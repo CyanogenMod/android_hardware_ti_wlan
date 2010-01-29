@@ -249,13 +249,13 @@ TI_STATUS que_Enqueue (TI_HANDLE hQue, TI_HANDLE hItem)
 		AddToHead (pQueNodeHdr, &pQue->tHead);
 		pQue->uCount++;
 
-#ifdef TI_DBG
-        if (pQue->uCount > pQue->uMaxCount)
-        {
-            pQue->uMaxCount = pQue->uCount;
-        }
-        TRACE0(pQue->hReport, REPORT_SEVERITY_INFORMATION , "que_Enqueue(): Enqueued Successfully\n");
-#endif
+        #ifdef TI_DBG
+		    if (pQue->uCount > pQue->uMaxCount)
+            {
+                pQue->uMaxCount = pQue->uCount;
+            }
+            TRACE0(pQue->hReport, REPORT_SEVERITY_INFORMATION , "que_Enqueue(): Enqueued Successfully\n");
+        #endif
 
         return TI_OK;
 	}
@@ -265,7 +265,7 @@ TI_STATUS que_Enqueue (TI_HANDLE hQue, TI_HANDLE hItem)
 	 */
 #ifdef TI_DBG
 	pQue->uOverflow++;
-    TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING , "que_Enqueue(): Queue Overflow\n");
+TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING , "que_Enqueue(): Queue Overflow\n");
 #endif
 	
 	return TI_NOK;
@@ -298,10 +298,10 @@ TI_HANDLE que_Dequeue (TI_HANDLE hQue)
          DelFromTail (pQue->tHead.pPrev);    /* remove node from the queue */
          pQue->uCount--;
 
-#ifdef TI_DBG
-        /* Clear the pNext so we can do a sanity check when enqueuing this structre in the future */
-        ((TQueNodeHdr *)((TI_UINT8*)hItem + pQue->uNodeHeaderOffset))->pNext = NULL;
-#endif
+         #ifdef TI_DBG
+            /* Clear the pNext so we can do a sanity check when enqueuing this structre in the future */
+            ((TQueNodeHdr *)((TI_UINT8*)hItem + pQue->uNodeHeaderOffset))->pNext = NULL;
+         #endif
 
          return (hItem);
     }
@@ -357,6 +357,7 @@ TRACE0(pQue->hReport, REPORT_SEVERITY_INFORMATION , "que_Requeue(): Requeued suc
 		return TI_OK;
     }
     
+
 	/* 
 	 *  Queue is overflowed, return TI_NOK.
 	 *  Note: This is not expected in the current design, since Tx packet may be requeued
@@ -364,7 +365,7 @@ TRACE0(pQue->hReport, REPORT_SEVERITY_INFORMATION , "que_Requeue(): Requeued suc
 	 */
 #ifdef TI_DBG
     pQue->uOverflow++;
-    TRACE0(pQue->hReport, REPORT_SEVERITY_ERROR , "que_Requeue(): Queue Overflow\n");
+TRACE0(pQue->hReport, REPORT_SEVERITY_ERROR , "que_Requeue(): Queue Overflow\n");
 #endif
     
     return TI_NOK;
@@ -406,11 +407,13 @@ TI_UINT32 que_Size (TI_HANDLE hQue)
 
 void que_Print(TI_HANDLE hQue)
 {
-	TQueue *pQue = (TQueue *)hQue;
+#ifdef REPORT_LOG
+    TQueue *pQue = (TQueue *)hQue;
 
     WLAN_OS_REPORT(("que_Print: Count=%u MaxCount=%u Limit=%u Overflow=%u NodeHeaderOffset=%u Next=0x%x Prev=0x%x\n",
                     pQue->uCount, pQue->uMaxCount, pQue->uLimit, pQue->uOverflow, 
                     pQue->uNodeHeaderOffset, pQue->tHead.pNext, pQue->tHead.pPrev));
+#endif
 }
 
 #endif /* TI_DBG */

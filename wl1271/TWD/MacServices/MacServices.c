@@ -33,7 +33,7 @@
 
 /** \file MacServices.c
  *  \brief This file include public definitions for the scan SRV module, comprising its API.
- *  \
+ *  \author Yuval Adler
  *  \date 6-Oct-2005
  */
 

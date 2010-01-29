@@ -263,8 +263,8 @@ void sendDataPacket (TI_HANDLE hOs)
 
 void sendMgmtPacket(TI_HANDLE hOs)
 {
+    static TI_UINT8     aMsg[2000];
     TI_UINT32           i;
-    TI_UINT8            aMsg[2000];
     dot11MgmtSubType_e  eMsgType = DE_AUTH;
     
     for (i = 0; i < packetLength; i++) 

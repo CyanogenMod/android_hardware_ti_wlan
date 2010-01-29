@@ -268,7 +268,7 @@ TI_STATUS currBSS_SetDefaults (TI_HANDLE hCurrBSS, TCurrBssInitParams *pInitPara
     currBSS_t *pCurrBSS = (currBSS_t *)hCurrBSS;
     TRroamingTriggerParams params;
     RssiSnrTriggerCfg_t tTriggerCfg;
-
+    
     /* save the roaming operational mode */
     pCurrBSS->RoamingOperationalMode = pInitParams->RoamingOperationalMode;
 
@@ -559,7 +559,8 @@ void currBSS_updateBSSLoss(currBSS_t   *pCurrBSS)
     
     roamingTriggersParams.BssLossTimeout = NO_BEACON_DEFAULT_TIMEOUT;
     
-TRACE2(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION, ": SG=%d, Band=%d\n", pCurrBSS->bUseSGParams, pCurrBSS->currAPInfo.band);
+    TRACE2(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION, ": SG=%d, Band=%d\n", pCurrBSS->bUseSGParams, pCurrBSS->currAPInfo.band);
+
 
     /* if Soft Gemini is enabled - increase the BSSLoss value (because BT activity might over-run beacons) */
     if ((pCurrBSS->bUseSGParams) && (pCurrBSS->currAPInfo.band == RADIO_BAND_2_4_GHZ))
@@ -657,10 +658,8 @@ TI_STATUS currBSS_probRespReceivedCallb(TI_HANDLE hCurrBSS,
 
     pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
     if (!pParam)
-    {
         return TI_NOK;
-    }
-    
+
     pParam->paramType = SITE_MGR_CURRENT_BSSID_PARAM;
     siteMgr_getParam(pCurrBSS->hSiteMgr, pParam);    
 
@@ -780,9 +779,7 @@ void currBSS_updateConnectedState(TI_HANDLE hCurrBSS, TI_BOOL isConnected, ScanB
 
         pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
         if (!pParam)
-        {
             return;
-        }
 
         /* BSSID */
         pParam->paramType = SITE_MGR_CURRENT_BSSID_PARAM;
@@ -1111,10 +1108,7 @@ static void currBSS_BackgroundScanQuality(TI_HANDLE hCurrBSS,
     /* Update Site Table in order to represent the RSSI of current AP correctly in the utility */
     pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
     if (!pParam)
-    {
         return;
-    }
-
     pParam->paramType = SITE_MGR_CURRENT_SIGNAL_PARAM;
     pParam->content.siteMgrCurrentSignal.rssi = averageRssi;
     siteMgr_setParam(pCurrBSS->hSiteMgr, pParam);
@@ -1236,7 +1230,6 @@ static TI_STATUS currBss_HandleTriggerEvent(TI_HANDLE hCurrBSS, TI_UINT8 *data, 
     currBSS_t *pCurrBSS = (currBSS_t *)hCurrBSS;
 
     TRACE1(pCurrBSS->hReport ,REPORT_SEVERITY_INFORMATION,  "currBss_HandleTriggerEvent(). eventID =%d \n",eventID);
-
 
     if (eventID < MAX_NUM_OF_RSSI_SNR_TRIGGERS)
     {
@@ -1420,7 +1413,6 @@ TI_STATUS currBSS_setParam(TI_HANDLE hCurrBSS, paramInfo_t *pParam)
                 /* Register the event and enable it before configuration.  */
                 triggerID = currBSS_RegisterTriggerEvent(hCurrBSS, (TI_UINT8)0, pUserTrigger->uClientID, (void*)0, hCurrBSS);
 
-
                 if (triggerID < 0)
                 {
                     TRACE0(pCurrBSS->hReport, REPORT_SEVERITY_ERROR , "currBSS_setParam: RSSI/SNR user trigger registration FAILED!! \n");
@@ -1430,7 +1422,6 @@ TI_STATUS currBSS_setParam(TI_HANDLE hCurrBSS, paramInfo_t *pParam)
                 {
                     tTriggerCfg.index = (uint8)triggerID; /* the index is used for the eventMBox triggerID mapping*/
                 }
-
                 /* Send user defined trigger to FW (the related FW events are handled by the currBSS) */
                 status = TWD_CfgRssiSnrTrigger (pCurrBSS->hTWD, &tTriggerCfg);
 
@@ -1453,6 +1444,7 @@ TI_STATUS currBSS_getParam(TI_HANDLE hCurrBSS, paramInfo_t *pParam)
 
 void currBss_DbgPrintTriggersTable(TI_HANDLE hCurrBSS)
 {
+#ifdef REPORT_LOG
     int i=0;
     currBSS_t *pCurrBSS = (currBSS_t *)hCurrBSS;
 
@@ -1467,4 +1459,5 @@ void currBss_DbgPrintTriggersTable(TI_HANDLE hCurrBSS)
                         pCurrBSS->aTriggersDesc[i].WasRegisteredByApp));
     }
     WLAN_OS_REPORT(("\n --------------------------------------------------------------- \n"));
+#endif
 }

@@ -92,19 +92,19 @@ RETURN:     Handle to the connection module on success, NULL otherwise
 ************************************************************************/
 TI_HANDLE conn_create(TI_HANDLE hOs)
 {
-	conn_t			   *pConn;
+	conn_t *pConn;
 	fsm_stateMachine_t *pFsm;
 	TI_STATUS status;
 
 	pConn = os_memoryAlloc(hOs, sizeof(conn_t));
 	if (pConn == NULL)
-    {
+	{
 		return NULL;
-    }
-	os_memoryZero (pConn->hOs, pConn, sizeof(conn_t));
-
+	}
+	
+	os_memoryZero(hOs, (void *)pConn, sizeof(conn_t));
 	/* Creating connection Ibss SM */
-    status = fsm_Create(hOs, &pFsm, CONN_IBSS_NUM_STATES, CONN_IBSS_NUM_EVENTS);
+	status = fsm_Create(hOs, &pFsm, CONN_IBSS_NUM_STATES, CONN_IBSS_NUM_EVENTS);
 	if (status != TI_OK)
 	{
 		release_module(pConn);
@@ -112,7 +112,7 @@ TI_HANDLE conn_create(TI_HANDLE hOs)
 	}
 	pConn->ibss_pFsm = pFsm;
 
-    /* Creating connection Infra SM */
+	/* Creating connection Infra SM */
    	status = fsm_Create(hOs, &pFsm, CONN_INFRA_NUM_STATES, CONN_INFRA_NUM_EVENTS);
 	if (status != TI_OK)
 	{
@@ -484,11 +484,13 @@ TI_STATUS conn_reportMlmeStatus(TI_HANDLE			hConn,
         TRACE0(pConn->hReport, REPORT_SEVERITY_CONSOLE,"               CONN LOST             \n");
         TRACE0(pConn->hReport, REPORT_SEVERITY_CONSOLE,"-------------------------------------\n");
 
-
+#ifdef REPORT_LOG
 		WLAN_OS_REPORT(("-------------------------------------\n"));
 		WLAN_OS_REPORT(("               CONN LOST             \n"));
 		WLAN_OS_REPORT(("-------------------------------------\n"));
-
+#else
+		os_printf("%s: *** CONN LOST ***\n", __func__);
+#endif
 		if( pConn->connType == CONN_TYPE_ROAM )
 			pConn->disConnType = DISCONNECT_IMMEDIATE;
 		else /* connType == CONN_TYPE_ESS */

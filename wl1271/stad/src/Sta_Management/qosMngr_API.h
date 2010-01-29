@@ -102,7 +102,6 @@ void qosMngr_SetBaPolicies(TI_HANDLE hQosMngr);
 TI_STATUS qosMngr_setParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo);
 
 TI_STATUS qosMngr_getParamsActiveProtocol(TI_HANDLE hQosMngr, EQosProtocol *actProt);
-
 TI_STATUS qosMngr_getParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo);
 
 TI_STATUS qosMngr_assocReqBuild(TI_HANDLE  hQosMngr, TI_UINT8 *pQosIe, TI_UINT32 *pLen);

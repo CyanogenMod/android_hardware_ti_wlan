@@ -54,8 +54,11 @@
 #endif
 
 #define TIWLAN_DRV_NAME "tiwlan0"
-#define SUPPL_IF_FILE "/var/run/tiwlan0"
-
+#ifdef ANDROID
+#define SUPPL_IF_FILE "/data/misc/wifi/sockets/" TIWLAN_DRV_NAME
+#else
+#define SUPPL_IF_FILE "/var/run/" TIWLAN_DRV_NAME
+#endif
 extern int consoleRunScript( char *script_file, THandle hConsole);
     
 /* local types */
@@ -1190,5 +1193,3 @@ void g_tester_send_event(U8 event_index)
 void ProcessLoggerMessage(PU8 data, U32 len)
 {
 }
-
-

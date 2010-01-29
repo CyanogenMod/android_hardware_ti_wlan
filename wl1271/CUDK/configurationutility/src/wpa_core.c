@@ -35,17 +35,15 @@
 #include <unistd.h>
 #endif
 
-/* Linux only file */
-#include <netinet/if_ether.h>
-
+#include <string.h>
 #include "cu_osapi.h"
 #include "TWDriver.h"
+#include "common.h"
 #include "config_ssid.h"
 #include "driver.h"
 #include "ipc_wpa.h"
 #include "wpa_core.h"
 #include "oserr.h"
-
 
 /* defines */
 /***********/
@@ -119,7 +117,7 @@ static VOID WpaCore_InitWpaParams(TWpaCore* pWpaCore)
 	  pWpaCore->WpaSupplParams.pair_wise = WPA_CIPHER_NONE;
 	  pWpaCore->WpaSupplParams.group = WPA_CIPHER_NONE; 
       pWpaCore->WpaSupplParams.anyWpaMode = 0;
-      #ifdef CONFIG_WPS
+#ifdef CONFIG_WPS
 	pWpaCore->WpaSupplParams.pWscPin = NULL;
 	pWpaCore->WpaSupplParams.WscMode = WSC_MODE_OFF;
 #endif
@@ -141,7 +139,7 @@ THandle WpaCore_Create(PS32 pRes, PS8 pSupplIfFile)
 		return NULL;
 	}
 
-	pWpaCore->hIpcWpa = IpcWpa_Create(pRes, pSupplIfFile);
+    pWpaCore->hIpcWpa = IpcWpa_Create(pRes, pSupplIfFile);
 	if(pWpaCore->hIpcWpa == NULL)
 	{	
 		WpaCore_Destroy(pWpaCore);

@@ -772,6 +772,7 @@ void fwEvent_EnableInterrupts(TI_HANDLE hFwEvent)
 
 void fwEvent_PrintStat (TI_HANDLE hFwEvent)
 {
+#ifdef REPORT_LOG
     TfwEvent *pFwEvent = (TfwEvent *)hFwEvent;
 
     WLAN_OS_REPORT(("Print FW event module info\n"));
@@ -782,6 +783,7 @@ void fwEvent_PrintStat (TI_HANDLE hFwEvent)
     WLAN_OS_REPORT(("bIntrPending   = %d\n",   pFwEvent->bIntrPending));
     WLAN_OS_REPORT(("uNumPendHndlrs = %d\n",   pFwEvent->uNumPendHndlrs));
     WLAN_OS_REPORT(("uFwTimeOffset  = %d\n",   pFwEvent->uFwTimeOffset));
+#endif
 }
 
 #endif  /* TI_DBG */

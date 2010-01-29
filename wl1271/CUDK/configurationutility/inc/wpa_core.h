@@ -66,7 +66,6 @@ S32 WpaCore_SetCertificate(THandle hWpaCore, PU8 Filepath);
 S32 WpaCore_SetXCC(THandle hWpaCore, U16 XCCConfig);
 
 
-
 #ifdef CONFIG_WPS
 S32 WpaCore_StartWpsPIN(THandle hWpaCore);
 S32 WpaCore_StartWpsPBC(THandle hWpaCore);

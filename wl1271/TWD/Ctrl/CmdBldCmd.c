@@ -488,7 +488,6 @@ TI_UINT32 cmdBld_BuildPeriodicScanChannles (TPeriodicScanParams *pPeriodicScanPa
             /* advance mathcing channel counter */
             uNumChannels++;
         }
-
     }
 
     /* return channel count */
@@ -548,9 +547,7 @@ TI_STATUS cmdBld_StartPeriodicScan (TI_HANDLE hCmdBld, TPeriodicScanParams *pPer
     default: /* More than one SSID - copy SSIDs to SSID list command */
         pFWSsidList = os_memoryAlloc(pCmdBld->hOs, sizeof(ConnScanSSIDList_t));
         if (!pFWSsidList)
-        {
             return TI_NOK;
-        }
 
         if ((TI_UINT8)pPeriodicScanParams->uSsidListFilterEnabled == 1)
 	        tFWPeriodicScanParams.ssidFilterType = (ScanSsidFilterType_e)SCAN_SSID_FILTER_TYPE_LIST;
@@ -1687,5 +1684,4 @@ TI_STATUS cmdBld_CmdTest (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb, TTestCmd*
 {
     return cmdBld_CmdIeTest (hCmdBld, fCb, hCb, pTestCmd);
 }
-
 

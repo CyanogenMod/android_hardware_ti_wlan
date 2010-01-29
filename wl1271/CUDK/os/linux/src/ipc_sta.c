@@ -32,7 +32,7 @@
 /************/
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <linux/if.h>
+#include <net/if.h>
 #include <linux/rtnetlink.h>
 #include <errno.h>
 #include <sys/ioctl.h>

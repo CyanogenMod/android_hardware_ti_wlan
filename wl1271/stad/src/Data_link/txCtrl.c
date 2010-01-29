@@ -163,22 +163,22 @@ static inline void txCtrl_TranslateTimeToFw (txCtrl_t *pTxCtrl, TTxCtrlBlk *pPkt
 *************************************************************************/
 TI_HANDLE txCtrl_Create (TI_HANDLE hOs)
 {
-    txCtrl_t *pTxCtrl;
+	txCtrl_t *pTxCtrl;
 
-    /* allocate Tx module control block */
-    pTxCtrl = os_memoryAlloc(hOs, (sizeof(txCtrl_t)));
+	/* allocate Tx module control block */
+	pTxCtrl = os_memoryAlloc(hOs, (sizeof(txCtrl_t)));
 
-    if (!pTxCtrl)
-        return NULL;
+	if (!pTxCtrl)
+		return NULL;
 
-    /* reset tx control object */
-    os_memoryZero(hOs, pTxCtrl, (sizeof(txCtrl_t)));
+	/* reset tx control object */
+	os_memoryZero(hOs, pTxCtrl, (sizeof(txCtrl_t)));
 
-    pTxCtrl->TxEventDistributor = DistributorMgr_Create(hOs, MAX_TX_NOTIF_REQ_ELMENTS);
+	pTxCtrl->TxEventDistributor = DistributorMgr_Create(hOs, MAX_TX_NOTIF_REQ_ELMENTS);
 
-    pTxCtrl->hOs = hOs;
+	pTxCtrl->hOs = hOs;
 
-    return pTxCtrl;
+	return pTxCtrl;
 }
 
 
@@ -189,31 +189,31 @@ TI_HANDLE txCtrl_Create (TI_HANDLE hOs)
 ***************************************************************************/
 void txCtrl_Init (TStadHandlesList *pStadHandles)
 {
-    txCtrl_t *pTxCtrl = (txCtrl_t *)(pStadHandles->hTxCtrl);
+	txCtrl_t *pTxCtrl = (txCtrl_t *)(pStadHandles->hTxCtrl);
 	TI_UINT32 ac;
 
-    /* Save other modules handles */
+	/* Save other modules handles */
 	pTxCtrl->hOs			= pStadHandles->hOs;
 	pTxCtrl->hReport		= pStadHandles->hReport;
 	pTxCtrl->hCtrlData		= pStadHandles->hCtrlData;
 	pTxCtrl->hTWD		    = pStadHandles->hTWD;
-    pTxCtrl->hTxDataQ	    = pStadHandles->hTxDataQ;
-    pTxCtrl->hTxMgmtQ	    = pStadHandles->hTxMgmtQ;
-    pTxCtrl->hEvHandler		= pStadHandles->hEvHandler;
+	pTxCtrl->hTxDataQ	    = pStadHandles->hTxDataQ;
+	pTxCtrl->hTxMgmtQ	    = pStadHandles->hTxMgmtQ;
+	pTxCtrl->hEvHandler		= pStadHandles->hEvHandler;
 	pTxCtrl->hHealthMonitor = pStadHandles->hHealthMonitor;
 	pTxCtrl->hTimer         = pStadHandles->hTimer;
-    pTxCtrl->hStaCap        = pStadHandles->hStaCap;
-    pTxCtrl->hXCCMngr       = pStadHandles->hXCCMngr;
-    pTxCtrl->hQosMngr       = pStadHandles->hQosMngr;
+	pTxCtrl->hStaCap        = pStadHandles->hStaCap;
+	pTxCtrl->hXCCMngr       = pStadHandles->hXCCMngr;
+	pTxCtrl->hQosMngr       = pStadHandles->hQosMngr;
 	pTxCtrl->hRxData        = pStadHandles->hRxData;
 
-    /* Set Tx parameters to defaults */
-    pTxCtrl->headerConverMode = HDR_CONVERT_NONE;
-    pTxCtrl->currentPrivacyInvokedMode = DEF_CURRENT_PRIVACY_MODE;
-    pTxCtrl->eapolEncryptionStatus = DEF_EAPOL_ENCRYPTION_STATUS;
-    pTxCtrl->encryptionFieldSize = 0;
-    pTxCtrl->currBssType = BSS_INFRASTRUCTURE;
-    pTxCtrl->busyAcBitmap = 0;
+	/* Set Tx parameters to defaults */
+	pTxCtrl->headerConverMode = HDR_CONVERT_NONE;
+	pTxCtrl->currentPrivacyInvokedMode = DEF_CURRENT_PRIVACY_MODE;
+	pTxCtrl->eapolEncryptionStatus = DEF_EAPOL_ENCRYPTION_STATUS;
+	pTxCtrl->encryptionFieldSize = 0;
+	pTxCtrl->currBssType = BSS_INFRASTRUCTURE;
+	pTxCtrl->busyAcBitmap = 0;
 	pTxCtrl->dbgPktSeqNum = 0;		
 	pTxCtrl->bCreditCalcTimerRunning = TI_FALSE;
 	pTxCtrl->genericEthertype = ETHERTYPE_EAPOL;
@@ -230,26 +230,26 @@ void txCtrl_Init (TStadHandlesList *pStadHandles)
 		pTxCtrl->credit[ac] = 0;
 	}
 
-    /* Reset counters */
-    txCtrlParams_resetCounters (pStadHandles->hTxCtrl);
+	/* Reset counters */
+	txCtrlParams_resetCounters (pStadHandles->hTxCtrl);
 
 #ifdef TI_DBG
-    txCtrlParams_resetDbgCounters (pStadHandles->hTxCtrl);
+	txCtrlParams_resetDbgCounters (pStadHandles->hTxCtrl);
 #endif
 
-    /* Register the Tx-Complete callback function. */
+	/* Register the Tx-Complete callback function. */
 	TWD_RegisterCb (pTxCtrl->hTWD, 
-                    TWD_EVENT_TX_RESULT_SEND_PKT_COMPLETE, 
-					(void*)txCtrl_TxCompleteCb, 
-                    pStadHandles->hTxCtrl);
+			TWD_EVENT_TX_RESULT_SEND_PKT_COMPLETE, 
+			(void*)txCtrl_TxCompleteCb, 
+			pStadHandles->hTxCtrl);
 
 	/* Register the Update-Busy-Map callback function. */
 	TWD_RegisterCb (pTxCtrl->hTWD, 
-                    TWD_EVENT_TX_HW_QUEUE_UPDATE_BUSY_MAP, 
-					(void *)txCtrl_UpdateBackpressure, 
-                    pStadHandles->hTxCtrl);
+			TWD_EVENT_TX_HW_QUEUE_UPDATE_BUSY_MAP, 
+			(void *)txCtrl_UpdateBackpressure, 
+			pStadHandles->hTxCtrl);
 
-    TRACE0(pTxCtrl->hReport, REPORT_SEVERITY_INIT, ".....Tx Data configured successfully\n");
+	TRACE0(pTxCtrl->hReport, REPORT_SEVERITY_INIT, ".....Tx Data configured successfully\n");
 }
 
 
@@ -267,23 +267,23 @@ void txCtrl_Init (TStadHandlesList *pStadHandles)
 *************************************************************************/
 TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, txDataInitParams_t *txDataInitParams)
 {
-    txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
+	txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
 
-    pTxCtrl->creditCalculationTimeout = txDataInitParams->creditCalculationTimeout;
+	pTxCtrl->creditCalculationTimeout = txDataInitParams->creditCalculationTimeout;
 	pTxCtrl->bCreditCalcTimerEnabled  = txDataInitParams->bCreditCalcTimerEnabled;
 
-    /* Update queues mapping (AC/TID/Backpressure) after module init. */
+	/* Update queues mapping (AC/TID/Backpressure) after module init. */
 	txCtrl_UpdateQueuesMapping (hTxCtrl); 
 
-    /* allocate timer for credit calculation */
-    pTxCtrl->hCreditTimer = tmr_CreateTimer (pTxCtrl->hTimer);
+	/* allocate timer for credit calculation */
+	pTxCtrl->hCreditTimer = tmr_CreateTimer (pTxCtrl->hTimer);
 	if (pTxCtrl->hCreditTimer == NULL)
 	{
-        TRACE0(pTxCtrl->hReport, REPORT_SEVERITY_ERROR, "txCtrl_SetDefaults(): Failed to create hCreditTimer!\n");
+		TRACE0(pTxCtrl->hReport, REPORT_SEVERITY_ERROR, "txCtrl_SetDefaults(): Failed to create hCreditTimer!\n");
 		return TI_NOK;
 	}
 
-    return TI_OK;
+	return TI_OK;
 }
 
 

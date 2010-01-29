@@ -196,6 +196,5 @@ TI_STATUS   busDrv_DisconnectBus (TI_HANDLE hBusDrv);
 ETxnStatus  busDrv_Transact   (TI_HANDLE hBusDrv, TTxnStruct *pTxn);
 
 
-
 #endif /*__BUS_DRV_API_H__*/
 

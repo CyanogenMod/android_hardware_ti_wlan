@@ -61,10 +61,10 @@
 typedef void (*os_free)(void *);
 struct os_mem_block
 {
-    struct list_head blk_list;
-    os_free f_free;
-    __u32 size;
-    __u32 signature;
+	struct list_head blk_list;
+	os_free f_free;
+	__u32 size;
+	__u32 signature;
 };
 #define MEM_BLOCK_START  (('m'<<24) | ('e'<<16) | ('m'<<8) | 's')
 #define MEM_BLOCK_END    (('m'<<24) | ('e'<<16) | ('m'<<8) | 'e')
@@ -97,25 +97,25 @@ os_memoryAlloc(
         TI_UINT32 Size
         )
 {
-    struct os_mem_block *blk;
-    __u32 total_size = Size + sizeof(struct os_mem_block) + sizeof(__u32);
+	struct os_mem_block *blk;
+	__u32 total_size = Size + sizeof(struct os_mem_block) + sizeof(__u32);
 
 #ifdef TI_MEM_ALLOC_TRACE
-    os_printf("MTT:%s:%d ::os_memoryAlloc(0x%p, %lu) : %lu\n",__FUNCTION__, __LINE__,OsContext,Size,total_size);
+	os_printf("MTT:%s:%d ::os_memoryAlloc(0x%p, %lu) : %lu\n",__FUNCTION__, __LINE__,OsContext,Size,total_size);
 #endif
 	/* 
-		Memory optimization issue. Allocate up to 2 pages (8k) from the SLAB allocator (2^n),
-		    otherwise allocate from virtual pool.
-        If full Async mode is used, allow up to 6 pages (24k) for DMA-able memory, so the TxCtrlBlk table
-            can be transacted over DMA.
+	Memory optimization issue. Allocate up to 2 pages (8k) from the SLAB
+	    allocator (2^n), otherwise allocate from virtual pool.
+	If full Async mode is used, allow up to 6 pages (24k) for DMA-able
+	  memory, so the TxCtrlBlk table can be transacted over DMA.
 	*/
 #ifdef FULL_ASYNC_MODE
 	if (total_size < 6 * 4096)
 #else
-    if (total_size < 2 * 4096)  
+	if (total_size < 2 * 4096)
 #endif
-    {
-        if (in_atomic())
+	{
+		if (in_atomic())
         {
             blk = kmalloc(total_size, GFP_ATOMIC);
         }
@@ -125,31 +125,35 @@ os_memoryAlloc(
         }
         if (!blk)
         {            
-            printk("%s: NULL\n",__func__);	
-            return NULL;
-        }
-        blk->f_free = (os_free)kfree;
-    }
+			printk("%s: NULL\n",__func__);	
+			return NULL;
+		}
+		blk->f_free = (os_free)kfree;
+	}
     else
     {
-		/* We expect that the big allocations should be made outside the interrupt,
-			otherwise fail
+		/* We expect that the big allocations should be made outside
+		     the interrupt, otherwise fail
 		*/
-		if (in_interrupt())
+		if (in_interrupt()) {
+			printk("%s: NULL\n",__func__);
 			return NULL;
-        blk = vmalloc(total_size);
-        if (!blk)
-            return NULL;
-        blk->f_free = (os_free)vfree;
-    }
+		}
+	        blk = vmalloc(total_size);
+	        if (!blk) {
+			printk("%s: NULL\n",__func__);
+			return NULL;
+		}
+		blk->f_free = (os_free)vfree;
+	}
 
-    os_profile (OsContext, 4, total_size);
+	os_profile (OsContext, 4, total_size);
 
-    /*list_add(&blk->blk_list, &drv->mem_blocks);*/
-    blk->size = Size;
-    blk->signature = MEM_BLOCK_START;
-    *(__u32 *)((unsigned char *)blk + total_size - sizeof(__u32)) = MEM_BLOCK_END;
-    return (void*)((char *)blk + sizeof(struct os_mem_block));
+	/*list_add(&blk->blk_list, &drv->mem_blocks);*/
+	blk->size = Size;
+	blk->signature = MEM_BLOCK_START;
+	*(__u32 *)((unsigned char *)blk + total_size - sizeof(__u32)) = MEM_BLOCK_END;
+	return (void *)((char *)blk + sizeof(struct os_mem_block));
 }
 
 
@@ -173,22 +177,22 @@ os_memoryCAlloc(
         TI_UINT32 Size
         )
 {
-   void* pAllocatedMem;
-   TI_UINT32 MemSize;
+	void* pAllocatedMem;
+	TI_UINT32 MemSize;
 
 #ifdef TI_MEM_ALLOC_TRACE
-   os_printf("MTT:%s:%d ::os_memoryCAlloc(0x%p, %lu, %lu) : %lu\n",__FUNCTION__,__LINE__,OsContext,Number,Size,Number*Size);
+	os_printf("MTT:%s:%d ::os_memoryCAlloc(0x%p, %lu, %lu) : %lu\n",__FUNCTION__,__LINE__,OsContext,Number,Size,Number*Size);
 #endif
-   MemSize = Number * Size;
+	MemSize = Number * Size;
 
-   pAllocatedMem = os_memoryAlloc(OsContext, MemSize);
+	pAllocatedMem = os_memoryAlloc(OsContext, MemSize);
 
-   if(!pAllocatedMem)
-      return NULL;
+	if (!pAllocatedMem)
+		return NULL;
 
-   memset(pAllocatedMem,0,MemSize);
+	memset(pAllocatedMem,0,MemSize);
 
-   return pAllocatedMem;
+	return pAllocatedMem;
 }
 
 
@@ -218,29 +222,34 @@ os_memoryFree(
         TI_UINT32 Size
         )
 {
-    struct os_mem_block *blk =
-        (struct os_mem_block *)((char *)pMemPtr - sizeof(struct os_mem_block));
-   
+	struct os_mem_block *blk;
+
+	if (!pMemPtr) {
+		printk("%s: NULL\n",__func__); 
+		return;
+	}
+	blk = (struct os_mem_block *)((char *)pMemPtr - sizeof(struct os_mem_block));
+
 #ifdef TI_MEM_ALLOC_TRACE
-    os_printf("MTT:%s:%d ::os_memoryFree(0x%p, 0x%p, %lu) : %d\n",__FUNCTION__,__LINE__,OsContext,pMemPtr,Size,-Size);
+	os_printf("MTT:%s:%d ::os_memoryFree(0x%p, 0x%p, %lu) : %d\n",__FUNCTION__,__LINE__,OsContext,pMemPtr,Size,-Size);
 #endif
 	if (blk->signature != MEM_BLOCK_START)
-    {
+	{
 		printk("\n\n%s: memory block signature is incorrect - 0x%x\n\n\n",
-               __FUNCTION__, blk->signature);
-        return;
-    }
-    *(char *)(&blk->signature) = '~';
-    if (*(__u32 *)((unsigned char *)blk + blk->size + sizeof(struct os_mem_block))
-        != MEM_BLOCK_END)
-    {
+			__FUNCTION__, blk->signature);
+		return;
+	}
+	*(char *)(&blk->signature) = '~';
+	if (*(__u32 *)((unsigned char *)blk + blk->size + sizeof(struct os_mem_block))
+		!= MEM_BLOCK_END)
+	{
 		printk("\n\n%s: memory block corruption. Size=%u\n\n\n",
-               __FUNCTION__, blk->size);
-    }
+			__FUNCTION__, blk->size);
+	}
 
-    os_profile (OsContext, 5, blk->size + sizeof(struct os_mem_block) + sizeof(__u32));
+	os_profile (OsContext, 5, blk->size + sizeof(struct os_mem_block) + sizeof(__u32));
 
-    blk->f_free(blk);
+	blk->f_free(blk);
 }
 
 
@@ -266,7 +275,11 @@ os_memorySet(
     TI_UINT32 Length
     )
 {
-   memset(pMemPtr,Value,Length);
+	if (!pMemPtr) {
+		printk("%s: NULL\n",__func__);
+		return;
+	}
+	memset(pMemPtr,Value,Length);
 }
 
 /****************************************************************************************
@@ -289,29 +302,32 @@ os_memoryAlloc4HwDma(
     TI_UINT32 Size
     )
 {
-    struct os_mem_block *blk;
+	struct os_mem_block *blk;
 	__u32 total_size = Size + sizeof(struct os_mem_block) + sizeof(__u32);
 	/* 
-		if the size is greater than 2 pages then we cant allocate the memory through kmalloc so the function fails
+	if the size is greater than 2 pages then we cant allocate the memory
+	    through kmalloc so the function fails
 	*/
 	if (Size < 2 * OS_PAGE_SIZE)
-    {
-       	blk = kmalloc(total_size, GFP_ATOMIC|GFP_DMA);
-		if (!blk)
+	{
+		blk = kmalloc(total_size, GFP_ATOMIC|GFP_DMA);
+		if (!blk) {
+			printk("%s: NULL\n",__func__);
 			return NULL;
-       	blk->f_free = (os_free)kfree;
+		}
+		blk->f_free = (os_free)kfree;
 	}
-    else
-    {
+	else
+	{
 		printk("\n\n%s: memory cant be allocated-Size = %d\n\n\n",
-               __FUNCTION__, Size);
+			__FUNCTION__, Size);
 		return NULL;
 	}
 	blk->size = Size;
 	blk->signature = MEM_BLOCK_START;
 	*(__u32 *)((unsigned char *)blk + total_size - sizeof(__u32)) = MEM_BLOCK_END;
 
-	return (void*)((char *)blk + sizeof(struct os_mem_block));
+	return (void *)((char *)blk + sizeof(struct os_mem_block));
 }
 
 /****************************************************************************************
@@ -339,24 +355,29 @@ os_memory4HwDmaFree(
     TI_UINT32 Size
     )
 {
-    struct os_mem_block *blk =
-        (struct os_mem_block *)((char *)pMem_ptr - sizeof(struct os_mem_block));
+	struct os_mem_block *blk;
+
+	if (!pMem_ptr) {
+		printk("%s: NULL\n",__func__);
+		return;
+	}
+	blk = (struct os_mem_block *)((char *)pMem_ptr - sizeof(struct os_mem_block));
 
 	if (blk->signature != MEM_BLOCK_START)
-    {
+	{
 		printk("\n\n%s: memory block signature is incorrect - 0x%x\n\n\n",
-               __FUNCTION__, blk->signature);
-        return;
-    }
-    *(char *)(&blk->signature) = '~';
-    if (*(__u32 *)((unsigned char *)blk + blk->size + sizeof(struct os_mem_block))
-        != MEM_BLOCK_END)
-    {
+			__FUNCTION__, blk->signature);
+		return;
+	}
+	*(char *)(&blk->signature) = '~';
+	if (*(__u32 *)((unsigned char *)blk + blk->size + sizeof(struct os_mem_block))
+		!= MEM_BLOCK_END)
+	{
 		printk("\n\n%s: memory block corruption. Size=%u\n\n\n",
-               __FUNCTION__, blk->size);
-    }
+			__FUNCTION__, blk->size);
+	}
 
-    blk->f_free(blk);
+	blk->f_free(blk);
 }
 
 /****************************************************************************************
@@ -379,7 +400,11 @@ os_memoryZero(
     TI_UINT32 Length
     )
 {
-   memset(pMemPtr,0,Length);
+	if (!pMemPtr) {
+		printk("%s: NULL\n",__func__);
+		return;
+	}
+	memset(pMemPtr,0,Length);
 }
 
 
@@ -406,7 +431,8 @@ os_memoryCopy(
     TI_UINT32 Size
     )
 {
-   memcpy(pDstPtr,pSrcPtr,Size);
+
+	memcpy(pDstPtr,pSrcPtr,Size);
 }
 
 /****************************************************************************************
@@ -434,7 +460,7 @@ os_memoryCompare(
         TI_INT32 Count
         )
 {
-   return memcmp(Buf1, Buf2, Count);
+	return memcmp(Buf1, Buf2, Count);
 }
 
 
@@ -463,7 +489,7 @@ os_memoryCopyFromUser(
     TI_UINT32 Size
     )
 {
-   return copy_from_user(pDstPtr,pSrcPtr,Size);
+	return copy_from_user(pDstPtr,pSrcPtr,Size);
 }
 
 /****************************************************************************************
@@ -489,5 +515,5 @@ os_memoryCopyToUser(
     TI_UINT32 Size
     )
 {
-   return copy_to_user(pDstPtr,pSrcPtr,Size);
+	return copy_to_user(pDstPtr,pSrcPtr,Size);
 }

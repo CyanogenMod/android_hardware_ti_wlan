@@ -55,7 +55,6 @@
 #define ROAMING_OPERATIONAL_MODE_MANUAL    0
 #define ROAMING_OPERATIONAL_MODE_AUTO 	   1
 
-
 /*--------------*/
 /* Enumerations */
 /*--------------*/

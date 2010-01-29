@@ -546,7 +546,6 @@ TI_STATUS drvMain_Create (TI_HANDLE  hOs,
     return TI_OK;
 }
 
-
 /* 
  * \fn     drvMain_Destroy
  * \brief  Destroy driver
@@ -654,10 +653,6 @@ TI_STATUS drvMain_Destroy (TI_HANDLE  hDrvMain)
         scr_release (pDrvMain->tStadHandles.hSCR);
     }
 
-    if (pDrvMain->tStadHandles.hEvHandler != NULL)
-    {
-         EvHandlerUnload (pDrvMain->tStadHandles.hEvHandler);
-    }
 
     if (pDrvMain->tStadHandles.hRsn != NULL)
     {
@@ -726,35 +721,35 @@ TI_STATUS drvMain_Destroy (TI_HANDLE  hDrvMain)
         cmdHndlr_Destroy (pDrvMain->tStadHandles.hCmdHndlr, pDrvMain->tStadHandles.hEvHandler);
     }
 
+    if (pDrvMain->tStadHandles.hEvHandler != NULL)
+    {
+         EvHandlerUnload (pDrvMain->tStadHandles.hEvHandler);
+    }
+
     if (pDrvMain->tStadHandles.hCmdDispatch) 
     {
         cmdDispatch_Destroy (pDrvMain->tStadHandles.hCmdDispatch);
-    }
-
-    if (pDrvMain->tStadHandles.hStaCap != NULL)
-    {
-        StaCap_Destroy (pDrvMain->tStadHandles.hStaCap);
     }
 
     if (pDrvMain->tStadHandles.hTxnQ != NULL)
     {
         txnQ_Destroy (pDrvMain->tStadHandles.hTxnQ);
     }
-
-    /* 
-     * Note: The Timer module must be destroyed here, after all created timers are already destroyed!! 
-     *       Also, the context module must be destroyed after that because its services are used in other
-     *         modules destroy function (including the tmr_Destroy function), and then the report module.
-     */
-
+    /* Note: The Timer module must be destroyed last, so all created timers are already destroyed!! */
     if (pDrvMain->tStadHandles.hTimer != NULL)
     {
         tmr_Destroy (pDrvMain->tStadHandles.hTimer);
     }
 
+    /* Note: Moved after timers for locks */
     if (pDrvMain->tStadHandles.hContext != NULL)
     {
         context_Destroy (pDrvMain->tStadHandles.hContext);
+    }
+
+    if (pDrvMain->tStadHandles.hStaCap != NULL)
+    {
+        StaCap_Destroy (pDrvMain->tStadHandles.hStaCap);
     }
 
     if (pDrvMain->tStadHandles.hReport != NULL)
@@ -1053,7 +1048,7 @@ static void drvMain_InitLocals (TDrvMain *pDrvMain)
                                                    sizeof("ACTION"));
 
     /* Platform specific HW preparations */
-    hPlatform_Wlan_Hardware_Init ();
+	hPlatform_Wlan_Hardware_Init(pDrvMain->tStadHandles.hOs);
 
     /* Insure that device power is off (expected to be) */
     hPlatform_DevicePowerOff ();
@@ -1127,14 +1122,14 @@ static TI_STATUS drvMain_ConfigFw (TI_HANDLE hDrvMain)
     TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_INIT , "EXIT FROM INIT\n");
 
     /* Print the driver and firmware version and the mac address */
-    WLAN_OS_REPORT(("\n"));
-    WLAN_OS_REPORT(("--------------------------------------------------------------------\n"));
-    WLAN_OS_REPORT(("Driver Version  : %s\n", SW_VERSION_STR));
-    WLAN_OS_REPORT(("Firmware Version: %s\n", pFwInfo->fwVer));
-    WLAN_OS_REPORT(("Station ID      : %02X-%02X-%02X-%02X-%02X-%02X\n",
-                    pMacAddr[0], pMacAddr[1], pMacAddr[2], pMacAddr[3], pMacAddr[4], pMacAddr[5]));
-    WLAN_OS_REPORT(("--------------------------------------------------------------------\n"));
-    WLAN_OS_REPORT(("\n"));
+    os_printf("\n");
+    os_printf("-----------------------------------------------------\n");
+    os_printf("Driver Version  : %s\n", SW_VERSION_STR);
+    os_printf("Firmware Version: %s\n", pFwInfo->fwVer);
+    os_printf("Station ID      : %02X-%02X-%02X-%02X-%02X-%02X\n",
+              pMacAddr[0], pMacAddr[1], pMacAddr[2], pMacAddr[3], pMacAddr[4], pMacAddr[5]);
+    os_printf("-----------------------------------------------------\n");
+    os_printf("\n");
 
     return TI_OK;
 }
@@ -1227,15 +1222,18 @@ TI_STATUS drvMain_InsertAction (TI_HANDLE hDrvMain, EActionType eAction)
 {
     TDrvMain *pDrvMain = (TDrvMain *) hDrvMain;
 
+    context_EnterCriticalSection(pDrvMain->tStadHandles.hContext);
     if (pDrvMain->eAction == eAction)
-    {            
+    {
+        context_LeaveCriticalSection(pDrvMain->tStadHandles.hContext);
         TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_CONSOLE, "Action is identical to last action!\n");
-        WLAN_OS_REPORT(("Action is identical to last action!\n"));
+        WLAN_OS_REPORT(("Action %d is identical to last action!\n", eAction));
         return TI_NOK;
     }
 
     /* Save the requested action */
     pDrvMain->eAction = eAction;
+    context_LeaveCriticalSection(pDrvMain->tStadHandles.hContext);
 
     /* Create signal object */
     /* 
@@ -1260,6 +1258,7 @@ TI_STATUS drvMain_InsertAction (TI_HANDLE hDrvMain, EActionType eAction)
 
     /* Free signalling object */
     os_SignalObjectFree (pDrvMain->tStadHandles.hOs, pDrvMain->hSignalObj);
+    pDrvMain->hSignalObj = NULL;
 
     if (pDrvMain->eSmState == SM_STATE_FAILED)
     return TI_NOK;
@@ -1286,7 +1285,11 @@ TI_STATUS drvMain_Recovery (TI_HANDLE hDrvMain)
     if (!pDrvMain->bRecovery)
     {
         TRACE1(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_CONSOLE,".....drvMain_Recovery, ts=%d\n", os_timeStampMs(pDrvMain->tStadHandles.hOs));
+#ifdef REPORT_LOG
         WLAN_OS_REPORT((".....drvMain_Recovery, ts=%d\n", os_timeStampMs(pDrvMain->tStadHandles.hOs)));
+#else
+        printk("%s\n",__func__);
+#endif
         pDrvMain->bRecovery = TI_TRUE;
         drvMain_SmEvent (hDrvMain, SM_EVENT_RECOVERY);
         return TI_OK;
@@ -1501,9 +1504,9 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
 		{
 			WLAN_OS_REPORT(("SDBus Connect Failed, Set Object Event !!\r\n"));
 			TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "SDBus Connect Failed, Set Object Event !!\r\n");
-            if (!pDrvMain->bRecovery) 
+			if (!pDrvMain->bRecovery)
 			{
-				os_SignalObjectSet (hOs, pDrvMain->hSignalObj);
+				os_SignalObjectSet(hOs, pDrvMain->hSignalObj);
 			}
 		}
 		else /* SDBus Connect success */
@@ -1520,11 +1523,11 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         }
         break;
     case SM_STATE_HW_INIT:
-        /* 
+        /*
          * HW-Init process is completed.
          * Request for the FW image file.
          */
-        if (eEvent == SM_EVENT_HW_INIT_COMPLETE) 
+        if (eEvent == SM_EVENT_HW_INIT_COMPLETE)
         {
             pDrvMain->tFileInfo.eFileType = FILE_TYPE_FW;
             pDrvMain->eSmState = SM_STATE_DOWNLOAD_FW_FILE;
@@ -1532,7 +1535,7 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         }
         break;
     case SM_STATE_DOWNLOAD_FW_FILE:
-        if (eEvent == SM_EVENT_FW_FILE_READY) 
+        if (eEvent == SM_EVENT_FW_FILE_READY)
         {
             pDrvMain->tFileInfo.eFileType = FILE_TYPE_FW_NEXT;
             if (pDrvMain->tFileInfo.bLast == TI_TRUE)
@@ -1551,14 +1554,14 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         }
         break;
     case SM_STATE_WAIT_FW_FILE:
-        if (eEvent == SM_EVENT_FW_INIT_COMPLETE) 
+        if (eEvent == SM_EVENT_FW_INIT_COMPLETE)
         {
             pDrvMain->eSmState = SM_STATE_DOWNLOAD_FW_FILE;
             eStatus = wlanDrvIf_GetFile (hOs, &pDrvMain->tFileInfo);
         }
         break;
     case SM_STATE_FW_INIT:
-        /* 
+        /*
          * FW-Init process is completed.
          * Free the semaphore of the START action to enable the OS interface.
          * Enable interrupts (or polling for debug).
@@ -1567,13 +1570,9 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
          * Note that in some OSs, the semaphore must be released in order to enable the
          *     interrupts, and the interrupts are needed for the configuration process!
          */
-        if (eEvent == SM_EVENT_FW_INIT_COMPLETE) 
+        if (eEvent == SM_EVENT_FW_INIT_COMPLETE)
         {
             pDrvMain->eSmState = SM_STATE_FW_CONFIG;
-            if (!pDrvMain->bRecovery) 
-            {
-				os_SignalObjectSet (hOs, pDrvMain->hSignalObj);
-            }
             TWD_EnableInterrupts(pDrvMain->tStadHandles.hTWD);
           #ifdef PRIODIC_INTERRUPT
             /* Start periodic interrupts. It means that every period of time the FwEvent SM will be called */
@@ -1583,7 +1582,7 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         }
         break;
     case SM_STATE_FW_CONFIG:
-        /* 
+        /*
          * FW-configuration process is completed.
          * Stop watchdog timer.
          * For recovery, notify the relevant STAD modules.
@@ -1612,6 +1611,10 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
             context_EnableClient (pDrvMain->tStadHandles.hContext, pDrvMain->uContextId);
             eStatus = TI_OK;
            
+        }
+        if (!pDrvMain->bRecovery)
+        {
+            os_SignalObjectSet(hOs, pDrvMain->hSignalObj);
         }
         break;
     case SM_STATE_OPERATIONAL:
@@ -1713,9 +1716,9 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         hPlatform_DevicePowerOff ();
         WLAN_OS_REPORT(("[WLAN] Exit application\n"));
         if (!pDrvMain->bRecovery) 
-		{
+        {
             os_SignalObjectSet (hOs, pDrvMain->hSignalObj);
-		}
+        }
         break;
     case SM_STATE_FAILED:
         /* Nothing to do except waiting for Destroy */
@@ -1744,6 +1747,3 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         eStatus = drvMain_StopActivities (pDrvMain);
     }
 }
-
-
-

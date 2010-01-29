@@ -389,9 +389,8 @@ void scanMngrDebugPrintNeighborAPList( TI_HANDLE hScanMngr );
  */
 void scanMngrDebugPrintObject( TI_HANDLE hScanMngr );
 
+#endif /* TI_DBG */
 
 void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitParams);
-
-#endif /* TI_DBG */
 
 #endif /* __SCAN_MNGR_API_H__ */

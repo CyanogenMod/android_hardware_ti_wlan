@@ -32,20 +32,20 @@
 /************/
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <linux/if.h>
+#include <net/if.h>
 #include <linux/rtnetlink.h>
 #include <signal.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <linux/wireless.h>
-
 #include "cu_osapi.h"
 #include "oserr.h"
+
 #include "TWDriver.h"
 #include "STADExternalIf.h"
+
 #include "ParsEvent.h"
 #include "ipc_event.h"
-
 
 /* defines */
 /***********/
@@ -132,8 +132,6 @@ static VOID IpcEvent_PrintEvent(IpcEvent_Child_t* pIpcEventChild, U32 EventId, T
     {
         switch(EventId)
         {
-
-
             case IPC_EVENT_DISASSOCIATED:
             {
                 OS_802_11_DISASSOCIATE_REASON_T    *pDisAssoc;
@@ -335,7 +333,7 @@ static VOID IpcEvent_wext_event_wireless(IpcEvent_Child_t* pIpcEventChild, PS8 d
                     (iwe.u.ap_addr.sa_data[4] == 0) &&
                     (iwe.u.ap_addr.sa_data[5] == 0))
                 {
-                     EventId=IPC_EVENT_DISASSOCIATED;
+					EventId=IPC_EVENT_DISASSOCIATED;
                      IpcEvent_PrintEvent(pIpcEventChild, EventId, NULL,0);
                 } 
                 else 
@@ -344,16 +342,16 @@ static VOID IpcEvent_wext_event_wireless(IpcEvent_Child_t* pIpcEventChild, PS8 d
                     /* Send a signal to the udhcpc application to trigger the renew request */
                     system("killall -SIGUSR1 udhcpc"); 
 #endif
-                     EventId=IPC_EVENT_ASSOCIATED;
+					EventId=IPC_EVENT_ASSOCIATED;
                      IpcEvent_PrintEvent(pIpcEventChild, EventId, NULL,0);                
                 }
                 break;
             case IWEVMICHAELMICFAILURE:
-                EventId=IPC_EVENT_MEDIA_SPECIFIC;
+				EventId=IPC_EVENT_MEDIA_SPECIFIC;
                 IpcEvent_PrintEvent(pIpcEventChild, EventId, NULL,0);
                 break;
             case IWEVCUSTOM:
-                pEvent =  (IPC_EV_DATA*)iwe.u.data.pointer;
+				pEvent =  (IPC_EV_DATA*)iwe.u.data.pointer;
                 if (pEvent)
                 {
                     EventId = (U32)pEvent->EvParams.uEventType;
@@ -361,7 +359,7 @@ static VOID IpcEvent_wext_event_wireless(IpcEvent_Child_t* pIpcEventChild, PS8 d
                 }
 				break;
             case SIOCGIWSCAN:
-                EventId=IPC_EVENT_SCAN_COMPLETE;
+				EventId=IPC_EVENT_SCAN_COMPLETE;
                 IpcEvent_PrintEvent(pIpcEventChild, EventId, NULL,0);             
                 break;
             case IWEVASSOCREQIE:

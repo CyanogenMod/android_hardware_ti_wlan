@@ -422,6 +422,7 @@ void txXfer_ClearStats (TI_HANDLE hTxXfer)
 
 void txXfer_PrintStats (TI_HANDLE hTxXfer)
 {
+#ifdef REPORT_LOG
     TTxXferObj *pTxXfer = (TTxXferObj*)hTxXfer;
     TI_UINT32   i;
     
@@ -437,8 +438,7 @@ void txXfer_PrintStats (TI_HANDLE hTxXfer)
     {
         WLAN_OS_REPORT(("uCountPktAggreg-%2d = %d\n", i, pTxXfer->aDbgCountPktAggreg[i]));
     }
+#endif
 }
 
 #endif /* TI_DBG */
-
-

@@ -164,7 +164,7 @@ void printSmeDbgFunctions(void)
 	WLAN_OS_REPORT(("1904 - Print BSSID list\n"));
 }
 
-
+#ifdef REPORT_LOG
 static TI_UINT8 Freq2Chan(TI_UINT32 freq)
 {
     TI_UINT32 i;
@@ -175,6 +175,7 @@ static TI_UINT8 Freq2Chan(TI_UINT32 freq)
 
     return 0;
 }
+#endif
 
 static void PrintBssidList(OS_802_11_BSSID_LIST_EX* bssidList, TI_UINT32 IsFullPrint, TMacAddr CurrentBssid)
 {

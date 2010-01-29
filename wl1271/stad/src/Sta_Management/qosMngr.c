@@ -117,9 +117,7 @@ TI_HANDLE qosMngr_create(TI_HANDLE hOs)
 	pQosMngr = os_memoryAlloc(hOs,sizeof(qosMngr_t));
 
 	if (pQosMngr == NULL)
-    {
-        return NULL;
-    }
+		return NULL;
 
     os_memoryZero (hOs, pQosMngr, sizeof(qosMngr_t));
 
@@ -768,7 +766,6 @@ TI_STATUS qosMngr_getParamsActiveProtocol(TI_HANDLE hQosMngr, EQosProtocol *actP
     return TI_OK;
 }
 
-
 /************************************************************************
  *                        qosMngr_getACparams           			    *
  ************************************************************************
@@ -817,7 +814,6 @@ TI_STATUS qosMngr_getParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo)
 	/* Check if voice call present. If so, store current TSPEC configuration */
 		pParamInfo->content.TspecConfigure.voiceTspecConfigure = (TI_UINT8)pQosMngr->voiceTspecConfigured;
         pParamInfo->content.TspecConfigure.videoTspecConfigure = (TI_UINT8)pQosMngr->videoTspecConfigured;
-
 
         TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_getParams: QOS_MNGR_VOICE_RE_NEGOTIATE_TSPEC=%d\n", pQosMngr->voiceTspecConfigured);
 

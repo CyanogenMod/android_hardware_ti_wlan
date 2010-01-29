@@ -238,7 +238,6 @@ TI_STATUS rsn_eventRecv(TI_HANDLE hRsn, ERsnEvent event, void* pData);
 TI_STATUS rsn_setParam(TI_HANDLE hCtrlData, void *pParam);
 
 TI_STATUS rsn_getParamEncryptionStatus(TI_HANDLE hRsn, ECipherSuite *rsnStatus);
-
 TI_STATUS rsn_getParam(TI_HANDLE hCtrlData, void *pParam);
 
 TI_STATUS rsn_evalSite(TI_HANDLE hRsn, TRsnData *pRsnData, TRsnSiteParams *pRsnSiteParams, TI_UINT32 *pMetric);

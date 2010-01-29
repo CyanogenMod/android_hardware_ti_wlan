@@ -1565,7 +1565,6 @@ static TI_STATUS __cfg_ht_information (TI_HANDLE hCmdBld)
 }
 
 
-
 static TI_STATUS __cfg_ba_set_session (TI_HANDLE hCmdBld)
 {
 	TI_STATUS tRes = TI_NOK;
@@ -2200,7 +2199,7 @@ TI_STATUS cmdBld_ReadMib (TI_HANDLE hCmdBld, TI_HANDLE hCb, void* fCb, void* pCb
     {
     case MIB_dot11MaxReceiveLifetime:
         {
-            TTwdParamInfo ParamInfo; 
+            TTwdParamInfo ParamInfo;
             ParamInfo.paramType = TWD_MAX_RX_MSDU_LIFE_TIME_PARAM_ID;
             ParamInfo.paramLength = sizeof(ParamInfo.content.halCtrlMaxRxMsduLifetime);
             Status = cmdBld_GetParam (hCmdBld, &ParamInfo);
@@ -2224,7 +2223,7 @@ TI_STATUS cmdBld_ReadMib (TI_HANDLE hCmdBld, TI_HANDLE hCb, void* fCb, void* pCb
         
     case MIB_ctsToSelf:
         {
-            TTwdParamInfo ParamInfo;          
+            TTwdParamInfo ParamInfo;
             ParamInfo.paramType = TWD_CTS_TO_SELF_PARAM_ID;
             ParamInfo.paramLength = sizeof(ParamInfo.content.halCtrlCtsToSelf);
             Status = cmdBld_GetParam (hCmdBld, &ParamInfo);
@@ -2427,24 +2426,24 @@ TI_STATUS cmdBld_ConvertAppRatesBitmap (TI_UINT32 uAppRatesBitmap, TI_UINT32 uAp
 
 EHwRateBitFiled rateNumberToBitmap(TI_UINT8 uRate)
 {
-    switch(uRate)
-    {
-    case 1:   return HW_BIT_RATE_1MBPS;
-    case 2:   return HW_BIT_RATE_2MBPS;
-    case 5:   return HW_BIT_RATE_5_5MBPS;
-    case 6:   return HW_BIT_RATE_6MBPS;
-    case 9:   return HW_BIT_RATE_9MBPS;
-    case 11:  return HW_BIT_RATE_11MBPS;
-    case 12:  return HW_BIT_RATE_12MBPS;
-    case 18:  return HW_BIT_RATE_18MBPS;
-    case 22:  return HW_BIT_RATE_22MBPS;
-    case 24:  return HW_BIT_RATE_24MBPS;
-    case 36:  return HW_BIT_RATE_36MBPS;
-    case 48:  return HW_BIT_RATE_48MBPS;
-    case 54:  return HW_BIT_RATE_54MBPS;
-    default:
-        return 0;
-    }
+	switch(uRate)
+	{
+	case 1:   return HW_BIT_RATE_1MBPS;
+	case 2:   return HW_BIT_RATE_2MBPS;
+	case 5:   return HW_BIT_RATE_5_5MBPS;
+	case 6:   return HW_BIT_RATE_6MBPS; 
+	case 9:   return HW_BIT_RATE_9MBPS; 
+	case 11:  return HW_BIT_RATE_11MBPS;
+	case 12:  return HW_BIT_RATE_12MBPS;
+	case 18:  return HW_BIT_RATE_18MBPS;
+	case 22:  return HW_BIT_RATE_22MBPS;
+	case 24:  return HW_BIT_RATE_24MBPS;
+	case 36:  return HW_BIT_RATE_36MBPS;
+	case 48:  return HW_BIT_RATE_48MBPS;
+	case 54:  return HW_BIT_RATE_54MBPS;
+	default:
+		return 0;
+	}
 }
 
 TI_STATUS cmdBld_ConvertAppRate (ERate AppRate, TI_UINT8 *pHwRate)

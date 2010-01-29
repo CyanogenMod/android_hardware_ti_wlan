@@ -228,6 +228,7 @@ static void siteMgr_TxPowerAdaptation(TI_HANDLE hSiteMgr, RssiEventDir_e highLow
 static void siteMgr_TxPowerLowThreshold(TI_HANDLE hSiteMgr, TI_UINT8 *data, TI_UINT8 dataLength);
 static void siteMgr_TxPowerHighThreshold(TI_HANDLE hSiteMgr, TI_UINT8 *data, TI_UINT8 dataLength);
 
+
 /************************************************************************
 *                        siteMgr_setTemporaryTxPower                    *
 *************************************************************************
@@ -291,9 +292,7 @@ TI_HANDLE siteMgr_create(TI_HANDLE hOs)
 
     pSiteMgr = os_memoryAlloc(hOs, sizeof(siteMgr_t));
     if (pSiteMgr == NULL)
-    {
         return NULL;
-    }
 
     os_memoryZero(hOs, pSiteMgr, sizeof(siteMgr_t));
 
@@ -4074,7 +4073,6 @@ TI_STATUS siteMgr_overwritePrimarySite(TI_HANDLE hSiteMgr, bssEntry_t *newAP, TI
         /* Select the entry as primary site */
         newApEntry->siteType = SITE_PRIMARY;
         pSiteMgr->pSitesMgmtParams->pPrimarySite = newApEntry;
-
         return TI_OK;
     }
     else

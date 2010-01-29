@@ -56,6 +56,10 @@
 #include "eventMbox_api.h"
 #include "CmdBld.h"
 #include "CmdMBox_api.h"
+#ifdef TI_RANDOM_DEFAULT_MAC
+#include <linux/random.h>
+#include <linux/jiffies.h>
+#endif
 
 
 extern void TWD_FinalizeOnFailure   (TI_HANDLE hTWD);
@@ -92,9 +96,9 @@ extern void cmdBld_FinalizeDownload (TI_HANDLE hCmdBld, TBootAttr *pBootAttr, Fw
 
 /* Maximal block size in a single SDIO transfer --> Firmware image load chunk size */
 #ifdef _VLCT_
-#define MAX_SDIO_BLOCK					(4000)	
+#define MAX_SDIO_BLOCK					(4000)
 #else
-#define MAX_SDIO_BLOCK					(500)	
+#define MAX_SDIO_BLOCK					(500)
 #endif
 
 #define ACX_EEPROMLESS_IND_REG        (SCR_PAD4)
@@ -340,7 +344,6 @@ typedef struct
     TI_UINT32               uTopStage;
     TI_STATUS               uTopStatus;
 
-
     TI_UINT8                auFwTmpBuf [WSPI_PAD_LEN_WRITE + MAX_SDIO_BLOCK];
 
     TFinalizeCb             fFinalizeDownload;
@@ -452,6 +455,9 @@ TI_STATUS hwInit_Init (TI_HANDLE      hHwInit,
 {
     THwInit   *pHwInit = (THwInit *)hHwInit;
     TTxnStruct* pTxn;
+#ifdef TI_RANDOM_DEFAULT_MAC
+    u32 rand_mac;
+#endif
 
     /* Configure modules handles */
     pHwInit->hReport    = hReport;
@@ -463,6 +469,14 @@ TI_STATUS hwInit_Init (TI_HANDLE      hHwInit,
     pHwInit->hFinalizeDownload 	= hFinalizeDownload;
 
     SET_DEF_NVS(pHwInit->aDefaultNVS)
+#ifdef TI_RANDOM_DEFAULT_MAC
+    /* Create random MAC address: offset 3, 4 and 5 */
+    srandom32((u32)jiffies);
+    rand_mac = random32();
+    pHwInit->aDefaultNVS[3] = (u8)rand_mac;
+    pHwInit->aDefaultNVS[4] = (u8)(rand_mac >> 8);
+    pHwInit->aDefaultNVS[5] = (u8)(rand_mac >> 16);
+#endif
 
     for (pHwInit->uTxnIndex=0;pHwInit->uTxnIndex<MAX_HW_INIT_CONSECUTIVE_TXN;pHwInit->uTxnIndex++)
     {
@@ -1334,7 +1348,6 @@ static TI_STATUS hwInit_EepromlessStartBurstSm (TI_HANDLE hHwInit)
 
             pHwInit->uEEPROMStage = 3;
     
-
             /* Set the bus addresses partition to its "running" mode */
             SET_WORK_PARTITION(pHwInit->aPartition)
             hwInit_SetPartition (pHwInit,pHwInit->aPartition);
@@ -1434,7 +1447,7 @@ static TI_STATUS hwInit_LoadFwImageSm (TI_HANDLE hHwInit)
 
 			TRACE2(pHwInit->hReport, REPORT_SEVERITY_INIT , "Image addr=0x%x, Len=0x%x\n", pHwInit->pFwBuf, pHwInit->uFwLength);
 
-	/* Set bus memory partition to current download area */
+			/* Set bus memory partition to current download area */
            SET_FW_LOAD_PARTITION(pHwInit->aPartition,pHwInit->uFwAddress)
            hwInit_SetPartition (pHwInit,pHwInit->aPartition);
             status = TI_OK;
@@ -2296,6 +2309,3 @@ TI_STATUS hwInit_InitTopRegisterRead(TI_HANDLE hHwInit, TI_UINT32 uAddress)
      } /* End while */
 
  }
-
-
-

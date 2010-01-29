@@ -49,9 +49,9 @@ LOCAL_STATIC_LIBRARIES := \
 	libtiOsLib
 
 LOCAL_SHARED_LIBRARIES := \
-	libcutils libc libhardware_legacy
+	libc libcutils libhardware_legacy
 
-LOCAL_MODULE:= tiwlan_loader
+LOCAL_MODULE:= wlan_loader
 
 include $(BUILD_EXECUTABLE)
 

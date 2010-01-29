@@ -49,8 +49,6 @@
 #define SW_RELEASE_DAY      10
 #define SW_RELEASE_YEAR     2009
 
-
-
 #endif /* _VERSION_H_ */
                                                                                                        
 

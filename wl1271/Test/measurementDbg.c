@@ -82,18 +82,20 @@ RETURN:
 ************************************************************************/
 void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChannel, TI_HANDLE hRegulatoryDomain, TI_UINT32 funcType, void *pParam)
 {
-	paramInfo_t		param;
+    paramInfo_t		param;
 #ifdef XCC_MODULE_INCLUDED
     TTwdParamInfo   tTwdParam;
 #endif
-	TI_STATUS	    status = TI_OK;
+    TI_STATUS	    status = TI_OK;
     TI_UINT8           rangeUpperBound;
     TI_UINT8           rangeIndex;
     TI_UINT16          trafficThreshold;
     TNoiseHistogram pNoiseHistParams;
-	measurementMgr_t * pMeasurementMgr = (measurementMgr_t *) hMeasurementMgr;
-	TI_UINT8			SwitchChannelParam = *(TI_UINT8*)pParam;
-	siteMgr_t		*pSiteMgr = (siteMgr_t *) pMeasurementMgr->hSiteMgr;
+    measurementMgr_t * pMeasurementMgr = (measurementMgr_t *) hMeasurementMgr;
+    TI_UINT8			SwitchChannelParam = *(TI_UINT8*)pParam;
+#ifdef REPORT_LOG
+    siteMgr_t		*pSiteMgr = (siteMgr_t *) pMeasurementMgr->hSiteMgr;
+#endif
 #ifdef XCC_MODULE_INCLUDED
     TI_UINT8           iappPacket[90] = {0xAA, 0xAA, 0x03, 0x00, 0x40, 0x96, 0x00, 0x00, 
                                       0x00, 0x20, 0x32, 0x01, 
@@ -409,10 +411,12 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
 void measurement_channelLoadCallBackDbg(TI_HANDLE hMeasurementMgr, TI_STATUS status, 
                                         TI_UINT8* CB_buf)
 {
+#ifdef REPORT_LOG
     TMediumOccupancy *pMediumOccupancy = (TMediumOccupancy*)(CB_buf+4);
     
     WLAN_OS_REPORT(("MediumUsage = %d\nPeriod = %d\n", 
-					pMediumOccupancy->MediumUsage/1000, pMediumOccupancy->Period/1000));            
+					pMediumOccupancy->MediumUsage/1000, pMediumOccupancy->Period/1000));
+#endif
 }
 
 void measurement_noiseHistCallBackDbg(TI_HANDLE hMeasurementSRV, TI_STATUS status, 
@@ -440,27 +444,6 @@ void measurement_noiseHistCallBackDbg(TI_HANDLE hMeasurementSRV, TI_STATUS statu
         WLAN_OS_REPORT(("Measurement Debug Functions - Interogate Noise Hist FAILED"));
     }
 }
-             
-           
-     
-      
-     
-       
-        
- 
-     
-     
-                   
-         
-        
-        
-           
-         
-             
-      
-									   
-    
-
 
 void printMeasurementDbgFunctions(void)
 {

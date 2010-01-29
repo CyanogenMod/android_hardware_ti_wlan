@@ -244,7 +244,6 @@ void smeSm_PreConnect (TI_HANDLE hSme)
     TSme *pSme = (TSme *)hSme;
     paramInfo_t	*pParam;
 
-
     /* set the connection mode with which this connection attempt is starting */
     pSme->eLastConnectMode = pSme->eConnectMode;
  
@@ -285,16 +284,17 @@ void smeSm_PreConnect (TI_HANDLE hSme)
             {
                 /* makr whether we need to stop the attempt connection in manual mode */
                 pSme->bConnectRequired = TI_FALSE;
-    
-                TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "smeSm_PreConnect: No candidate available, sending connect failure\n");
+
+				TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "smeSm_PreConnect: No candidate available, sending connect failure\n");
                 /* manual mode and no connection candidate is available - connection failed */
                 genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
 			}
 
 			else		/* IBSS */
 			{
-				TI_UINT8     uDesiredChannel;
+				TI_UINT8    uDesiredChannel;
                 TI_BOOL     channelValidity;
+
 		        pSme->bConnectRequired = TI_FALSE;
 
                 pParam = (paramInfo_t *)os_memoryAlloc(pSme->hOS, sizeof(paramInfo_t));
@@ -324,7 +324,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
 				pParam->content.channelCapabilityReq.scanOption = ACTIVE_SCANNING;
 				pParam->content.channelCapabilityReq.channelNum = uDesiredChannel;
 
-				regulatoryDomain_getParam (pSme->hRegDomain,pParam);
+				regulatoryDomain_getParam (pSme->hRegDomain, pParam);
                 channelValidity = pParam->content.channelCapabilityRet.channelValidity;
                 os_memoryFree(pSme->hOS, pParam, sizeof(paramInfo_t));
 				if (!channelValidity)
@@ -370,7 +370,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
  */ 
 void smeSm_Connect (TI_HANDLE hSme)
 {
-    TSme        *pSme = (TSme*)hSme;
+    TSme            *pSme = (TSme*)hSme;
     TI_STATUS       tStatus;
     paramInfo_t     *pParam;
 
@@ -406,8 +406,8 @@ void smeSm_Connect (TI_HANDLE hSme)
                pParam->content.connType = CONNECTION_IBSS;
            }
        else
-            pParam->content.connType = CONNECTION_INFRA;
-       conn_setParam(pSme->hConn, pParam);   
+           pParam->content.connType = CONNECTION_INFRA;
+       conn_setParam(pSme->hConn, pParam);
        os_memoryFree(pSme->hOS, pParam, sizeof(paramInfo_t));
 
        /* start the connection process */

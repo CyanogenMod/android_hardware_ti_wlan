@@ -38,7 +38,7 @@
 #include <netinet/if_ether.h>
 #endif
 #include <linux/rtnetlink.h>
-#include <linux/if.h>
+#include <net/if.h>
 #include <linux/wireless.h>
 #include "ParsEvent.h"
 #include "cu_osapi.h"

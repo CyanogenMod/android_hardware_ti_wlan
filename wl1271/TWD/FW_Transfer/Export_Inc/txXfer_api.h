@@ -199,7 +199,3 @@ void txXfer_PrintStats (TI_HANDLE hTxXfer);
 
 
 #endif /* _TX_XFER_API_H */
-
-
-
-

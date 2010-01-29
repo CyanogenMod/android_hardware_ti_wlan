@@ -843,12 +843,11 @@ TI_STATUS admCtrlWpa_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 *
         pAdmCtrl->externalAuthMode = RSN_EXT_AUTH_MODE_OPEN;
         break;
     }
-
       
 
 #ifdef XCC_MODULE_INCLUDED
 	pParam->paramType = XCC_CCKM_EXISTS;
-	pParam->content.XCCCckmExists  = (wpaData.KeyMngSuite[0]==WPA_IE_KEY_MNG_CCKM) ? TI_TRUE : TI_FALSE;
+	pParam->content.XCCCckmExists = (wpaData.KeyMngSuite[0]==WPA_IE_KEY_MNG_CCKM) ? TI_TRUE : TI_FALSE;
 	XCCMngr_setParam(pAdmCtrl->hXCCMngr, pParam);
 #endif
     /* set replay counter */
@@ -896,7 +895,7 @@ TI_STATUS admCtrlWpa_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 *
 	status = TWD_SetParam(pAdmCtrl->pRsn->hTWD, &tTwdParam);
 	if (status != TI_OK)
 	{
-        goto adm_ctrl_wpa_end;
+        goto adm_ctrl_wpa_end;		
 	}
 
 #ifdef XCC_MODULE_INCLUDED
@@ -915,7 +914,7 @@ TI_STATUS admCtrlWpa_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 *
     
     if (status != TI_OK)
     {
-        goto adm_ctrl_wpa_end;
+        goto adm_ctrl_wpa_end;        
     }
 #endif /*XCC_MODULE_INCLUDED*/
 
@@ -925,7 +924,6 @@ TI_STATUS admCtrlWpa_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 *
     {
         goto adm_ctrl_wpa_end;
     }
-
 adm_ctrl_wpa_end:
     os_memoryFree(pAdmCtrl->hOs, pParam, sizeof(paramInfo_t));
     return status;
@@ -1080,7 +1078,6 @@ TI_STATUS admCtrlWpa_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSiteP
         return TI_NOK; /* if the encyption is TKIP and the site does support HT(11n) the site can not be a candidate */
 	}
 
-
 	/* Check privacy bit if not in mixed mode */
     if (!pAdmCtrl->mixedMode)
     {   /* There's no mixed mode, so make sure that the privacy Bit matches the privacy mode*/
@@ -1102,7 +1099,6 @@ TI_STATUS admCtrlWpa_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSiteP
         pAdmCtrl->broadcastSuite = TWD_CIPHER_NONE;
         pAdmCtrl->unicastSuite = TWD_CIPHER_NONE;
     }
-
 
 	/* always return TI_OK */
     return TI_OK;
@@ -1257,7 +1253,8 @@ TI_STATUS admCtrlWpa_parseIe(admCtrl_t *pAdmCtrl, TI_UINT8 *pWpaIe, wpaIeData_t 
             curWpaIe +=4; 
 
             /* Include all AP key management supported suites in the wpaData structure */
-            pWpaData->KeyMngSuite[index+1] = curKeyMngSuite;
+	    if ((index+1) < MAX_WPA_KEY_MNG_SUITES)
+                pWpaData->KeyMngSuite[index+1] = curKeyMngSuite;
 
         }
         pWpaData->KeyMngSuite[0] = maxKeyMngSuite;

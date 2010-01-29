@@ -500,11 +500,13 @@ void cmdMbox_GetCmdParams (TI_HANDLE hCmdMbox, TI_UINT8* pParamBuf)
 
 void cmdMbox_PrintInfo(TI_HANDLE hCmdMbox)
 {
+#ifdef REPORT_LOG
     TCmdMbox *pCmdMbox = (TCmdMbox *)hCmdMbox;
 
     WLAN_OS_REPORT(("Print cmdMbox module info\n"));
     WLAN_OS_REPORT(("=========================\n"));
     WLAN_OS_REPORT(("bCmdInProgress = %d\n", pCmdMbox->bCmdInProgress));
+#endif
 }
 
 #endif  /* TI_DBG */

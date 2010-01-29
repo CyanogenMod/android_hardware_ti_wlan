@@ -261,7 +261,6 @@ typedef struct
 #define DB_RM(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tRateMngParams)
 
 
-
 #define DB_DEFAULT_CHANNEL(HCMDBLD)                     \
     (RADIO_BAND_5_0_GHZ == DB_WLAN(HCMDBLD).RadioBand)  \
         ? DB_WLAN(HCMDBLD).calibrationChannel5_0        \

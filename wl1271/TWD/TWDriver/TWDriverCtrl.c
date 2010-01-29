@@ -921,5 +921,3 @@ ETxnStatus TWD_WdExpireEvent(TI_HANDLE hTWD)
 
     return TXN_STATUS_COMPLETE;
 }
-
-

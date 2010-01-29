@@ -282,7 +282,6 @@ static TI_STATUS RxQueue_PassPacket (TI_HANDLE hRxQueue, TI_STATUS tStatus, cons
         pMacHdr->fc  = ENDIAN_HANDLE_WORD(pMacHdr->fc);
         pMacHdr->duration = ENDIAN_HANDLE_WORD(pMacHdr->duration);
         pMacHdr->seqCtrl = ENDIAN_HANDLE_WORD(pMacHdr->seqCtrl);
-
     }
     else
     {
@@ -293,7 +292,6 @@ static TI_STATUS RxQueue_PassPacket (TI_HANDLE hRxQueue, TI_STATUS tStatus, cons
     }
 
     TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION , "RxQueue_PassPacket: call TWD_OWNER_RX_QUEUE CB. In std rxData_ReceivePacket()\n");
-
 
     /* Set the packet to upper layer */
     /* if the packet status not success it will be discarded */
@@ -368,14 +366,14 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
         {
             pRxParams->packet_class_tag = TAG_CLASS_QOS_DATA;
         }
-	}
+    }
 
     /* 
      * packet doesn't need reorder ? 
      */
     if ((pRxParams->packet_class_tag != TAG_CLASS_QOS_DATA) && (pRxParams->packet_class_tag != TAG_CLASS_BA_EVENT) && (pRxParams->packet_class_tag != TAG_CLASS_AMSDU))
     {
-        TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION , "RxQueue_ReceivePacket: pass packet without reorder.\n");
+        TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: pass packet without reorder.\n");
         
         RxQueue_PassPacket (pRxQueue, tStatus, pBuffer);
 
@@ -392,7 +390,6 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
         TI_UINT16           uFrameSn;
         TI_UINT16		    uSequenceControl;
         TRxQueueTidDataBase *pTidDataBase;
-
 
         /* Get TID from frame */
         uFrameTid = uQosControl & DOT11_QOS_CONTROL_FIELD_TID_BITS;
@@ -502,7 +499,6 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
 			else
 			{
 				 TRACE1(pRxQueue->hReport, REPORT_SEVERITY_ERROR, "RxQueue_ReceivePacket: frame Sequence has allready saved. uFrameSn = %d\n",uFrameSn);
-
 				 RxQueue_PassPacket (pRxQueue, TI_NOK, pBuffer);
 				 return;
 			}
@@ -596,7 +592,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
 				/* uSaveInex % RX_QUEUE_ARRAY_SIZE */
 				uSaveInex &= RX_QUEUE_ARRAY_SIZE_BIT_MASK;
 
-				/* save the packet in the last entry of the queue */
+            /* save the packet in the last entry of the queue */
                pTidDataBase->aPaketsQueue[uSaveInex].tStatus = tStatus;
                pTidDataBase->aPaketsQueue[uSaveInex].pPacket = (void *)pBuffer;
                pTidDataBase->aPaketsQueue[uSaveInex].pPacket = (void *)pBuffer;
@@ -630,7 +626,6 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
         switch ((dot11_Fc_Sub_Type_e)(ufc & DOT11_FC_SUB_MASK))
         {
         case DOT11_FC_SUB_BAR:
-
             TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION , "RxQueue_ReceivePacket: BA event - BAR frame.\n");
 
             /* get pointer to the frame body */
@@ -659,7 +654,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
             {
                 TRACE1(pRxQueue->hReport, REPORT_SEVERITY_ERROR , "RxQueue_ReceivePacket: BA event - BAR frame for TID not established, TID = %d.\n",uFrameTid);
 
-				RxQueue_PassPacket (pRxQueue, TI_NOK, pBuffer);
+                RxQueue_PassPacket (pRxQueue, TI_NOK, pBuffer);
 
                 return;
             }
@@ -695,6 +690,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
                     /* aWinStartArrayInex % RX_QUEUE_ARRAY_SIZE */
                     pTidDataBase->aWinStartArrayInex &= RX_QUEUE_ARRAY_SIZE_BIT_MASK;
                 }
+
                 pTidDataBase->aTidExpectedSn = uStartingSequenceNumber;
             }
             break;
@@ -730,7 +726,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
                 /*set the SA Tid pointer */
                 pTidDataBase = &(pRxQueue->tRxQueueArraysMng.tSa1ArrayMng[uFrameTid]);
 
-				/* TID legal value */
+                /* TID legal value */
                 /* packet TID BA established ? */ 
                 if (pTidDataBase->aTidBaEstablished == TI_TRUE)
                 {
@@ -761,7 +757,6 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
                 pTidDataBase->aTidExpectedSn = (uStartingSequenceNumber & DOT11_SC_SEQ_NUM_MASK) >> 4;
                 pTidDataBase->aWinStartArrayInex = 0;
                 os_memoryZero (pRxQueue->hOs, pTidDataBase->aPaketsQueue, sizeof (TRxQueuePacketEntry) * RX_QUEUE_ARRAY_SIZE);
-
                 break;
 
             case DOT11_BA_ACTION_DELBA:
@@ -792,7 +787,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
                 {
                     TRACE1(pRxQueue->hReport, REPORT_SEVERITY_ERROR , "RxQueue_ReceivePacket: BA event - DELBA frame for TID not established, TID = %d.\n",uFrameTid);
 
-					RxQueue_PassPacket (pRxQueue, TI_NOK, pBuffer);
+                    RxQueue_PassPacket (pRxQueue, TI_NOK, pBuffer);
 
                     return;
                 }

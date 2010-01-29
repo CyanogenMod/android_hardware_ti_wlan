@@ -105,6 +105,7 @@ TI_STATUS fsm_Create(TI_HANDLE				hOs,
 	{
 		return TI_NOK;
 	}
+	os_memoryZero(hOs, (*pFsm), sizeof(fsm_stateMachine_t));
 
 	/* allocate memory for FSM matrix */
 	(*pFsm)->stateEventMatrix = (fsm_Matrix_t)os_memoryAlloc(hOs, MaxNoOfStates * MaxNoOfEvents * sizeof(fsm_actionCell_t));
@@ -113,7 +114,8 @@ TI_STATUS fsm_Create(TI_HANDLE				hOs,
 		os_memoryFree(hOs, *pFsm, sizeof(fsm_stateMachine_t));
 		return TI_NOK;
 	}
-
+	os_memoryZero(hOs, (*pFsm)->stateEventMatrix, 
+		(MaxNoOfStates * MaxNoOfEvents * sizeof(fsm_actionCell_t)));
 	/* update pFsm structure with parameters */
 	(*pFsm)->MaxNoOfStates = MaxNoOfStates;
 	(*pFsm)->MaxNoOfEvents = MaxNoOfEvents;
@@ -240,9 +242,9 @@ TI_STATUS fsm_Config(fsm_stateMachine_t	*pFsm,
 *
 * \sa fsm_Init
 */
-TI_STATUS fsm_Event (fsm_stateMachine_t  *pFsm,
-                     TI_UINT8            *currentState,
-                     TI_UINT8            event,
+TI_STATUS fsm_Event(fsm_stateMachine_t		*pFsm,
+				 TI_UINT8					*currentState,
+				 TI_UINT8					event,
 				 void					*pData)
 {
 	TI_UINT8		oldState;

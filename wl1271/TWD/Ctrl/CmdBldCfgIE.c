@@ -773,10 +773,7 @@ TI_STATUS cmdBld_CfgIeStatisitics (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 
     pCfg = os_memoryAlloc(pCmdBld->hOs, sizeof(ACXStatistics_t));
     if (!pCfg)
-    {
         return status;
-    }
-
     /* Set information element header */
     pCfg->EleHdr.id  = ACX_STATISTICS;
     pCfg->EleHdr.len = sizeof(*pCfg) - sizeof(EleHdrStruct);
@@ -1868,10 +1865,9 @@ TI_STATUS cmdBld_CfgIeRadioParams (TI_HANDLE hCmdBld, IniFileRadioParam *pIniFil
     }
 
     pTestCmd->testCmdId = TEST_CMD_INI_FILE_RADIO_PARAM;
-    
+
     os_memoryCopy(pCmdBld->hOs, &pTestCmd->testCmd_u.IniFileRadioParams, pIniFileRadioParams, sizeof(IniFileRadioParam));
 
-   
     status = cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
                              CMD_TEST, 
                              (void *)pTestCmd, 
@@ -1912,8 +1908,6 @@ TI_STATUS cmdBld_CfgPlatformGenParams (TI_HANDLE hCmdBld, IniFileGeneralParam *p
 }
 
 
-
-
 /****************************************************************************
  *                      cmdBld_CfgIeBurstMode()
  ****************************************************************************
@@ -1922,7 +1916,7 @@ TI_STATUS cmdBld_CfgPlatformGenParams (TI_HANDLE hCmdBld, IniFileGeneralParam *p
  * INPUTS:  hCmdBld     - handle to command builder object
  *          bEnabled    - is enabled flag
  *          fCB         - callback function for command complete
- *          hCb         - handle to be apssed to callback function    
+ *          hCb         - handle to be apssed to callback function
  *
  * OUTPUT:  None
  *
@@ -1935,7 +1929,7 @@ TI_STATUS cmdBld_CfgIeBurstMode (TI_HANDLE hCmdBld, TI_BOOL bEnabled, void *fCb,
 	AcxBurstMode *pCfg = &tAcxBurstMode;
 
 	/* set IE header */
-    pCfg->EleHdr.id = ACX_BURST_MODE;
+	pCfg->EleHdr.id = ACX_BURST_MODE;
 	pCfg->EleHdr.len = sizeof(*pCfg) - sizeof(EleHdrStruct);
 
 	/* set burst mode value */
@@ -2042,6 +2036,3 @@ TI_STATUS cmdBld_CfgIeDcoItrimParams (TI_HANDLE hCmdBld, TI_BOOL enable, TI_UINT
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, pCfg, sizeof(ACXDCOItrimParams_t), fCb, hCb, NULL);
 }
-
-							   
-    

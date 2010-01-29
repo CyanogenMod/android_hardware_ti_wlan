@@ -6,8 +6,8 @@ TNETW_INCS = \
     $(PLATFORMS)/os/common/inc \
     $(PLATFORMS)/os/linux/src \
     $(PLATFORMS)/os/linux/inc \
-    $(PLATFORMS)/hw/host_platform_$(HOST_PLATFORM) \
-    $(EXT_DRV)/$(HOST_PLATFORM)/Linux/$(BUS_DRV) \
+    $(PLATFORMS)/hw/linux \
+    $(EXT_DRV)/$(BUS_DRV)/linux \
     $(EXT_APP)/Linux/bmtrace/Export_Inc \
     $(TWD) \
     $(TWD)/Ctrl \
@@ -50,10 +50,10 @@ CORE_INCS = \
     $(COMSRC)/Sta_Management \
     $(COMSRC)/Connection_Managment
 
-ifeq ($(DEBUG),y)
+#ifeq ($(DEBUG),y)
     CORE_INCS += \
         $(TESTSRC)/
-endif 
+#endif 
 
 #start of CORE_INCS_XCC#     do not remove or change this comment
 ifeq ($(XCC),y)
@@ -220,7 +220,7 @@ CORE_SRCS = \
     $(COMSRC)/Application/roamingMngr_manualSM.c \
     $(COMSRC)/Application/roamingMngr_autoSM.c
 
-ifeq ($(DEBUG),y)
+#ifeq ($(DEBUG),y)
     CORE_SRCS += \
         $(TESTSRC)/connDebug.c \
         $(TESTSRC)/siteMgrDebug.c \
@@ -242,9 +242,9 @@ ifeq ($(DEBUG),y)
         $(TESTSRC)/HealthMonitorDbg.c \
         $(TESTSRC)/smeDebug.c \
         $(TESTSRC)/fwdriverdebug.c \
-        $(TESTSRC)/MibDbg.c \
-		$(TESTSRC)/TwIfDebug.c
-endif
+	$(TESTSRC)/MibDbg.c \
+        $(TESTSRC)/TwIfDebug.c
+#endif
 
 #start of CORE_SRCS_XCC#   do not remove or change this comment
 ifeq ($(XCC),y)

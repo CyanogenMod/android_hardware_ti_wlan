@@ -51,10 +51,13 @@
 #include "connApi.h"
 #include "report.h"
 
+#ifdef REPORT_LOG
 void printConnDbgFunctions(void);
+#endif
 
 void connDebugSetParam(TI_HANDLE hConn, TI_UINT32 paramType, TI_UINT32 *value)
 {
+#ifdef REPORT_LOG
 	conn_t	*pConn = (conn_t *)hConn;
 
 	switch (paramType)
@@ -63,10 +66,12 @@ void connDebugSetParam(TI_HANDLE hConn, TI_UINT32 paramType, TI_UINT32 *value)
 		WLAN_OS_REPORT(("Invalid param type in Set Debug Connection command: %d, curr state %d\n\n", value, pConn->state));
 		break;
 	}
+#endif
 }
 
 void connDebugGetParam(TI_HANDLE hConn, TI_UINT32 paramType, TI_UINT32 *value)
 {
+#ifdef REPORT_LOG
 	conn_t	*pConn = (conn_t *)hConn;
 
 	switch (paramType)
@@ -75,12 +80,14 @@ void connDebugGetParam(TI_HANDLE hConn, TI_UINT32 paramType, TI_UINT32 *value)
 		WLAN_OS_REPORT(("Invalid param type in Get Debug Connection command: %d, curr state %d\n\n", value, pConn->state));
 		break;
 	}
+#endif
 }
 
 void connDebugFunction(TI_HANDLE hConn, 
 					   TI_UINT32	funcType, 
 					   void		*pParam)
 {
+#ifdef REPORT_LOG
 	conn_t	*pConn = (conn_t *)hConn;
 
 	switch (funcType)
@@ -97,14 +104,15 @@ void connDebugFunction(TI_HANDLE hConn,
 		WLAN_OS_REPORT(("Invalid function type in Debug Connection Function Command: %d\n\n", funcType));
 		break;
 	}
+#endif
 } 
 
 void printConnDbgFunctions(void)
 {
+#ifdef REPORT_LOG
 	WLAN_OS_REPORT(("  Conn Dbg Functions  \n"));
 	WLAN_OS_REPORT(("----------------------\n"));
 
 	WLAN_OS_REPORT(("601 - Connection Print Test.\n"));
+#endif
 }
-
-

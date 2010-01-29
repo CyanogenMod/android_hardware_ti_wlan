@@ -24,6 +24,25 @@ ifeq ($(TARGET_SIMULATOR),true)
   $(error This makefile must not be included when building the simulator)
 endif
 
+ifndef WPA_SUPPLICANT_VERSION
+WPA_SUPPLICANT_VERSION := VER_0_5_X
+endif
+
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_5_X)
+WPA_SUPPL_DIR = external/wpa_supplicant
+else
+WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
+endif
+WPA_SUPPL_DIR_INCLUDE = $(WPA_SUPPL_DIR)
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_6_X)
+WPA_SUPPL_DIR_INCLUDE += $(WPA_SUPPL_DIR)/src \
+	$(WPA_SUPPL_DIR)/src/common \
+	$(WPA_SUPPL_DIR)/src/drivers \
+	$(WPA_SUPPL_DIR)/src/l2_packet \
+	$(WPA_SUPPL_DIR)/src/utils \
+	$(WPA_SUPPL_DIR)/src/wps
+endif
+
 DK_ROOT = $(BOARD_WLAN_TI_STA_DK_ROOT)
 OS_ROOT = $(DK_ROOT)/platforms
 STAD	= $(DK_ROOT)/stad
@@ -34,12 +53,7 @@ TXN	= $(DK_ROOT)/Txn
 CUDK	= $(DK_ROOT)/CUDK
 LIB	= ../../lib
 
-include external/wpa_supplicant/.config
-
-# To force sizeof(enum) = 4
-ifneq ($(TARGET_SIMULATOR),true)
-L_CFLAGS += -mabi=aapcs-linux
-endif
+include $(WPA_SUPPL_DIR)/.config
 
 INCLUDES = $(STAD)/Export_Inc \
 	$(STAD)/src/Application \
@@ -54,11 +68,17 @@ INCLUDES = $(STAD)/Export_Inc \
 	$(CUDK)/configurationutility/inc \
 	$(CUDK)/os/common/inc \
 	external/openssl/include \
-	external/wpa_supplicant \
+	$(WPA_SUPPL_DIR_INCLUDE) \
 	$(DK_ROOT)/../lib
   
-L_CFLAGS += -DCONFIG_DRIVER_CUSTOM -DHOST_COMPILE -D__BYTE_ORDER_LITTLE_ENDIAN
+L_CFLAGS = -DCONFIG_DRIVER_CUSTOM -DHOST_COMPILE -D__BYTE_ORDER_LITTLE_ENDIAN
+L_CFLAGS += -DWPA_SUPPLICANT_$(WPA_SUPPLICANT_VERSION)
 OBJS = driver_ti.c $(LIB)/scanmerge.c $(LIB)/shlist.c
+
+# To force sizeof(enum) = 4
+ifneq ($(TARGET_SIMULATOR),true)
+L_CFLAGS += -mabi=aapcs-linux
+endif
 
 ifdef CONFIG_NO_STDOUT_DEBUG
 L_CFLAGS += -DCONFIG_NO_STDOUT_DEBUG
@@ -68,11 +88,17 @@ ifdef CONFIG_DEBUG_FILE
 L_CFLAGS += -DCONFIG_DEBUG_FILE
 endif
 
+ifdef CONFIG_ANDROID_LOG
+L_CFLAGS += -DCONFIG_ANDROID_LOG
+endif
+
 ifdef CONFIG_IEEE8021X_EAPOL
 L_CFLAGS += -DIEEE8021X_EAPOL
 endif
 
+ifdef CONFIG_WPS
 L_CFLAGS += -DCONFIG_WPS
+endif
 
 ########################
  

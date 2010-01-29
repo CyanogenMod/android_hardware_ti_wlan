@@ -686,7 +686,8 @@ DESCRIPTION:    Print module internal information.
 ************************************************************************/
 void txCtrlParams_printInfo(TI_HANDLE hTxCtrl)
 {
-	txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
+#ifdef REPORT_LOG
+    txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
 
     WLAN_OS_REPORT(("-------------- Tx-Ctrl Module Information --------------\n"));
     WLAN_OS_REPORT(("========================================================\n"));
@@ -728,6 +729,7 @@ void txCtrlParams_printInfo(TI_HANDLE hTxCtrl)
     WLAN_OS_REPORT(("encryptionFieldSize          = %d\n", pTxCtrl->encryptionFieldSize));
     WLAN_OS_REPORT(("currBssType                  = %d\n", pTxCtrl->currBssType));
     WLAN_OS_REPORT(("========================================================\n\n"));
+#endif
 }
 
 
@@ -738,7 +740,8 @@ DESCRIPTION:    Print Tx statistics debug counters.
 ************************************************************************/
 void txCtrlParams_printDebugCounters(TI_HANDLE hTxCtrl)
 {
-	txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
+#ifdef REPORT_LOG
+    txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
     TI_UINT32 ac;
 
     WLAN_OS_REPORT(("-------------- Tx-Ctrl Statistics Per AC ---------------\n"));
@@ -794,6 +797,7 @@ void txCtrlParams_printDebugCounters(TI_HANDLE hTxCtrl)
 		pTxCtrl->dbgCounters.dbgNumPktsPending[0] +	pTxCtrl->dbgCounters.dbgNumPktsPending[1] +
 		pTxCtrl->dbgCounters.dbgNumPktsPending[2] +	pTxCtrl->dbgCounters.dbgNumPktsPending[3]));
     WLAN_OS_REPORT(("========================================================\n\n"));
+#endif
 }
 
 

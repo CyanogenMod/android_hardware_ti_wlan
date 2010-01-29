@@ -33,7 +33,7 @@
 
 /** \file powerSrv.c
  *  \brief This is the powerSrv module implementation.
- *  \
+ *  \author Assaf Azulay
  *  \date 19-Oct-2005
  */
 

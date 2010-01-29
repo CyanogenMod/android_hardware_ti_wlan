@@ -93,7 +93,7 @@ extern int WMEQosTagToACTable[MAX_NUM_OF_802_1d_TAGS];
 
 TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
 {
-    TI_STATUS              status = TI_NOK;
+    TI_STATUS              status;
     mlme_t                 *pHandle = (mlme_t *)hMlme;
     TI_UINT8               *pData;
     TI_INT32               bodyDataLen;
@@ -132,8 +132,8 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
     }
 
     pParam = (paramInfo_t *)os_memoryAlloc(pHandle->hOs, sizeof(paramInfo_t));
-    if (!pParam) 
-    {
+    if (!pParam) {
+        RxBufFree(pHandle->hOs, pBuffer);
         return TI_NOK;
     }
 
@@ -798,12 +798,11 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
 						break;
 						
 					default:
-                        TRACE1(pHandle->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: Error, category is invalid for action management frame %d \n", pHandle->tempFrameInfo.frame.content.action.category );
+                        TRACE1(pHandle->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: Error, category is invalid for action management frame %d \n",							pHandle->tempFrameInfo.frame.content.action.category );
 						break;
 				}
 				
 				break;
-
 				
 			default:
 				status = TI_NOK;
@@ -816,7 +815,9 @@ mlme_recv_end:
     /* release BUF */
     os_memoryFree(pHandle->hOs, pParam, sizeof(paramInfo_t));
 	RxBufFree(pHandle->hOs, pBuffer);
-    return status;
+    if (status != TI_OK)
+        return TI_NOK;
+    return TI_OK;
 }
 
 TI_STATUS mlmeParser_getFrameType(mlme_t *pMlme, TI_UINT16* pFrameCtrl, dot11MgmtSubType_e *pType)
@@ -1100,33 +1101,33 @@ TI_STATUS mlmeParser_readWMEParams(mlme_t *pMlme,TI_UINT8 *pData, TI_UINT32 data
 
 	/* Note:  This function actually reads either the WME-Params IE or the WME-Info IE! */
 
-    pWMEParamIE->hdr[0] = *pData;
-    pWMEParamIE->hdr[1] = *(pData+1);
+	pWMEParamIE->hdr[0] = *pData;
+	pWMEParamIE->hdr[1] = *(pData+1);
 
-    *pReadLen = pWMEParamIE->hdr[1] + 2;
+	*pReadLen = pWMEParamIE->hdr[1] + 2;
 
-    if (dataLen < *pReadLen)
-    {
-TRACE2(pMlme->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: WME Parameter: eleLen=%d is too long (%d)\n", *pReadLen, dataLen);
+	if (dataLen < *pReadLen)
+	{
+		TRACE2(pMlme->hReport, REPORT_SEVERITY_WARNING, "MLME_PARSER: WME Parameter: eleLen=%d is too long (%d)\n", *pReadLen, dataLen);
 		*pReadLen = dataLen;
 		return TI_NOK;
-    }
+	}
 
-    if ((pWMEParamIE->hdr[1]> WME_TSPEC_IE_LEN) || (pWMEParamIE->hdr[1]< DOT11_WME_ELE_LEN))
-    {
-        TRACE1(pMlme->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: WME Parameter IE error: eleLen=%d\n", pWMEParamIE->hdr[1]);
-        return TI_NOK;
-    }
+	if ((pWMEParamIE->hdr[1]> WME_TSPEC_IE_LEN) || (pWMEParamIE->hdr[1]< DOT11_WME_ELE_LEN))
+	{
+		TRACE1(pMlme->hReport, REPORT_SEVERITY_WARNING, "MLME_PARSER: WME Parameter IE error: eleLen=%d\n", pWMEParamIE->hdr[1]);
+		return TI_NOK;
+	}
 
 	ieSubtype = *((TI_UINT8*)(pData+6));
-    switch (ieSubtype)
+	switch (ieSubtype)
 	{
 		case dot11_WME_OUI_SUB_TYPE_IE:
 		case dot11_WME_OUI_SUB_TYPE_PARAMS_IE:
 			/* Checking WME Version validity */
 			if (*((TI_UINT8*)(pData+7)) != dot11_WME_VERSION )
 			{
-TRACE1(pMlme->hReport, REPORT_SEVERITY_INFORMATION, "MLME_PARSER: WME Parameter IE error: Version =%d is unsupported\n",								  *((TI_UINT8*)(pData+7)) );
+				TRACE1(pMlme->hReport, REPORT_SEVERITY_INFORMATION, "MLME_PARSER: WME Parameter IE error: Version =%d is unsupported\n",								  *((TI_UINT8*)(pData+7)) );
 				return TI_NOK;
 			}
 

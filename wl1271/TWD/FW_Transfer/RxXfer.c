@@ -563,7 +563,6 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
         /* If required to send Rx packet(s) transaction */
         if (bIssueTxn)
         {
-
             if (bExit)
             {
                 TXN_PARAM_SET_END_OF_BURST(pTxn, 1);
@@ -665,6 +664,7 @@ static ETxnStatus rxXfer_IssueTxn (TI_HANDLE hRxXfer, TI_UINT32 uFirstMemBlkAddr
     eStatus = twIf_Transact(pRxXfer->hTwIf, pTxn);
 
     /* Write driver packets counter to FW. This write automatically generates interrupt to FW */
+    /* Note: Workaround for WL6-PG1.0 is still needed for PG2.0   ==>  if (pRxXfer->bChipIs1273Pg10)  */
     pTxn = &pRxXfer->aCounterTxn[uIndex].tTxnStruct;
     pTxn->uHwAddr = RX_DRIVER_COUNTER_ADDRESS;
     pRxXfer->aCounterTxn[uIndex].uCounter = ENDIAN_HANDLE_LONG(pRxXfer->uDrvRxCntr);
@@ -886,6 +886,7 @@ void rxXfer_ClearStats (TI_HANDLE hRxXfer)
  ****************************************************************************/
 void rxXfer_PrintStats (TI_HANDLE hRxXfer)
 {
+#ifdef REPORT_LOG
     TRxXfer *pRxXfer = (TRxXfer *)hRxXfer;
     
     WLAN_OS_REPORT(("Print RX Xfer module info\n"));
@@ -903,7 +904,6 @@ void rxXfer_PrintStats (TI_HANDLE hRxXfer)
     WLAN_OS_REPORT(("uCountPktAggreg-2  = %d\n", pRxXfer->tDbgStat.uCountPktAggreg[1]));
     WLAN_OS_REPORT(("uCountPktAggreg-3  = %d\n", pRxXfer->tDbgStat.uCountPktAggreg[2]));
     WLAN_OS_REPORT(("uCountPktAggreg-4  = %d\n", pRxXfer->tDbgStat.uCountPktAggreg[3]));
+#endif
 }
 #endif
-
-

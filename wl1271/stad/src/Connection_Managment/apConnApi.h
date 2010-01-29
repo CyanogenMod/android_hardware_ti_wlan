@@ -170,8 +170,6 @@ typedef TI_STATUS (*apConn_roamMngrCallb_t) (TI_HANDLE hRoamingMngr, void *pData
 
 typedef TI_STATUS (*apConn_roamMngrEventCallb_t) (TI_HANDLE hRoamingMngr, void *pData, TI_UINT16 reasonCode);
 
-
-
 /*------------*/
 /* Structures */
 /*------------*/
@@ -247,7 +245,6 @@ typedef struct _TargetAP_t
 	ETransitionMethod 	    transitionMethod;
 	bssEntry_t		        newAP;
 } TargetAp_t;
-
 
 /*---------------------------*/
 /* External data definitions */

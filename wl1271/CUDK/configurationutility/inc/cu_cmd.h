@@ -137,7 +137,6 @@ VOID CuCmd_RoamingLowSnrThreshold(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_RoamingLowQualityForBackgroungScanCondition(THandle hCuCmd, ConParm_t parm[], U16 nParms); 
 VOID CuCmd_RoamingNormalQualityForBackgroungScanCondition(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_RoamingGetConfParams(THandle hCuCmd, ConParm_t parm[], U16 nParms);
-
 VOID CuCmd_CurrBssUserDefinedTrigger(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 VOID CuCmd_AddTspec(THandle hCuCmd, ConParm_t parm[], U16 nParms);
@@ -188,7 +187,6 @@ VOID CuCmd_PrintDriverDebugBuffer(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_FwDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SetRateMngDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_GetRateMngDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
-
 
 VOID CuCmd_ShowAbout(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_Quit(THandle hCuCmd, ConParm_t parm[], U16 nParms);

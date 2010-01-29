@@ -33,7 +33,7 @@
 
 /** \file powerSrv.h
  *  \brief This is the Power Manager module private (internal).
- *  \
+ *  \author Yaron Menashe
  *  \date 27-Apr-2004
  */
 

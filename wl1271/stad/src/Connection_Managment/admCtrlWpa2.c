@@ -651,7 +651,6 @@ TI_STATUS admCtrlWpa2_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 
     TI_UINT8                *pWpa2Ie;
     ECipherSuite            uSuite, bSuite;
 
-
     *pAssocIeLen = 0;
 
     if (pRsnData==NULL)
@@ -693,7 +692,7 @@ TI_STATUS admCtrlWpa2_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 
     
     status = admCtrl_parseIe(pAdmCtrl, pRsnData, &pWpa2Ie, RSN_IE_ID);
     if (status != TI_OK)                                                         
-    {                                                                                    
+    {
         goto adm_ctrl_wpa2_end;
     }
     TRACE0(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "admCtrlWpa2_setSite: RSN_IE=\n");
@@ -742,13 +741,11 @@ TI_STATUS admCtrlWpa2_setSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TI_UINT8 
           paeConfig.authProtocol   = RSN_EXT_AUTH_MODE_WPA2PSK;
     }
 
-
 #ifdef XCC_MODULE_INCLUDED
     pParam->paramType = XCC_CCKM_EXISTS;
     pParam->content.XCCCckmExists = (wpa2Data.KeyMngSuite[0]==WPA2_IE_KEY_MNG_CCKM) ? TI_TRUE : TI_FALSE;
     XCCMngr_setParam(pAdmCtrl->hXCCMngr, pParam);
 #endif
-
 
     paeConfig.keyExchangeProtocol = pAdmCtrl->keyMngSuite;
     paeConfig.unicastSuite        = uSuite;    /* Updated value */
@@ -849,10 +846,8 @@ TI_STATUS admCtrlWpa2_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSite
 		TRACE0(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION,"Dismiss AP - HT with TKIP is not valid");
         return TI_NOK; /* if the encyption is TKIP and the site does support HT(11n) the site can not be a candidate */
 	}
-
-	/* Get Simple-Config state */
+    /* Get Simple-Config state */
     siteMgr_getParamWSC(pAdmCtrl->pRsn->hSiteMgr, &wscMode); /* SITE_MGR_SIMPLE_CONFIG_MODE */
-
     status = admCtrl_parseIe(pAdmCtrl, pRsnData, &pWpa2Ie, RSN_IE_ID);
     if (status != TI_OK)                                                         
     {                                                                                    
@@ -1680,7 +1675,7 @@ static void admCtrlWpa2_buildAndSendPMKIDCandList (TI_HANDLE hHandle, TBssidList
     TI_UINT8          candIndex =0, apIndex = 0, size =0;
     paramInfo_t       *pParam;
     OS_802_11_PMKID_CANDIDATELIST  *pCandList;
-    TI_UINT8             memBuff[PMKID_CAND_LIST_MEMBUFF_SIZE + sizeof(TI_UINT32)];
+    TI_UINT8           memBuff[PMKID_CAND_LIST_MEMBUFF_SIZE + sizeof(TI_UINT32)];
     dot11_RSN_t       *rsnIE = 0;
     wpa2IeData_t      wpa2Data;
     TI_STATUS         status = TI_NOK;
@@ -1704,7 +1699,7 @@ static void admCtrlWpa2_buildAndSendPMKIDCandList (TI_HANDLE hHandle, TBssidList
     /* the ssid in the PMKID cache */
     if ((pAdmCtrl->pmkid_cache.ssid.len != pParam->content.smeDesiredSSID.len) || 
          (os_memoryCompare(pAdmCtrl->hOs, (TI_UINT8 *)pAdmCtrl->pmkid_cache.ssid.str,
-          (TI_UINT8 *) pParam->content.smeDesiredSSID.str,
+          (TI_UINT8 *)pParam->content.smeDesiredSSID.str,
                           pAdmCtrl->pmkid_cache.ssid.len) != 0))
     {
         admCtrlWpa2_resetPMKIDCache(pAdmCtrl);
@@ -1843,10 +1838,7 @@ static void admCtrlWpa2_buildAndSendPMKIDCandList (TI_HANDLE hHandle, TBssidList
     /* Send PRE-AUTH start event to External Application */
     admCtrl_notifyPreAuthStatus (pAdmCtrl, RSN_PRE_AUTH_START);
     TRACE1(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "RSN:  PMKID Candidate List with %d entries has been built and sent for ssid  \n", candIndex);
-
-    
     return;
-
 }
 
 /**

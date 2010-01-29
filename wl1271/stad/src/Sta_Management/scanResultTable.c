@@ -520,7 +520,7 @@ void scanResultTable_UpdateSiteData (TI_HANDLE hScanResultTable, TSiteEntry *pSi
     if ((pFrame->parsedIEs->content.iePacket.pDSParamsSet != NULL)  &&
         (pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel != pFrame->channel))
     {
-        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_ERROR , "scanResultTable_UpdateSiteData: wrong channels, radio channel=%d, frame channel=%d\n", pFrame->channel, pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel);
+        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_WARNING, "scanResultTable_UpdateSiteData: wrong channels, radio channel=%d, frame channel=%d\n", pFrame->channel, pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel);
     }
     else
         UPDATE_CHANNEL (pSite, pFrame , pFrame->channel);

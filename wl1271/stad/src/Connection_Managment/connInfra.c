@@ -256,7 +256,6 @@ TI_STATUS conn_infraConfig(conn_t *pConn)
     return fsm_Config(pConn->infra_pFsm, (fsm_Matrix_t)smMatrix, CONN_INFRA_NUM_STATES, CONN_INFRA_NUM_EVENTS, conn_infraSMEvent, pConn->hOs);
 }
 
-
 /***********************************************************************
  *                        conn_infraSMEvent                                 
  ***********************************************************************
@@ -283,7 +282,6 @@ TI_STATUS conn_infraSMEvent(TI_UINT8 *currentState, TI_UINT8 event, TI_HANDLE hC
     TI_UINT8       nextState;
 
     status = fsm_GetNextState(pConn->infra_pFsm, *currentState, event, &nextState);
-
     if (status != TI_OK)
     {
         TRACE0(pConn->hReport, REPORT_SEVERITY_SM, "State machine error, failed getting next state\n");
@@ -394,7 +392,6 @@ static TI_STATUS mlmeWait_to_WaitDisconnect(void *pData)
     pParam->content.rxDataPortStatus = CLOSE;
     rxData_setParam(pConn->hRxData, pParam);
 
-
     /* Update TxMgmtQueue SM to close Tx path. */
     txMgmtQ_SetConnState (pConn->hTxMgmtQ, TX_CONN_STATE_CLOSE);
 
@@ -443,19 +440,17 @@ static TI_STATUS mlmeWait_to_rsnWait(void *pData)
 
     pParam->paramType = RX_DATA_PORT_STATUS_PARAM;
     pParam->content.rxDataPortStatus = OPEN_EAPOL;
-    status = rxData_setParam(pConn->hRxData, pParam);    
+    status = rxData_setParam(pConn->hRxData, pParam);
     os_memoryFree(pConn->hOs, pParam, sizeof(paramInfo_t));
     if (status != TI_OK)
         return status;
-
     /* Update TxMgmtQueue SM to enable EAPOL packets. */
     txMgmtQ_SetConnState (((conn_t *)pData)->hTxMgmtQ, TX_CONN_STATE_EAPOL);
-
+    
     /*
      *  Notify that the driver is associated to the supplicant\IP stack. 
      */
     EvHandlerSendEvent(pConn->hEvHandler, IPC_EVENT_ASSOCIATED, NULL,0);
-
     status = rsn_start(pConn->hRsn);
     return status;
 }
@@ -531,16 +526,15 @@ static TI_STATUS configHW_to_disconnect(void *pData)
         {
             pParam->paramType = REGULATORY_DOMAIN_DISCONNECT_PARAM;
             regulatoryDomain_setParam(pConn->hRegulatoryDomain, pParam);
-
+        
             /* Must be called AFTER mlme_stop. since De-Auth packet should be sent with the
-            supported rates, and stopModules clears all rates. */
+                supported rates, and stopModules clears all rates. */
             stopModules(pConn, TI_TRUE);
-
+        
             /* send disconnect command to firmware */
             prepare_send_disconnect(pData);
         }
     }
-
     os_memoryFree(pConn->hOs, pParam, sizeof(paramInfo_t));
     return status;
 }
@@ -567,25 +561,25 @@ static TI_STATUS connInfra_ScrWaitDisconn_to_disconnect(void *pData)
     if (status == TI_OK) 
     {
         /* Update TxMgmtQueue SM to close Tx path for all except Mgmt packets. */
-        txMgmtQ_SetConnState (pConn->hTxMgmtQ, TX_CONN_STATE_MGMT);
-
+        txMgmtQ_SetConnState(pConn->hTxMgmtQ, TX_CONN_STATE_MGMT);
+    
         pParam->paramType = REGULATORY_DOMAIN_DISCONNECT_PARAM;
         regulatoryDomain_setParam(pConn->hRegulatoryDomain, pParam);
-
-        status = mlme_stop( pConn->hMlmeSm, DISCONNECT_IMMEDIATE, pConn->disConnReasonToAP );
+    
+        status = mlme_stop(pConn->hMlmeSm, DISCONNECT_IMMEDIATE, pConn->disConnReasonToAP);
         if (status == TI_OK) 
         {
             /* Must be called AFTER mlme_stop. since De-Auth packet should be sent with the
                 supported rates, and stopModules clears all rates. */
             stopModules(pConn, TI_TRUE);
-    
+        
             /* send disconnect command to firmware */
             prepare_send_disconnect(pData);
         }
     }
-
     os_memoryFree(pConn->hOs, pParam, sizeof(paramInfo_t));
     return status;
+
 }
 
 
@@ -607,7 +601,7 @@ static TI_STATUS rsnWait_to_configHW(void *pData)
     status = rxData_setParam(pConn->hRxData, pParam);
     os_memoryFree(pConn->hOs, pParam, sizeof(paramInfo_t));
     if (status != TI_OK)
-        return status;
+         return status;
 
     status = qosMngr_connect(pConn->hQosMngr);
     if (status != TI_OK)
@@ -619,15 +613,15 @@ static TI_STATUS rsnWait_to_configHW(void *pData)
     status = measurementMgr_connected(pConn->hMeasurementMgr);
     if (status != TI_OK)
     {
-        TRACE2(pConn->hReport, REPORT_SEVERITY_ERROR, "Infra Conn status=%d, have to return (%d)\n",status,__LINE__);
-        return status;
+         TRACE2(pConn->hReport, REPORT_SEVERITY_ERROR, "Infra Conn status=%d, have to return (%d)\n",status,__LINE__);
+         return status;
     }
 
     status = TrafficMonitor_Start(pConn->hTrafficMonitor);
     if (status != TI_OK)
     {
-        TRACE2(pConn->hReport, REPORT_SEVERITY_ERROR, "Infra Conn status=%d, have to return (%d)\n",status,__LINE__);
-        return status;
+         TRACE2(pConn->hReport, REPORT_SEVERITY_ERROR, "Infra Conn status=%d, have to return (%d)\n",status,__LINE__);
+         return status;
     }
 
     healthMonitor_setState(pConn->hHealthMonitor, HEALTH_MONITOR_STATE_CONNECTED);
@@ -687,8 +681,10 @@ static TI_STATUS configHW_to_connected(void *pData)
     TRACE0(pConn->hReport, REPORT_SEVERITY_CONSOLE, "************ NEW CONNECTION ************\n"); 
     WLAN_OS_REPORT(("************ NEW CONNECTION ************\n"));
     siteMgr_printPrimarySiteDesc(pConn->hSiteMgr);
-     TRACE0(pConn->hReport, REPORT_SEVERITY_CONSOLE, "****************************************\n"); 
+    TRACE0(pConn->hReport, REPORT_SEVERITY_CONSOLE, "****************************************\n"); 
     WLAN_OS_REPORT(("****************************************\n"));
+#else
+    os_printf("%s: *** NEW CONNECTION ***\n", __func__);
 #endif
 
     return TI_OK;

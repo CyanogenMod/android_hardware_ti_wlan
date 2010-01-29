@@ -649,7 +649,7 @@ TRACE1(pRegulatoryDomain->hReport, REPORT_SEVERITY_INFORMATION, "regulatoryDomai
         break;
 
 	default:
-TRACE1(pRegulatoryDomain->hReport, REPORT_SEVERITY_ERROR, "Get param, Params is not supported, %d\n\n", pParam->paramType);
+		TRACE1(pRegulatoryDomain->hReport, REPORT_SEVERITY_WARNING, "Get param, Params is not supported, %d\n\n", pParam->paramType);
 		return PARAM_NOT_SUPPORTED;
 	}
 
@@ -1118,7 +1118,7 @@ static TI_STATUS regulatoryDomain_getChannelCapability(regulatoryDomain_t *pRegu
 	{
 		return TI_NOK;
 	}
-	
+
 	channelCapabilityRet->channelValidity = TI_FALSE;
 	channelCapabilityRet->maxTxPowerDbm = 0;
 	if ((channelCapabilityReq.channelNum==0 ) || (channelCapabilityReq.channelNum > A_5G_BAND_MAX_CHANNEL))
@@ -1192,7 +1192,6 @@ static TI_STATUS regulatoryDomain_getChannelCapability(regulatoryDomain_t *pRegu
 				channelCapabilityReq.band, 
 				bServingChannel);
             os_memoryFree(pRegulatoryDomain->hOs, pParam, sizeof(paramInfo_t));
-
 		}
 	}
 	else	/* Passive scanning */
@@ -1297,6 +1296,7 @@ static TI_STATUS regulatoryDomain_updateCurrTxPower(regulatoryDomain_t	*pRegulat
     pTwdParam = (TTwdParamInfo *)os_memoryAlloc(pRegulatoryDomain->hOs, sizeof(TTwdParamInfo));
     if (!pTwdParam)
     {
+        os_memoryFree(pRegulatoryDomain->hOs, pParam, sizeof(paramInfo_t));
         return TI_NOK;
     }
 
@@ -1366,7 +1366,7 @@ void regulatoryDomain_checkCountryCodeExpiry(regulatoryDomain_t *pRegulatoryDoma
 {
     paramInfo_t *pParam;
     TI_STATUS   connStatus;
-    TI_UINT32      uCurrentTS = os_timeStampMs(pRegulatoryDomain->hOs);
+    TI_UINT32   uCurrentTS = os_timeStampMs(pRegulatoryDomain->hOs);
 
     if ((pRegulatoryDomain->country_2_4_WasFound) || (pRegulatoryDomain->country_5_WasFound))
     {
@@ -1392,7 +1392,7 @@ void regulatoryDomain_checkCountryCodeExpiry(regulatoryDomain_t *pRegulatoryDoma
             
             /* Restore default values of the scan control table */
             setSupportedChannelsAccording2ScanControlTable(pRegulatoryDomain); 
-        } 
+        }
         os_memoryFree(pRegulatoryDomain->hOs, pParam, sizeof(paramInfo_t));
     }
 }

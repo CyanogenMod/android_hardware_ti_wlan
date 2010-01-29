@@ -249,10 +249,12 @@ void siteMgrDebugFunction (TI_HANDLE         hSiteMgr,
     case PRINT_FAILURE_EVENTS:
         {
 
-		WLAN_OS_REPORT(("\n PRINT HEALTH MONITOR LOG\n"));
-		healthMonitor_printFailureEvents (pStadHandles->hHealthMonitor);
-		apConn_printStatistics(pStadHandles->hAPConnection);
+	WLAN_OS_REPORT(("\n PRINT HEALTH MONITOR LOG\n"));
+	healthMonitor_printFailureEvents (pStadHandles->hHealthMonitor);
+	apConn_printStatistics(pStadHandles->hAPConnection);
+#ifdef REPORT_LOG		
         conn_ibssPrintStatistics(pStadHandles->hConn);
+#endif
         if (((conn_t*)pStadHandles->hConn)->currentConnType==CONNECTION_INFRA)
         {
             switch (((conn_t*)pStadHandles->hConn)->state)
@@ -312,7 +314,7 @@ void siteMgrDebugFunction (TI_HANDLE         hSiteMgr,
 
 static void printPrimarySite(siteMgr_t *pSiteMgr)
 {
-	siteEntry_t *pSiteEntry;
+	siteEntry_t *pSiteEntry;	
     TI_UINT8	len;
 	char	ssid[MAX_SSID_LEN + 1];
 	

@@ -63,8 +63,10 @@ static TI_STATUS    cmdQueue_Push (TI_HANDLE  hCmdQueue,
                                    void       *pCb);
 #ifdef TI_DBG
 static void         cmdQueue_PrintQueue(TCmdQueue  *pCmdQueue);
+#ifdef REPORT_LOG
 static char *       cmdQueue_GetIEString (TI_INT32 MboxCmdType, TI_UINT16 id);
 static char *       cmdQueue_GetCmdString (TI_INT32 MboxCmdType);
+#endif
 #endif /* TI_DBG */
 
 
@@ -789,8 +791,8 @@ TI_STATUS cmdQueue_Error (TI_HANDLE hCmdQueue, TI_UINT32 command, TI_UINT32 stat
 
     if (status != CMD_STATUS_UNKNOWN_CMD && status != CMD_STATUS_UNKNOWN_IE)
     {
-      #ifdef TI_DBG
-
+#ifdef TI_DBG
+#ifdef REPORT_LOG
         TCmdQueueNode* pHead = &pCmdQueue->aCmdQueue[pCmdQueue->head];  
         TI_UINT32 TimeStamp = os_timeStampMs(pCmdQueue->hOs);
 
@@ -803,11 +805,11 @@ TI_STATUS cmdQueue_Error (TI_HANDLE hCmdQueue, TI_UINT32 command, TI_UINT32 stat
 						pHead->uParamsLen, 
 						pCmdQueue->uNumberOfCommandInQueue, 
 						TimeStamp));
-
+#endif
         /* Print The command that was sent before the timeout occur */
         cmdQueue_PrintHistory(pCmdQueue, CMDQUEUE_HISTORY_DEPTH);
 
-      #endif /* TI_DBG */
+#endif /* TI_DBG */
 
         /* preform Recovery */
         if (pCmdQueue->fFailureCb)
@@ -929,6 +931,7 @@ static void cmdQueue_PrintQueue (TCmdQueue *pCmdQueue)
  */
 void cmdQueue_PrintHistory (TI_HANDLE hCmdQueue, TI_UINT32 uNumOfCmd)
 {
+#ifdef REPORT_LOG
     TCmdQueue* pCmdQueue = (TCmdQueue*)hCmdQueue; 
     TI_UINT32 uCurrentCmdIndex;
     TI_UINT32 first  = pCmdQueue->head;
@@ -951,16 +954,17 @@ void cmdQueue_PrintHistory (TI_HANDLE hCmdQueue, TI_UINT32 uNumOfCmd)
         {
             first = CMDQUEUE_QUEUE_DEPTH - 1;
         }
-		else
+        else
         {
 			first--;
         }
-	}
+    }
 
-	WLAN_OS_REPORT(("-----------------------------------------------------------------------\n"));
+    WLAN_OS_REPORT(("-----------------------------------------------------------------------\n"));
+#endif
 }
 
-
+#ifdef REPORT_LOG
 /*
  * \brief	Interperts the command's type to the command's name 
  * 
@@ -1090,7 +1094,7 @@ static char * cmdQueue_GetIEString (TI_INT32 MboxCmdType, TI_UINT16 Id)
     }
     return "";
 }
-
+#endif
 #endif  /* TI_DBG */
 
 

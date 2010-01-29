@@ -3661,8 +3661,6 @@ VOID CuCmd_ConfigBtCoe(THandle hCuCmd, ConParm_t parm[], U16 nParms)
     }
 }
 
-
-
 VOID CuCmd_GetBtCoeStatus(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
     CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;

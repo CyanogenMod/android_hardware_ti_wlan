@@ -447,7 +447,7 @@ RETURN:     TI_OK on success, TI_NOK otherwise
 ************************************************************************/
 static TI_STATUS rsnWait_to_waitToDisconnCmplt(void *pData)
 {
-    paramInfo_t     param;
+    paramInfo_t     param;  
 	TI_STATUS		tStatus;
 
     tStatus = rsn_stop(((conn_t *)pData)->hRsn, TI_FALSE);

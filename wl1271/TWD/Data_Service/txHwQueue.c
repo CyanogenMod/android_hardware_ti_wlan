@@ -673,6 +673,7 @@ void txHwQueue_RegisterCb (TI_HANDLE hTxHwQueue, TI_UINT32 uCallBackId, void *fC
 #ifdef TI_DBG
 void txHwQueue_PrintInfo (TI_HANDLE hTxHwQueue)
 {
+#ifdef REPORT_LOG
     TTxHwQueue *pTxHwQueue = (TTxHwQueue *)hTxHwQueue;
     TI_INT32 TxQid;
 
@@ -706,8 +707,8 @@ void txHwQueue_PrintInfo (TI_HANDLE hTxHwQueue)
             pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksCausedBusy,
             pTxHwQueue->aTxHwQueueInfo[TxQid].bQueueBusy));
     }
+#endif
 }
-
 
 #endif /* TI_DBG */
 

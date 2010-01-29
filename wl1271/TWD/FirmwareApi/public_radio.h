@@ -59,7 +59,6 @@
 #include "public_types.h"
 #define MAC_ADDR_SIZE 6
 /* typedef uint8 TMacAddr[MAC_ADDR_SIZE]; */
-/*defined in tiDefs.h*/
 /************************************************************************/
 /*																		*/	
 /*							Definitions section                         */

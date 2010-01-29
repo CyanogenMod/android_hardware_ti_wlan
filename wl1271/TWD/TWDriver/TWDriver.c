@@ -1834,4 +1834,3 @@ void TWD_FinalizePolarityRead(TI_HANDLE hTWD)
   /*  allways read FEM type from Radio Registers */ 
    hwInit_ReadRadioParams(pTWD->hHwInit);   
 }
-

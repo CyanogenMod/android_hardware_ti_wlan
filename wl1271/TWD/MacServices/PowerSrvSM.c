@@ -33,7 +33,7 @@
 
 /** \file PowerSrvSM.c
  *  \brief This is the PowerSrvSM module implementation.
- *  \
+ *  \author Assaf Azulay
  *  \date 19-OCT-2005
  */
 

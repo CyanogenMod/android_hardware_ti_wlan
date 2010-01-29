@@ -2350,7 +2350,6 @@ typedef struct
 	uint16 MaxPer;
 	uint8 InverseCuriosityFactor;
 	uint8 TxFailLowTh;
-
 	uint8 TxFailHighTh;
 	uint8 PerAlphaShift;
 	uint8 PerAddShift;

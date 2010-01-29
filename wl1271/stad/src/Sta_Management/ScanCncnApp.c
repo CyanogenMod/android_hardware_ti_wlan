@@ -49,7 +49,6 @@
 #include "sme.h"
 #include "smeApi.h"
 
-
 /** 
  * \fn     scanCncnApp_SetParam
  * \brief  Parses and executes a set param command
@@ -75,7 +74,7 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
         /* verify that scan is not currently running */
         if (pScanCncn->eCurrentRunningAppScanClient != SCAN_SCC_NO_CLIENT)
         {
-            TRACE1(pScanCncn->hReport, REPORT_SEVERITY_ERROR , "scanCncnApp_SetParam: trying to start app one-shot scan when client %d is currently running!\n", pScanCncn->eCurrentRunningAppScanClient);
+            TRACE1(pScanCncn->hReport, REPORT_SEVERITY_WARNING, "scanCncnApp_SetParam: trying to start app one-shot scan when client %d is currently running!\n", pScanCncn->eCurrentRunningAppScanClient);
             /* Scan was not started successfully, send a scan complete event to the user */
             return TI_NOK;
         }
@@ -105,7 +104,7 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
         /* verify that scan is not currently running */
         if (SCAN_SCC_NO_CLIENT != pScanCncn->eCurrentRunningAppScanClient)
         {
-            TRACE1(pScanCncn->hReport, REPORT_SEVERITY_ERROR , "scanCncnApp_SetParam: trying to start app periodic scan when client %d is currently running!\n", pScanCncn->eCurrentRunningAppScanClient);
+            TRACE1(pScanCncn->hReport, REPORT_SEVERITY_WARNING, "scanCncnApp_SetParam: trying to start app periodic scan when client %d is currently running!\n", pScanCncn->eCurrentRunningAppScanClient);
             /* Scan was not started successfully, send a scan complete event to the user */
             return TI_NOK;
         }

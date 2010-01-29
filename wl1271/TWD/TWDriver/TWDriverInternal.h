@@ -47,6 +47,7 @@
 #include "TWDriver.h"
 #include "Device.h"
 
+
 /* Shift factor to conver between TU (1024 uSec) and uSec. */
 #define SHIFT_BETWEEN_TU_AND_USEC       10  
 
@@ -147,6 +148,7 @@ typedef struct
 	void		*pRadioCb;
 	TI_HANDLE	hRadioCb;
 	TTestCmd 	testCmd; 
+
 } TTwd;
 
 

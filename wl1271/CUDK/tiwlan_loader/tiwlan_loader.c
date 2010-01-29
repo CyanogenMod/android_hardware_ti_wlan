@@ -2,22 +2,22 @@
  * tiwlan_loader.c
  *
  * Copyright 2001-2009 Texas Instruments, Inc. - http://www.ti.com/
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and  
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * \file  tiwlan_loader.c 
+
+/**
+ * \file  tiwlan_loader.c
  * \brief Loader implementation - sends FW image, NVS image and ini file to the driver
  */
 
@@ -53,14 +53,14 @@ S32 print_usage(VOID)
 }
 
 /*  Return '0' if success */
-S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name, 
+S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
                  PS8 init_file_name, PS8 firmware_file_name )
 {
-    PVOID f1=NULL, f2=NULL, f3 = NULL;
-    S32 eeprom_image_length=0;
-    S32 init_file_length=0;
+    PVOID f1 = NULL, f2 = NULL, f3 = NULL;
+    S32 eeprom_image_length = 0;
+    S32 init_file_length = 0;
     S32 firmware_image_length = 0;
-    U32 req_size=0;
+    U32 req_size = 0;
     TLoaderFilesData *init_info = NULL;
     S32 rc = -1;
     THandle hIpcSta;
@@ -74,11 +74,10 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
 
     hIpcSta = IpcSta_Create(adapter_name);
     if (hIpcSta == NULL)
-    {	
-        os_error_printf (CU_MSG_ERROR, (PS8)"wlan_loader: cant allocate IpcSta context\n", eeprom_file_name);
-        goto init_driver_end;
+    {
+	os_error_printf (CU_MSG_ERROR, (PS8)"wlan_loader: cant allocate IpcSta context\n", eeprom_file_name);
+	goto init_driver_end;
     }
-	
 
     /* Send init request to the driver */
     if ( (NULL != eeprom_file_name) &&
@@ -87,8 +86,7 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
         eeprom_image_length = os_getFileSize(f1);
         if (-1 == eeprom_image_length)
         {
-            os_error_printf(CU_MSG_ERROR, (PS8)"Cannot get eeprom image file length <%s>\n", 
-                            eeprom_file_name);
+            os_error_printf(CU_MSG_ERROR, (PS8)"Cannot get eeprom image file length <%s>\n", eeprom_file_name);
             goto init_driver_end;
         }
     }
@@ -99,8 +97,7 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
         firmware_image_length = os_getFileSize(f2);
         if (-1 == firmware_image_length)
         {
-            os_error_printf(CU_MSG_ERROR, (PS8)"Cannot get firmware image file length <%s>\n",
-                            firmware_file_name);
+            os_error_printf(CU_MSG_ERROR, (PS8)"Cannot get firmware image file length <%s>\n", firmware_file_name);
             goto init_driver_end;
         }
     }
@@ -111,8 +108,7 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
         init_file_length = os_getFileSize(f3);
         if (-1 == init_file_length)
         {
-            os_error_printf(CU_MSG_ERROR, (PS8)"Cannot get init file length <%s>\n",
-                            init_file_name);
+            os_error_printf(CU_MSG_ERROR, (PS8)"Cannot get init file length <%s>\n", init_file_name);
             goto init_driver_end;
         }
     }
@@ -128,24 +124,21 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
     init_info->uNvsFileLength = eeprom_image_length;
     init_info->uFwFileLength  = firmware_image_length;
     init_info->uIniFileLength = init_file_length;
-    
-    if (!f1 || 
-        (eeprom_image_length &&
+
+    if (!f1 || (eeprom_image_length &&
         os_fread(&init_info->data[0], 1, eeprom_image_length, f1)<eeprom_image_length))
     {
-    }else
+    } else
         os_error_printf(CU_MSG_INFO1, (PS8)"****  nvs file found %s **** \n", eeprom_file_name);
 
-    if (!f2 ||
-        (firmware_image_length &&
+    if (!f2 || (firmware_image_length &&
         os_fread(&init_info->data[eeprom_image_length], 1, firmware_image_length, f2)<firmware_image_length))
     {
         os_error_printf(CU_MSG_ERROR, (PS8)"Error reading firmware image %s - Aborting...\n", firmware_file_name);
         goto init_driver_end;
     }
 
-    if (!f3 ||
-        (init_file_length &&
+    if (!f3 || (init_file_length &&
         os_fread(&init_info->data[eeprom_image_length+firmware_image_length], 1, init_file_length, f3)<init_file_length))
     {
         os_error_printf(CU_MSG_ERROR, (PS8)"Warning: Error in reading init_file %s - Using defaults\n", init_file_name);
@@ -170,7 +163,7 @@ init_driver_end:
         os_fclose(f3);
     if (init_info)
         os_MemoryFree(init_info);
-	if (hIpcSta)
+    if (hIpcSta)
         IpcSta_Destroy(hIpcSta);
 
     return rc;
@@ -189,7 +182,7 @@ int check_and_set_property(char *prop_name, char *prop_val)
 	    break;
     }
     if( count ) {
-		os_error_printf(CU_MSG_ERROR, (PS8)"Set property %s = %s - Ok\n", prop_name, prop_val);
+        os_error_printf(CU_MSG_ERROR, (PS8)"Set property %s = %s - Ok\n", prop_name, prop_val);
     }
     else {
         os_error_printf(CU_MSG_ERROR, (PS8)"Set property %s = %s - Fail\n", prop_name, prop_val);
@@ -236,9 +229,9 @@ S32 user_main(S32 argc, PPS8 argv)
             else
             {
                 os_error_printf (CU_MSG_ERROR, (PS8)"Loader: unknow parameter '%s'\n", argv[i]);
-#ifdef ANDROID		
+#ifdef ANDROID
                 check_and_set_property("wlan.driver.status", "failed");
-#endif	
+#endif
                 return -1;
             }
         }
@@ -256,14 +249,14 @@ S32 user_main(S32 argc, PPS8 argv)
     if (init_driver (g_drv_name, eeprom_file_name, init_file_name, firmware_file_name) != 0)
     {
 #ifdef ANDROID
-	check_and_set_property("wlan.driver.status", "failed");
-	release_wake_lock(PROGRAM_NAME);
-#endif    
+        check_and_set_property("wlan.driver.status", "failed");
+        release_wake_lock(PROGRAM_NAME);
+#endif
         return -1;
     }
 #ifdef ANDROID
-	check_and_set_property("wlan.driver.status", "ok");
-	release_wake_lock(PROGRAM_NAME);
-#endif    
+    check_and_set_property("wlan.driver.status", "ok");
+    release_wake_lock(PROGRAM_NAME);
+#endif
     return 0;
 }

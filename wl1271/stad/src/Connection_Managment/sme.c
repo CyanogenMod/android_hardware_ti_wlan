@@ -362,6 +362,12 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
         break;
 
     case SME_DESIRED_SSID_ACT_PARAM:
+        if (pParam->content.smeDesiredSSID.len > MAX_SSID_LEN)
+        {
+            /* printk("SSID length(%d) is out of range. Discard it.\n", pParam->content.smeDesiredSSID.len);*/
+            return PARAM_VALUE_NOT_VALID; /* ssid length is out of range */
+        }
+
         pSme->bRadioOn = TI_TRUE;
 
         /* if new value is different than current one */
@@ -396,6 +402,9 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
         {
             pSme->bConstantScan = TI_FALSE;
         }
+
+        /* printk("SME_DESIRED_SSID_ACT_PARAM: bRadioOn = %d, bRunning = %d\n", pSme->bRadioOn, pSme->bRunning); */
+        pSme->bRunning = TI_TRUE; /* set it to TRUE in case it's accidentally altered. */
 
         /* now send a disconnect event */
         genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
@@ -553,12 +562,10 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
     TSme                *pSme = (TSme*)hSme;
     paramInfo_t	        param;
 
-
     switch (eStatus)
     {
     /* a frame was received - update the scan result table */
     case SCAN_CRS_RECEIVED_FRAME:
-
         TRACE6(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_ScanResultCB: received frame from BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
 
         /* 
@@ -578,19 +585,17 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
                                             pSme->tSsid.len)))
 #endif
                 {
-
                     if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
                     {
-                        TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update specific enrty for BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
+                        TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update specific entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
                     }
                 }
             }
             else
             {
-
                 if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
                 {
-                    TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update enrty for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
+                    TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
                 }
             }
         }
@@ -599,7 +604,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
         {
             if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
             {
-                TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update application scan enrty for BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
+                TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update application scan entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
             }
         }
         break;
@@ -735,7 +740,7 @@ void sme_AppScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
     
             if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
             {
-                TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_AppScanResult: unable to update enrty for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
+                TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_AppScanResult: unable to update entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
             }
             break;
     
@@ -783,7 +788,7 @@ void sme_MeansurementScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus, 
     
         if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
         {
-            TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_MeansurementScanResult: unable to update enrty for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
+            TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_MeansurementScanResult: unable to update entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
         }
         break;
 
@@ -990,4 +995,3 @@ void SME_Disconnect (TI_HANDLE hSme)
     /* now send a disconnect event */
     genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
 }
-

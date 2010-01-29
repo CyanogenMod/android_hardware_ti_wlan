@@ -152,13 +152,14 @@ void genSM_Event (TI_HANDLE hGenSM, TI_UINT32 uEvent, void *pData)
     TI_UINT32           uCurrentState;
     TGenSM_actionCell   *pCell;
 
-#ifdef TI_DBG
-    /* sanity check */
 	if (pGenSM == NULL)
 	{
         TRACE0(pGenSM->hReport, REPORT_SEVERITY_ERROR , "genSM_Event: Handle is NULL!!\n");
 		return;
 	}
+
+#ifdef TI_DBG
+    /* sanity check */
     if (uEvent >= pGenSM->uEventNum)
     {
         TRACE3(pGenSM->hReport, REPORT_SEVERITY_ERROR , "genSM_Event: module: %d received event %d, which is out of events boundry %d\n", pGenSM->uModuleLogIndex, uEvent, pGenSM->uEventNum);

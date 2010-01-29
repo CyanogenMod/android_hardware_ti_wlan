@@ -624,6 +624,3 @@ static void busDrv_TxnDoneCb (TI_HANDLE hBusDrv, int iStatus)
 
     CL_TRACE_END_L1("tiwlan_drv.ko", "TXN_DONE", "BusDrvCB", "");
 }
-
-
-

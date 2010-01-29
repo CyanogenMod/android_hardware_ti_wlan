@@ -255,7 +255,7 @@ typedef struct
 
 typedef struct rxDataFilterFieldPattern_t
 {
-    TI_UINT16       offset; /*  Offset of the field to compare from the start of the packet*/
+    TI_UINT16      offset; /*  Offset of the field to compare from the start of the packet*/
     TI_UINT8       length; /* Size of the field pattern */
     TI_UINT8       flag; /* Bit Mask flag */
     TI_UINT8       pattern[RX_DATA_FILTER_MAX_PATTERN_SIZE]; /* expected pattern */

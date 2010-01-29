@@ -1448,7 +1448,7 @@ typedef enum
 																											* Allocate Bit: OFF	\n
 																											* GET Bit: OFF	\n
 																											* SET Bit: ON	\n
-																											*/
+																											*/ 
 
 	/* Health Monitoring section */
     HEALTH_MONITOR_CHECK_DEVICE                 =   SET_BIT |           HEALTH_MONITOR_MODULE_PARAM | 0x01,	/**< Health Monitoring Check Device Parameter (Health Monitoring Module Set Command): \n  

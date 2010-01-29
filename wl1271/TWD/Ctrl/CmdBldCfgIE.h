@@ -103,9 +103,5 @@ TI_STATUS cmdBld_CfgIeBurstMode 				(TI_HANDLE hCmdBld, TI_BOOL bEnabled, void *
 TI_STATUS cmdBld_CfgIeSRDebug                   (TI_HANDLE hCmdBld, ACXSmartReflexDebugParams_t *pSRDebug, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeSRState                   (TI_HANDLE hCmdBld, uint8 SRstate, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeRateMngDbg 				(TI_HANDLE hCmdBld, RateMangeParams_t *pRateMngParams, void *fCb, TI_HANDLE hCb);
-
-
-
-
 #endif
 

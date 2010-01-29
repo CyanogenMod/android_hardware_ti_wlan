@@ -13,7 +13,7 @@ STATIC_LIB ?= y
 #
 # Rebuild the supplicant
 #
-BUILD_SUPPL ?= y
+BUILD_SUPPL ?= n
 
 #
 # Supplicant
@@ -53,8 +53,15 @@ USE_IRQ_ACTIVE_HIGH ?= n
 #
 TEST ?= n
 
-
+#
+# Eth Support
+#
 ETH_SUPPORT ?= n
+
+#
+# Debug
+#
+DEBUG ?= y
 
 ##
 ##
@@ -203,8 +210,8 @@ endif
 ifeq "$(HOST_PLATFORM)" "zoom1"
 TARGET = apps.tar
 endif
-ifeq "$(HOST_PLATFORM)" "*UNDEFINED*"
-TARGET = help
+ifeq "$(HOST_PLATFORM)" "sholes"
+TARGET = apps.tar
 endif
 #
 .PHONY: all
@@ -244,7 +251,7 @@ TAR_FILE = $(HOST_PLATFORM)Binaries.tar
 apps.tar: apps
 ifeq ($(STRIP),y)
 	@echo stripping...
-	cd $(OUTPUT_DIR) && $(CROSS_COMPILE)strip --strip-unneeded $(MODULES_LIST)
+	cd $(OUTPUT_DIR) && $(CROSS_COMPILE)strip -g --strip-unneeded $(MODULES_LIST)
 #	cd $(DK_ROOT)/external_drivers/$(HOST_PLATFORM)/Linux/$(BUS_DRV) && $(CROSS_COMPILE)strip -g $(BUS_DRIVER_MODULE)
 endif
 
@@ -278,19 +285,19 @@ clean:
 	$(MAKE) -C $(OS_COMMON_DIR) CROSS_COMPILE=$(CROSS_COMPILE) DEBUG=$(DEBUG) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) WSPI=$(WSPI) INTR=$(INTR) XCC=$(XCC) INFO=$(INFO) STATIC_LIB=$(STATIC_LIB) clean
 	$(MAKE) -C $(OS_LINUX_DIR) CROSS_COMPILE=$(CROSS_COMPILE) DEBUG=$(DEBUG) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) WSPI=$(WSPI) INTR=$(INTR) XCC=$(XCC) INFO=$(INFO) STATIC_LIB=$(STATIC_LIB) clean
 #	$(MAKE) -C $(DK_ROOT)/external_drivers/$(HOST_PLATFORM)/Linux/$(BUS_DRV) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) KERNEL_DIR=$(KERNEL_DIR) OUTPUT_DIR=$(shell pwd)/$(OUTPUT_DIR) clean
-#	$(MAKE) -C $(WLAN_CUDK_DIR) CROSS_COMPILE=$(CROSS_COMPILE) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) XCC=$(XCC) ETH_SUPPORT=$(ETH_SUPPORT) clean
+#	$(MAKE) -C $(WLAN_CUDK_DIR) CROSS_COMPILE=$(CROSS_COMPILE) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) XCC=$(XCC) clean
 #       $(MAKE) -C $(WLAN_CU_CLI_DIR) CROSS_COMPILE=$(CROSS_COMPILE) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) XCC=$(XCC) cleanall
 #       $(MAKE) -C $(WLAN_LOADER_DIR) CROSS_COMPILE=$(CROSS_COMPILE) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) XCC=$(XCC) clean
 #       $(MAKE) -C $(LINUX_WIRELESS_TOOLS_DIR) CROSS_COMPILE=$(CROSS_COMPILE) BUILD_SUPPL=$(BUILD_SUPPL) SUPPL=$(SUPPL) XCC=$(XCC) clean
 #       $(MAKE) -C $(DBG_MDL) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) KERNEL_DIR=$(KERNEL_DIR) clean
 
-	@rm -f suppl.* apps.* voice.*
-	@rm -f *spi*.ko sdio.ko
+#	@rm -f suppl.* apps.* voice.*
+#	@rm -f *spi*.ko sdio.ko
+#	@rm -f $(OUTPUT_DIR)/wlan_cu
 	@rm -f $(OUTPUT_DIR)/tiwlan_drv.ko 
-	@rm -f $(OUTPUT_DIR)/tiwlan_drv.ko 
-	@rm -f wpa_supplicant 
+#	@rm -f wpa_supplicant 
 #	@rm -f $(FW_IMAGE_DEST_FILE)
-	@rm -rf *.o *.a \.*.o.cmd *~ *.~* core .depend dep
+#	@rm -rf *.o *.a \.*.o.cmd *~ *.~* core .depend dep
 
 #       @rm -f tiwlan_drv.ko $(OUTPUT_DIR)/gwsi_drv.o $(OUTPUT_DIR)/debug_tools.o
 #       @rm -rf $(OUTPUT_DIR)/iwconfig apps/iwlist $(OUTPUT_DIR)/iwevent

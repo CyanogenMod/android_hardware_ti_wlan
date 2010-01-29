@@ -43,7 +43,6 @@
 
 #include "tidef.h"
 
-
 /* action function type definition */
 typedef void (*TGenSM_action) (void *pData);
 
@@ -54,6 +53,7 @@ typedef  struct
     TI_UINT32       uNextState; /**< next state in transition */
     TGenSM_action   fAction;    /**< action function */
 } TGenSM_actionCell;
+
 
 
 /* 
@@ -82,8 +82,6 @@ typedef struct
     TI_INT8         **pStateDesc;      /**< State description strings */
     TI_INT8         **pEventDesc;      /**< Event description strings */
 } TGenSM;
-
-
 
 TI_HANDLE   genSM_Create (TI_HANDLE hOS);
 void        genSM_Unload (TI_HANDLE hGenSM);

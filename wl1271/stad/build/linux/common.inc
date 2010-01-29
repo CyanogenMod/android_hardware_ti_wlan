@@ -100,13 +100,15 @@ endif
 ifeq ($(DEBUG),y)
     DK_DEFINES += -D TI_DBG
     DK_DEFINES += -D REPORT_LOG
-    DK_DEFINES += -Os
+    DK_DEFINES += -O2
+    DK_DEFINES += -D PRINTF_ROLLBACK
 else
+    DK_DEFINES += -D TI_DBG
     DK_DEFINES += -U REPORT_LOG
-    DK_DEFINES += -Os
+    DK_DEFINES += -O2
 endif
 ifeq ($(KERNEL_DEBUGGER),y)
-    DK_DEFINES += -g -Os
+    DK_DEFINES += -g -O2
 	STRIP = n
 endif
 export KERNEL_DEBUGGER
@@ -170,7 +172,7 @@ endif
 ##
 ##
 
-EXTRA_CFLAGS += -fsigned-char -Werror
-EXTRA_CFLAGS += -D __LINUX__
+EXTRA_CFLAGS += -fsigned-char
+EXTRA_CFLAGS += -D __LINUX__ -DTI_RANDOM_DEFAULT_MAC
 EXTRA_CFLAGS += $(DK_DEFINES)
 EXTRA_CFLAGS += $(PFORM_DEFINES)

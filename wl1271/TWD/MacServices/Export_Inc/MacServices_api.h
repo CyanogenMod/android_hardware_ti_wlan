@@ -33,7 +33,7 @@
 
 /** \file MacServicesApi.h
  *  \brief This file include public definitions for the MacServices module, comprising its API.
- *  \
+ *  \author Yuval Adler
  *  \date 6-Oct-2005
  */
 
@@ -80,7 +80,7 @@
  ***********************************************************************
  */
 /**
- * \\n
+ * \author Yuval Adler\n
  * \date 6-Oct-2004\n
  * \brief Creates MacServices module
  *
@@ -90,7 +90,7 @@
 TI_HANDLE MacServices_create( TI_HANDLE hOS );
 
 /**
- * \\n
+ * \author Yuval Adler\n
  * \date 6-Oct-2004\n
  * \brief Destroys MacServices module
  *
@@ -100,7 +100,7 @@ TI_HANDLE MacServices_create( TI_HANDLE hOS );
 void MacServices_destroy( TI_HANDLE hMacServices );
 
 /**
- * \\n
+ * \author Yuval Adler\n
  * \date  6-Oct-2004\n
  * \brief Initializes the MacServices module
  *
@@ -129,7 +129,7 @@ void MacServices_registerFailureEventCB (TI_HANDLE hMacServices, void * failureE
 
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 29-Dec-2004\n
  * \brief Registers a complete callback for scan complete notifications.
  *
@@ -144,7 +144,7 @@ void MacServices_scanSRV_registerScanCompleteCB( TI_HANDLE hMacServices,
 
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 29-Dec-2004\n
  * \brief Performs a scan
  *
@@ -167,7 +167,7 @@ TI_STATUS MacServices_scanSRV_scan( TI_HANDLE hMacServices, TScanParams *scanPar
 						TCmdResponseCb commandResponseFunc, TI_HANDLE commandResponseObj );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 29-Dec-2004\n
  * \brief Stops a scan in progress
  *
@@ -183,7 +183,7 @@ TI_STATUS MacServices_scanSRV_stopScan( TI_HANDLE hMacServices, EScanResultTag e
                                         TCmdResponseCb commandResponseFunc, TI_HANDLE commandResponseObj );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 17-Jan-2005\n
  * \brief Notifies the scan SRV of a FW reset (that had originally been reported by a different module).\n
  *
@@ -194,7 +194,7 @@ TI_STATUS MacServices_scanSRV_stopScan( TI_HANDLE hMacServices, EScanResultTag e
 TI_STATUS MacServices_scanSRV_stopOnFWReset( TI_HANDLE hMacServices );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 29-Dec-2004\n
  * \brief callback function used by the power manager to notify driver mode result
  *
@@ -205,7 +205,7 @@ TI_STATUS MacServices_scanSRV_stopOnFWReset( TI_HANDLE hMacServices );
 void MacServices_scanSRV_powerSaveCB( TI_HANDLE hScanSRV, TI_UINT8 PSMode,TI_UINT8 psStatus );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 29-Dec-2004\n
  * \brief Callback function used by the HAL ctrl to notify scan complete
  *
@@ -217,7 +217,7 @@ void MacServices_scanSRV_powerSaveCB( TI_HANDLE hScanSRV, TI_UINT8 PSMode,TI_UIN
 void MacServices_scanSRV_scanCompleteCB( TI_HANDLE hScanSRV, char* str, TI_UINT32 strLen );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 29-Dec-2004\n
  * \brief called when a scan timer expires. Completes the scan and starts a recovery process.
  *
@@ -232,7 +232,7 @@ void MacServices_scanSrv_UpdateDtimTbtt (TI_HANDLE hMacServices,
 
 #ifdef TI_DBG
 /**
- * \\n
+ * \author Shirit Brook\n
  * \date God knows when...\n
  * \brief Prints Scan Server SM status.\n
  *
@@ -246,7 +246,7 @@ void MacServices_scanSrv_printDebugStatus(TI_HANDLE hMacServices);
 
 
 /**
-  * \
+  * \author Assaf Azulay
  * \date 24-Oct-2005\n
  * \brief request PS by User
  *
@@ -273,7 +273,7 @@ TI_STATUS MacServices_powerSrv_SetPsMode(TI_HANDLE 	                hMacServices
 
 
 /**
-  * \
+  * \author Assaf Azulay
  * \date 24-Oct-2005\n
  * \brief SW configure, use to override the current PowerMode (what ever it will be) to
  *        active/PS combined with awake/power-down. use for temporary change the system policy.
@@ -305,7 +305,7 @@ TI_STATUS MacServices_powerSrv_ReservePS(	TI_HANDLE 	                hMacService
 
 
 /**
- * \
+ * \author Assaf Azulay
  * \date 24-Oct-2005\n
  * \brief end the temporary change of system policy, and returns to the user system policy.
  *
@@ -327,7 +327,7 @@ TI_STATUS MacServices_powerSrv_ReleasePS( 	TI_HANDLE 	hMacServices,
 
 
 /**
- * \
+ * \author Assaf Azulay
  * \date 24-Oct-2005\n
  * \brief reflects the actual state of the state machine
  *
@@ -341,7 +341,7 @@ TI_BOOL MacServices_powerSrv_getPsStatus(TI_HANDLE hMacServices);
 
 
 /**
- * \
+ * \author Assaf Azulay
  * \date 24-Oct-2005\n
  * \sets the rate as got from user else sets default value.\n
  *
@@ -372,7 +372,7 @@ TI_UINT32 MacServices_powerSrv_GetRateModulation(TI_HANDLE hMacServices);
  ***********************************************************************/
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 09-November-2005\n
  * \brief Starts a measurement operation.\n
  *
@@ -395,7 +395,7 @@ TI_STATUS MacServices_measurementSRV_startMeasurement( TI_HANDLE hMacServices,
                                                        TI_HANDLE cmdCompleteCBObj );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 09-November-2005\n
  * \brief Stops a measurement operation in progress.\n
  *
@@ -412,7 +412,7 @@ TI_STATUS MacServices_measurementSRV_stopMeasurement( TI_HANDLE hMacServices,
                                                       TI_HANDLE cmdResponseCBObj );
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 09-November-2005\n
  * \brief Notifies the measurement SRV of a FW reset (recovery).\n
  *
@@ -422,7 +422,7 @@ TI_STATUS MacServices_measurementSRV_stopMeasurement( TI_HANDLE hMacServices,
 void MacServices_measurementSRV_FWReset( TI_HANDLE hMacServices );
 
 /** 
- * \\n
+ * \author Ronen Kalish\n
  * \date 09-November-2005\n
  * \brief callback function used by the power manager to notify driver mode result
  *
@@ -434,7 +434,7 @@ void MacServices_measurementSRV_FWReset( TI_HANDLE hMacServices );
 void MacServices_measurementSRV_powerSaveCB( TI_HANDLE hMeasurementSRV, TI_UINT8 PSMode,TI_UINT8 psStatus );
 
 /** 
- * \\n
+ * \author Ronen Kalish\n
  * \date 14-November-2005\n
  * \brief callback function used by the HAL for measure start event (sent when the FW 
  * has started measurement operation, i.e. switched channel and changed RX filters).\n
@@ -445,7 +445,7 @@ void MacServices_measurementSRV_powerSaveCB( TI_HANDLE hMeasurementSRV, TI_UINT8
 void MacServices_measurementSRV_measureStartCB( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \\n
+ * \author Ronen Kalish\n
  * \date 14-November-2005\n
  * \brief callback function used by the HAL for measure stop event (sent when the FW 
  * has finished measurement operation, i.e. switched channel to serving channel and changed back RX filters).\n
@@ -456,7 +456,7 @@ void MacServices_measurementSRV_measureStartCB( TI_HANDLE hMeasurementSRV );
 void MacServices_measurementSRV_measureCompleteCB( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \\n
+ * \author Ronen Kalish\n
  * \date 14-November-2005\n
  * \brief callback function used by the HAL for AP discovery stop event (sent when the FW 
  * has finished AP discovery operation).\n
@@ -467,7 +467,7 @@ void MacServices_measurementSRV_measureCompleteCB( TI_HANDLE hMeasurementSRV );
 void MacServices_measurementSRV_apDiscoveryCompleteCB( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \\n
+ * \author Ronen Kalish\n
  * \date 16-November-2005\n
  * \brief Callback for channel load get param call.\n
  *
@@ -490,7 +490,7 @@ void MacServices_measurementSRV_channelLoadParamCB( TI_HANDLE hMeasurementSRV, T
 void MacServices_measurementSRV_dummyChannelLoadParamCB( TI_HANDLE hMeasurementSRV, TI_STATUS status, TI_UINT8* CB_buf );
 
 /** 
- * \\n
+ * \author Ronen Kalish\n
  * \date 16-November-2005\n
  * \brief Callback for noise histogram get param call.\n
  *
@@ -502,7 +502,7 @@ void MacServices_measurementSRV_dummyChannelLoadParamCB( TI_HANDLE hMeasurementS
 void MacServices_measurementSRV_noiseHistCallBack(TI_HANDLE hMeasurementSRV, TI_STATUS status, TI_UINT8* CB_buf);
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 14-November-2005\n
  * \brief called when a measurement FW guard timer expires.
  *
@@ -512,7 +512,7 @@ void MacServices_measurementSRV_noiseHistCallBack(TI_HANDLE hMeasurementSRV, TI_
 void MacServices_measurementSRV_startStopTimerExpired (TI_HANDLE hMeasurementSRV, TI_BOOL bTwdInitOccured);
 
 /**
- * \\n
+ * \author Ronen Kalish\n
  * \date 15-November-2005\n
  * \brief called when a measurement type timer expires.\n
  *

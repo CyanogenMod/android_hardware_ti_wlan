@@ -101,8 +101,6 @@ typedef struct
 	TI_UINT32			 uClsfrMismatchCount;
 	TI_UINT32			 uTxSendPaceTimeoutsCount;
 
-
-
 } TTxDataQ;
 
 

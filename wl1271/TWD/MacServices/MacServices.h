@@ -33,7 +33,7 @@
 
 /** \file MacServices.h
  *  \brief This file include internal definitions for the MacServices module
- *  \
+ *  \author Yuval Adler
  *  \date 6-Oct-2005
  */
 

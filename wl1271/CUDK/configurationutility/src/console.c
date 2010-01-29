@@ -218,7 +218,6 @@ static VOID Console_allocRoot(Console_t* pConsole)
         os_error_printf(CU_MSG_ERROR, (PS8)( "ERROR - Console_allocRoot(): cant allocate root\n") );
         return;
     }
-
     os_strcpy((PS8)pConsole->p_mon_root->name, (PS8)("\\") );
     pConsole->p_mon_root->sel = Dir;
     pConsole->p_cur_dir = pConsole->p_mon_root;

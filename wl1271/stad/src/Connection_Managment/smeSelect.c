@@ -81,7 +81,7 @@ TSiteEntry *sme_Select (TI_HANDLE hSme)
 
     /* on SG avalanche, select is not needed, send connect event automatically */
     if (TI_TRUE == pSme->bReselect)
-    {        
+    {
         paramInfo_t *pParam;
 
         TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_Select: reselect flag is on, reselecting the current site\n");
@@ -100,7 +100,6 @@ TSiteEntry *sme_Select (TI_HANDLE hSme)
         pCurrentSite = pParam->content.pPrimarySite;
         os_memoryFree(pSme->hOS, pParam, sizeof(paramInfo_t));
         return pCurrentSite;
-
     }
 
     /* get the first site from the scan result table */

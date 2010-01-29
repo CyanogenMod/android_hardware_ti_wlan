@@ -1547,13 +1547,8 @@ TI_STATUS apConn_getVendorSpecificIE(TI_HANDLE hAPConnection, TI_UINT8 *pRequest
     {
         *len = 0;
     }
-
     return TI_OK;
 }
-
-
-
-
 
 
 /* Internal functions implementation */
@@ -2279,7 +2274,6 @@ static void apConn_smHandleTspecReneg (void *pData)
         {
             /* TSPEC is already configured, move to CONNECTED */
             apConn_smEvent(&(pAPConnection->currentState), AP_CONNECT_EVENT_FINISHED_OK, pAPConnection);
-            return;;
         }
         else
         {
@@ -2291,17 +2285,15 @@ static void apConn_smHandleTspecReneg (void *pData)
             {
                 /* Re-negotiation of TSPEC cannot be performed */
                 apConn_smEvent(&(pAPConnection->currentState), AP_CONNECT_EVENT_FINISHED_NOT_OK, pAPConnection);
-                return;
             }
-            return;
         }
     }
     else
     {
         /* No need to re-negotiate TSPEC, move to CONNECTED */
         apConn_smEvent(&(pAPConnection->currentState), AP_CONNECT_EVENT_FINISHED_OK, pAPConnection);
-        return;
     }
+	return;
 }
 
 

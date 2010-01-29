@@ -994,17 +994,20 @@ static void ctrlData_TrafficThresholdCrossed(TI_HANDLE Context,TI_UINT32 Cookie)
 
 void ctrlData_printTxParameters(TI_HANDLE hCtrlData)
 {
-	ctrlData_t *pCtrlData = (ctrlData_t *)hCtrlData;
+#ifdef REPORT_LOG
+    ctrlData_t *pCtrlData = (ctrlData_t *)hCtrlData;
 
     WLAN_OS_REPORT(("            Tx Parameters            \n"));
     WLAN_OS_REPORT(("-------------------------------------\n"));
     WLAN_OS_REPORT(("currentPreamble                     = %d\n\n",pCtrlData->ctrlDataCurrentPreambleType));
     WLAN_OS_REPORT(("ctrlDataCurrentRateMask             = 0x%X\n",pCtrlData->ctrlDataCurrentRateMask));
+#endif
 }  
 
 
 void ctrlData_printCtrlBlock(TI_HANDLE hCtrlData)
 {
+#ifdef REPORT_LOG
     ctrlData_t *pCtrlData = (ctrlData_t *)hCtrlData;
     TI_UINT32  i;
 
@@ -1048,6 +1051,7 @@ void ctrlData_printCtrlBlock(TI_HANDLE hCtrlData)
 						pCtrlData->ctrlDataTxRatePolicy.rateClass[i].longRetryLimit,
 						pCtrlData->ctrlDataTxRatePolicy.rateClass[i].shortRetryLimit));
     }
+#endif
 }
 
 

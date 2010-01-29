@@ -169,8 +169,6 @@ int sdioDrv_WriteSyncBytes (unsigned int  uFunc,
 void sdioDrv_register_pm(int (*wlanDrvIf_Start)(void),
 						int (*wlanDrvIf_Stop)(void));
 
-int sdioDrv_init(void);
-void sdioDrv_exit(void);
 int sdioDrv_clk_enable(void);
 void sdioDrv_clk_disable(void);
 

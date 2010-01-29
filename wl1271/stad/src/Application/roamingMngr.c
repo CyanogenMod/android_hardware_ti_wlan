@@ -645,7 +645,6 @@ extern TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
 
 TI_HANDLE roamingMngr_create(TI_HANDLE hOs)
 {
- //   TI_STATUS       status = TI_OK;
     roamingMngr_t   *pRoamingMngr;
     TI_UINT32          initVec;
 

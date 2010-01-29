@@ -504,6 +504,7 @@ typedef struct
 #define TKIP_AFTER_HEADER_FIELD_SIZE (IV_FIELD_SIZE + EIV_FIELD_SIZE)
 #define AES_AFTER_HEADER_FIELD_SIZE  8
 
+
 /* DS params Information Element */
 #define DOT11_DS_PARAMS_ELE_ID      3
 #define DOT11_DS_PARAMS_ELE_LEN     1

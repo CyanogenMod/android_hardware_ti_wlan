@@ -17,4 +17,3 @@ typedef PVOID                   THandle;
 typedef int                     TI_SIZE_T;
 
 #endif
-

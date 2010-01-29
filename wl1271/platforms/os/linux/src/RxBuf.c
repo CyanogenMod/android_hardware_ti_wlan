@@ -46,20 +46,18 @@
  * Allocate BUF Rx packets.
  * Add 16 bytes before the data buffer for WSPI overhead!
  */
-void* RxBufAlloc(TI_HANDLE hOs, TI_UINT32 len,PacketClassTag_e ePacketClassTag)
+void *RxBufAlloc(TI_HANDLE hOs, TI_UINT32 len,PacketClassTag_e ePacketClassTag)
 {
-    rx_head_t      *rx_head;
-    TI_UINT32      alloc_len = len + WSPI_PAD_BYTES + PAYLOAD_ALIGN_PAD_BYTES + RX_HEAD_LEN_ALIGNED;
-	struct sk_buff *skb      = alloc_skb (alloc_len, GFP_ATOMIC);
+	TI_UINT32 alloc_len = len + WSPI_PAD_BYTES + PAYLOAD_ALIGN_PAD_BYTES + RX_HEAD_LEN_ALIGNED;
+	struct sk_buff *skb;
+	rx_head_t *rx_head;
 
-    if(skb == NULL){
-        printk("RxBufAlloc(): alloc_skb failed\n");
-        return NULL;
-    }
-	rx_head  = (rx_head_t *)skb->head;
-
+	skb = alloc_skb(alloc_len, GFP_ATOMIC);
+	if (!skb)
+		return NULL;
+	rx_head = (rx_head_t *)skb->head;
 	rx_head->skb = skb;
-	skb_reserve(skb, RX_HEAD_LEN_ALIGNED+WSPI_PAD_BYTES);
+	skb_reserve(skb, RX_HEAD_LEN_ALIGNED + WSPI_PAD_BYTES);
 /*
 	printk("-->> RxBufAlloc(len=%d)  skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
 		   (int)len, (int)skb, (int)skb->data, (int)skb->head, (int)skb->len);
@@ -70,28 +68,27 @@ void* RxBufAlloc(TI_HANDLE hOs, TI_UINT32 len,PacketClassTag_e ePacketClassTag)
 
 /*--------------------------------------------------------------------------------------*/
 
-inline void  RxBufFree(TI_HANDLE hOs, void* pBuf)		
+inline void RxBufFree(TI_HANDLE hOs, void *pBuf)
 {
-    unsigned char  *pdata   = (unsigned char *)((TI_UINT32)pBuf & ~(TI_UINT32)0x3);
+	unsigned char  *pdata   = (unsigned char *)((TI_UINT32)pBuf & ~(TI_UINT32)0x3);
 	rx_head_t      *rx_head = (rx_head_t *)(pdata -  WSPI_PAD_BYTES - RX_HEAD_LEN_ALIGNED);
 	struct sk_buff *skb     = rx_head->skb;
 
-
 #ifdef TI_DBG
-   if ((TI_UINT32)pBuf & 0x3)
-   {
-     if ((TI_UINT32)pBuf - (TI_UINT32)skb->data != 2)
-	 {
-	   printk("RxBufFree() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pBuf);
-	 }
-   }
-   else
-   {
-	 if ((TI_UINT32)skb->data != (TI_UINT32)pBuf)
-	 {
-	   printk("RxBufFree() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pBuf);
-	 }
-   }
+	if ((TI_UINT32)pBuf & 0x3)
+	{
+		if ((TI_UINT32)pBuf - (TI_UINT32)skb->data != 2)
+		{
+			printk("RxBufFree() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pBuf);
+		}
+	}
+	else
+	{
+		if ((TI_UINT32)skb->data != (TI_UINT32)pBuf)
+		{
+			printk("RxBufFree() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pBuf);
+		}
+	}
 #endif	  
 /*
 	printk("-->> RxBufFree()  skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
@@ -99,7 +96,3 @@ inline void  RxBufFree(TI_HANDLE hOs, void* pBuf)
 */
 	dev_kfree_skb(skb);
 }
-
-
-
-

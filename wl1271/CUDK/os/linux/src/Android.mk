@@ -3,7 +3,7 @@ include $(CLEAR_VARS)
 
 STATIC_LIB ?= y
 DEBUG ?= y
-BUILD_SUPPL ?= y
+BUILD_SUPPL ?= n
 WPA_ENTERPRISE ?= y
 
 ifeq ($(DEBUG),y)
@@ -29,7 +29,7 @@ ifeq ($(BUILD_SUPPL), y)
   endif
 endif
 
-LOCAL_CFLAGS+= \
+LOCAL_CFLAGS += \
 	-Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(DK_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -fno-common #-pipe
 
 LOCAL_SRC_FILES:= \
@@ -39,8 +39,12 @@ LOCAL_SRC_FILES:= \
 	ipc_wpa.c \
 	os_trans.c \
 	ParsEvent.c \
-        osapi.c
+	osapi.c
 
+ifeq ($(BUILD_SUPPL), y)
+LOCAL_SRC_FILES += \
+	$(TI_SUPP_LIB_DIR)/wpa_ctrl.c
+endif
 
 LOCAL_C_INCLUDES := \
         $(LOCAL_PATH)/../inc \
@@ -60,7 +64,7 @@ LOCAL_C_INCLUDES := \
         external/wpa_supplicant \
         $(LOCAL_PATH)/$(CUDK_ROOT)/configurationutility/inc
 
-LOCAL_MODULE:=libtiOsLib
+LOCAL_MODULE := libtiOsLib
 
 include $(BUILD_STATIC_LIBRARY)
 

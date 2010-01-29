@@ -257,6 +257,7 @@ void changeMode( TI_HANDLE hScr, EScrModeId mode )
  */
 void printSCRObject( TI_HANDLE hScr )
 {
+#ifdef REPORT_LOG
     TScr* pScr = (TScr*)hScr;
     int i;
 
@@ -277,4 +278,5 @@ void printSCRObject( TI_HANDLE hScr )
                          pendReasonDesc[ pScr->clientArray[ i ].currentPendingReason[ SCR_RESOURCE_SERVING_CHANNEL ] ],
                          pendReasonDesc[ pScr->clientArray[ i ].currentPendingReason[ SCR_RESOURCE_PERIODIC_SCAN ] ]) );
     }
+#endif
 }

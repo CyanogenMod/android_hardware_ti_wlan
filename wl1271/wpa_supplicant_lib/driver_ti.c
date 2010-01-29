@@ -30,6 +30,9 @@
 #endif
 #include "driver_ti.h"
 #include "scanmerge.h"
+#ifdef CONFIG_WPS
+#include "wps_defs.h"
+#endif
 
 /*-------------------------------------------------------------------*/
 #define TI2WPA_STATUS(s)	(((s) != 0) ? -1 : 0)
@@ -50,7 +53,7 @@ static int check_and_get_build_channels( void )
 #ifdef ANDROID
     char prop_status[PROPERTY_VALUE_MAX];
     char *prop_name = "ro.wifi.channels";
-    int i, default_channels = NUMBER_SCAN_CHANNELS_ETSI;
+    int i, default_channels = NUMBER_SCAN_CHANNELS_FCC;
 
     if( property_get(prop_name, prop_status, NULL) ) {
         i = atoi(prop_status);
@@ -86,6 +89,9 @@ static int wpa_driver_tista_keymgmt2wext(int keymgmt)
 	switch (keymgmt) {
 	case KEY_MGMT_802_1X:
 	case KEY_MGMT_802_1X_NO_WPA:
+#ifdef CONFIG_WPS
+	case KEY_MGMT_WPS:
+#endif
 		return IW_AUTH_KEY_MGMT_802_1X;
 	case KEY_MGMT_PSK:
 		return IW_AUTH_KEY_MGMT_PSK;
@@ -134,12 +140,17 @@ static int wpa_driver_tista_private_send( void *priv, u32 ioctl_cmd, void *bufIn
 	iwr.u.data.flags = 0;
 
 	res = ioctl(drv->ioctl_sock, SIOCIWFIRSTPRIV, &iwr);
-	if(res != 0)
+	if (0 != res)
 	{
 		wpa_printf(MSG_ERROR, "ERROR - wpa_driver_tista_private_send - error sending Wext private IOCTL to STA driver (ioctl_cmd = %x,  res = %d, errno = %d)", ioctl_cmd, res, errno);
+		drv->errors++;
+		if (drv->errors > MAX_NUMBER_SEQUENTIAL_ERRORS) {
+			drv->errors = 0;
+			wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
+		}
 		return -1;
 	}
-
+	drv->errors = 0;
 	wpa_printf(MSG_DEBUG, "wpa_driver_tista_private_send ioctl_cmd = %x  res = %d", ioctl_cmd, res);
 
 	return 0;
@@ -153,8 +164,10 @@ static int wpa_driver_tista_driver_start( void *priv )
 
 	res = wpa_driver_tista_private_send(priv, DRIVER_START_PARAM, &uDummyBuf, sizeof(uDummyBuf), NULL, 0);
 
-	if(0 != res)
+	if (0 != res) {
 		wpa_printf(MSG_ERROR, "ERROR - Failed to start driver!");
+		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
+	}
 	else {
 		os_sleep(0, WPA_DRIVER_WEXT_WAIT_US); /* delay 400 ms */
 		wpa_printf(MSG_DEBUG, "wpa_driver_tista_driver_start success");
@@ -170,8 +183,10 @@ static int wpa_driver_tista_driver_stop( void *priv )
 
 	res = wpa_driver_tista_private_send(priv, DRIVER_STOP_PARAM, &uDummyBuf, sizeof(uDummyBuf), NULL, 0);
 
-	if(0 != res)
+	if (0 != res) {
 		wpa_printf(MSG_ERROR, "ERROR - Failed to stop driver!");
+		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
+	}
 	else
 		wpa_printf(MSG_DEBUG, "wpa_driver_tista_driver_stop success");
 
@@ -195,12 +210,6 @@ int wpa_driver_tista_parse_custom(void *ctx, const void *custom)
 
 			/* Dm: wpa_printf(MSG_INFO,"wpa_supplicant - Link Speed = %u", pStaDrv->link_speed ); */
 			break;
-#ifdef CONFIG_WPS
-		case	IPC_EVENT_WPS_SESSION_OVERLAP:
-			wpa_printf(MSG_INFO, "IPC_EVENT_WPS_SESSION_OVERLAP");
-			wpa_supplicant_event(ctx, EVENT_WSC_PBC_OVERLAP, NULL);
-			break;
-#endif /* CONFIG_WPS */
 		default:
 			wpa_printf(MSG_DEBUG, "Unknown event");
 			break;
@@ -257,7 +266,7 @@ static int wpa_driver_tista_scan( void *priv, const u8 *ssid, size_t ssid_len )
 	struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
 	struct wpa_ssid *issid;
 	scan_Params_t scanParams;
-	int scan_type, res, scan_probe_flag = 0;
+	int scan_type, res, timeout, scan_probe_flag = 0;
 
 	wpa_printf(MSG_DEBUG, "%s", __func__);
         TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
@@ -295,6 +304,12 @@ static int wpa_driver_tista_scan( void *priv, const u8 *ssid, size_t ssid_len )
 	else
 		wpa_printf(MSG_DEBUG, "wpa_driver_tista_scan success");
 
+	timeout = 30;
+	wpa_printf(MSG_DEBUG, "Scan requested (ret=%d) - scan timeout %d sec",
+			res, timeout);
+	eloop_cancel_timeout(wpa_driver_wext_scan_timeout, drv->wext, drv->ctx);
+	eloop_register_timeout(timeout, 0, wpa_driver_wext_scan_timeout,
+				drv->wext, drv->ctx);
 	return res;
 #else
 	return wpa_driver_wext_scan(drv->wext, ssid, ssid_len);
@@ -575,7 +590,7 @@ Return Value: actual buffer length - success, -1 - failure
 static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t buf_len )
 {
 	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
-	int ret = -1, prev_events;
+	int ret = -1, prev_events, flags;
 
 	wpa_printf(MSG_DEBUG, "%s %s", __func__, cmd);
 
@@ -593,11 +608,21 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 
 	if( os_strcasecmp(cmd, "stop") == 0 ) {
 		wpa_printf(MSG_DEBUG,"Stop command");
+		if ((wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) &&
+		    (flags & IFF_UP)) {
+			wpa_printf(MSG_ERROR, "TI: %s when iface is UP", cmd);
+			wpa_driver_wext_set_ifflags(drv->wext, flags & ~IFF_UP);
+		}
 		ret = wpa_driver_tista_driver_stop(priv);
 		if( ret == 0 ) {
 			drv->driver_is_loaded = FALSE;
 			wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "STOPPED");
 		}
+	}
+	if( os_strcasecmp(cmd, "reload") == 0 ) {
+		wpa_printf(MSG_DEBUG,"Reload command");
+		ret = 0;
+		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
 	}
 	else if( os_strcasecmp(cmd, "macaddr") == 0 ) {
 		wpa_driver_tista_get_mac_addr(priv);
@@ -641,43 +666,50 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 		wpa_printf(MSG_DEBUG, "buf %s", buf);
 	}
 	else if( os_strcasecmp(cmd, "rssi-approx") == 0 ) {
-		struct wpa_scan_result *cur_res;
+		scan_result_t *cur_res;
 		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
+		scan_ssid_t *p_ssid;
 		int rssi, len;
 
 		wpa_printf(MSG_DEBUG,"rssi-approx command");
 
 		if( !wpa_s )
 			return( ret );
-		cur_res = scan_get_by_bssid( drv, wpa_s->bssid );
+		cur_res = scan_get_by_bssid(drv, wpa_s->bssid);
 		if( cur_res ) {
-			len = (int)(cur_res->ssid_len);
+			p_ssid = scan_get_ssid(cur_res);
+			len = (int)(p_ssid->ssid_len);
 			rssi = cur_res->level;
 			if( (len > 0) && (len <= MAX_SSID_LEN) && (len < (int)buf_len)) {
-				os_memcpy( (void *)buf, (void *)(cur_res->ssid), len );
+				os_memcpy((void *)buf, (void *)(p_ssid->ssid), len);
 				ret = len;
 				ret += snprintf(&buf[ret], buf_len-len, " rssi %d\n", rssi);
-				if (ret < (int)buf_len) {
-					return( ret );
-				}
 			}
 		}
 	}
 	else if( os_strcasecmp(cmd, "rssi") == 0 ) {
 		u8 ssid[MAX_SSID_LEN];
+		scan_result_t *cur_res;
+		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
 		int rssi_data, rssi_beacon, len;
 
 		wpa_printf(MSG_DEBUG,"rssi command");
 
 		ret = wpa_driver_tista_get_rssi(priv, &rssi_data, &rssi_beacon);
 		if( ret == 0 ) {
-			len = wpa_driver_tista_get_ssid( priv, (u8 *)ssid );
+			len = wpa_driver_tista_get_ssid(priv, (u8 *)ssid);
 			wpa_printf(MSG_DEBUG,"rssi_data %d rssi_beacon %d", rssi_data, rssi_beacon);
 			if( (len > 0) && (len <= MAX_SSID_LEN) ) {
-				os_memcpy( (void *)buf, (void *)ssid, len );
+				os_memcpy((void *)buf, (void *)ssid, len);
 				ret = len;
 				ret += sprintf(&buf[ret], " rssi %d\n", rssi_beacon);
 				wpa_printf(MSG_DEBUG, "buf %s", buf);
+				/* Update cached value */
+				if( !wpa_s )
+					return( ret );
+				cur_res = scan_get_by_bssid(drv, wpa_s->bssid);
+				if( cur_res )
+					cur_res->level = rssi_beacon;
 			}
 			else
 			{
@@ -794,6 +826,86 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 	return ret;
 }
 
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+/*-----------------------------------------------------------------------------
+Routine Name: wpa_driver_tista_set_probe_req_ie
+Routine Description: set probe request ie for WSC mode change
+Arguments:
+   priv - pointer to private data structure
+   ies - probe_req_ie data
+   ies_len - ie data length
+Return Value: actual buffer length - success, -1 - failure
+-----------------------------------------------------------------------------*/
+static int wpa_driver_tista_set_probe_req_ie(void *priv, const u8* ies, size_t ies_len)
+{
+	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
+#ifdef CONFIG_WPS
+	TWscMode WscModeStruct;
+
+        TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+
+	if ((!ies || (0 == ies_len)) && (NULL == drv->probe_req_ie)) {
+		return 0;
+	}
+
+	if (ies && drv->probe_req_ie) {
+		size_t len = wpabuf_len(drv->probe_req_ie);
+		u8* data = (u8*)wpabuf_head(drv->probe_req_ie);
+		if ((ies_len == len) && (0 == os_memcmp(ies, data, ies_len))) {
+			return 0;
+		}
+	}
+
+	os_memset(&WscModeStruct, 0, sizeof(TWscMode));
+
+	if (!ies || (0 == ies_len)) {
+		WscModeStruct.WSCMode = TIWLN_SIMPLE_CONFIG_OFF;
+	} else {
+		const size_t head_len = 6; /* probeReqIe head: dd xx 00 50 f2 04 */
+		u8 *pos, *end;
+		u16 password_id = 0;
+		size_t min_len = 0;
+
+		pos = (u8*)ies + head_len; /* Find the WSC mode in probe_req_ie by password_id */
+		end = (u8*)ies + ies_len;
+		while (pos < end) {
+			if (ATTR_DEV_PASSWORD_ID == WPA_GET_BE16(pos)) {
+				password_id = WPA_GET_BE16(pos+4);
+				break;
+			}
+			pos += (4 + WPA_GET_BE16(pos+2));
+		}
+		WscModeStruct.WSCMode = (DEV_PW_PUSHBUTTON == password_id)?TIWLN_SIMPLE_CONFIG_PBC_METHOD:TIWLN_SIMPLE_CONFIG_PIN_METHOD;
+
+		pos = (u8*)ies + head_len;
+		min_len = ies_len - head_len;
+		if (min_len > sizeof(WscModeStruct.probeReqWSCIE)) {
+			min_len = sizeof(WscModeStruct.probeReqWSCIE);
+		}
+		os_memcpy(WscModeStruct.probeReqWSCIE, pos, min_len);
+	}
+
+	wpa_hexdump(MSG_DEBUG, "SetProbeReqIe:WscModeStruct", (u8*)&WscModeStruct, sizeof(TWscMode));
+	if(0 == wpa_driver_tista_private_send(priv, SITE_MGR_SIMPLE_CONFIG_MODE, (void*)&WscModeStruct, sizeof(TWscMode), NULL, 0)) {
+		/* Update the cached probe req ie */
+		wpabuf_free(drv->probe_req_ie);
+		drv->probe_req_ie = NULL;
+
+		if (ies && ies_len) {
+			drv->probe_req_ie = wpabuf_alloc(sizeof(WscModeStruct.probeReqWSCIE));
+			if (drv->probe_req_ie) {
+				wpabuf_put_data(drv->probe_req_ie, ies, ies_len);
+			}
+		}
+	} else {
+		wpa_printf(MSG_ERROR, "ERROR - Failed to set wsc mode!");
+		return -1;
+	}
+#endif
+	return 0;
+}
+#endif
+
 /**
  * wpa_driver_tista_init - Initialize WE driver interface
  * @ctx: context to be used when calling wpa_supplicant functions,
@@ -840,6 +952,14 @@ void * wpa_driver_tista_init(void *ctx, const char *ifname)
 
 	/* BtCoex mode is read from tiwlan.ini file */
 	drv->btcoex_mode = 0; /* SG_DISABLE */
+
+#ifdef CONFIG_WPS
+	/* The latest probe_req_ie for WSC */
+	drv->probe_req_ie = NULL;
+#endif
+
+	/* Number of sequential errors */
+	drv->errors = 0;
 	return drv;
 }
 
@@ -857,6 +977,10 @@ void wpa_driver_tista_deinit(void *priv)
 	wpa_driver_wext_deinit(drv->wext);
 	close(drv->ioctl_sock);
 	scan_exit(drv);
+#ifdef CONFIG_WPS
+	wpabuf_free(drv->probe_req_ie);
+	drv->probe_req_ie = NULL;
+#endif
 	os_free(drv);
 }
 
@@ -873,7 +997,7 @@ static int wpa_driver_tista_set_auth_param(struct wpa_driver_ti_data *drv,
 
 	if (ioctl(drv->ioctl_sock, SIOCSIWAUTH, &iwr) < 0) {
 		perror("ioctl[SIOCSIWAUTH]");
-		fprintf(stderr, "WEXT auth param %d value 0x%x - ",
+		wpa_printf(MSG_ERROR, "WEXT auth param %d value 0x%x - ",
 			idx, value);
 		ret = errno == EOPNOTSUPP ? -2 : -1;
 	}
@@ -1065,21 +1189,77 @@ static int wpa_driver_tista_set_key(void *priv, wpa_alg alg,
 	int ret;
 
 	wpa_printf(MSG_DEBUG, "%s", __func__);
-        TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+	TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
 	ret = wpa_driver_wext_set_key(drv->wext, alg, addr, key_idx, set_tx,
 					seq, seq_len, key, key_len);
 	return ret;
 }
 
+static int wpa_driver_tista_set_gen_ie(void *priv, const u8 *ie, size_t ie_len)
+{
+	struct wpa_driver_ti_data *drv = priv;
+	struct iwreq iwr;
+	int ret = 0;
+
+	os_memset(&iwr, 0, sizeof(iwr));
+	os_strncpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);
+	iwr.u.data.pointer = (caddr_t)ie;
+	iwr.u.data.length = ie_len;
+
+	if (ioctl(drv->ioctl_sock, SIOCSIWGENIE, &iwr) < 0) {
+		perror("ioctl[SIOCSIWGENIE]");
+		ret = -1;
+	}
+
+	return ret;
+}
+
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+static struct wpa_scan_results *wpa_driver_tista_get_scan_results(void *priv)
+{
+	struct wpa_driver_ti_data *drv = priv;
+	struct wpa_scan_results *res;
+	struct wpa_scan_res **tmp;
+	unsigned ap_num;
+
+	TI_CHECK_DRIVER( drv->driver_is_loaded, NULL );
+	res = wpa_driver_wext_get_scan_results(drv->wext);
+	if (res == NULL) {
+		return NULL;
+	}
+
+	wpa_printf(MSG_DEBUG, "Actual APs number %d", res->num);
+	ap_num = (unsigned)scan_count(drv) + res->num;
+	tmp = os_realloc(res->res, ap_num * sizeof(struct wpa_scan_res *));
+	if (tmp == NULL)
+		return res;
+	res->num = scan_merge(drv, tmp, drv->force_merge_flag, res->num, ap_num);
+	wpa_printf(MSG_DEBUG, "After merge, APs number %d", res->num);
+	tmp = os_realloc(tmp, res->num * sizeof(struct wpa_scan_res *));
+	res->res = tmp;
+	return res;
+}
+
+int wpa_driver_tista_set_mode(void *priv, int mode)
+{
+	struct wpa_driver_ti_data *drv = priv;
+	int ret;
+
+	wpa_printf(MSG_DEBUG, "%s", __func__);
+	TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+	ret = wpa_driver_wext_set_mode(drv->wext, mode);
+	return ret;
+}
+#else
 /*-----------------------------------------------------------------------------
 Compare function for sorting scan results. Return >0 if @b is considered better.
 -----------------------------------------------------------------------------*/
 static int wpa_driver_tista_scan_result_compare(const void *a, const void *b)
 {
-    const struct wpa_scan_result *wa = a;
-    const struct wpa_scan_result *wb = b;
+	const struct wpa_scan_result *wa = a;
+	const struct wpa_scan_result *wb = b;
 
-    return( wb->level - wa->level );
+	return( wb->level - wa->level );
 }
 
 static int wpa_driver_tista_get_scan_results(void *priv,
@@ -1089,7 +1269,7 @@ static int wpa_driver_tista_get_scan_results(void *priv,
 	struct wpa_driver_ti_data *drv = priv;
 	int ap_num = 0;
 
-        TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );	
+        TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
 	ap_num = wpa_driver_wext_get_scan_results(drv->wext, results, max_size);
 	wpa_printf(MSG_DEBUG, "Actual APs number %d", ap_num);
 
@@ -1097,33 +1277,51 @@ static int wpa_driver_tista_get_scan_results(void *priv,
 		return -1;
 
 	/* Merge new results with previous */
-        ap_num = scan_merge( drv, results, drv->force_merge_flag, ap_num, max_size );
+        ap_num = scan_merge(drv, results, drv->force_merge_flag, ap_num, max_size);
 	wpa_printf(MSG_DEBUG, "After merge, APs number %d", ap_num);
-	qsort( results, ap_num, sizeof(struct wpa_scan_result),
-		wpa_driver_tista_scan_result_compare );
+	qsort(results, ap_num, sizeof(struct wpa_scan_result),
+		wpa_driver_tista_scan_result_compare);
 	return ap_num;
 }
+#endif
 
 static int wpa_driver_tista_associate(void *priv,
 			  struct wpa_driver_associate_params *params)
 {
 	struct wpa_driver_ti_data *drv = priv;
 	int allow_unencrypted_eapol;
-	int value, flags;
+	int value, flags, ret = 0;
 
-        TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+	wpa_printf(MSG_DEBUG, "%s", __FUNCTION__);
+	TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+
 	if (wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) {
 		if (!(flags & IFF_UP)) {
 			wpa_driver_wext_set_ifflags(drv->wext, flags | IFF_UP);
 		}
 	}
+
+	if (!params->bssid)
+		wpa_driver_wext_set_bssid(drv->wext, NULL);
+
+#ifdef WPA_SUPPLICANT_VER_0_5_X
 	/* Set driver network mode (Adhoc/Infrastructure) according to supplied parameters */
 	wpa_driver_wext_set_mode(drv->wext, params->mode);
+#endif
+	wpa_driver_tista_set_gen_ie(drv, params->wpa_ie, params->wpa_ie_len);
 
 	if (params->wpa_ie == NULL || params->wpa_ie_len == 0)
 		value = IW_AUTH_WPA_VERSION_DISABLED;
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+	else if (params->wpa_ie[0] == WLAN_EID_RSN)
+#else
 	else if (params->wpa_ie[0] == RSN_INFO_ELEM)
+#endif
 		value = IW_AUTH_WPA_VERSION_WPA2;
+#ifdef CONFIG_WPS
+	else if (params->key_mgmt_suite == KEY_MGMT_WPS)
+		value = IW_AUTH_WPA_VERSION_DISABLED;
+#endif
 	else
 		value = IW_AUTH_WPA_VERSION_WPA;
 	wpa_driver_tista_set_auth_param(drv, IW_AUTH_WPA_VERSION, value);
@@ -1136,7 +1334,11 @@ static int wpa_driver_tista_associate(void *priv,
 	value = params->key_mgmt_suite != KEY_MGMT_NONE ||
 		params->pairwise_suite != CIPHER_NONE ||
 		params->group_suite != CIPHER_NONE ||
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+		(params->wpa_ie_len && (params->key_mgmt_suite != KEY_MGMT_WPS));
+#else
 		params->wpa_ie_len;
+#endif
 	wpa_driver_tista_set_auth_param(drv, IW_AUTH_PRIVACY_INVOKED, value);
 
 	/* Allow unencrypted EAPOL messages even if pairwise keys are set when
@@ -1152,16 +1354,20 @@ static int wpa_driver_tista_associate(void *priv,
 					   IW_AUTH_RX_UNENCRYPTED_EAPOL,
 					   allow_unencrypted_eapol);
 
-	if( params->bssid ) {
-		wpa_printf(MSG_DEBUG, "wpa_driver_tista_associate: BSSID=" MACSTR, 
+	if (params->freq)
+		wpa_driver_wext_set_freq(drv->wext, params->freq);
+
+	ret = wpa_driver_wext_set_ssid(drv->wext, params->ssid, params->ssid_len);
+	if (params->bssid) {
+		wpa_printf(MSG_DEBUG, "wpa_driver_tista_associate: BSSID=" MACSTR,
 			            MAC2STR(params->bssid));
 		/* if there is bssid -> set it */
-		if( os_memcmp( params->bssid, "\x00\x00\x00\x00\x00\x00", ETH_ALEN ) != 0 ) {
-			wpa_driver_wext_set_bssid( drv->wext, params->bssid );
+		if (os_memcmp(params->bssid, "\x00\x00\x00\x00\x00\x00", ETH_ALEN) != 0) {
+			wpa_driver_wext_set_bssid(drv->wext, params->bssid);
 		}
 	}
 
-	return wpa_driver_wext_set_ssid(drv->wext, params->ssid, params->ssid_len);
+	return ret;
 }
 
 static int wpa_driver_tista_set_operstate(void *priv, int state)
@@ -1175,42 +1381,6 @@ static int wpa_driver_tista_set_operstate(void *priv, int state)
 	return wpa_driver_wext_set_operstate(drv->wext, state);
 }
 
-#ifdef CONFIG_WPS
-static int wpa_driver_tista_set_wsc_mode(void *priv, const u32 WscMode, const void* probeReqBuf, int probeReqBufLen)
-{
-	struct wpa_driver_ti_data *drv = priv;
-	struct iwreq iwr;
-	ti_private_cmd_t private_cmd;
-	TWscMode WcsModeStruct;
-	int ret = 0;
-
-	WcsModeStruct.WSCMode = WscMode;
-	memset(WcsModeStruct.probeReqWSCIE, 0, DOT11_WSC_PROBE_REQ_MAX_LENGTH);
-	memcpy(WcsModeStruct.probeReqWSCIE, probeReqBuf, probeReqBufLen);
-
-	private_cmd.cmd = SITE_MGR_SIMPLE_CONFIG_MODE;
-	private_cmd.flags = PRIVATE_CMD_SET_FLAG;
-	private_cmd.in_buffer = &WcsModeStruct;
-	private_cmd.in_buffer_len = sizeof(TWscMode);
-	private_cmd.out_buffer = NULL;
-	private_cmd.out_buffer_len = 0;
-
-	os_memset(&iwr, 0, sizeof(iwr));
-	os_strncpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);
-
-	iwr.u.data.pointer = &private_cmd;
-	iwr.u.data.length = sizeof(ti_private_cmd_t);
-	iwr.u.data.flags = 0;
-
-	if (ioctl(drv->ioctl_sock, SIOCIWFIRSTPRIV, &iwr) < 0) {
-		perror("ioctl[SIOCIWFIRSTPRIV]");
-		ret = -1;
-	}
-
-	return ret;
-}
-#endif /* CONFIG_WPS */
-
 const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.name = TIWLAN_DRV_NAME,
 	.desc = "TI Station Driver (1271)",
@@ -1221,7 +1391,11 @@ const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.set_countermeasures = wpa_driver_tista_set_countermeasures,
 	.set_drop_unencrypted = wpa_driver_tista_set_drop_unencrypted,
 	.scan = wpa_driver_tista_scan,
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+	.get_scan_results2 = wpa_driver_tista_get_scan_results,
+#else
 	.get_scan_results = wpa_driver_tista_get_scan_results,
+#endif
 	.deauthenticate = wpa_driver_tista_deauthenticate,
 	.disassociate = wpa_driver_tista_disassociate,
 	.associate = wpa_driver_tista_associate,
@@ -1233,8 +1407,9 @@ const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.remove_pmkid = wpa_driver_tista_remove_pmkid,
 	.flush_pmkid = wpa_driver_tista_flush_pmkid,
 	.set_operstate = wpa_driver_tista_set_operstate,
-#ifdef CONFIG_WPS
-	.set_wsc_mode = wpa_driver_tista_set_wsc_mode,
-#endif /* CONFIG_WPS */
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+	.set_mode = wpa_driver_tista_set_mode,
+	.set_probe_req_ie = wpa_driver_tista_set_probe_req_ie,
+#endif
 	.driver_cmd = wpa_driver_tista_driver_cmd
 };

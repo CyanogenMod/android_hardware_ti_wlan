@@ -612,7 +612,7 @@ static void roamingMngr_smSuccHandover(TI_HANDLE hRoamingMngr)
     /* Start pre-authentication in order to set PMKID
         for the current AP */
     if (pRoamingMngr->staCapabilities.authMode==os802_11AuthModeWPA2)
-    {   
+    {
 		/* No Pre-Auth is required */
         bssList_t           *pBssList;
 
@@ -791,5 +791,4 @@ static void roamingMngr_smStartIdle(void *pData)
         os_memoryFree(pRoamingMngr->hOs, pBssList, sizeof(bssList_t));
     }
 }
-
 

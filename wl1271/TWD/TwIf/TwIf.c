@@ -69,8 +69,11 @@
 /* 
  * Device interface-control registers addresses (at the end ot the 17-bit address space):
  */
-#define PARTITION_REGISTERS_ADDR        (0x1FFC0)   /* Start address of the chip memory regions partition (see also HwInit) */
-                                                    /* 4 couples of registers: region start address & region size */
+#define PARTITION_REGISTERS_ADDR        (0x1FFC0)   /* Four 32 bit register:                      */
+                                                    /*    Memory region size            (0x1FFC0) */
+                                                    /*    Memory region base address    (0x1FFC4) */
+                                                    /*    Registers region size         (0x1FFC8) */
+                                                    /*    Registers region base address (0x1FFCC) */
 
 #define ELP_CTRL_REG_ADDR		        (0x1FFFC)   /* ELP control register address */
 
@@ -192,7 +195,6 @@ static void        twIf_ClearTxnDoneQueue  (TI_HANDLE hTwIf);
 static void        twIf_PendRestratTimeout (TI_HANDLE hTwIf, TI_BOOL bTwdInitOccured);
 
 
-
 /************************************************************************
  *
  *   Module functions implementation
@@ -257,7 +259,6 @@ TI_STATUS twIf_Destroy (TI_HANDLE hTwIf)
         }
         os_memoryFree (pTwIf->hOs, pTwIf, sizeof(TTwIfObj));     
     }
-
     return TI_OK;
 }
 
@@ -429,7 +430,6 @@ void twIf_RegisterErrCb (TI_HANDLE hTwIf, void *fErrCb, TI_HANDLE hErrCb)
 static void twIf_WriteElpReg (TTwIfObj *pTwIf, TI_UINT32 uValue)
 {
     TRACE1(pTwIf->hReport, REPORT_SEVERITY_INFORMATION, "twIf_WriteElpReg:  ELP Txn data = 0x%x\n", uValue);
-
     /* Send ELP (awake or sleep) transaction to TxnQ */
     if (uValue == ELP_CTRL_REG_AWAKE)
     {
@@ -716,16 +716,15 @@ ETxnStatus twIf_TransactReadFWStatus (TI_HANDLE hTwIf, TTxnStruct *pTxn)
 static ETxnStatus twIf_SendTransaction (TTwIfObj *pTwIf, TTxnStruct *pTxn)
 {
     ETxnStatus eStatus;
-	TI_UINT32  data=0;
-
 #ifdef TI_DBG
-    /* Verify that the Txn HW-Address is 4-bytes aligned */
-	if (pTxn->uHwAddr & 0x3)
-	{
-TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned HwAddr! HwAddr=0x%x, Params=0x%x\n", pTxn->uHwAddr, pTxn->uTxnParams);
-		return TXN_STATUS_ERROR;
-	}	
+    TI_UINT32  data = 0;
 
+    /* Verify that the Txn HW-Address is 4-bytes aligned */
+    if (pTxn->uHwAddr & 0x3)
+    {
+        TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned HwAddr! HwAddr=0x%x, Params=0x%x\n", pTxn->uHwAddr, pTxn->uTxnParams);
+		return TXN_STATUS_ERROR;
+    }	
 #endif
 
     context_EnterCriticalSection (pTwIf->hContext);
@@ -1113,7 +1112,8 @@ TI_BOOL	twIf_isValidRegAddr(TI_HANDLE hTwIf, TI_UINT32 Address, TI_UINT32 Length
  */ 
 void twIf_PrintModuleInfo (TI_HANDLE hTwIf) 
 {
-    TTwIfObj *pTwIf = (TTwIfObj*)hTwIf;
+#ifdef REPORT_LOG
+	TTwIfObj *pTwIf = (TTwIfObj*)hTwIf;
 	
 	WLAN_OS_REPORT(("-------------- TwIf Module Info-- ------------------------\n"));
 	WLAN_OS_REPORT(("==========================================================\n"));
@@ -1134,6 +1134,7 @@ void twIf_PrintModuleInfo (TI_HANDLE hTwIf)
 	WLAN_OS_REPORT(("uDbgCountTxnComplete = %d\n",   pTwIf->uDbgCountTxnComplete    ));
 	WLAN_OS_REPORT(("uDbgCountTxnDone     = %d\n",   pTwIf->uDbgCountTxnDoneCb      ));
 	WLAN_OS_REPORT(("==========================================================\n\n"));
+#endif
 } 
 
 
@@ -1144,9 +1145,4 @@ void twIf_PrintQueues (TI_HANDLE hTwIf)
     txnQ_PrintQueues(pTwIf->hTxnQ);
 }
 
-
 #endif /* TI_DBG */
-
-
-
-

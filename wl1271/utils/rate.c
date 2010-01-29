@@ -708,7 +708,6 @@ TI_STATUS rate_DrvBitmapToNetStr (TI_UINT32   uSuppRatesBitMap,
  * it is only for basic and extended rates, otherwise it will exceed 16 bytes string 
  * the code below is a sample and can be used in the future, if need to parse MCS rates bit map to string
  */
-
 #if 0 
     if (uSuppRatesBitMap & DRV_RATE_MASK_MCS_0_OFDM)
     {
@@ -806,6 +805,7 @@ TI_STATUS rate_DrvBitmapToNetStr (TI_UINT32   uSuppRatesBitMap,
         }
     }
 #endif
+
     *len = i;
     
     return TI_OK;

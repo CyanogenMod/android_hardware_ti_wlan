@@ -154,7 +154,6 @@ TI_STATUS buildDisconnTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate)
 	MAC_COPY (pBuffer->hdr.SA, param.content.ctrlDataDeviceMacAddress);  
 	
 	fc = DOT11_FC_DISASSOC; /* will be change by firmware to DOT11_FC_DEAUTH if needed */
-  
 
 	COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
 
@@ -805,7 +804,6 @@ TI_STATUS buildArpRspTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate, TIpA
     }
      return TI_OK;
 } 
-
    
    
    

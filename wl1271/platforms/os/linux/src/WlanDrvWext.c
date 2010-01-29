@@ -166,76 +166,75 @@ int wlanDrvWext_Handler (struct net_device *dev,
                      void *iw_req, 
                      void *extra)
 {
-   int              rc;
-   TWlanDrvIfObj   *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
-   ti_private_cmd_t my_command; 
-   struct iw_mlme   mlme;
-   struct iw_scan_req scanreq;
+    int              rc;
+    TWlanDrvIfObj   *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
+    ti_private_cmd_t my_command; 
+    struct iw_mlme   mlme;
+	struct iw_scan_req scanreq;
+    void             *copy_to_buf=NULL, *param3=NULL; 
 
-   void             *copy_to_buf=NULL, *param3=NULL; 
+    os_memoryZero(drv, &my_command, sizeof(ti_private_cmd_t));
+    os_memoryZero(drv, &mlme,       sizeof(struct iw_mlme));
+	os_memoryZero(drv, &scanreq, sizeof(struct iw_scan_req));
 
-   os_memoryZero(drv, &my_command, sizeof(ti_private_cmd_t));
-   os_memoryZero(drv, &mlme,       sizeof(struct iw_mlme));
-   os_memoryZero(drv, &scanreq, sizeof(struct iw_scan_req));
-   
-   switch (info->cmd)
-   {
-     case SIOCIWFIRSTPRIV:
-     {
-           void *copy_from_buf;
+    switch (info->cmd)
+    {
+        case SIOCIWFIRSTPRIV:
+        {
+            void *copy_from_buf;
 
-           if (os_memoryCopyFromUser(drv, &my_command, ((union iwreq_data *)iw_req)->data.pointer, sizeof(ti_private_cmd_t)))
-	   {
-		 os_printf ("wlanDrvWext_Handler() os_memoryCopyFromUser FAILED !!!\n");
-		 return TI_NOK;
-           }
-	   if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
-       {
-		   /* If it's a driver level command, handle it here and exit */
-           switch (my_command.cmd)
-           {
-           case DRIVER_INIT_PARAM:
-               return wlanDrvIf_LoadFiles (drv, my_command.in_buffer);
-                
-           case DRIVER_START_PARAM:
-               return wlanDrvIf_Start (dev);
+            if (os_memoryCopyFromUser(drv, &my_command, ((union iwreq_data *)iw_req)->data.pointer, sizeof(ti_private_cmd_t)))
+            {
+                os_printf ("wlanDrvWext_Handler() os_memoryCopyFromUser FAILED !!!\n");
+                return TI_NOK;
+            }
+            if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
+            {
+                /* If it's a driver level command, handle it here and exit */
+                switch (my_command.cmd)
+                {
+                    case DRIVER_INIT_PARAM:
+                        return wlanDrvIf_LoadFiles(drv, my_command.in_buffer);
 
-           case DRIVER_STOP_PARAM:
-               return wlanDrvIf_Stop (dev);
+                    case DRIVER_START_PARAM:
+                        return wlanDrvIf_Start(dev);
 
-           case DRIVER_STATUS_PARAM:
-               *(TI_UINT32 *)my_command.out_buffer = 
-                   (drv->tCommon.eDriverState == DRV_STATE_RUNNING) ? TI_TRUE : TI_FALSE;
-               return TI_OK;
-           }
-       }
-	   /* if we are still here handle a normal private command*/
+                    case DRIVER_STOP_PARAM:
+                        return wlanDrvIf_Stop(dev);
 
-	   if ((my_command.in_buffer) && (my_command.in_buffer_len))
-       {
-		 copy_from_buf        = my_command.in_buffer;
-		 my_command.in_buffer = os_memoryAlloc(drv, my_command.in_buffer_len);
-		 if (os_memoryCopyFromUser(drv, my_command.in_buffer, copy_from_buf, my_command.in_buffer_len))
-		 {
-		   os_printf ("wlanDrvWext_Handler() os_memoryCopyFromUser 1 FAILED !!!\n");
-		   return TI_NOK;
-		 }
-	   }
-	   if ((my_command.out_buffer) && (my_command.out_buffer_len))
-	   {
-		 copy_to_buf          = my_command.out_buffer;
-		 my_command.out_buffer = os_memoryAlloc(drv, my_command.out_buffer_len);
-	   }
-	   param3 = &my_command;
-     }
-	 break;
+                    case DRIVER_STATUS_PARAM:
+                        *(TI_UINT32 *)my_command.out_buffer =
+                           (drv->tCommon.eDriverState == DRV_STATE_RUNNING) ? TI_TRUE : TI_FALSE;
+                        return TI_OK;
+                }
+            }
+            /* if we are still here handle a normal private command*/
 
-     case SIOCSIWMLME:
-     {
-		os_memoryCopyFromUser(drv, &mlme, ((union iwreq_data *)iw_req)->data.pointer, sizeof(struct iw_mlme));
-		param3 = &mlme;
-     }
-	 break;
+            if ((my_command.in_buffer) && (my_command.in_buffer_len))
+            {
+                copy_from_buf        = my_command.in_buffer;
+                my_command.in_buffer = os_memoryAlloc(drv, my_command.in_buffer_len);
+                if (os_memoryCopyFromUser(drv, my_command.in_buffer, copy_from_buf, my_command.in_buffer_len))
+                {
+                    os_printf("wlanDrvWext_Handler() os_memoryCopyFromUser 1 FAILED !!!\n");
+                    return TI_NOK;
+                }
+            }
+            if ((my_command.out_buffer) && (my_command.out_buffer_len))
+            {
+                copy_to_buf          = my_command.out_buffer;
+                my_command.out_buffer = os_memoryAlloc(drv, my_command.out_buffer_len);
+            }
+            param3 = &my_command;
+        }
+        break;
+
+        case SIOCSIWMLME:
+        {
+            os_memoryCopyFromUser(drv, &mlme, ((union iwreq_data *)iw_req)->data.pointer, sizeof(struct iw_mlme));
+            param3 = &mlme;
+        }
+        break;
      case SIOCSIWSCAN:
      {
 	if (((union iwreq_data *)iw_req)->data.pointer) {
@@ -263,14 +262,18 @@ int wlanDrvWext_Handler (struct net_device *dev,
      }
 	 break;
    }
-   /* If the friver is not running, return NOK */
-   if (drv->tCommon.eDriverState != DRV_STATE_RUNNING)
-   {
-       return TI_NOK;
-   }
+    /* If the friver is not running, return NOK */
+    if (drv->tCommon.eDriverState != DRV_STATE_RUNNING)
+    {
+        if (my_command.in_buffer)
+            os_memoryFree(drv, my_command.in_buffer, my_command.in_buffer_len);
+        if (my_command.out_buffer)
+            os_memoryFree(drv,my_command.out_buffer,my_command.out_buffer_len);
+        return TI_NOK;
+    }
 
-   /* Call the Cmd module with the given user paramters */
-   rc = (cmdHndlr_InsertCommand (drv->tCommon.hCmdHndlr, 
+    /* Call the Cmd module with the given user paramters */
+    rc = cmdHndlr_InsertCommand(drv->tCommon.hCmdHndlr,
                                    info->cmd, 
                                    info->flags, 
                                    iw_req, 
@@ -278,21 +281,20 @@ int wlanDrvWext_Handler (struct net_device *dev,
                                    extra, 
                                    0, 
                                    param3, 
-                                   NULL));
-   /* Here we are after the command was completed */
-   if (my_command.in_buffer)
-   {
-	 os_memoryFree (drv, my_command.in_buffer, my_command.in_buffer_len);
-   }
-   if (my_command.out_buffer)
-   {
-	 if (os_memoryCopyToUser(drv, copy_to_buf, my_command.out_buffer, my_command.out_buffer_len))
-	 {
-	   os_printf ("wlanDrvWext_Handler() os_memoryCopyToUser FAILED !!!\n");
-	   rc = TI_NOK;
-	 }
-	 os_memoryFree (drv, my_command.out_buffer, my_command.out_buffer_len);
-   }
-
-   return rc;
+                                   NULL);
+    /* Here we are after the command was completed */
+    if (my_command.in_buffer)
+    {
+        os_memoryFree(drv, my_command.in_buffer, my_command.in_buffer_len);
+    }
+    if (my_command.out_buffer)
+    {
+        if (os_memoryCopyToUser(drv, copy_to_buf, my_command.out_buffer, my_command.out_buffer_len))
+        {
+            os_printf("wlanDrvWext_Handler() os_memoryCopyToUser FAILED !!!\n");
+            rc = TI_NOK;
+        }
+        os_memoryFree(drv, my_command.out_buffer, my_command.out_buffer_len);
+    }
+    return rc;
 }

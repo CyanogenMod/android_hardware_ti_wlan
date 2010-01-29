@@ -45,8 +45,7 @@ typedef struct
     U8 snrBeacon;     /* The current average SNR in db - For Beacon Packets*/
     S8 rssi;      /* The current average RSSI  - For Data Packets*/
     S8 rssiBeacon;
-}TCuCommon_RoamingStatisticsTable;
-
+} TCuCommon_RoamingStatisticsTable;
 
 /* functions */
 /*************/

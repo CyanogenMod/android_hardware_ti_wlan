@@ -461,7 +461,6 @@ TI_STATUS rsn_start(TI_HANDLE hRsn)
     }
 
     TRACE0(pRsn->hReport, REPORT_SEVERITY_INFORMATION, "rsn_start ...\n");
-
     pRsn->rsnStartedTs = os_timeStampMs (pRsn->hOs);
 
     status = pRsn->pMainSecSm->start (pRsn->pMainSecSm);
@@ -670,7 +669,7 @@ TI_STATUS rsn_getParamEncryptionStatus(TI_HANDLE hRsn, ECipherSuite *rsnStatus)
 TI_STATUS rsn_getParam(TI_HANDLE hRsn, void *param)
 {
     rsn_t       *pRsn = (rsn_t *)hRsn;
-    paramInfo_t *pParam = (paramInfo_t*)param;
+    paramInfo_t *pParam = (paramInfo_t *)param;
     TI_STATUS   status = TI_OK;
 
     if ( (NULL == pRsn) || (NULL == pParam) )
@@ -1223,7 +1222,6 @@ TI_STATUS rsn_reportStatus (rsn_t *pRsn, TI_STATUS rsnStatus)
         return TI_NOK;
     }
     
-
     if (rsnStatus == TI_OK)
     {
         /* set EAPOL encryption status according to authentication protocol */
@@ -1584,9 +1582,13 @@ TI_STATUS rsn_setKey (rsn_t *pRsn, TSecurityKeys *pKey)
     TI_BOOL				macIsBroadcast = TI_FALSE;
     TI_STATUS           status = TI_OK;
 
-	keyIndex = (TI_UINT8)pKey->keyIndex;
+	if (pRsn == NULL || pKey == NULL)
+	{
+		return TI_NOK;
+	}
 
-    if ((pRsn == NULL) || (pKey == NULL) || ((keyIndex)>=MAX_KEYS_NUM))
+	keyIndex = (TI_UINT8)pKey->keyIndex;
+    if (keyIndex >= MAX_KEYS_NUM)
     {
         return TI_NOK;
     }
@@ -1649,6 +1651,7 @@ TI_STATUS rsn_setKey (rsn_t *pRsn, TSecurityKeys *pKey)
 			        txCtrlParams_setEncryptionFieldSizes (pRsn->hTxCtrl, 0);
                     break;
             }
+
         }
 
         pRsn->keys[keyIndex].keyType = pKey->keyType;
@@ -1728,9 +1731,13 @@ TI_STATUS rsn_removeKey (rsn_t *pRsn, TSecurityKeys *pKey)
     TTwdParamInfo       tTwdParam;
     TI_UINT8               keyIndex;
 
-    keyIndex = (TI_UINT8)pKey->keyIndex;
+	if (pRsn == NULL || pKey == NULL)
+	{
+		return TI_NOK;
+	}
 
-    if ( (NULL == pRsn) || (NULL == pKey) || (keyIndex >= MAX_KEYS_NUM) )
+	keyIndex = (TI_UINT8)pKey->keyIndex;
+    if (keyIndex >= MAX_KEYS_NUM)
     {
         return TI_NOK;
     }
@@ -1912,7 +1919,6 @@ TI_STATUS rsn_reportMicFailure(TI_HANDLE hRsn, TI_UINT8 *pType, TI_UINT32 Length
                             IPC_EVENT_MEDIA_SPECIFIC, 
                             (TI_UINT8*)AuthBuf,
                             sizeof(TI_UINT32) + sizeof(OS_802_11_AUTHENTICATION_REQUEST));
-
 
 		if ( pRsn->bRsnExternalMode ) {
 			return TI_OK;

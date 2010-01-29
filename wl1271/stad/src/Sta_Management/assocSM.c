@@ -936,7 +936,6 @@ TI_STATUS assoc_smSendAssocReq(assoc_t *pAssoc)
     {
         assocType = RE_ASSOC_REQUEST;
     }
-
     status = assoc_smRequestBuild(pAssoc, assocMsg, &msgLen);
     if (status == TI_OK) {
         /* Save the association request message */
@@ -1362,11 +1361,9 @@ TI_STATUS assoc_smRequestBuild(assoc_t *pCtx, TI_UINT8* reqBuf, TI_UINT32* reqLe
     paramInfo_t     param;
     TTwdParamInfo   tTwdParam;
     TI_UINT16       capabilities;
-
     
     pRequest = reqBuf;
     *reqLen = 0;
-
 
     /* insert capabilities */
     status = assoc_smCapBuild(pCtx, &capabilities);
@@ -1576,7 +1573,6 @@ TI_STATUS assoc_saveAssocRespMessage(assoc_t *pAssocSm, TI_UINT8 *pAssocBuffer, 
     {
         return TI_NOK;
     }
-
     os_memoryCopy(pAssocSm->hOs, pAssocSm->assocRespBuffer, pAssocBuffer, length);  
     pAssocSm->assocRespLen = length;
     

@@ -516,7 +516,6 @@ typedef enum
  * \sa TKeepAliveParams
  * 
  */
-
 typedef enum
 {
     KEEP_ALIVE_TRIG_TYPE_NO_TX = 0,		/**< */
@@ -2638,9 +2637,6 @@ typedef struct
 
 } TScanSrvInitParams;
 
-
-
-
 /** \struct TArpIpFilterInitParams
  * \brief ARP IP Filter Init Parameters
  * 
@@ -4456,7 +4452,6 @@ TI_STATUS TWD_CfgSetFwHtInformation (TI_HANDLE hTWD, Tdot11HtInformationUnparse 
  * \sa
  */
 TI_STATUS TWD_CfgBurstMode (TI_HANDLE hTWD, TI_BOOL bEnabled);
-
 
 /*-------------*/
 /* Interrogate */
