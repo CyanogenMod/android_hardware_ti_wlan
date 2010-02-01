@@ -298,50 +298,56 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
 	unsigned int   uBlkSize = 1 << uBlkSizeShift;
 	int            iStatus;
 
-	if (uBlkSize < SYNC_ASYNC_LENGTH_THRESH) 
+	if (uBlkSize < SYNC_ASYNC_LENGTH_THRESH)
 	{
 		PERR1("%s(): Block-Size should be bigger than SYNC_ASYNC_LENGTH_THRESH!!\n", __FUNCTION__ );
 	}
 
-    /* Enabling clocks if thet are not enabled */
-    sdioDrv_clk_enable();
+	/* Enabling clocks if thet are not enabled */
+	sdioDrv_clk_enable();
 
-    /* Allocate a DMA-able buffer and provide it to the upper layer to be used for all read and write transactions */
-    if (pDmaBufAddr == 0) /* allocate only once (in case this function is called multiple times) */
-    {
-        pDmaBufAddr = kmalloc (MAX_BUS_TXN_SIZE, GFP_ATOMIC | GFP_DMA);
-        if (pDmaBufAddr == 0) { return -1; }
-    }
-    *pRxDmaBufAddr = *pTxDmaBufAddr = pDmaBufAddr;
-    *pRxDmaBufLen  = *pTxDmaBufLen  = MAX_BUS_TXN_SIZE;
+	/* Allocate a DMA-able buffer and provide it to the upper layer to be used for all read and write transactions */
+	if (pDmaBufAddr == 0) /* allocate only once (in case this function is called multiple times) */
+	{
+		pDmaBufAddr = kmalloc (MAX_BUS_TXN_SIZE, GFP_ATOMIC | GFP_DMA);
+		if (pDmaBufAddr == 0)
+		{
+			iStatus = -1;
+			goto fail;
+		}
+	}
+	*pRxDmaBufAddr = *pTxDmaBufAddr = pDmaBufAddr;
+	*pRxDmaBufLen  = *pTxDmaBufLen  = MAX_BUS_TXN_SIZE;
 
-    /* Init SDIO driver and HW */
-    iStatus = sdioDrv_ConnectBus (fCbFunc, hCbArg, uBlkSizeShift, uSdioThreadPriority);
-	if (iStatus) { return iStatus; }
-  
+	/* Init SDIO driver and HW */
+	iStatus = sdioDrv_ConnectBus (fCbFunc, hCbArg, uBlkSizeShift, uSdioThreadPriority);
+	if (iStatus) { goto fail; }
+
 	/* Send commands sequence: 0, 5, 3, 7 */
 	iStatus = sdioDrv_ExecuteCmd (SD_IO_GO_IDLE_STATE, 0, MMC_RSP_NONE, &uByte, sizeof(uByte));
 	if (iStatus)
-        {
-           printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SD_IO_GO_IDLE_STATE);
-           return iStatus;
-        }
+	{
+		printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SD_IO_GO_IDLE_STATE);
+		goto fail;
+	}
+
 	iStatus = sdioDrv_ExecuteCmd (SDIO_CMD5, VDD_VOLTAGE_WINDOW, MMC_RSP_R4, &uByte, sizeof(uByte));
 	if (iStatus) {
-          printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SDIO_CMD5);
-          return iStatus; 
-        }
+		printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SDIO_CMD5);
+		goto fail;
+	}
 
 	iStatus = sdioDrv_ExecuteCmd (SD_IO_SEND_RELATIVE_ADDR, 0, MMC_RSP_R6, &uLong, sizeof(uLong));
 	if (iStatus) {
-           printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SD_IO_SEND_RELATIVE_ADDR);
-           return iStatus; 
-        }
+		printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SD_IO_SEND_RELATIVE_ADDR);
+		goto fail;
+	}
+
 	iStatus = sdioDrv_ExecuteCmd (SD_IO_SELECT_CARD, uLong, MMC_RSP_R6, &uByte, sizeof(uByte));
 	if (iStatus) {
-           printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SD_IO_SELECT_CARD);
-           return iStatus; 
-        }
+		printk("%s %d command number: %d failed\n", __FUNCTION__, __LINE__, SD_IO_SELECT_CARD);
+		goto fail;
+	}
 
     /* NOTE:
      * =====
@@ -353,95 +359,94 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
      * 4) If the byte read in step 2 is different than the written byte repeat the sequence
      */
 
-    /* set device side bus width to 4 bit (for 1 bit write 0x80 instead of 0x82) */
-    do
-    {
-        uByte = SDIO_BITS_CODE;
-        iStatus = sdioDrv_WriteSyncBytes (TXN_FUNC_ID_CTRL, CCCR_BUS_INTERFACE_CONTOROL, &uByte, 1, 1);
-        if (iStatus) { return iStatus; }
+	/* set device side bus width to 4 bit (for 1 bit write 0x80 instead of 0x82) */
+	do
+	{
+		uByte = SDIO_BITS_CODE;
+		iStatus = sdioDrv_WriteSyncBytes (TXN_FUNC_ID_CTRL, CCCR_BUS_INTERFACE_CONTOROL, &uByte, 1, 1);
+		if (iStatus) { goto fail; }
 
-        iStatus = sdioDrv_ReadSyncBytes (TXN_FUNC_ID_CTRL, CCCR_BUS_INTERFACE_CONTOROL, &uByte, 1, 1);
-        if (iStatus) { return iStatus; }
+		iStatus = sdioDrv_ReadSyncBytes (TXN_FUNC_ID_CTRL, CCCR_BUS_INTERFACE_CONTOROL, &uByte, 1, 1);
+		if (iStatus) { goto fail; }
         
-        iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
-        if (iStatus) { return iStatus; }
+		iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
+		if (iStatus) { goto fail; }
 
-        uCount++;
+		uCount++;
 
-    } while ((uByte != SDIO_BITS_CODE) && (uCount < MAX_RETRIES));
+	} while ((uByte != SDIO_BITS_CODE) && (uCount < MAX_RETRIES));
 
+	uCount = 0;
 
-    uCount = 0;
+	/* allow function 2 */
+	do
+	{
+		uByte = 4;
+		iStatus = sdioDrv_WriteSyncBytes (TXN_FUNC_ID_CTRL, CCCR_IO_ENABLE, &uByte, 1, 1);
+		if (iStatus) { goto fail; }
 
-    /* allow function 2 */
-    do
-    {
-        uByte = 4;
-        iStatus = sdioDrv_WriteSyncBytes (TXN_FUNC_ID_CTRL, CCCR_IO_ENABLE, &uByte, 1, 1);
-        if (iStatus) { return iStatus; }
-
-        iStatus = sdioDrv_ReadSyncBytes (TXN_FUNC_ID_CTRL, CCCR_IO_ENABLE, &uByte, 1, 1);
-        if (iStatus) { return iStatus; }
+		iStatus = sdioDrv_ReadSyncBytes (TXN_FUNC_ID_CTRL, CCCR_IO_ENABLE, &uByte, 1, 1);
+		if (iStatus) { goto fail; }
         
-        iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
-        if (iStatus) { return iStatus; }
+		iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
+		if (iStatus) { goto fail; }
 
-        uCount++;
+		uCount++;
 
-    } while ((uByte != 4) && (uCount < MAX_RETRIES));
+	} while ((uByte != 4) && (uCount < MAX_RETRIES));
 
 
 #ifdef SDIO_IN_BAND_INTERRUPT
 
-    uCount = 0;
+	uCount = 0;
 
-    do
-    {
-        uByte = 3;
-        iStatus = sdioDrv_WriteSyncBytes (TXN_FUNC_ID_CTRL, CCCR_INT_ENABLE, &uByte, 1, 1);
-        if (iStatus) { return iStatus; }
+	do
+	{
+		uByte = 3;
+		iStatus = sdioDrv_WriteSyncBytes (TXN_FUNC_ID_CTRL, CCCR_INT_ENABLE, &uByte, 1, 1);
+		if (iStatus) { goto fail; }
 
-        iStatus = sdioDrv_ReadSyncBytes (TXN_FUNC_ID_CTRL, CCCR_INT_ENABLE, &uByte, 1, 1);
-        if (iStatus) { return iStatus; }
-        
-        iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
-        if (iStatus) { return iStatus; }
+		iStatus = sdioDrv_ReadSyncBytes (TXN_FUNC_ID_CTRL, CCCR_INT_ENABLE, &uByte, 1, 1);
+		if (iStatus) { goto fail; }
 
-        uCount++;
+		iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
+		if (iStatus) { goto fail; }
 
-    } while ((uByte != 3) && (uCount < MAX_RETRIES));
+		uCount++;
+
+	} while ((uByte != 3) && (uCount < MAX_RETRIES));
 
 
 #endif
 
-    uCount = 0;
-    
-    /* set block size for SDIO block mode */
-    do
-    {
-        uLong = uBlkSize;
-        iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, FN0_FBR2_REG_108, &uLong, 2, 1, 1);
-        if (iStatus) { return iStatus; }
+	uCount = 0;
 
-        iStatus = sdioDrv_ReadSync (TXN_FUNC_ID_CTRL, FN0_FBR2_REG_108, &uLong, 2, 1, 1);
-        if (iStatus) { return iStatus; }
-        
-        iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
-        if (iStatus) { return iStatus; }
+	/* set block size for SDIO block mode */
+	do
+	{
+		uLong = uBlkSize;
+		iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, FN0_FBR2_REG_108, &uLong, 2, 1, 1);
+		if (iStatus) { goto fail; }
 
-        uCount++;
+		iStatus = sdioDrv_ReadSync (TXN_FUNC_ID_CTRL, FN0_FBR2_REG_108, &uLong, 2, 1, 1);
+		if (iStatus) { goto fail; }
 
-    } while (((uLong & FN0_FBR2_REG_108_BIT_MASK) != uBlkSize) && (uCount < MAX_RETRIES));
+		iStatus = sdioDrv_WriteSync (TXN_FUNC_ID_CTRL, 0xC8, &uLong, 2, 1, 1);
+		if (iStatus) { goto fail; }
 
+		uCount++;
 
-    if (uCount >= MAX_RETRIES)
-    {
-        /* Failed to write CMD52_WRITE to function 0 */
-        return (int)uCount;
-    }
+	} while (((uLong & FN0_FBR2_REG_108_BIT_MASK) != uBlkSize) && (uCount < MAX_RETRIES));
 
-    /* Disable the clocks for now */
-    sdioDrv_clk_disable();
+	if (uCount >= MAX_RETRIES)
+	{
+		/* Failed to write CMD52_WRITE to function 0 */
+		iStatus = (int)uCount;
+	}
+
+fail:
+	/* Disable the clocks for now */
+	sdioDrv_clk_disable();
 
 	return iStatus;
 }
@@ -449,13 +454,13 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
 
 int sdioAdapt_DisconnectBus (void)
 {
-    if (pDmaBufAddr)
-    {
-        kfree (pDmaBufAddr);
-        pDmaBufAddr = 0;
-    }
+	if (pDmaBufAddr)
+	{
+		kfree (pDmaBufAddr);
+		pDmaBufAddr = 0;
+	}
 
-    return sdioDrv_DisconnectBus ();
+	return sdioDrv_DisconnectBus ();
 }
 
 ETxnStatus sdioAdapt_Transact (unsigned int  uFuncId,
@@ -467,57 +472,57 @@ ETxnStatus sdioAdapt_Transact (unsigned int  uFuncId,
                                unsigned int  bFixedAddr,
                                unsigned int  bMore)
 {
-    int iStatus;
+	int iStatus;
 
-    /* If transction length is below threshold, use Sync methods */
-    if (uLength < SYNC_ASYNC_LENGTH_THRESH) 
-    {
-        /* Call read or write Sync method */
-        if (bDirection) 
-        {
-            CL_TRACE_START_L2();
-            iStatus = sdioDrv_ReadSync (uFuncId, uHwAddr, pHostAddr, uLength, bFixedAddr, bMore);
-            CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".ReadSync");
-        }
-        else 
-        {
-            CL_TRACE_START_L2();
-            iStatus = sdioDrv_WriteSync (uFuncId, uHwAddr, pHostAddr, uLength, bFixedAddr, bMore);
-            CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".WriteSync");
-        }
+	/* If transction length is below threshold, use Sync methods */
+	if (uLength < SYNC_ASYNC_LENGTH_THRESH)
+	{
+		/* Call read or write Sync method */
+		if (bDirection)
+		{
+			CL_TRACE_START_L2();
+			iStatus = sdioDrv_ReadSync (uFuncId, uHwAddr, pHostAddr, uLength, bFixedAddr, bMore);
+			CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".ReadSync");
+		}
+		else
+		{
+			CL_TRACE_START_L2();
+			iStatus = sdioDrv_WriteSync (uFuncId, uHwAddr, pHostAddr, uLength, bFixedAddr, bMore);
+			CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".WriteSync");
+		}
 
-        /* If failed return ERROR, if succeeded return COMPLETE */
-        if (iStatus) 
-        {
-            return TXN_STATUS_ERROR;
-        }
-        return TXN_STATUS_COMPLETE;
-    }
+		/* If failed return ERROR, if succeeded return COMPLETE */
+		if (iStatus)
+		{
+			return TXN_STATUS_ERROR;
+		}
+		return TXN_STATUS_COMPLETE;
+	}
 
-    /* If transction length is above threshold, use Async methods */
-    else 
-    {
-        /* Call read or write Async method */
-        if (bDirection) 
-        {
-            CL_TRACE_START_L2();
-            iStatus = sdioDrv_ReadAsync (uFuncId, uHwAddr, pHostAddr, uLength, bBlkMode, bFixedAddr, bMore);
-            CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".ReadAsync");
-        }
-        else 
-        {
-            CL_TRACE_START_L2();
-            iStatus = sdioDrv_WriteAsync (uFuncId, uHwAddr, pHostAddr, uLength, bBlkMode, bFixedAddr, bMore);
-            CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".WriteAsync");
-        }
+	/* If transction length is above threshold, use Async methods */
+	else
+	{
+		/* Call read or write Async method */
+		if (bDirection)
+		{
+			CL_TRACE_START_L2();
+			iStatus = sdioDrv_ReadAsync (uFuncId, uHwAddr, pHostAddr, uLength, bBlkMode, bFixedAddr, bMore);
+			CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".ReadAsync");
+		}
+		else
+		{
+			CL_TRACE_START_L2();
+			iStatus = sdioDrv_WriteAsync (uFuncId, uHwAddr, pHostAddr, uLength, bBlkMode, bFixedAddr, bMore);
+			CL_TRACE_END_L2("tiwlan_drv.ko", "INHERIT", "SDIO", ".WriteAsync");
+		}
 
-        /* If failed return ERROR, if succeeded return PENDING */
-        if (iStatus) 
-        {
-            return TXN_STATUS_ERROR;
-        }
-        return TXN_STATUS_PENDING;
-    }
+		/* If failed return ERROR, if succeeded return PENDING */
+		if (iStatus)
+		{
+			return TXN_STATUS_ERROR;
+		}
+		return TXN_STATUS_PENDING;
+	}
 }
          
 ETxnStatus sdioAdapt_TransactBytes (unsigned int  uFuncId,
@@ -527,35 +532,35 @@ ETxnStatus sdioAdapt_TransactBytes (unsigned int  uFuncId,
                                     unsigned int  bDirection,
                                     unsigned int  bMore)
 {
-    static unsigned int lastMore = 0;
-    int iStatus;
+	static unsigned int lastMore = 0;
+	int iStatus;
 
-    if ((bMore == 1) || (lastMore == bMore))
-    {
-        sdioDrv_clk_enable();
-    }
+	if ((bMore == 1) || (lastMore == bMore))
+	{
+		sdioDrv_clk_enable();
+	}
 
-    /* Call read or write bytes Sync method */
-    if (bDirection) 
-    {
-        iStatus = sdioDrv_ReadSyncBytes (uFuncId, uHwAddr, pHostAddr, uLength, bMore);
-    }
-    else 
-    {
-        iStatus = sdioDrv_WriteSyncBytes (uFuncId, uHwAddr, pHostAddr, uLength, bMore);
-    }
+	/* Call read or write bytes Sync method */
+	if (bDirection)
+	{
+		iStatus = sdioDrv_ReadSyncBytes (uFuncId, uHwAddr, pHostAddr, uLength, bMore);
+	}
+	else
+	{
+		iStatus = sdioDrv_WriteSyncBytes (uFuncId, uHwAddr, pHostAddr, uLength, bMore);
+	}
 
-    if (bMore == 0)
-    {
-        sdioDrv_clk_disable();
-    }
-    lastMore = bMore;
+	if (bMore == 0)
+	{
+		sdioDrv_clk_disable();
+	}
+	lastMore = bMore;
 
-    /* If failed return ERROR, if succeeded return COMPLETE */
-    if (iStatus) 
-    {
-        return TXN_STATUS_ERROR;
-    }
-    return TXN_STATUS_COMPLETE;
+	/* If failed return ERROR, if succeeded return COMPLETE */
+	if (iStatus)
+	{
+		return TXN_STATUS_ERROR;
+	}
+	return TXN_STATUS_COMPLETE;
 }
 #endif
