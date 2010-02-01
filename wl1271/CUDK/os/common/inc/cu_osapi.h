@@ -48,11 +48,15 @@
  * be specifically declared here, and only if they weren't defined before by someone
  * including common.h
  */
-#ifndef ANDROID
+#ifndef COMMON_H
 typedef unsigned char   u8;
 typedef unsigned short u16;
 typedef unsigned long   u32;
 typedef unsigned long long u64;
+
+#ifndef BIT
+#define BIT(x) (1 << (x))
+#endif
 #endif
 
 #ifndef NULL

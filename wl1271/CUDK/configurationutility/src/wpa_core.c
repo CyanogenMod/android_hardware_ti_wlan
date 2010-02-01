@@ -35,10 +35,10 @@
 #include <unistd.h>
 #endif
 
-#include <string.h>
+#include <netinet/if_ether.h>
+
 #include "cu_osapi.h"
 #include "TWDriver.h"
-#include "common.h"
 #include "config_ssid.h"
 #include "driver.h"
 #include "ipc_wpa.h"

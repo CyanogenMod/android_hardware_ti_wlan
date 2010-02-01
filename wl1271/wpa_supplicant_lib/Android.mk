@@ -15,11 +15,6 @@
 #
 LOCAL_PATH := $(call my-dir)
 
-# This makefile is only included if BOARD_WLAN_TI_STA_DK_ROOT is set,
-# and if we're not building for the simulator.
-ifndef BOARD_WLAN_TI_STA_DK_ROOT
-  $(error BOARD_WLAN_TI_STA_DK_ROOT must be defined when including this makefile)
-endif
 ifeq ($(TARGET_SIMULATOR),true)
   $(error This makefile must not be included when building the simulator)
 endif
@@ -43,7 +38,7 @@ WPA_SUPPL_DIR_INCLUDE += $(WPA_SUPPL_DIR)/src \
 	$(WPA_SUPPL_DIR)/src/wps
 endif
 
-DK_ROOT = $(BOARD_WLAN_TI_STA_DK_ROOT)
+DK_ROOT = hardware/ti/wlan/$(BOARD_WLAN_DEVICE)
 OS_ROOT = $(DK_ROOT)/platforms
 STAD	= $(DK_ROOT)/stad
 UTILS	= $(DK_ROOT)/utils

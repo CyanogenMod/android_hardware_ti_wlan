@@ -11,17 +11,36 @@ WILINK_ROOT = ../..
 CUDK_ROOT ?= $(WILINK_ROOT)/CUDK
 CU_ROOT = $(CUDK_ROOT)/configurationutility
 
-ifeq ($(DEBUG),y)
-  DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   
+ifndef WPA_SUPPLICANT_VERSION
+WPA_SUPPLICANT_VERSION := VER_0_5_X
+endif
+
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_5_X)
+WPA_SUPPL_DIR = external/wpa_supplicant
 else
-  DEBUGFLAGS = -O2
+WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
+endif
+WPA_SUPPL_DIR_INCLUDE = $(WPA_SUPPL_DIR)
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_6_X)
+WPA_SUPPL_DIR_INCLUDE += $(WPA_SUPPL_DIR)/src \
+	$(WPA_SUPPL_DIR)/src/common \
+	$(WPA_SUPPL_DIR)/src/drivers \
+	$(WPA_SUPPL_DIR)/src/l2_packet \
+	$(WPA_SUPPL_DIR)/src/utils \
+	$(WPA_SUPPL_DIR)/src/wps
 endif
 
 ifeq ($(DEBUG),y)
-  DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   # "-O" is needed to expand inlines
+DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin
+else
+DEBUGFLAGS = -O2
+endif
+
+ifeq ($(DEBUG),y)
+DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   # "-O" is needed to expand inlines
 #  DEBUGFLAGS+= -DDEBUG_MESSAGES
 else
-  DEBUGFLAGS = -O2
+DEBUGFLAGS = -O2
 endif
 DEBUGFLAGS += -DHOST_COMPILE
 
@@ -36,13 +55,13 @@ endif
 #Supplicant image building
 ifeq ($(BUILD_SUPPL), y)
 DK_DEFINES += -D WPA_SUPPLICANT -D CONFIG_CTRL_IFACE -D CONFIG_CTRL_IFACE_UNIX
-  -include external/wpa_supplicant/.config
+-include external/wpa_supplicant/.config
 ifeq ($(CONFIG_WPS), y)
-DK_DEFINES += -DCONFIG_WPS
+	DK_DEFINES += -DCONFIG_WPS
 endif
 endif
 
-ARMFLAGS  = -fno-common -g #-fno-builtin -Wall #-pipe
+ARMFLAGS = -fno-common -g #-fno-builtin -Wall #-pipe
 
 LOCAL_C_INCLUDES = \
 	$(LOCAL_PATH)/inc \
@@ -60,7 +79,7 @@ LOCAL_C_INCLUDES = \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/platforms/os/common/inc \
 	$(LOCAL_PATH)/$(KERNEL_DIR)/include \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/TWD/FW_Transfer/Export_Inc \
-	external/wpa_supplicant 
+	$(WPA_SUPPL_DIR_INCLUDE)
 
 LOCAL_SRC_FILES = \
 	src/console.c \

@@ -9,15 +9,15 @@ WILINK_ROOT = ../..
 CUDK_ROOT = $(WILINK_ROOT)/CUDK
 
 ifeq ($(DEBUG),y)
-  DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   # "-O" is needed to expand inlines
+DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   # "-O" is needed to expand inlines
 #  DEBUGFLAGS+= -DDEBUG_MESSAGES
 else
-  DEBUGFLAGS = -O2
+DEBUGFLAGS = -O2
 endif
 
-COMMON  = $(WILINK_ROOT)/stad
+COMMON = $(WILINK_ROOT)/stad
 
-ARMFLAGS  = -fno-common -g -fno-builtin -Wall #-pipe
+ARMFLAGS = -fno-common -g -fno-builtin -Wall #-pipe
 
 LOCAL_C_INCLUDES = \
 	$(LOCAL_PATH)/$(CUDK_ROOT)/os/common/inc \
@@ -54,4 +54,3 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_MODULE:= wlan_loader
 
 include $(BUILD_EXECUTABLE)
-
