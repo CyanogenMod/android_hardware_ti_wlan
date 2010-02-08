@@ -48,7 +48,6 @@ OS_SRCS = \
     $(DK_ROOT)/platforms/os/linux/src/RxBuf.c \
     $(DK_ROOT)/platforms/hw/linux/host_platform.c \
     $(DK_ROOT)/external_drivers/sdio/linux/SdioDrv.c
-#    $(DK_ROOT)/external_drivers/$(HOST_PLATFORM)/Linux/sdio/SdioDrv.c
 #    $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/host_platform.c
 
 ifeq ($(STACK_PROFILING_ON),y)    

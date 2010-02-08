@@ -116,22 +116,22 @@ os_memoryAlloc(
 #endif
 	{
 		if (in_atomic())
-        {
-            blk = kmalloc(total_size, GFP_ATOMIC);
-        }
-        else
-        {
-            blk = kmalloc(total_size, GFP_KERNEL);
-        }
-        if (!blk)
-        {            
+		{
+			blk = kmalloc(total_size, GFP_ATOMIC);
+		}
+		else
+		{
+			blk = kmalloc(total_size, GFP_KERNEL);
+		}
+		if (!blk)
+		{
 			printk("%s: NULL\n",__func__);	
 			return NULL;
 		}
 		blk->f_free = (os_free)kfree;
 	}
-    else
-    {
+	else
+	{
 		/* We expect that the big allocations should be made outside
 		     the interrupt, otherwise fail
 		*/
@@ -248,7 +248,6 @@ os_memoryFree(
 	}
 
 	os_profile (OsContext, 5, blk->size + sizeof(struct os_mem_block) + sizeof(__u32));
-
 	blk->f_free(blk);
 }
 

@@ -482,28 +482,34 @@ int wlanDrvIf_LoadFiles (TWlanDrvIfObj *drv, TLoaderFilesData *pInitFiles)
  */ 
 int wlanDrvIf_GetFile (TI_HANDLE hOs, TFileInfo *pFileInfo)
 {
-    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)hOs;
+	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)hOs;
 
 	if (drv == NULL || pFileInfo == NULL) {
 		ti_dprintf(TIWLAN_LOG_ERROR, "wlanDrv_GetFile: ERROR: Null File Handler, Exiting");
 		return TI_NOK;
 	}
 
-    /* Future option for getting the FW image part by part */ 
-    pFileInfo->hOsFileDesc = NULL;
+	/* Future option for getting the FW image part by part */ 
+	pFileInfo->hOsFileDesc = NULL;
 
-    /* Fill the file's location and size in the file's info structure */
-    switch (pFileInfo->eFileType) 
-    {
-    case FILE_TYPE_INI: 
-        pFileInfo->pBuffer = (TI_UINT8 *)drv->tCommon.tIniFile.pImage; 
-        pFileInfo->uLength = drv->tCommon.tIniFile.uSize; 
-        break;
-    case FILE_TYPE_NVS:     
-        pFileInfo->pBuffer = (TI_UINT8 *)drv->tCommon.tNvsImage.pImage; 
-        pFileInfo->uLength = drv->tCommon.tNvsImage.uSize; 
-        break;
+	/* Fill the file's location and size in the file's info structure */
+	switch (pFileInfo->eFileType) 
+	{
+	case FILE_TYPE_INI: 
+		pFileInfo->pBuffer = (TI_UINT8 *)drv->tCommon.tIniFile.pImage; 
+		pFileInfo->uLength = drv->tCommon.tIniFile.uSize; 
+		break;
+	case FILE_TYPE_NVS:     
+		pFileInfo->pBuffer = (TI_UINT8 *)drv->tCommon.tNvsImage.pImage; 
+		pFileInfo->uLength = drv->tCommon.tNvsImage.uSize; 
+		break;
 	case FILE_TYPE_FW:
+		if (drv->tCommon.tFwImage.pImage == NULL)
+		{
+			ti_dprintf(TIWLAN_LOG_ERROR, "wlanDrv_GetFile: ERROR: no Firmware image, exiting\n");
+			return TI_NOK;
+		}
+
 		pFileInfo->pBuffer = (TI_UINT8 *)drv->tCommon.tFwImage.pImage; 
 		pFileInfo->bLast		= TI_FALSE;
 		pFileInfo->uLength	= 0;
@@ -575,16 +581,16 @@ int wlanDrvIf_GetFile (TI_HANDLE hOs, TFileInfo *pFileInfo)
 			pFileInfo->bLast = TI_TRUE;
 		}
 
-        break;
-    }
+		break;
+	}
 
-    /* Call the requester callback */
-    if (pFileInfo->fCbFunc)
-    {
-        pFileInfo->fCbFunc (pFileInfo->hCbHndl);
-    }
+	/* Call the requester callback */
+	if (pFileInfo->fCbFunc)
+	{
+		pFileInfo->fCbFunc (pFileInfo->hCbHndl);
+	}
 
-    return TI_OK;
+	return TI_OK;
 }
 
 
@@ -626,6 +632,7 @@ void wlanDrvIf_SetMacAddress (TI_HANDLE hOs, TI_UINT8 *pMacAddr)
 int wlanDrvIf_Start (struct net_device *dev)
 {
 	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
+	int status;
 
 	ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Start()\n");
 	printk("%s\n", __func__);
@@ -634,18 +641,25 @@ int wlanDrvIf_Start (struct net_device *dev)
 		return -ENODEV;
 	}
 
+	if (DRV_STATE_FAILED == drv->tCommon.eDriverState)
+	{
+		ti_dprintf (TIWLAN_LOG_ERROR, "wlanDrvIf_Start() Driver failed!\n");
+		return -ENODEV;
+	}
+
 	/*
 	 *  Insert Start command in DrvMain action queue, request driver scheduling 
 	 *      and wait for action completion (all init process).
 	 */
 	os_wake_lock_timeout_enable(drv);
-	drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_START);
-	return 0;
+	status = drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_START);
+	return (status) ? -1 : 0;
 }
 
 int wlanDrvIf_Open (struct net_device *dev)
 {
 	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
+	int status = 0;
 
 	ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Open()\n");
 	printk("%s\n", __func__);
@@ -654,10 +668,10 @@ int wlanDrvIf_Open (struct net_device *dev)
 		return -ENODEV;
 	}
 
-    if (drv->tCommon.eDriverState == DRV_STATE_STOPPED ||
-        drv->tCommon.eDriverState == DRV_STATE_IDLE) {
-        wlanDrvIf_Start(dev);
-    }
+	if (drv->tCommon.eDriverState == DRV_STATE_STOPPED ||
+	    drv->tCommon.eDriverState == DRV_STATE_IDLE) {
+		status = wlanDrvIf_Start(dev);
+	}
 
 	/*
 	 *  Finalize network interface setup
@@ -676,7 +690,7 @@ int wlanDrvIf_Open (struct net_device *dev)
 	sdioDrv_register_pm(wlanDrvIf_pm_resume, wlanDrvIf_pm_suspend);
 #endif
 #endif
-	return 0;
+	return status;
 }
 
 /** 
@@ -698,6 +712,12 @@ int wlanDrvIf_Stop (struct net_device *dev)
 
 	ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Stop()\n");
 	printk("%s\n", __func__);
+
+	if (DRV_STATE_FAILED == drv->tCommon.eDriverState)
+	{
+		return -ENODEV;
+	}
+
 	/* 
 	 *  Insert Stop command in DrvMain action queue, request driver scheduling 
 	 *      and wait for Stop process completion.
