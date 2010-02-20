@@ -279,10 +279,11 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
     eStatus = que_Enqueue (pCmdHndlr->hCmdQueue, (TI_HANDLE)pNewCmd);
     if (eStatus != TI_OK) 
     {
-        context_LeaveCriticalSection (pCmdHndlr->hContext);  /* Leave critical section */
         os_printf("cmdPerform: Failed to enqueue new command\n");
         os_SignalObjectFree (pCmdHndlr->hOs, pNewCmd->pSignalObject);
+        pNewCmd->pSignalObject = NULL;
         os_memoryFree (pCmdHndlr->hOs, pNewCmd, sizeof (TConfigCommand));
+        context_LeaveCriticalSection (pCmdHndlr->hContext);  /* Leave critical section */
         return TI_NOK;
     }
 
@@ -316,20 +317,21 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
 	os_SignalObjectWait (pCmdHndlr->hOs, pNewCmd->pSignalObject);
 
 	/* After "wait" - the command has already been processed by the drivers' context */
-    /* Indicate the end of command process, from adding it to the queue until get return status form it */  
-    pNewCmd->bWaitFlag = TI_FALSE;
+	/* Indicate the end of command process, from adding it to the queue until get return status form it */  
+	pNewCmd->bWaitFlag = TI_FALSE;
 
 	/* Copy the return code */
 	eStatus = pNewCmd->return_code;
 
 	/* Free signalling object and command structure */
 	os_SignalObjectFree (pCmdHndlr->hOs, pNewCmd->pSignalObject);
+	pNewCmd->pSignalObject = NULL;
 
-    /* If command not completed in this context (Async) don't free the command memory */
-    if(COMMAND_PENDING != pNewCmd->eCmdStatus)
-    {
-        os_memoryFree (pCmdHndlr->hOs, pNewCmd, sizeof (TConfigCommand));
-    }
+	/* If command not completed in this context (Async) don't free the command memory */
+	if(COMMAND_PENDING != pNewCmd->eCmdStatus)
+	{
+		os_memoryFree (pCmdHndlr->hOs, pNewCmd, sizeof (TConfigCommand));
+	}
 
 	/* Return to calling process with command return code */
 	return eStatus;
