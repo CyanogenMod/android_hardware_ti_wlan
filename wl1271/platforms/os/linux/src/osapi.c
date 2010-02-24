@@ -593,7 +593,7 @@ void os_InterruptServiced (TI_HANDLE OsContext)
 /*-----------------------------------------------------------------------------
 Routine Name:  os_wake_lock_timeout
 
-Routine Description: Called to prevent system from suspend for some time
+Routine Description: Called to prevent system from suspend for 1 sec
 
 Arguments:     OsContext - handle to OS context
 
@@ -611,7 +611,7 @@ int os_wake_lock_timeout (TI_HANDLE OsContext)
 		if (drv->wl_packet) {
 			drv->wl_packet = 0;
 #ifdef CONFIG_HAS_WAKELOCK
-			wake_lock_timeout(&drv->wl_rxwake, (HZ >> 1));
+			wake_lock_timeout(&drv->wl_rxwake, HZ);
 #endif
 		}
 		spin_unlock_irqrestore(&drv->lock, flags);
