@@ -1295,6 +1295,12 @@ static int wpa_driver_tista_associate(void *priv,
 	wpa_printf(MSG_DEBUG, "%s", __FUNCTION__);
 	TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
 
+#ifdef WPA_SUPPLICANT_VER_0_6_X
+#ifdef ANDROID
+	((struct wpa_driver_wext_data *)(drv->wext))->skip_disconnect = 0;
+#endif
+#endif
+
 	if (wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) {
 		if (!(flags & IFF_UP)) {
 			wpa_driver_wext_set_ifflags(drv->wext, flags | IFF_UP);
