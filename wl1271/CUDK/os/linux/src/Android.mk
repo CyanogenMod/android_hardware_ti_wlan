@@ -41,9 +41,9 @@ endif
 ifeq ($(BUILD_SUPPL), y)
 DK_DEFINES += -D WPA_SUPPLICANT -D CONFIG_CTRL_IFACE -D CONFIG_CTRL_IFACE_UNIX
 -include $(WPA_SUPPL_DIR)/.config
-	ifeq ($(CONFIG_WPS), y)
-	DK_DEFINES += -DCONFIG_WPS
-	endif
+ifdef CONFIG_WPS
+DK_DEFINES += -DCONFIG_WPS
+endif
 endif
 
 LOCAL_CFLAGS += \

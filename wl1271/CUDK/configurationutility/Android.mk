@@ -5,7 +5,6 @@ STATIC_LIB ?= y
 DEBUG ?= y
 BUILD_SUPPL ?= n
 WPA_ENTERPRISE ?= y
-CONFIG_WPS ?= y
 
 WILINK_ROOT = ../..
 CUDK_ROOT ?= $(WILINK_ROOT)/CUDK
@@ -55,8 +54,8 @@ endif
 #Supplicant image building
 ifeq ($(BUILD_SUPPL), y)
 DK_DEFINES += -D WPA_SUPPLICANT -D CONFIG_CTRL_IFACE -D CONFIG_CTRL_IFACE_UNIX
--include external/wpa_supplicant/.config
-ifeq ($(CONFIG_WPS), y)
+-include $(WPA_SUPPL_DIR)/.config
+ifdef CONFIG_WPS
 	DK_DEFINES += -DCONFIG_WPS
 endif
 endif
