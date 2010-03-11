@@ -615,6 +615,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 		}
 		ret = wpa_driver_tista_driver_stop(priv);
 		if( ret == 0 ) {
+			scan_exit(drv); /* Clear scan cache */
 			drv->driver_is_loaded = FALSE;
 			wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "STOPPED");
 		}
@@ -1307,8 +1308,10 @@ static int wpa_driver_tista_associate(void *priv,
 		}
 	}
 
+#if 0
 	if (!params->bssid)
 		wpa_driver_wext_set_bssid(drv->wext, NULL);
+#endif
 
 #ifdef WPA_SUPPLICANT_VER_0_5_X
 	/* Set driver network mode (Adhoc/Infrastructure) according to supplied parameters */
@@ -1363,7 +1366,6 @@ static int wpa_driver_tista_associate(void *priv,
 	if (params->freq)
 		wpa_driver_wext_set_freq(drv->wext, params->freq);
 
-	ret = wpa_driver_wext_set_ssid(drv->wext, params->ssid, params->ssid_len);
 	if (params->bssid) {
 		wpa_printf(MSG_DEBUG, "wpa_driver_tista_associate: BSSID=" MACSTR,
 			            MAC2STR(params->bssid));
@@ -1372,7 +1374,7 @@ static int wpa_driver_tista_associate(void *priv,
 			wpa_driver_wext_set_bssid(drv->wext, params->bssid);
 		}
 	}
-
+	ret = wpa_driver_wext_set_ssid(drv->wext, params->ssid, params->ssid_len);
 	return ret;
 }
 
