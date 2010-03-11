@@ -132,7 +132,8 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
     }
 
     pParam = (paramInfo_t *)os_memoryAlloc(pHandle->hOs, sizeof(paramInfo_t));
-    if (!pParam) {
+    if (!pParam)
+	{
         RxBufFree(pHandle->hOs, pBuffer);
         return TI_NOK;
     }
@@ -817,7 +818,7 @@ mlme_recv_end:
 	RxBufFree(pHandle->hOs, pBuffer);
     if (status != TI_OK)
         return TI_NOK;
-    return TI_OK;
+    return status;
 }
 
 TI_STATUS mlmeParser_getFrameType(mlme_t *pMlme, TI_UINT16* pFrameCtrl, dot11MgmtSubType_e *pType)

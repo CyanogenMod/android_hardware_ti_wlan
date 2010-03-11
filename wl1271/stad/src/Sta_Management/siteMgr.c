@@ -292,7 +292,9 @@ TI_HANDLE siteMgr_create(TI_HANDLE hOs)
 
     pSiteMgr = os_memoryAlloc(hOs, sizeof(siteMgr_t));
     if (pSiteMgr == NULL)
+    {
         return NULL;
+    }
 
     os_memoryZero(hOs, pSiteMgr, sizeof(siteMgr_t));
 
@@ -605,6 +607,8 @@ TI_STATUS siteMgr_setParam(TI_HANDLE        hSiteMgr,
     TI_UINT32      channel;
     ESlotTime  slotTime;
     paramInfo_t	param;
+    PowerMgr_t *pPowerMgr = (PowerMgr_t*)pSiteMgr->hPowerMgr;
+    static PowerMgr_PowerMode_e desiredPowerModeProfile;
 
     switch(pParam->paramType)
     {
@@ -724,18 +728,34 @@ TI_STATUS siteMgr_setParam(TI_HANDLE        hSiteMgr,
 			param.paramType = RSN_WPA_PROMOTE_OPTIONS;	
            	param.content.rsnWPAPromoteFlags = ADMCTRL_WPA_OPTION_ENABLE_PROMOTE_AUTH_MODE;
            	rsn_setParam(pSiteMgr->hRsn, &param);
+
+            /*
+		     * Set the system to Active power save
+             */
+            desiredPowerModeProfile = pPowerMgr->desiredPowerModeProfile;
+            param.paramType = POWER_MGR_POWER_MODE;
+            param.content.powerMngPowerMode.PowerMode = POWER_MODE_ACTIVE;
+            param.content.powerMngPowerMode.PowerMngPriority = POWER_MANAGER_USER_PRIORITY;
+            powerMgr_setParam(pSiteMgr->hPowerMgr,&param);
         }
 		else
 		{
 			param.paramType = RSN_WPA_PROMOTE_OPTIONS;	
            	param.content.rsnWPAPromoteFlags = ADMCTRL_WPA_OPTION_NONE;
            	rsn_setParam(pSiteMgr->hRsn, &param);
+
+            /* 
+             * Set the system to last power mode
+             */
+            param.paramType = POWER_MGR_POWER_MODE;
+            param.content.powerMngPowerMode.PowerMode = desiredPowerModeProfile;
+            param.content.powerMngPowerMode.PowerMngPriority = POWER_MANAGER_USER_PRIORITY;
+            powerMgr_setParam(pSiteMgr->hPowerMgr,&param);
 		}
 
         /* update the SME on the WPS mode */
-            param.paramType = SME_WSC_PB_MODE_PARAM;
-            sme_SetParam (pSiteMgr->hSmeSm, &param);
-
+        param.paramType = SME_WSC_PB_MODE_PARAM;
+        sme_SetParam (pSiteMgr->hSmeSm, &param);
 
         return TI_OK;
 
@@ -2927,13 +2947,13 @@ void siteMgr_printPrimarySiteDesc(TI_HANDLE hSiteMgr )
     /* the driver logger can't print %s
      * TRACE1(pSiteMgr->hReport, REPORT_SEVERITY_CONSOLE, "-- SSID  = %s \n",pPrimarySite->ssid.str); 
      */
-    TRACE6(pSiteMgr->hReport, REPORT_SEVERITY_CONSOLE,"-- BSSID = %x-%x-%x-%x-%x-%x\n",
+    TRACE6(pSiteMgr->hReport, REPORT_SEVERITY_CONSOLE,"-- BSSID = %02x-%02x-%02x-%02x-%02x-%02x\n",
                     pPrimarySite->bssid[0], pPrimarySite->bssid[1], pPrimarySite->bssid[2], pPrimarySite->bssid[3], 
                     pPrimarySite->bssid[4], pPrimarySite->bssid[5]);
 
 
 	WLAN_OS_REPORT(("-- SSID  = %s \n",pPrimarySite->ssid.str));
-	WLAN_OS_REPORT(("-- BSSID = %x-%x-%x-%x-%x-%x\n",
+	WLAN_OS_REPORT(("-- BSSID = %02x-%02x-%02x-%02x-%02x-%02x\n",
 					pPrimarySite->bssid[0], pPrimarySite->bssid[1], pPrimarySite->bssid[2], pPrimarySite->bssid[3], 
 					pPrimarySite->bssid[4], pPrimarySite->bssid[5]));
 }
@@ -3116,6 +3136,24 @@ RETURN:
 ************************************************************************/
 static ERate translateRateMaskToValue(siteMgr_t *pSiteMgr, TI_UINT32 rateMask)
 {
+ /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+    if (rateMask & DRV_RATE_MASK_MCS_7_OFDM)
+        return DRV_RATE_MCS_7;
+    if (rateMask & DRV_RATE_MASK_MCS_6_OFDM)
+        return DRV_RATE_MCS_6;
+    if (rateMask & DRV_RATE_MASK_MCS_5_OFDM)
+        return DRV_RATE_MCS_5;
+    if (rateMask & DRV_RATE_MASK_MCS_4_OFDM)
+        return DRV_RATE_MCS_4;
+    if (rateMask & DRV_RATE_MASK_MCS_3_OFDM)
+        return DRV_RATE_MCS_3;
+    if (rateMask & DRV_RATE_MASK_MCS_2_OFDM)
+        return DRV_RATE_MCS_2;
+    if (rateMask & DRV_RATE_MASK_MCS_1_OFDM)
+        return DRV_RATE_MCS_1;
+    if (rateMask & DRV_RATE_MASK_MCS_0_OFDM)
+        return DRV_RATE_MCS_0;
+/* MODS_END_FOR_11N_RATE_REPORTING */
     if (rateMask & DRV_RATE_MASK_54_OFDM)
         return DRV_RATE_54M;
     if (rateMask & DRV_RATE_MASK_48_OFDM)
@@ -3684,8 +3722,20 @@ void siteMgr_ConfigRate(TI_HANDLE hSiteMgr)
             pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[OperationMode] = SUPPORTED_RATE_SET_1_2_5_5_11;
     }
 
+/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+#if 0
     /* use HT MCS rates */
     StaCap_IsHtEnable (pSiteMgr->hStaCap, &b11nEnable);
+#else
+    {
+        if (pSiteMgr->pDesiredParams->siteMgrDesiredBSSType == BSS_INFRASTRUCTURE)
+            b11nEnable = TI_TRUE;
+        else
+            b11nEnable = TI_FALSE;
+    }
+#endif
+/* MODS_END_FOR_11N_RATE_REPORTING */
+
     if (TI_TRUE == b11nEnable)
     {
         OperationMode = DOT11_N_MODE;

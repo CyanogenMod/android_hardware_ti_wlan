@@ -1067,6 +1067,8 @@ typedef enum TXPWR_CFG0__VGA_STEP_ENMT
 /* NVS definition start here */
 
 #define	NVS_TX_TYPE_INDEX		0 
+#define        NVS_TX_LENGTH_INDEX                             ((NVS_TX_TYPE_INDEX) + 1) /* 1 (26) */
+#define        NVS_TX_PARAM_INDEX                              ((NVS_TX_LENGTH_INDEX) + 2) /* 3  (28) */
 
 #define START_TYPE_INDEX_IN_TLV	0
 #define TLV_TYPE_LENGTH			1
@@ -1137,9 +1139,15 @@ typedef enum TXPWR_CFG0__VGA_STEP_ENMT
 #define NVS_TX_PARAM_LENGTH				NVS_TX_PARAM_LENGTH_NVS_V2
 
 /* NVS RX version */
+#define        NVS_RX_TYPE_INDEX                               ((NVS_TX_PARAM_INDEX) + (NVS_TX_PARAM_LENGTH)) /* 316 (341) */
+#define        NVS_RX_LENGTH_INDEX                             ((NVS_RX_TYPE_INDEX) + 1) /* 317 (342) */
+#define        NVS_RX_PARAM_INDEX                              ((NVS_RX_LENGTH_INDEX) + 2) /* 319 (344) */
 #define	NVS_RX_PARAM_LENGTH				NUMBER_OF_RX_BIP_EFUSE_PARAMETERS_E				/* 19		 */
 
 /* NVS version parameter length */
+#define NVS_VERSION_TYPE_INDEX                 ((NVS_RX_PARAM_INDEX) + (NVS_RX_PARAM_LENGTH)) /* 338 (363) */
+#define NVS_VERSION_LENGTH_INDEX               ((NVS_VERSION_TYPE_INDEX) + 1) /* 339 (364) */
+#define NVS_VERSION_PARAMETER_INDEX            ((NVS_VERSION_LENGTH_INDEX) + 2) /* 340 (365) */
 #define NVS_VERSION_PARAMETER_LENGTH	3
 
 /* NVS max length */

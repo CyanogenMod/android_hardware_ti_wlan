@@ -54,7 +54,9 @@ void *RxBufAlloc(TI_HANDLE hOs, TI_UINT32 len,PacketClassTag_e ePacketClassTag)
 
 	skb = alloc_skb(alloc_len, GFP_ATOMIC);
 	if (!skb)
+	{
 		return NULL;
+	}
 	rx_head = (rx_head_t *)skb->head;
 	rx_head->skb = skb;
 	skb_reserve(skb, RX_HEAD_LEN_ALIGNED + WSPI_PAD_BYTES);

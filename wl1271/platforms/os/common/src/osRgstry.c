@@ -161,8 +161,10 @@ NDIS_STRING STRdot11BasicRateMask_A           = NDIS_STRING_CONST( "dot11BasicRa
 NDIS_STRING STRdot11SupportedRateMask_A       = NDIS_STRING_CONST( "dot11SupportedRateMaskA");
 NDIS_STRING STRdot11BasicRateMask_AG           = NDIS_STRING_CONST( "dot11BasicRateMaskAG");
 NDIS_STRING STRdot11SupportedRateMask_AG       = NDIS_STRING_CONST( "dot11SupportedRateMaskAG");
-NDIS_STRING STRdot11BasicRateMask_N           = NDIS_STRING_CONST( "STRdot11BasicRateMask_N");
-NDIS_STRING STRdot11SupportedRateMask_N       = NDIS_STRING_CONST( "STRdot11SupportedRateMask_N");
+/*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
+NDIS_STRING STRdot11BasicRateMask_N           = NDIS_STRING_CONST( "dot11BasicRateMask_N");
+NDIS_STRING STRdot11SupportedRateMask_N       = NDIS_STRING_CONST( "dot11SupportedRateMask_N");
+/*** MODS_END_FOR_11N_RATE_REPORTING ***/
 
 NDIS_STRING STRRadio11_RxLevel              = NDIS_STRING_CONST( "Radio11_RxLevel");
 NDIS_STRING STRRadio11_LNA                  = NDIS_STRING_CONST( "Radio11_LNA");

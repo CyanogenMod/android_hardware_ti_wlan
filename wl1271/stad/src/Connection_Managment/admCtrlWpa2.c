@@ -820,7 +820,13 @@ TI_STATUS admCtrlWpa2_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSite
     TI_STATUS               status;
     wpa2IeData_t            wpa2Data;
     TI_UINT8                *pWpa2Ie;
+/*** OMAPS00214746_CHANGE_START ***/
+#if 0
     ECipherSuite            uSuite, bSuite,encryptionStatus;
+#else
+    ECipherSuite            uSuite, bSuite; 
+#endif
+/*** OMAPS00214746_CHANGE_END ***/
     TI_UINT8                i = 0;
     TIWLN_SIMPLE_CONFIG_MODE  wscMode = TIWLN_SIMPLE_CONFIG_OFF;
 
@@ -839,6 +845,8 @@ TI_STATUS admCtrlWpa2_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSite
     {
         return TI_NOK;
     }
+/*** OMAPS00214746_CHANGE_START ***/
+#if 0  /*** Delete the following check ***/
 
 	pAdmCtrl->getCipherSuite(pAdmCtrl, &encryptionStatus);
 	if ((encryptionStatus == TWD_CIPHER_TKIP) && (pRsnSiteParams->pHTCapabilities->tHdr[0] != TI_FALSE) && (pRsnSiteParams->pHTInfo->tHdr[0] != TI_FALSE))
@@ -846,6 +854,9 @@ TI_STATUS admCtrlWpa2_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSite
 		TRACE0(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION,"Dismiss AP - HT with TKIP is not valid");
         return TI_NOK; /* if the encyption is TKIP and the site does support HT(11n) the site can not be a candidate */
 	}
+#endif /*** End of Deletion ***/
+/*** OMAPS00214746_CHANGE_END ***/
+
     /* Get Simple-Config state */
     siteMgr_getParamWSC(pAdmCtrl->pRsn->hSiteMgr, &wscMode); /* SITE_MGR_SIMPLE_CONFIG_MODE */
     status = admCtrl_parseIe(pAdmCtrl, pRsnData, &pWpa2Ie, RSN_IE_ID);

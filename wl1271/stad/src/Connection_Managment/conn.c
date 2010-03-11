@@ -101,8 +101,8 @@ TI_HANDLE conn_create(TI_HANDLE hOs)
 	{
 		return NULL;
 	}
-	
-	os_memoryZero(hOs, (void *)pConn, sizeof(conn_t));
+	os_memoryZero (pConn->hOs, pConn, sizeof(conn_t));
+
 	/* Creating connection Ibss SM */
 	status = fsm_Create(hOs, &pFsm, CONN_IBSS_NUM_STATES, CONN_IBSS_NUM_EVENTS);
 	if (status != TI_OK)

@@ -300,6 +300,10 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             struct iw_point *data = (struct iw_point *) cmdObj->buffer1;
             struct iw_range *range = (struct iw_range *) cmdObj->buffer2;
             int i;
+/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+            ScanBssType_e smeDesiredBssType = BSS_ANY;
+            paramInfo_t *pParam2;
+/* MODS_END_FOR_11N_RATE_REPORTING */
 
             /* Reset structure */
             data->length = sizeof(struct iw_range);
@@ -333,12 +337,45 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             res = cmdDispatch_GetParam (pCmdInterpret->hCmdDispatch, pParam );
 
             CHECK_PENDING_RESULT(res,pParam)
+/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+            pParam2 = (paramInfo_t *)os_memoryAlloc(pCmdInterpret->hOs, sizeof(paramInfo_t));
+            if (pParam2)
+            {
+                pParam2->paramType = SME_DESIRED_BSS_TYPE_PARAM;
+                pParam2->paramLength = sizeof(ScanBssType_e);
+                res = cmdDispatch_GetParam(pCmdInterpret->hCmdDispatch, pParam2);
+                CHECK_PENDING_RESULT(res,pParam2)
+                smeDesiredBssType = pParam2->content.smeDesiredBSSType;
+                os_memoryFree(pCmdInterpret->hOs, pParam2, sizeof(paramInfo_t));
+            }
+/* MODS_END_FOR_11N_RATE_REPORTING */
 
             /* Number of entries in the rates list */
             range->num_bitrates = pParam->content.siteMgrDesiredSupportedRateSet.len;
             for (i=0; i<pParam->content.siteMgrDesiredSupportedRateSet.len; i++)
             {
-                range->bitrate[i] = ((pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F) * 500000);
+/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+                switch(pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F)
+                {
+                    case NET_RATE_MCS0:
+                    case NET_RATE_MCS1:
+                    case NET_RATE_MCS2:
+                    case NET_RATE_MCS3:
+                    case NET_RATE_MCS4:
+                    case NET_RATE_MCS5:
+                    case NET_RATE_MCS6:
+                    case NET_RATE_MCS7:
+                         if (BSS_INDEPENDENT == smeDesiredBssType)
+                             continue;
+                    default:
+                        range->bitrate[i] = ((pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F) * 500000);
+                        if (63500000 == range->bitrate[i])
+                        {
+                            range->bitrate[i] = 65000000;   /* convert special code 0x7F to 65Mbps */
+                        }
+                        break;
+                }
+/* MODS_END_FOR_11N_RATE_REPORTING */
             }
 
             /* RTS threshold */
@@ -709,11 +746,21 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 os_memorySet (pCmdInterpret->hOs, &iwe, 0, sizeof(iwe));
                 iwe.cmd = SIOCGIWRATE;
                 current_val = event + IW_EV_LCP_LEN;
-                for (j=0; j<16; j++)
-                {
+/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+                for (j=0; j<32; j++)
+		{
                     if (my_current->SupportedRates[j])
                     {
-                        iwe.u.bitrate.value = ((my_current->SupportedRates[j] & 0x7f) * 500000);
+                        if ((my_current->SupportedRates[j] & 0x7f) == NET_RATE_MCS7)
+                        {
+                            iwe.u.bitrate.value = 65000000;  /* convert the special code 0x7f to 65Mbps */
+                        }
+                        else
+                        {
+                            iwe.u.bitrate.value = ((my_current->SupportedRates[j] & 0x7f) * 500000);
+                        }
+                        /* printk("Supported Rates [%d] = %d\n", j, iwe.u.bitrate.value); */
+/* MODS_END_FOR_11N_RATE_REPORTING */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27)
                         current_val = iwe_stream_add_value(event, current_val, end_buf, &iwe,IW_EV_PARAM_LEN);
 #else

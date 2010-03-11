@@ -1,0 +1,654 @@
+diff -Nar wl1271/TWD/Ctrl/CmdBldCfgIE.c wl1271.new/wilink_6_1/TWD/Ctrl/CmdBldCfgIE.c
+775a776
+>     {
+776a778,779
+>     }
+> 
+diff -Nar wl1271/TWD/Ctrl/CmdBldCmd.c wl1271.new/wilink_6_1/TWD/Ctrl/CmdBldCmd.c
+549a550
+>         {
+550a552
+>         }
+diff -Nar wl1271/TWD/FirmwareApi/public_radio.h wl1271.new/wilink_6_1/TWD/FirmwareApi/public_radio.h
+1069a1070,1071
+> #define        NVS_TX_LENGTH_INDEX                             ((NVS_TX_TYPE_INDEX) + 1) /* 1 (26) */
+> #define        NVS_TX_PARAM_INDEX                              ((NVS_TX_LENGTH_INDEX) + 2) /* 3  (28) */
+1139a1142,1144
+> #define        NVS_RX_TYPE_INDEX                               ((NVS_TX_PARAM_INDEX) + (NVS_TX_PARAM_LENGTH)) /* 316 (341) */
+> #define        NVS_RX_LENGTH_INDEX                             ((NVS_RX_TYPE_INDEX) + 1) /* 317 (342) */
+> #define        NVS_RX_PARAM_INDEX                              ((NVS_RX_LENGTH_INDEX) + 2) /* 319 (344) */
+1142a1148,1150
+> #define NVS_VERSION_TYPE_INDEX                 ((NVS_RX_PARAM_INDEX) + (NVS_RX_PARAM_LENGTH)) /* 338 (363) */
+> #define NVS_VERSION_LENGTH_INDEX               ((NVS_VERSION_TYPE_INDEX) + 1) /* 339 (364) */
+> #define NVS_VERSION_PARAMETER_INDEX            ((NVS_VERSION_LENGTH_INDEX) + 2) /* 340 (365) */
+diff -Nar wl1271/config/tiwlan.ini wl1271.new/wilink_6_1/config/tiwlan.ini
+184c184
+< ConsecutivePsPollDeliveryFailureThreshold = 20   # Number of failed PsPoll's to start ACTIVE time out
+---
+> ConsecutivePsPollDeliveryFailureThreshold = 4   # Number of failed PsPoll's to start ACTIVE time out
+diff -Nar wl1271/platforms/os/common/build/linux/common.inc wl1271.new/wilink_6_1/platforms/os/common/build/linux/common.inc
+35a36,41
+> 
+> #
+> # Compile with GEM support or not
+> #
+> GEM ?= n
+> 
+86a93,96
+> ifeq ($(GEM),y)
+>     DK_DEFINES += -D GEM_SUPPORTED
+> endif
+> 
+diff -Nar wl1271/platforms/os/common/src/osRgstry.c wl1271.new/wilink_6_1/platforms/os/common/src/osRgstry.c
+164,165c164,167
+< NDIS_STRING STRdot11BasicRateMask_N           = NDIS_STRING_CONST( "STRdot11BasicRateMask_N");
+< NDIS_STRING STRdot11SupportedRateMask_N       = NDIS_STRING_CONST( "STRdot11SupportedRateMask_N");
+---
+> /*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
+> NDIS_STRING STRdot11BasicRateMask_N           = NDIS_STRING_CONST( "dot11BasicRateMask_N");
+> NDIS_STRING STRdot11SupportedRateMask_N       = NDIS_STRING_CONST( "dot11SupportedRateMask_N");
+> /*** MODS_END_FOR_11N_RATE_REPORTING ***/
+diff -Nar wl1271/platforms/os/linux/build/common.inc wl1271.new/wilink_6_1/platforms/os/linux/build/common.inc
+34a35,40
+> 
+> #
+> # Compile with GEM support or not
+> #
+> GEM ?= n
+> 
+85a92,95
+> ifeq ($(GEM),y)
+>     DK_DEFINES += -D GEM_SUPPORTED
+> endif
+> 
+diff -Nar wl1271/platforms/os/linux/src/CmdInterpretWext.c wl1271.new/wilink_6_1/platforms/os/linux/src/CmdInterpretWext.c
+302a303,306
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+>             ScanBssType_e smeDesiredBssType = BSS_ANY;
+>             paramInfo_t *pParam2;
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+335a340,351
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+>             pParam2 = (paramInfo_t *)os_memoryAlloc(pCmdInterpret->hOs, sizeof(paramInfo_t));
+>             if (pParam2)
+>             {
+>                 pParam2->paramType = SME_DESIRED_BSS_TYPE_PARAM;
+>                 pParam2->paramLength = sizeof(ScanBssType_e);
+>                 res = cmdDispatch_GetParam(pCmdInterpret->hCmdDispatch, pParam2);
+>                 CHECK_PENDING_RESULT(res,pParam2)
+>                 smeDesiredBssType = pParam2->content.smeDesiredBSSType;
+>                 os_memoryFree(pCmdInterpret->hOs, pParam2, sizeof(paramInfo_t));
+>             }
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+341c357,378
+<                 range->bitrate[i] = ((pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F) * 500000);
+---
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+>                 switch(pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F)
+>                 {
+>                     case NET_RATE_MCS0:
+>                     case NET_RATE_MCS1:
+>                     case NET_RATE_MCS2:
+>                     case NET_RATE_MCS3:
+>                     case NET_RATE_MCS4:
+>                     case NET_RATE_MCS5:
+>                     case NET_RATE_MCS6:
+>                     case NET_RATE_MCS7:
+>                          if (BSS_INDEPENDENT == smeDesiredBssType)
+>                              continue;
+>                     default:
+>                         range->bitrate[i] = ((pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F) * 500000);
+>                         if (63500000 == range->bitrate[i])
+>                         {
+>                             range->bitrate[i] = 65000000;   /* convert special code 0x7F to 65Mbps */
+>                         }
+>                         break;
+>                 }
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+712,713c749,751
+<                 for (j=0; j<16; j++)
+<                 {
+---
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+>                 for (j=0; j<32; j++)
+> 		{
+716c754,763
+<                         iwe.u.bitrate.value = ((my_current->SupportedRates[j] & 0x7f) * 500000);
+---
+>                         if ((my_current->SupportedRates[j] & 0x7f) == NET_RATE_MCS7)
+>                         {
+>                             iwe.u.bitrate.value = 65000000;  /* convert the special code 0x7f to 65Mbps */
+>                         }
+>                         else
+>                         {
+>                             iwe.u.bitrate.value = ((my_current->SupportedRates[j] & 0x7f) * 500000);
+>                         }
+>                         /* printk("Supported Rates [%d] = %d\n", j, iwe.u.bitrate.value); */
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+diff -Nar wl1271/platforms/os/linux/src/RxBuf.c wl1271.new/wilink_6_1/platforms/os/linux/src/RxBuf.c
+56a57
+> 	{
+57a59
+> 	}
+diff -Nar wl1271/platforms/os/linux/src/WlanDrvIf.c wl1271.new/wilink_6_1/platforms/os/linux/src/WlanDrvIf.c
+639c639,640
+< 	if (!drv->tCommon.hDrvMain) {
+---
+>     if (!drv->tCommon.hDrvMain)
+>     {
+774c775,776
+< 	if (dev == NULL) {
+---
+> 	if (dev == NULL)
+> 	{
+807c809,810
+< 	if (res != 0) {
+---
+> 	if (res != 0)
+> 	{
+862c865,866
+< 	if (!drv) {
+---
+>     if (!drv)
+>     {
+1017c1021,1022
+< 	if (drv && drv->wl_sock) {
+---
+>     if (drv && drv->wl_sock) 
+>     {
+1024c1029,1030
+< 	if (drv->irq) {
+---
+>     if (drv->irq)
+>     {
+1038,1061c1044,1067
+< 	if (drv->tCommon.tFwImage.pImage) {
+< 		os_memoryFree (drv, drv->tCommon.tFwImage.pImage, drv->tCommon.tFwImage.uSize);
+< #ifdef TI_MEM_ALLOC_TRACE
+< 		os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+< 			__FUNCTION__, __LINE__, drv->tCommon.tFwImage.uSize,
+< 			-drv->tCommon.tFwImage.uSize);
+< #endif
+< 	}
+< 	if (drv->tCommon.tNvsImage.pImage) {
+< 		kfree (drv->tCommon.tNvsImage.pImage);
+< #ifdef TI_MEM_ALLOC_TRACE
+< 		os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+< 			__FUNCTION__, __LINE__, drv->tCommon.tNvsImage.uSize,
+< 			-drv->tCommon.tNvsImage.uSize);
+< #endif
+< 	}
+< 	if (drv->tCommon.tIniFile.pImage) {
+< 		kfree (drv->tCommon.tIniFile.pImage);
+< #ifdef TI_MEM_ALLOC_TRACE
+< 		os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+< 			__FUNCTION__, __LINE__, drv->tCommon.tIniFile.uSize,
+< 			-drv->tCommon.tIniFile.uSize);
+< #endif
+< 	}
+---
+>     if (drv->tCommon.tFwImage.pImage)
+>     {
+>         os_memoryFree (drv, drv->tCommon.tFwImage.pImage, drv->tCommon.tFwImage.uSize);
+>         #ifdef TI_MEM_ALLOC_TRACE        
+>           os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+>               __FUNCTION__, __LINE__, drv->tCommon.tFwImage.uSize, -drv->tCommon.tFwImage.uSize);
+>         #endif
+>     }
+>     if (drv->tCommon.tNvsImage.pImage)
+>     {
+>         kfree (drv->tCommon.tNvsImage.pImage);
+>         #ifdef TI_MEM_ALLOC_TRACE        
+>           os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+>               __FUNCTION__, __LINE__, drv->tCommon.tNvsImage.uSize, -drv->tCommon.tNvsImage.uSize);
+>         #endif
+>     }
+>     if (drv->tCommon.tIniFile.pImage)
+>     {
+>         kfree (drv->tCommon.tIniFile.pImage);
+>         #ifdef TI_MEM_ALLOC_TRACE        
+>           os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+>               __FUNCTION__, __LINE__, drv->tCommon.tIniFile.uSize, -drv->tCommon.tIniFile.uSize);
+>         #endif
+>     }
+diff -Nar wl1271/stad/src/Connection_Managment/admCtrlWpa.c wl1271.new/wilink_6_1/stad/src/Connection_Managment/admCtrlWpa.c
+1074c1074,1075
+< 
+---
+> /*** OMAPS00214746_CHANGE_START ***/
+> #if 0
+1080c1081
+< 
+---
+> #endif
+diff -Nar wl1271/stad/src/Connection_Managment/admCtrlWpa2.c wl1271.new/wilink_6_1/stad/src/Connection_Managment/admCtrlWpa2.c
+822a823,824
+> /*** OMAPS00214746_CHANGE_START ***/
+> #if 0
+823a826,829
+> #else
+>     ECipherSuite            uSuite, bSuite; 
+> #endif
+> /*** OMAPS00214746_CHANGE_END ***/
+841a848,849
+> /*** OMAPS00214746_CHANGE_START ***/
+> #if 0  /*** Delete the following check ***/
+848a857,859
+> #endif /*** End of Deletion ***/
+> /*** OMAPS00214746_CHANGE_END ***/
+> 
+diff -Nar wl1271/stad/src/Connection_Managment/conn.c wl1271.new/wilink_6_1/stad/src/Connection_Managment/conn.c
+104,105c104,105
+< 	
+< 	os_memoryZero(hOs, (void *)pConn, sizeof(conn_t));
+---
+> 	os_memoryZero (pConn->hOs, pConn, sizeof(conn_t));
+> 
+diff -Nar wl1271/stad/src/Sta_Management/assocSM.c wl1271.new/wilink_6_1/stad/src/Sta_Management/assocSM.c
+1364c1364,1370
+<     
+---
+> 
+> /*** OMAPS00214746_CHANGE_START ***/
+>     ECipherSuite    eCipherSuite = TWD_CIPHER_NONE; /* To be used for checking whether 
+>                                                        AP supports HT rates and TKIP 
+>                                                      */
+> /*** OMAPS00214746_CHANGE_END ***/  
+> 
+1528a1535,1545
+> /*** OMAPS00214746_CHANGE_START ***/
+>     /* Privacy - Used later on HT */
+>     param.paramType = RSN_ENCRYPTION_STATUS_PARAM;
+>     status          = rsn_getParam(pCtx->hRsn, &param);
+>    
+>     if(status == TI_OK)
+>     {
+>         eCipherSuite = param.content.rsnEncryptionStatus;
+>     } 
+> /*** OMAPS00214746_CHANGE_END ***/
+> 
+1532a1550,1551
+> /*** OMAPS00214746_CHANGE_START ***/
+> #if 0
+1533a1553,1557
+> #else
+>     /* Disallow TKIP with HT Rates: If this is the case - discard HT rates from Association Request */
+>     if((TI_TRUE == param.content.bPrimarySiteHtSupport) && (eCipherSuite != TWD_CIPHER_TKIP))
+> #endif
+> /*** OMAPS00214746_CHANGE_END ***/
+diff -Nar wl1271/stad/src/Sta_Management/currBss.c wl1271.new/wilink_6_1/stad/src/Sta_Management/currBss.c
+83a84,85
+> #include "smePrivate.h"
+> #include "conn.h"
+660a663
+>     {
+662c665
+< 
+---
+>     }
+781a785
+>         {
+782a787
+>         }
+1017a1023,1025
+>     TSme   *pSme = (TSme*)pCurrBSS->hSme;
+>     conn_t *pConn = (conn_t *)pSme->hConn;
+> 
+1028c1036
+<             if( roamingEventType == ROAMING_TRIGGER_BSS_LOSS )
+---
+>             if (roamingEventType == ROAMING_TRIGGER_BSS_LOSS)
+1033c1041,1048
+<                 sme_Restart (pCurrBSS->hSme);
+---
+>                 if (pConn->currentConnType == CONNECTION_SELF)
+>                 {
+>                     return;
+>                 }
+>                 else 
+>                 {
+>                     sme_Restart (pCurrBSS->hSme);
+>                 }
+1110a1126
+>     {
+1111a1128
+>     }
+diff -Nar wl1271/stad/src/Sta_Management/mlmeParser.c wl1271.new/wilink_6_1/stad/src/Sta_Management/mlmeParser.c
+135c135,136
+<     if (!pParam) {
+---
+>     if (!pParam)
+> 	{
+820c821
+<     return TI_OK;
+---
+>     return status;
+diff -Nar wl1271/stad/src/Sta_Management/qosMngr.c wl1271.new/wilink_6_1/stad/src/Sta_Management/qosMngr.c
+120c120,122
+< 		return NULL;
+---
+>     {
+>         return NULL;
+>     }
+549,550c551,552
+< TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite:failed to init NON_QOS Queue Traffic parameters!!!\n\n");
+< 			return status;
+---
+>         TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite:failed to init NON_QOS Queue Traffic parameters!!!\n\n");
+> 		return status;
+1706c1708
+< TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite: Signal TSPEC was not re-negotiated while voice was \n");
+---
+>         TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite: Signal TSPEC was not re-negotiated while voice was \n");
+1754c1756,1757
+<                 return TI_NOK;
+---
+>                 status = qosMngr_setSite(hQosMngr, assocRsp);
+>                 return status;
+1789c1792
+< TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "qosMngr_setSite:failed to init NON_QOS parameters!!!\n\n");
+---
+>                     TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "qosMngr_setSite:failed to init NON_QOS parameters!!!\n\n");
+1797c1800
+< TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "Warning: qosMngr_setSite NO active protocls To set \n");
+---
+>         TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "Warning: qosMngr_setSite NO active protocls To set \n");
+2130a2134
+> #if 0
+2136a2141
+> #endif
+2778c2783
+< TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  Ignore  !!!");
+---
+>         TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  Ignore  !!!");
+2795c2800
+< 		tsInfo.tsInfoArr[1] = *pData;
+---
+>         tsInfo.tsInfoArr[1] = *pData;
+2804c2809
+< TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "QosMngr_receiveActionFrames: DELTS [ acID = %d ] \n", acID);
+---
+>         TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "QosMngr_receiveActionFrames: DELTS [ acID = %d ] \n", acID);
+2829c2834
+< TRACE3(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames: DELTS [ acID = %d userPriority = %d  currentUserPriority = %d] Current State in not ADMITED !! \n", acID, userPriority,pQosMngr->resourceMgmtTable.currentTspecInfo[acID].userPriority);
+---
+>             TRACE3(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames: DELTS [ acID = %d userPriority = %d  currentUserPriority = %d] Current State in not ADMITED !! \n", acID, userPriority,pQosMngr->resourceMgmtTable.currentTspecInfo[acID].userPriority);
+2872c2877
+< TRACE1(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "QosMngr_receiveActionFrames: Receive unknown action code = %d  -> Ignore !! \n",action);
+---
+>         TRACE1(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "QosMngr_receiveActionFrames: Receive unknown action code = %d  -> Ignore !! \n",action);
+2971a2977
+> 
+diff -Nar wl1271/stad/src/Sta_Management/scanResultTable.c wl1271.new/wilink_6_1/stad/src/Sta_Management/scanResultTable.c
+596a597,599
+> /*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
+>     TI_UINT32           uMcsSupportedRateMask = 0, uMcsbasicRateMask=0;
+> /*** MODS_END_FOR_11N_RATE_REPORTING ***/
+663a667,686
+> 
+> /*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
+>     if (pFrame->parsedIEs->content.iePacket.pHtCapabilities != NULL)
+>     {
+>         /* MCS build rates bit map */
+>         rate_McsNetStrToDrvBitmap (&uMcsSupportedRateMask,
+>                                    (pFrame->parsedIEs->content.iePacket.pHtCapabilities->aHtCapabilitiesIe + DOT11_HT_CAPABILITIES_MCS_RATE_OFFSET));
+> 
+>         pSite->rateMask.supportedRateMask |= uMcsSupportedRateMask;
+>     }
+> 
+>     if (pFrame->parsedIEs->content.iePacket.pHtInformation != NULL)
+>     {
+>         /* MCS build rates bit map */
+>         rate_McsNetStrToDrvBitmap (&uMcsbasicRateMask,
+>                                    (pFrame->parsedIEs->content.iePacket.pHtInformation->aHtInformationIe + DOT11_HT_INFORMATION_MCS_RATE_OFFSET));
+> 
+>         pSite->rateMask.basicRateMask |= uMcsbasicRateMask;
+>     }
+> /*** MODS_END_FOR_11N_RATE_REPORTING ***/
+diff -Nar wl1271/stad/src/Sta_Management/siteHash.c wl1271.new/wilink_6_1/stad/src/Sta_Management/siteHash.c
+173c173,174
+< 	   if ((pSiteMgr->pDesiredParams->siteMgrDesiredDot11Mode == DOT11_DUAL_MODE) && (tableIndex==1))
+---
+> 	   if ((pSiteMgr->pDesiredParams->siteMgrDesiredDot11Mode == DOT11_DUAL_MODE) &&
+>            (tableIndex==1))
+diff -Nar wl1271/stad/src/Sta_Management/siteMgr.c wl1271.new/wilink_6_1/stad/src/Sta_Management/siteMgr.c
+294a295
+>     {
+295a297
+>     }
+607a610,611
+>     PowerMgr_t *pPowerMgr = (PowerMgr_t*)pSiteMgr->hPowerMgr;
+>     static PowerMgr_PowerMode_e desiredPowerModeProfile;
+726a731,739
+> 
+>             /*
+> 		     * Set the system to Active power save
+>              */
+>             desiredPowerModeProfile = pPowerMgr->desiredPowerModeProfile;
+>             param.paramType = POWER_MGR_POWER_MODE;
+>             param.content.powerMngPowerMode.PowerMode = POWER_MODE_ACTIVE;
+>             param.content.powerMngPowerMode.PowerMngPriority = POWER_MANAGER_USER_PRIORITY;
+>             powerMgr_setParam(pSiteMgr->hPowerMgr,&param);
+732a746,753
+> 
+>             /* 
+>              * Set the system to last power mode
+>              */
+>             param.paramType = POWER_MGR_POWER_MODE;
+>             param.content.powerMngPowerMode.PowerMode = desiredPowerModeProfile;
+>             param.content.powerMngPowerMode.PowerMngPriority = POWER_MANAGER_USER_PRIORITY;
+>             powerMgr_setParam(pSiteMgr->hPowerMgr,&param);
+736,738c757,758
+<             param.paramType = SME_WSC_PB_MODE_PARAM;
+<             sme_SetParam (pSiteMgr->hSmeSm, &param);
+< 
+---
+>         param.paramType = SME_WSC_PB_MODE_PARAM;
+>         sme_SetParam (pSiteMgr->hSmeSm, &param);
+2930c2950
+<     TRACE6(pSiteMgr->hReport, REPORT_SEVERITY_CONSOLE,"-- BSSID = %x-%x-%x-%x-%x-%x\n",
+---
+>     TRACE6(pSiteMgr->hReport, REPORT_SEVERITY_CONSOLE,"-- BSSID = %02x-%02x-%02x-%02x-%02x-%02x\n",
+2936c2956
+< 	WLAN_OS_REPORT(("-- BSSID = %x-%x-%x-%x-%x-%x\n",
+---
+> 	WLAN_OS_REPORT(("-- BSSID = %02x-%02x-%02x-%02x-%02x-%02x\n",
+3118a3139,3156
+>  /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+>     if (rateMask & DRV_RATE_MASK_MCS_7_OFDM)
+>         return DRV_RATE_MCS_7;
+>     if (rateMask & DRV_RATE_MASK_MCS_6_OFDM)
+>         return DRV_RATE_MCS_6;
+>     if (rateMask & DRV_RATE_MASK_MCS_5_OFDM)
+>         return DRV_RATE_MCS_5;
+>     if (rateMask & DRV_RATE_MASK_MCS_4_OFDM)
+>         return DRV_RATE_MCS_4;
+>     if (rateMask & DRV_RATE_MASK_MCS_3_OFDM)
+>         return DRV_RATE_MCS_3;
+>     if (rateMask & DRV_RATE_MASK_MCS_2_OFDM)
+>         return DRV_RATE_MCS_2;
+>     if (rateMask & DRV_RATE_MASK_MCS_1_OFDM)
+>         return DRV_RATE_MCS_1;
+>     if (rateMask & DRV_RATE_MASK_MCS_0_OFDM)
+>         return DRV_RATE_MCS_0;
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+3686a3725,3726
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+> #if 0
+3688a3729,3738
+> #else
+>     {
+>         if (pSiteMgr->pDesiredParams->siteMgrDesiredBSSType == BSS_INFRASTRUCTURE)
+>             b11nEnable = TI_TRUE;
+>         else
+>             b11nEnable = TI_FALSE;
+>     }
+> #endif
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+> 
+diff -Nar wl1271/utils/osDot11.h wl1271.new/wilink_6_1/utils/osDot11.h
+204c204,206
+< typedef TI_UINT8 OS_802_11_RATES_EX[16];
+---
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+> typedef TI_UINT8 OS_802_11_RATES_EX[32];
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+diff -Nar wl1271/utils/queue.c wl1271.new/wilink_6_1/utils/queue.c
+180,183c180,188
+<     /* Alert if the queue is unloaded before it was cleared from items */
+<     if (pQue->uCount)
+<     {
+<         TRACE0(pQue->hReport, REPORT_SEVERITY_ERROR, "que_Destroy() Queue Not Empty!!");
+---
+>     if (pQue)
+> 	{
+>         /* Alert if the queue is unloaded before it was cleared from items */
+>         if (pQue->uCount)
+>         {
+>             TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING, "que_Destroy() Queue Not Empty!!");
+>         }
+>         /* free Queue object */
+>         os_memoryFree (pQue->hOs, pQue, sizeof(TQueue));
+185,186d189
+<     /* free Queue object */
+< 	os_memoryFree (pQue->hOs, pQue, sizeof(TQueue));
+233,235c236
+<     
+<     /* Check queue limit */
+< 	if(pQue->uCount < pQue->uLimit)
+---
+>     if (pQue)
+237,253c238,239
+<         /* Find NodeHeader in the given item */
+<         pQueNodeHdr = (TQueNodeHdr *)((TI_UINT8*)hItem + pQue->uNodeHeaderOffset);
+< 
+<         /* Verify that pNext is NULL --> Sanity check that this item is not already linked to a queue */
+<         if (pQueNodeHdr->pNext)
+<         {
+<             /* Not an error since we have a case where a timer may expire twice in a row (in TxDataQueue) */
+<             TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING, "que_Enqueue(): Trying to enqueue an item that is already enqueued!!");
+<             return TI_NOK;
+<         }
+< 
+<         /* Enqueue item and increment items counter */
+< 		AddToHead (pQueNodeHdr, &pQue->tHead);
+< 		pQue->uCount++;
+< 
+<         #ifdef TI_DBG
+< 		    if (pQue->uCount > pQue->uMaxCount)
+---
+>             /* Check queue limit */
+>             if(pQue->uCount < pQue->uLimit)
+255c241,264
+<                 pQue->uMaxCount = pQue->uCount;
+---
+>                 /* Find NodeHeader in the given item */
+>                 pQueNodeHdr = (TQueNodeHdr *)((TI_UINT8*)hItem + pQue->uNodeHeaderOffset);
+>         
+>                 /* Verify that pNext is NULL --> Sanity check that this item is not already linked to a queue */
+>                 if (pQueNodeHdr->pNext)
+>                 {
+>                     /* Not an error since we have a case where a timer may expire twice in a row (in TxDataQueue) */
+>                     TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING, "que_Enqueue(): Trying to enqueue an item that is already enqueued!!");
+>                     return TI_NOK;
+>                 }
+>         
+>                 /* Enqueue item and increment items counter */
+>                 AddToHead (pQueNodeHdr, &pQue->tHead);
+>                 pQue->uCount++;
+>         
+> #ifdef TI_DBG
+>                     if (pQue->uCount > pQue->uMaxCount)
+>                     {
+>                         pQue->uMaxCount = pQue->uCount;
+>                     }
+>                     TRACE0(pQue->hReport, REPORT_SEVERITY_INFORMATION , "que_Enqueue(): Enqueued Successfully\n");
+> #endif
+>         
+>                 return TI_OK;
+257,258d265
+<             TRACE0(pQue->hReport, REPORT_SEVERITY_INFORMATION , "que_Enqueue(): Enqueued Successfully\n");
+<         #endif
+260,265c267,269
+<         return TI_OK;
+< 	}
+< 	
+< 	/* 
+< 	 *  Queue is overflowed, return TI_NOK.
+< 	 */
+---
+>         /* 
+>          *  Queue is overflowed, return TI_NOK.
+>          */
+267,268c271,272
+< 	pQue->uOverflow++;
+< TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING , "que_Enqueue(): Queue Overflow\n");
+---
+>         pQue->uOverflow++;
+>         TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING , "que_Enqueue(): Queue Overflow\n");
+270c274
+< 	
+---
+>     }
+290,291c294,295
+<  
+<     if (pQue->uCount)
+---
+> 
+>     if (pQue)
+293c297,302
+<         /* Queue is not empty, take packet from the queue tail */
+---
+>         if (pQue->uCount)
+>         {
+>             /* Queue is not empty, take packet from the queue tail */
+>     
+>             /* find pointer to the node entry */
+>             hItem = (TI_HANDLE)((TI_UINT8*)pQue->tHead.pPrev - pQue->uNodeHeaderOffset); 
+295,299c304,305
+<         /* find pointer to the node entry */
+<          hItem = (TI_HANDLE)((TI_UINT8*)pQue->tHead.pPrev - pQue->uNodeHeaderOffset); 
+<         
+<          DelFromTail (pQue->tHead.pPrev);    /* remove node from the queue */
+<          pQue->uCount--;
+---
+>             DelFromTail (pQue->tHead.pPrev);    /* remove node from the queue */
+>             pQue->uCount--;
+301c307
+<          #ifdef TI_DBG
+---
+> #ifdef TI_DBG
+304c310
+<          #endif
+---
+> #endif
+306c312,313
+<          return (hItem);
+---
+>             return (hItem);
+>         }
+420,422d426
+< 
+< 
+< 
+diff -Nar wl1271/utils/rate.c wl1271.new/wilink_6_1/utils/rate.c
+711c711,713
+< #if 0 
+---
+> /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+> #if 1   // enable the 11n rate conversions
+> /* MODS_END_FOR_11N_RATE_REPORTING */
+808d809
+< 
+diff -Nar wl1271/utils/timer.c wl1271.new/wilink_6_1/utils/timer.c
+132c132
+< 
+---
+> #if 0
+136c136
+< 
+---
+> #endif
+diff -Nar wl1271/wpa_supplicant_lib/driver_ti.c wl1271.new/wilink_6_1/wpa_supplicant_lib/driver_ti.c
+617a618
+> 			scan_exit(drv); /* Clear scan cache */

@@ -594,6 +594,9 @@ void scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, 
     TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
     TI_UINT8            maxBasicRate = 0, maxActiveRate = 0;
     TI_UINT32           bitMapExtSupp = 0;
+/*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
+    TI_UINT32           uMcsSupportedRateMask = 0, uMcsbasicRateMask=0;
+/*** MODS_END_FOR_11N_RATE_REPORTING ***/
 
     if (pFrame->parsedIEs->content.iePacket.pRates == NULL)
     {
@@ -661,6 +664,26 @@ void scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, 
 
         pSite->rateMask.basicRateMask |= bitMapExtSupp;
     }
+
+/*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
+    if (pFrame->parsedIEs->content.iePacket.pHtCapabilities != NULL)
+    {
+        /* MCS build rates bit map */
+        rate_McsNetStrToDrvBitmap (&uMcsSupportedRateMask,
+                                   (pFrame->parsedIEs->content.iePacket.pHtCapabilities->aHtCapabilitiesIe + DOT11_HT_CAPABILITIES_MCS_RATE_OFFSET));
+
+        pSite->rateMask.supportedRateMask |= uMcsSupportedRateMask;
+    }
+
+    if (pFrame->parsedIEs->content.iePacket.pHtInformation != NULL)
+    {
+        /* MCS build rates bit map */
+        rate_McsNetStrToDrvBitmap (&uMcsbasicRateMask,
+                                   (pFrame->parsedIEs->content.iePacket.pHtInformation->aHtInformationIe + DOT11_HT_INFORMATION_MCS_RATE_OFFSET));
+
+        pSite->rateMask.basicRateMask |= uMcsbasicRateMask;
+    }
+/*** MODS_END_FOR_11N_RATE_REPORTING ***/
 }
 
 /** 

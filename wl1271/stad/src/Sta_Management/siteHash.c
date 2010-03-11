@@ -170,7 +170,8 @@ siteEntry_t	*findSiteEntry(siteMgr_t		*pSiteMgr,
 	    	}
 
 	    }
-	   if ((pSiteMgr->pDesiredParams->siteMgrDesiredDot11Mode == DOT11_DUAL_MODE) && (tableIndex==1))
+	   if ((pSiteMgr->pDesiredParams->siteMgrDesiredDot11Mode == DOT11_DUAL_MODE) &&
+           (tableIndex==1))
 	   {   /* change site table */
 	       if (pCurrentSiteTable == &pSiteMgr->pSitesMgmtParams->dot11BG_sitesTables)
               {

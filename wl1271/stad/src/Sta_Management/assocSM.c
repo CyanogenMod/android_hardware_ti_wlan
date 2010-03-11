@@ -1361,7 +1361,13 @@ TI_STATUS assoc_smRequestBuild(assoc_t *pCtx, TI_UINT8* reqBuf, TI_UINT32* reqLe
     paramInfo_t     param;
     TTwdParamInfo   tTwdParam;
     TI_UINT16       capabilities;
-    
+
+/*** OMAPS00214746_CHANGE_START ***/
+    ECipherSuite    eCipherSuite = TWD_CIPHER_NONE; /* To be used for checking whether 
+                                                       AP supports HT rates and TKIP 
+                                                     */
+/*** OMAPS00214746_CHANGE_END ***/  
+
     pRequest = reqBuf;
     *reqLen = 0;
 
@@ -1526,11 +1532,29 @@ TI_STATUS assoc_smRequestBuild(assoc_t *pCtx, TI_UINT8* reqBuf, TI_UINT32* reqLe
 	*reqLen += len;
   }
 
+/*** OMAPS00214746_CHANGE_START ***/
+    /* Privacy - Used later on HT */
+    param.paramType = RSN_ENCRYPTION_STATUS_PARAM;
+    status          = rsn_getParam(pCtx->hRsn, &param);
+   
+    if(status == TI_OK)
+    {
+        eCipherSuite = param.content.rsnEncryptionStatus;
+    } 
+/*** OMAPS00214746_CHANGE_END ***/
+
     /* Primary Site support HT ? */
     param.paramType = SITE_MGR_PRIMARY_SITE_HT_SUPPORT;
     siteMgr_getParam(pCtx->hSiteMgr, &param);
 
+/*** OMAPS00214746_CHANGE_START ***/
+#if 0
     if(TI_TRUE == param.content.bPrimarySiteHtSupport)
+#else
+    /* Disallow TKIP with HT Rates: If this is the case - discard HT rates from Association Request */
+    if((TI_TRUE == param.content.bPrimarySiteHtSupport) && (eCipherSuite != TWD_CIPHER_TKIP))
+#endif
+/*** OMAPS00214746_CHANGE_END ***/
     {
         status = StaCap_GetHtCapabilitiesIe (pCtx->hStaCap, pRequest, &len);
     	if (status != TI_OK)

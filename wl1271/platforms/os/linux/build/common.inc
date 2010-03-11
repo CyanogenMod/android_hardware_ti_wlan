@@ -32,6 +32,12 @@ FW ?= 1273
 #
 XCC ?= n
 
+
+#
+# Compile with GEM support or not
+#
+GEM ?= n
+
 #
 # Choose the bus type (n for SDIO, y for WSPI)
 #
@@ -81,6 +87,10 @@ endif
 
 ifeq ($(XCC),y)
     DK_DEFINES += -D XCC_MODULE_INCLUDED
+endif
+
+ifeq ($(GEM),y)
+    DK_DEFINES += -D GEM_SUPPORTED
 endif
 
 ifeq ($(INTR),n)

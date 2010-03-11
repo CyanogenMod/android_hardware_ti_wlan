@@ -636,7 +636,8 @@ int wlanDrvIf_Start (struct net_device *dev)
 
 	ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Start()\n");
 	printk("%s\n", __func__);
-	if (!drv->tCommon.hDrvMain) {
+    if (!drv->tCommon.hDrvMain)
+    {
 		ti_dprintf (TIWLAN_LOG_ERROR, "wlanDrvIf_Start() Driver not created!\n");
 		return -ENODEV;
 	}
@@ -771,7 +772,8 @@ static int wlanDrvIf_SetupNetif (TWlanDrvIfObj *drv)
 
 	/* Allocate network interface structure for the driver */
 	dev = alloc_etherdev (0);
-	if (dev == NULL) {
+	if (dev == NULL)
+	{
 		ti_dprintf (TIWLAN_LOG_ERROR, "alloc_etherdev() failed\n");
 		return -ENOMEM;
 	}
@@ -804,7 +806,8 @@ static int wlanDrvIf_SetupNetif (TWlanDrvIfObj *drv)
 	wlanDrvWext_Init (dev);
 
 	res = register_netdev (dev);
-	if (res != 0) {
+	if (res != 0)
+	{
 		ti_dprintf (TIWLAN_LOG_ERROR, "register_netdev() failed : %d\n", res);
 		kfree (dev);
 		return res;
@@ -859,7 +862,8 @@ static int wlanDrvIf_Create (void)
 
 	/* Allocate driver's structure */
 	drv = kmalloc (sizeof(TWlanDrvIfObj), GFP_KERNEL);
-	if (!drv) {
+    if (!drv)
+    {
 		return -ENOMEM;
 	}
 #ifdef TI_DBG
@@ -1014,14 +1018,16 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
 	}
 
 	/* close the ipc_kernel socket*/
-	if (drv && drv->wl_sock) {
+    if (drv && drv->wl_sock) 
+    {
 		sock_release (drv->wl_sock->sk_socket);
 	}
 	/* Release the driver interrupt (or polling timer) */
 #ifdef PRIODIC_INTERRUPT
 	os_timerDestroy (drv, drv->hPollTimer);
 #else
-	if (drv->irq) {
+    if (drv->irq)
+    {
 		hPlatform_freeInterrupt(drv);
 	}
 #endif
@@ -1035,30 +1041,30 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
 	/* 
 	 *  Free init files memory
 	 */
-	if (drv->tCommon.tFwImage.pImage) {
-		os_memoryFree (drv, drv->tCommon.tFwImage.pImage, drv->tCommon.tFwImage.uSize);
-#ifdef TI_MEM_ALLOC_TRACE
-		os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
-			__FUNCTION__, __LINE__, drv->tCommon.tFwImage.uSize,
-			-drv->tCommon.tFwImage.uSize);
-#endif
-	}
-	if (drv->tCommon.tNvsImage.pImage) {
-		kfree (drv->tCommon.tNvsImage.pImage);
-#ifdef TI_MEM_ALLOC_TRACE
-		os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
-			__FUNCTION__, __LINE__, drv->tCommon.tNvsImage.uSize,
-			-drv->tCommon.tNvsImage.uSize);
-#endif
-	}
-	if (drv->tCommon.tIniFile.pImage) {
-		kfree (drv->tCommon.tIniFile.pImage);
-#ifdef TI_MEM_ALLOC_TRACE
-		os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
-			__FUNCTION__, __LINE__, drv->tCommon.tIniFile.uSize,
-			-drv->tCommon.tIniFile.uSize);
-#endif
-	}
+    if (drv->tCommon.tFwImage.pImage)
+    {
+        os_memoryFree (drv, drv->tCommon.tFwImage.pImage, drv->tCommon.tFwImage.uSize);
+        #ifdef TI_MEM_ALLOC_TRACE        
+          os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+              __FUNCTION__, __LINE__, drv->tCommon.tFwImage.uSize, -drv->tCommon.tFwImage.uSize);
+        #endif
+    }
+    if (drv->tCommon.tNvsImage.pImage)
+    {
+        kfree (drv->tCommon.tNvsImage.pImage);
+        #ifdef TI_MEM_ALLOC_TRACE        
+          os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+              __FUNCTION__, __LINE__, drv->tCommon.tNvsImage.uSize, -drv->tCommon.tNvsImage.uSize);
+        #endif
+    }
+    if (drv->tCommon.tIniFile.pImage)
+    {
+        kfree (drv->tCommon.tIniFile.pImage);
+        #ifdef TI_MEM_ALLOC_TRACE        
+          os_printf ("MTT:%s:%d ::kfree(0x%p) : %d\n", 
+              __FUNCTION__, __LINE__, drv->tCommon.tIniFile.uSize, -drv->tCommon.tIniFile.uSize);
+        #endif
+    }
 
     /* Free the driver object */
 #ifdef TI_DBG

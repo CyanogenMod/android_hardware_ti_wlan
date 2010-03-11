@@ -1071,13 +1071,14 @@ TI_STATUS admCtrlWpa_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSiteP
         wpaData.unicastSuite[0] = admCtrlWpa_validity.unicast;
         *pEvaluation = admCtrlWpa_validity.evaluation;
     }
-
+/*** OMAPS00214746_CHANGE_START ***/
+#if 0
     if ((encryptionStatus == TWD_CIPHER_TKIP) && (pRsnSiteParams->pHTCapabilities->tHdr[0] != TI_FALSE) && (pRsnSiteParams->pHTInfo->tHdr[0] != TI_FALSE))
 	{
 		TRACE0(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION,"Dismiss AP - HT with TKIP is not valid");
         return TI_NOK; /* if the encyption is TKIP and the site does support HT(11n) the site can not be a candidate */
 	}
-
+#endif
 	/* Check privacy bit if not in mixed mode */
     if (!pAdmCtrl->mixedMode)
     {   /* There's no mixed mode, so make sure that the privacy Bit matches the privacy mode*/

@@ -81,6 +81,8 @@
 #include "apConn.h"
 #include "scanMngrApi.h" 
 #include "MacServices_api.h"
+#include "smePrivate.h"
+#include "conn.h"
 #include "smeApi.h"
 #include "sme.h"
 #include "TWDriver.h"
@@ -658,8 +660,9 @@ TI_STATUS currBSS_probRespReceivedCallb(TI_HANDLE hCurrBSS,
 
     pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
     if (!pParam)
+    {
         return TI_NOK;
-
+    }
     pParam->paramType = SITE_MGR_CURRENT_BSSID_PARAM;
     siteMgr_getParam(pCurrBSS->hSiteMgr, pParam);    
 
@@ -779,7 +782,9 @@ void currBSS_updateConnectedState(TI_HANDLE hCurrBSS, TI_BOOL isConnected, ScanB
 
         pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
         if (!pParam)
+        {
             return;
+        }
 
         /* BSSID */
         pParam->paramType = SITE_MGR_CURRENT_BSSID_PARAM;
@@ -1015,6 +1020,9 @@ static void currBSS_reportRoamingEvent(currBSS_t *pCurrBSS,
                                        apConn_roamingTrigger_e roamingEventType,
                                        roamingEventData_u *pRoamingEventData)
 {
+    TSme   *pSme = (TSme*)pCurrBSS->hSme;
+    conn_t *pConn = (conn_t *)pSme->hConn;
+
     TRACE1(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION, "currBSS_reportRoamingEvent: trigger %d\n", roamingEventType);
 
     if (pCurrBSS->isConnected)
@@ -1025,12 +1033,19 @@ static void currBSS_reportRoamingEvent(currBSS_t *pCurrBSS,
         }
         else /* IBSS */
         { 
-            if( roamingEventType == ROAMING_TRIGGER_BSS_LOSS )
+            if (roamingEventType == ROAMING_TRIGGER_BSS_LOSS)
             {
                 /* If in IBSS call the SME restart function, this logic issues a DISCONNECT 
                  * event and tries to connect to other STA or establish self connection.
                  */
-                sme_Restart (pCurrBSS->hSme);
+                if (pConn->currentConnType == CONNECTION_SELF)
+                {
+                    return;
+                }
+                else 
+                {
+                    sme_Restart (pCurrBSS->hSme);
+                }
             }
         }
     }
@@ -1108,7 +1123,9 @@ static void currBSS_BackgroundScanQuality(TI_HANDLE hCurrBSS,
     /* Update Site Table in order to represent the RSSI of current AP correctly in the utility */
     pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
     if (!pParam)
+    {
         return;
+    }
     pParam->paramType = SITE_MGR_CURRENT_SIGNAL_PARAM;
     pParam->content.siteMgrCurrentSignal.rssi = averageRssi;
     siteMgr_setParam(pCurrBSS->hSiteMgr, pParam);

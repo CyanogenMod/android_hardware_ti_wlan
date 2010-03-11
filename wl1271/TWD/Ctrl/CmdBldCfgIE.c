@@ -773,7 +773,10 @@ TI_STATUS cmdBld_CfgIeStatisitics (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 
     pCfg = os_memoryAlloc(pCmdBld->hOs, sizeof(ACXStatistics_t));
     if (!pCfg)
+    {
         return status;
+    }
+
     /* Set information element header */
     pCfg->EleHdr.id  = ACX_STATISTICS;
     pCfg->EleHdr.len = sizeof(*pCfg) - sizeof(EleHdrStruct);

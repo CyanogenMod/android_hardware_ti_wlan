@@ -117,7 +117,9 @@ TI_HANDLE qosMngr_create(TI_HANDLE hOs)
 	pQosMngr = os_memoryAlloc(hOs,sizeof(qosMngr_t));
 
 	if (pQosMngr == NULL)
-		return NULL;
+    {
+        return NULL;
+    }
 
     os_memoryZero (hOs, pQosMngr, sizeof(qosMngr_t));
 
@@ -546,8 +548,8 @@ TI_STATUS qosMngr_disconnect (TI_HANDLE hQosMngr, TI_BOOL bDisconnect)
 	status = verifyAndConfigTrafficParams(hQosMngr,&(pQosMngr->acParams[QOS_AC_BE].QtrafficParams));
 	if (status != TI_OK)
 	{
-TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite:failed to init NON_QOS Queue Traffic parameters!!!\n\n");
-			return status;
+        TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite:failed to init NON_QOS Queue Traffic parameters!!!\n\n");
+		return status;
 	}
 
 	/*
@@ -1703,7 +1705,7 @@ TRACE2(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_checkTspecRenegR
 	else if (pQosMngr->tspecRenegotiationParams[USER_PRIORITY_4].uUserPriority != MAX_USER_PRIORITY) 
 	{
 		/* Signal TSPEC was not re-negotiated although requested to - ERROR */
-TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite: Signal TSPEC was not re-negotiated while voice was \n");
+        TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite: Signal TSPEC was not re-negotiated while voice was \n");
 		qosMngr_setAdmissionInfo(pQosMngr, USER_PRIORITY_4, 
 								 &pQosMngr->resourceMgmtTable.candidateTspecInfo[USER_PRIORITY_4], 
 								 STATUS_TRAFFIC_ADM_REQUEST_REJECT);
@@ -1751,7 +1753,8 @@ TI_STATUS qosMngr_setSite(TI_HANDLE hQosMngr, assocRsp_t *assocRsp)
 			{
                 pQosMngr->activeProtocol = QOS_NONE;
                 TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite: setting active protocol QOS_WME params with non QOS_WME IE params frame, setting active protocol back to NONE \n");
-                return TI_NOK;
+                status = qosMngr_setSite(hQosMngr, assocRsp);
+                return status;
 			}
 
             status = setWmeSiteParams(pQosMngr, (TI_UINT8 *)assocRsp->WMEParams);
@@ -1786,7 +1789,7 @@ TI_STATUS qosMngr_setSite(TI_HANDLE hQosMngr, assocRsp_t *assocRsp)
 				status = verifyAndConfigQosParams(hQosMngr,&(pQosMngr->acParams[QOS_AC_BE].acQosParams));
 				if (status != TI_OK)
 				{
-TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "qosMngr_setSite:failed to init NON_QOS parameters!!!\n\n");
+                    TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "qosMngr_setSite:failed to init NON_QOS parameters!!!\n\n");
 					return TI_NOK;
 				}
 			}
@@ -1794,7 +1797,7 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "qosMngr_setSite:failed to in
 		break;
 
 	default:
-TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "Warning: qosMngr_setSite NO active protocls To set \n");
+        TRACE0(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "Warning: qosMngr_setSite NO active protocls To set \n");
 		break;
 	}
 
@@ -2128,12 +2131,14 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_SetPsRxStreaming: Not 
 		return NOT_CONNECTED;
 	}
 
+#if 0
 	/* Verify that the AP supports QOS_WME */
 	if (pQosMngr->activeProtocol != QOS_WME)
 	{
 TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_SetPsRxStreaming: Not connected to a QOS AP - Ignoring request !!!\n");
 		return NO_QOS_AP;
 	}
+#endif
 
 	/* Check TID validity */
 	if (uCurrTid > MAX_USER_PRIORITY)
@@ -2775,7 +2780,7 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 		(pQosMngr->activeProtocol != QOS_WME) || 
 		(pQosMngr->trafficAdmCtrlEnable == TI_FALSE) )
 	{
-TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  Ignore  !!!");
+        TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  Ignore  !!!");
 		return TI_NOK;
 	}
 
@@ -2792,7 +2797,7 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  
 		/*  Get TS-Info from TSpec IE in DELTS, and get from it the user-priority. */
 		tsInfo.tsInfoArr[0] = *pData;
 		pData++;
-		tsInfo.tsInfoArr[1] = *pData;
+        tsInfo.tsInfoArr[1] = *pData;
 		pData++;
 		tsInfo.tsInfoArr[2] = *pData;
 		
@@ -2801,7 +2806,7 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  
 		acID = WMEQosTagToACTable[userPriority];
 		
 
-TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "QosMngr_receiveActionFrames: DELTS [ acID = %d ] \n", acID);
+        TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "QosMngr_receiveActionFrames: DELTS [ acID = %d ] \n", acID);
 
 
 		/* check if this AC is admitted with the correct userPriority */
@@ -2826,7 +2831,7 @@ TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "QosMngr_receiveActionFra
 		}
 		else
 		{
-TRACE3(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames: DELTS [ acID = %d userPriority = %d  currentUserPriority = %d] Current State in not ADMITED !! \n", acID, userPriority,pQosMngr->resourceMgmtTable.currentTspecInfo[acID].userPriority);
+            TRACE3(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames: DELTS [ acID = %d userPriority = %d  currentUserPriority = %d] Current State in not ADMITED !! \n", acID, userPriority,pQosMngr->resourceMgmtTable.currentTspecInfo[acID].userPriority);
 			
 		}
 	}
@@ -2869,7 +2874,7 @@ TRACE3(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames: D
 	}
 	else
 	{
-TRACE1(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "QosMngr_receiveActionFrames: Receive unknown action code = %d  -> Ignore !! \n",action);
+        TRACE1(pQosMngr->hReport, REPORT_SEVERITY_WARNING, "QosMngr_receiveActionFrames: Receive unknown action code = %d  -> Ignore !! \n",action);
 	}
 	
 	return TI_OK;
@@ -2969,3 +2974,4 @@ static void qosMngr_storeTspecCandidateParams (tspecInfo_t *pCandidateParams, OS
 	pCandidateParams->streamDirection = BI_DIRECTIONAL;
 	pCandidateParams->mediumTime = 0;
 }
+
