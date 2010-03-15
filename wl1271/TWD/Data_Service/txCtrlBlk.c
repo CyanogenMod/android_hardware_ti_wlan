@@ -217,24 +217,28 @@ void txCtrlBlk_Free (TI_HANDLE hTxCtrlBlk, TTxCtrlBlk *pCurrentEntry)
 	TTxCtrlBlkObj   *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
 	TTxCtrlBlk *pFirstFreeEntry = &(pTxCtrlBlk->aTxCtrlBlkTbl[0]);
 
+	if (!pTxCtrlBlk) {
+		return;
+	}
+
 #ifdef TI_DBG
 	/* If the pointed entry is already free, print error and exit (not expected to happen). */
 	if (pCurrentEntry->pNextFreeEntry != 0)
 	{
-TRACE2(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_free(): Entry %d alredy free, UsedEntries=%d\n", 			pCurrentEntry->tTxDescriptor.descID, pTxCtrlBlk->uNumUsedEntries);
+		TRACE2(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_free(): Entry %d alredy free, UsedEntries=%d\n", 			pCurrentEntry->tTxDescriptor.descID, pTxCtrlBlk->uNumUsedEntries);
 		return;
 	}
 	pTxCtrlBlk->uNumUsedEntries--;
 #endif
 
-    /* Protect block freeing from preemption (may be called from external context) */
-    context_EnterCriticalSection (pTxCtrlBlk->hContext);
+	/* Protect block freeing from preemption (may be called from external context) */
+	context_EnterCriticalSection (pTxCtrlBlk->hContext);
 
 	/* Link the freed entry between entry 0 and the next free entry. */
 	pCurrentEntry->pNextFreeEntry   = pFirstFreeEntry->pNextFreeEntry;
 	pFirstFreeEntry->pNextFreeEntry = pCurrentEntry;
 
-    context_LeaveCriticalSection (pTxCtrlBlk->hContext);
+	context_LeaveCriticalSection (pTxCtrlBlk->hContext);
 }
 
 
