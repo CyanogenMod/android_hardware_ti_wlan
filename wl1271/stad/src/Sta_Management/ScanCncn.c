@@ -730,7 +730,8 @@ void scanCncn_MlmeResultCB (TI_HANDLE hScanCncn, TMacAddr* bssid, mlmeFrameInfo_
         TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: received frame from BBSID: %02x:%02x:%02x:%02x:%02x:%02x\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
 
         /* If SSID length is 0 (hidden SSID), discard the frame */
-        if (frameInfo->content.iePacket.pSsid->hdr[1] == 0)
+        if ((frameInfo->content.iePacket.pSsid == NULL) ||
+            (frameInfo->content.iePacket.pSsid->hdr[1] == 0))
         {
 			/*Unless it is application scan for any SSID - In this case we want to see also the hidden SSIDs*/
             if  (!(((SCAN_SCC_APP_ONE_SHOT == eClient) || (SCAN_SCC_APP_PERIODIC == eClient)) &&
