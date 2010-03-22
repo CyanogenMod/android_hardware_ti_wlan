@@ -729,17 +729,23 @@ void scanCncn_MlmeResultCB (TI_HANDLE hScanCncn, TMacAddr* bssid, mlmeFrameInfo_
     {
         TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: received frame from BBSID: %02x:%02x:%02x:%02x:%02x:%02x\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
 
+        /* If SSID IE is missing, discard the frame */
+        if (frameInfo->content.iePacket.pSsid == NULL)
+        {
+            TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because SSID IE is missing!!\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
+            bValidResult = TI_FALSE;
+        }
+
         /* If SSID length is 0 (hidden SSID), discard the frame */
-        if ((frameInfo->content.iePacket.pSsid == NULL) ||
-            (frameInfo->content.iePacket.pSsid->hdr[1] == 0))
+        else if (frameInfo->content.iePacket.pSsid->hdr[1] == 0)
         {
 			/*Unless it is application scan for any SSID - In this case we want to see also the hidden SSIDs*/
             if  (!(((SCAN_SCC_APP_ONE_SHOT == eClient) || (SCAN_SCC_APP_PERIODIC == eClient)) &&
 				    pScanCncn->pScanClients[ eClient ]->uScanParams.tOneShotScanParams.desiredSsid.len == 0))
-			{
-				TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because SSID is hidden (len=0)\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
-				bValidResult = TI_FALSE;
-			}
+            {
+                TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because SSID is hidden (len=0)\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
+                bValidResult = TI_FALSE;
+            }
         }
 
        /* 
