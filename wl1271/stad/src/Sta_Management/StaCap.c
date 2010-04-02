@@ -1,7 +1,7 @@
 /*
  * StaCap.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -265,8 +265,7 @@ TI_STATUS StaCap_GetHtCapabilitiesIe (TI_HANDLE hStaCap, TI_UINT8 *pRequest, TI_
     tHtCapabilities.uExteCapabilities |= ((pTwdHtCapabilities->uMCSFeedback << 8) |
                                           (HTC_SUPPORT_NO                   << 10));
 
-    tHtCapabilities.uTxBfCapabilities = ((IMPLICIT_TXBF_REC_CAPABLE             << 0) |
-                                         (TRANSMIT_STAGGERED_SOUNDING_CAPABLE   << 2));
+	tHtCapabilities.uTxBfCapabilities = 0x0;
 
     tHtCapabilities.uAselCapabilities = 0x0;
 

@@ -1,7 +1,7 @@
 /*
  * txCtrl.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -1044,7 +1044,7 @@ static void txCtrl_UpdateAcToTidMapping (txCtrl_t *pTxCtrl)
 	for (tid = 0; tid < MAX_NUM_OF_802_1d_TAGS; tid++)
 	{
 		/* Find the AC that is used for transmitting this TID. */
-		inputAc = WMEQosTagToACTable[tid];					/* Standard translation from TID to AC. */
+		inputAc = (EAcTrfcType)WMEQosTagToACTable[tid];					/* Standard translation from TID to AC. */
 		admittedAc = pTxCtrl->highestAdmittedAc[inputAc];	/* The actual AC that is used for Tx. */
 
 		/* Set the bit related to the TID in the correlated AC. */
@@ -1255,8 +1255,8 @@ TRACE1(pTxCtrl->hReport, REPORT_SEVERITY_WARNING, "txCtrl_UpdateTxCounters(): Tx
         else 
         {
             /* Save last data Tx rate for applications' query */
-            EHwBitRate eHwTxRate = ENDIAN_HANDLE_LONG(pTxResultInfo->rate); 
-            rate_PolicyToDrv ((TI_UINT32)eHwTxRate, &pTxCtrl->eCurrentTxRate);
+            EHwBitRate eHwTxRate = ENDIAN_HANDLE_LONG((EHwBitRate)(pTxResultInfo->rate)); 
+            rate_PolicyToDrv (eHwTxRate, &pTxCtrl->eCurrentTxRate);
 
             /* Directed frame statistics */
             pTxCtrl->txDataCounters[ac].DirectedFramesXmit++;

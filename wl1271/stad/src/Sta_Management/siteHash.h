@@ -1,7 +1,7 @@
 /*
  * siteHash.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -141,6 +141,7 @@ typedef struct
 
     /* Wifi Simple Config */
     TIWLN_SIMPLE_CONFIG_MODE  siteMgrWSCCurrMode; /* indicates the current WiFi Simple Config mode */
+    TI_UINT32           uWscIeSize; 			  /* Simple Config IE actual size (the part after the OUI) */
     char                siteMgrWSCProbeReqParams[DOT11_WSC_PROBE_REQ_MAX_LENGTH]; /* Contains the params to be used in the ProbeReq - WSC IE */ 
 
     TI_UINT8            includeWSCinProbeReq;

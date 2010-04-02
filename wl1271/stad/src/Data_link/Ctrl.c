@@ -1,7 +1,7 @@
 /*
  * Ctrl.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -1074,15 +1074,9 @@ void ctrlData_printCtrlBlock(TI_HANDLE hCtrlData)
 static void ctrlData_storeTSRateSet(ctrlData_t *pCtrlData, TTxDataQosParams *tsrsParams)
 {
     TI_UINT32 rateCount;
-    TI_UINT32 acID, rateID;
+    TI_UINT32 acID;
     TI_UINT32 tsrsRequestedMap;
     ERate rateNumber;
-    ETxRateClassId  rate_e_to_txRateClassId_e[DRV_RATE_MAX + 1] = 
-    {
-        txPolicy1,  txPolicy1, txPolicy2, txPolicy5_5, txPolicy11,
-        txPolicy22, txPolicy6, txPolicy9, txPolicy12,  txPolicy18,
-        txPolicy24, txPolicy36, txPolicy48, txPolicy54
-    };
 
     acID = tsrsParams->acID;
     os_memoryZero(pCtrlData->hOs, 
@@ -1097,7 +1091,6 @@ static void ctrlData_storeTSRateSet(ctrlData_t *pCtrlData, TTxDataQosParams *tsr
         /* Convert multiplication of 500kb/sec to ERate and then to ETxRateClassId */
         /* and update retransmission map in accordance to rate definitions */
         rateNumber = rate_NumberToDrv ((tsrsParams->tsrsArr[rateCount] & 0x7F) >> 1);
-        rateID = rate_e_to_txRateClassId_e[rateNumber];
 
         pCtrlData->tsrsParameters[acID].policyClassRateMask = pCtrlData->uCurrPolicyEnabledRatesMask;
 

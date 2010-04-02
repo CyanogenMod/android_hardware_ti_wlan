@@ -1,7 +1,7 @@
 /*
  * scanResultTable.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -122,6 +122,9 @@ typedef struct
     dot11_RSN_t                pRsnIe[MAX_RSN_IE];
     TI_UINT8                   rsnIeLen;
 
+    /* 80211h beacon  - Switch Channel IE included */
+    TI_BOOL                    bChannelSwitchAnnoncIEFound;
+
 	TI_UINT8                   pUnknownIe[MAX_BEACON_BODY_LENGTH];
     TI_UINT16                  unknownIeLen;
 
@@ -135,10 +138,15 @@ typedef struct
 } TSiteEntry;
 
 
+typedef enum 
+{
+    SCAN_RESULT_TABLE_DONT_CLEAR,
+    SCAN_RESULT_TABLE_CLEAR
 
+} EScanResultTableClear;
 
-TI_HANDLE   scanResultTable_Create (TI_HANDLE hOS);
-void        scanResultTable_Init (TI_HANDLE hScanResultTable, TStadHandlesList *pStadHandles);
+TI_HANDLE   scanResultTable_Create (TI_HANDLE hOS, TI_UINT32 uEntriesNumber);
+void        scanResultTable_Init (TI_HANDLE hScanResultTable, TStadHandlesList *pStadHandles, EScanResultTableClear eClearTable);
 void        scanResultTable_Destroy (TI_HANDLE hScanResultTable);
 TI_STATUS   scanResultTable_UpdateEntry (TI_HANDLE hScanResultTable, TMacAddr *pBssid, TScanFrameInfo* pFrame);
 void        scanResultTable_SetStableState (TI_HANDLE hScanResultTable);
@@ -146,8 +154,12 @@ TSiteEntry  *scanResultTable_GetFirst (TI_HANDLE hScanResultTable);
 TSiteEntry  *scanResultTable_GetNext (TI_HANDLE hScanResultTable);
 TSiteEntry  *scanResultTable_GetBySsidBssidPair (TI_HANDLE hScanResultTable, TSsid *pSsid, TMacAddr *pBssid);
 TI_UINT32   scanResultTable_CalculateBssidListSize (TI_HANDLE hScanResultTable, TI_BOOL bAllVarIes);
+TI_UINT32 scanResultTable_GetNumOfBSSIDInTheList (TI_HANDLE hScanResultTable);
 TI_STATUS   scanResultTable_GetBssidList (TI_HANDLE hScanResultTable, OS_802_11_BSSID_LIST_EX *pBssidList, 
                                           TI_UINT32 *pLength, TI_BOOL bAllVarIes);
+TI_STATUS scanResultTable_GetBssidSupportedRatesList (TI_HANDLE hScanResultTable, OS_802_11_N_RATES *pRateList, TI_UINT32 *pLength);
 
+void        scanResultTable_PerformAging(TI_HANDLE hScanResultTable);
+void        scanResultTable_SetSraThreshold(TI_HANDLE hScanResultTable, TI_UINT32 uSraThreshold);
 #endif /* __SCAN_RESULT_TABLE_H__ */
 

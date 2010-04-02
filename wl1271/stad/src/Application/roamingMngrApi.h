@@ -1,7 +1,7 @@
 /*
  * roamingMngrApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -151,6 +151,7 @@ struct _roamingMngr_t
 #endif
 
     TI_UINT8	                   RoamingOperationalMode; /* 0 - manual, 1 - auto*/
+    TI_UINT8                       bSendTspecInReassPkt;   
     TargetAp_t                     targetAP;               /* holds the AP to connect with in manual mode */
 }; /* _roamingMngr_t */
 

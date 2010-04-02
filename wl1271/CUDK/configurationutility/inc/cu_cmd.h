@@ -103,6 +103,8 @@ VOID CuCmd_ScanAppGlobalConfig(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ScanAppChannelConfig(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ScanAppClear(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ScanAppDisplay(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_ScanSetSra(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_ScanSetRssi(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_StartScan(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_StopScan (THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_WextStartScan(THandle hCuCmd, ConParm_t parm[], U16 nParms);
@@ -188,6 +190,8 @@ VOID CuCmd_FwDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SetRateMngDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_GetRateMngDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
+
+VOID CuCmd_SetArpIPFilter (THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ShowAbout(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_Quit(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 

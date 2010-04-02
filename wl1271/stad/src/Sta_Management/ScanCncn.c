@@ -1,7 +1,7 @@
 /*
  * ScanCncn.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -119,7 +119,7 @@ TI_HANDLE scanCncn_Create (TI_HANDLE hOS)
     }
 
     /* create the app scan result table */
-    pScanCncn->hScanResultTable = scanResultTable_Create (hOS);
+    pScanCncn->hScanResultTable = scanResultTable_Create (hOS, SCAN_CNCN_APP_SCAN_TABLE_ENTRIES);
     if (NULL == pScanCncn->hScanResultTable)
     {
         WLAN_OS_REPORT (("scanCncn_Create: Unable to create application scan result table\n"));
@@ -222,7 +222,7 @@ void scanCncn_Init (TStadHandlesList *pStadHandles)
     scanCncnOsSm_Init ((TI_HANDLE)pScanCncn);
 
     /* initlaize the application scan result table */
-    scanResultTable_Init (pScanCncn->hScanResultTable, pStadHandles);
+    scanResultTable_Init (pScanCncn->hScanResultTable, pStadHandles, SCAN_RESULT_TABLE_DONT_CLEAR);
 }
 
 /** 
@@ -257,17 +257,23 @@ void scanCncn_SetDefaults (TI_HANDLE hScanCncn, TScanCncnInitParams *pScanCncnIn
                                 (TI_HANDLE)pScanCncn);
     /* register and enable periodic scan complete event with TWD */
     TWD_RegisterEvent (pScanCncn->hTWD, TWD_OWN_EVENT_PERIODIC_SCAN_COMPLETE,
-                       scanCncn_PeriodicScanCompleteCB, (TI_HANDLE)pScanCncn);
+                       (void *)scanCncn_PeriodicScanCompleteCB, (TI_HANDLE)pScanCncn);
     TWD_EnableEvent (pScanCncn->hTWD, TWD_OWN_EVENT_PERIODIC_SCAN_COMPLETE);
 
     /* and periodic scan report */
     TWD_RegisterEvent (pScanCncn->hTWD, TWD_OWN_EVENT_PERIODIC_SCAN_REPORT,
-                       scanCncn_PeriodicScanReportCB, (TI_HANDLE)pScanCncn);
+                       (void *)scanCncn_PeriodicScanReportCB, (TI_HANDLE)pScanCncn);
     TWD_EnableEvent (pScanCncn->hTWD, TWD_OWN_EVENT_PERIODIC_SCAN_REPORT);
 
     /* "register" the application scan result callback */
     scanCncn_RegisterScanResultCB ((TI_HANDLE)pScanCncn, SCAN_SCC_APP_ONE_SHOT, scanCncn_AppScanResultCB, (TI_HANDLE)pScanCncn);
     scanCncn_RegisterScanResultCB ((TI_HANDLE)pScanCncn, SCAN_SCC_APP_PERIODIC, scanCncn_AppScanResultCB, (TI_HANDLE)pScanCncn);
+
+    /* set the Scan Result Aging threshold for the scan concentrator's Scan Result Table */
+    scanResultTable_SetSraThreshold(pScanCncn->hScanResultTable, pScanCncnInitParams->uSraThreshold);
+
+    /* set to the sme the handler of the scan concentrator Scan Result Table */
+    sme_SetScanResultTable(pScanCncn->hSme, pScanCncn->hScanResultTable);
 }
 
 /** 
@@ -631,7 +637,7 @@ void scanCncn_PeriodicScanReportCB (TI_HANDLE hScanCncn, char* str, TI_UINT32 st
 {
     TScanCncn           *pScanCncn = (TScanCncn*)hScanCncn;
     EScanCncnClient     eClient;
-    EScanResultTag      eTag = str[ 1 ];
+    EScanResultTag      eTag = (EScanResultTag)str[ 1 ];
     TI_UINT32           uResultCount = str[ 0 ];
 
     TRACE2(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_PeriodicScanReportCB: tag: %d, result count: %d\n", eTag, uResultCount);
@@ -658,8 +664,8 @@ void scanCncn_PeriodicScanCompleteCB (TI_HANDLE hScanCncn, char* str, TI_UINT32 
 {
     TScanCncn           *pScanCncn = (TScanCncn*)hScanCncn;
     EScanCncnClient     eClient;
-    EScanResultTag      eTag = str[ 1 ];
-    TI_UINT32           uResultCount = str[ 0 ];
+    EScanResultTag      eTag = (EScanResultTag)str[1];
+    TI_UINT32           uResultCount = (TI_UINT8)(str[0]);
 
     TRACE2(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_PeriodicScanCompleteCB: tag: %d, result count: %d\n", eTag, uResultCount);
 
@@ -736,16 +742,16 @@ void scanCncn_MlmeResultCB (TI_HANDLE hScanCncn, TMacAddr* bssid, mlmeFrameInfo_
             bValidResult = TI_FALSE;
         }
 
-        /* If SSID length is 0 (hidden SSID), discard the frame */
+        /* If SSID length is 0 (hidden SSID) */
         else if (frameInfo->content.iePacket.pSsid->hdr[1] == 0)
         {
-			/*Unless it is application scan for any SSID - In this case we want to see also the hidden SSIDs*/
+			/* Discard the frame unless it is application scan for any SSID - In this case we want to see also the hidden SSIDs*/
             if  (!(((SCAN_SCC_APP_ONE_SHOT == eClient) || (SCAN_SCC_APP_PERIODIC == eClient)) &&
 				    pScanCncn->pScanClients[ eClient ]->uScanParams.tOneShotScanParams.desiredSsid.len == 0))
-            {
-                TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because SSID is hidden (len=0)\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
-                bValidResult = TI_FALSE;
-            }
+			{
+				TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because SSID is hidden (len=0)\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
+				bValidResult = TI_FALSE;
+			}
         }
 
        /* 
@@ -754,7 +760,7 @@ void scanCncn_MlmeResultCB (TI_HANDLE hScanCncn, TMacAddr* bssid, mlmeFrameInfo_
         */
         else if ((SCAN_SCC_ROAMING_CONT == eClient) || (SCAN_SCC_ROAMING_IMMED == eClient))
         {
-            bssEntry_t          *pCurrentAP;
+            bssEntry_t *pCurrentAP;
 
             pCurrentAP = apConn_getBSSParams(pScanCncn->hAPConn);
             if(MAC_EQUAL(*bssid, pCurrentAP->BSSID) ||
@@ -765,13 +771,17 @@ void scanCncn_MlmeResultCB (TI_HANDLE hScanCncn, TMacAddr* bssid, mlmeFrameInfo_
                 pScanCncn->pScanClients[ eClient ]->uScanParams.tOneShotScanParams.scanType != SCAN_TYPE_SPS))
             {
                 TRACE6(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from SSID: , BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because SSID different from desired or from current AP!\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ]);
-
-                /* invalid resuilt */
                 bValidResult = TI_FALSE;
             }
 
         }
 
+        /* if rssi is lower than the Rssi threshold, discard frame */
+        if ( pRxAttr->Rssi < pScanCncn->tInitParams.nRssiThreshold )
+        {
+            TRACE7(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_MlmeResultCB: discarding frame from BSSID: %02x:%02x:%02x:%02x:%02x:%02x, because RSSI = %d\n", (*bssid)[ 0 ], (*bssid)[ 1 ], (*bssid)[ 2 ], (*bssid)[ 3 ], (*bssid)[ 4 ], (*bssid)[ 5 ], pRxAttr->Rssi);
+            bValidResult = TI_FALSE;
+        }
 
         if(TI_TRUE == bValidResult)
         {

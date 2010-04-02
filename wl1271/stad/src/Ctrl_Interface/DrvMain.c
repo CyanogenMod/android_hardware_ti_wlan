@@ -1,7 +1,7 @@
 /*
  * DrvMain.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -82,6 +82,8 @@
 
 #define SDIO_CONNECT_THRESHOLD  8
 
+/* This is used to prevent endless recovery loops */
+#define MAX_NUM_OF_RECOVERY_TRIGGERS 5
 
 /* Handle failure status from the SM callbacks by triggering the SM with FAILURE event */
 #define HANDLE_CALLBACKS_FAILURE_STATUS(hDrvMain, eStatus)      \
@@ -129,9 +131,10 @@ typedef enum
 typedef struct
 {
     TStadHandlesList  tStadHandles; /* All STAD modules handles (distributed in driver init process) */
-    TI_BOOL           bRecovery;    /* Indicates if we are during recovery process */
-    ESmState          eSmState;     /* The DrvMain SM state. */
-    ESmEvent          ePendingEvent;/* A pending event issued when the SM is busy */
+	TI_BOOL           bRecovery;    /* Indicates if we are during recovery process */
+	TI_UINT32         uNumOfRecoveryAttempts;    /* Indicates if we are during recovery process */
+	ESmState          eSmState;     /* The DrvMain SM state. */
+	ESmEvent          ePendingEvent;/* A pending event issued when the SM is busy */
     TI_UINT32         uPendingEventsCount; /* Counts the number of events pending for SM execution */
     TFileInfo         tFileInfo;    /* Information of last file retrieved by os_GetFile() */
     TI_UINT32         uContextId;   /* ID allocated to this module on registration to context module */
@@ -1036,8 +1039,9 @@ static void drvMain_InitLocals (TDrvMain *pDrvMain)
     pDrvMain->tFileInfo.hCbHndl     = (TI_HANDLE)pDrvMain;
     pDrvMain->eSmState              = SM_STATE_IDLE;
     pDrvMain->uPendingEventsCount   = 0;
-    pDrvMain->bRecovery             = TI_FALSE; 
-    pDrvMain->eAction               = ACTION_TYPE_NONE; 
+	pDrvMain->bRecovery             = TI_FALSE; 
+	pDrvMain->uNumOfRecoveryAttempts = 0;
+	pDrvMain->eAction               = ACTION_TYPE_NONE; 
 
     /* Register the Action callback to the context engine and get the client ID */
     pDrvMain->uContextId = context_RegisterClient (pDrvMain->tStadHandles.hContext,
@@ -1228,7 +1232,7 @@ TI_STATUS drvMain_InsertAction (TI_HANDLE hDrvMain, EActionType eAction)
         context_LeaveCriticalSection(pDrvMain->tStadHandles.hContext);
         TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_CONSOLE, "Action is identical to last action!\n");
         WLAN_OS_REPORT(("Action %d is identical to last action!\n", eAction));
-        return TI_NOK;
+        return TI_OK;
     }
 
     /* Save the requested action */
@@ -1282,6 +1286,7 @@ TI_STATUS drvMain_Recovery (TI_HANDLE hDrvMain)
 {
     TDrvMain         *pDrvMain = (TDrvMain *) hDrvMain;
 
+	pDrvMain->uNumOfRecoveryAttempts++;
     if (!pDrvMain->bRecovery)
     {
         TRACE1(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_CONSOLE,".....drvMain_Recovery, ts=%d\n", os_timeStampMs(pDrvMain->tStadHandles.hOs));
@@ -1297,6 +1302,9 @@ TI_STATUS drvMain_Recovery (TI_HANDLE hDrvMain)
     else
     {
         TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR, "drvMain_Recovery: ****  Recovery already in progress!  ****\n");
+
+		/* nesting recoveries... Try again */
+		drvMain_SmEvent (hDrvMain, SM_EVENT_RECOVERY);
         return TI_NOK;
     }
 }
@@ -1598,6 +1606,7 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
             pDrvMain->eSmState = SM_STATE_OPERATIONAL;
             if (pDrvMain->bRecovery) 
             {
+				pDrvMain->uNumOfRecoveryAttempts = 0;
                 drvMain_RecoveryNotify (pDrvMain);
                 pDrvMain->bRecovery = TI_FALSE;
             }
@@ -1718,7 +1727,12 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         if (!pDrvMain->bRecovery) 
         {
             os_SignalObjectSet (hOs, pDrvMain->hSignalObj);
-        }
+		}
+		else if (pDrvMain->uNumOfRecoveryAttempts < MAX_NUM_OF_RECOVERY_TRIGGERS) 
+		{
+			pDrvMain->eSmState = SM_STATE_STOPPING;
+			eStatus = drvMain_StopActivities (pDrvMain);
+		}
         break;
     case SM_STATE_FAILED:
         /* Nothing to do except waiting for Destroy */

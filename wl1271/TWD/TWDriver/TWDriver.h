@@ -1,7 +1,7 @@
 /*
  * TWDriver.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -71,7 +71,6 @@
 #ifndef TWDRIVER_H
 #define TWDRIVER_H
 
-#define MAX_NUM_OF_802_1d_TAGS          8
 
 #include "802_11Defs.h"
 #include "TWDriverMsr.h"
@@ -226,11 +225,10 @@
 #define SMART_REFLEX_STATE_MAX        TI_TRUE
 #define SMART_REFLEX_STATE_DEF        TI_TRUE
 
-#define SMART_REFLEX_DEBUG_MIN        0
-#define SMART_REFLEX_DEBUG_MAX        0xFFFF
-#define SMART_REFLEX_DEBUG_DEF        0
-
 #define SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE  "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
+#define SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF1  "07,03,18,10,05,fb,f0,e8, 0,0,0,0,0,0,0f,3f"
+#define SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF2  "07,03,18,10,05,f6,f0,e8"
+#define SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF3  "07,03,18,10,05,fb,f0,e8"
 
 #define TWD_FRAG_THRESHOLD_MIN          256
 #define TWD_FRAG_THRESHOLD_MAX          4096
@@ -292,7 +290,7 @@
 #define TWD_RX_AGGREG_PKTS_LIMIT_MAX    4
 
 /* Tx aggregation packets number limit (max packets in one aggregation) */
-#define TWD_TX_AGGREG_PKTS_LIMIT_DEF    8
+#define TWD_TX_AGGREG_PKTS_LIMIT_DEF    0
 #define TWD_TX_AGGREG_PKTS_LIMIT_MIN    0 
 #define TWD_TX_AGGREG_PKTS_LIMIT_MAX    32
 
@@ -452,6 +450,7 @@
 #define HT_INF_NON_GF_PRES_BITMASK             0x04
 #define HT_INF_TX_BURST_LIMIT_BITMASK          0x08
 #define HT_INF_DUAL_BEACON_BITMASK             0x40
+#define HT_INF_DUAL_CTS_PROTECTION_BITMASK     0x80
 
 /* 
  * TWD HT capabilities, physical capabilities of the STA.
@@ -1213,14 +1212,27 @@ typedef enum
  * 
  * \sa TWD_SetDefaults, TTwdHtCapabilities
  */
+
+/*
+ ==============
+
+ IMPORTANT NOTE - Changes to this enumeration must check weather MIN and MAX values 
+                  should be updated
+ ==============
+*/
 typedef enum
 {   
-/*	0	*/	MAX_MPDU_8191_OCTETS = 0,	/**< Maximum MPDU Octets Number: 8191	*/
-/*	1	*/  MAX_MPDU_16383_OCTETS,		/**< Maximum MPDU Octets Number: 16383	*/
-/*	2	*/  MAX_MPDU_32767_OCTETS,		/**< Maximum MPDU Octets Number: 32767	*/
-/*	3	*/  MAX_MPDU_65535_OCTETS		/**< Maximum MPDU Octets Number: 65535	*/
+            MAX_MPDU_MIN_VALUE = 0,
+
+/*	0	*/	MAX_MPDU_8191_OCTETS = MAX_MPDU_MIN_VALUE,	/**< Maximum MPDU Octets Number: 8191	*/
+/*	1	*/  MAX_MPDU_16383_OCTETS,		                /**< Maximum MPDU Octets Number: 16383	*/
+/*	2	*/  MAX_MPDU_32767_OCTETS,		                /**< Maximum MPDU Octets Number: 32767	*/
+/*	3	*/  MAX_MPDU_65535_OCTETS,		                /**< Maximum MPDU Octets Number: 65535	*/
+
+            MAX_MPDU_MAX_VALUE = MAX_MPDU_65535_OCTETS
 
 } ETwdMaxAMPDU;
+
 
 /** \enum ETwdAMPDUSpacing
  * \brief TWD AMPDU Spacing
@@ -2518,7 +2530,7 @@ typedef struct
  */ 
 typedef struct
 {
-    PacketClassTag_enum                 ePacketType;    /**< */
+    PacketClassTag_e                    ePacketType;    /**< */
     TI_STATUS                           status;			/**< */
     ERate                               Rate;   		/**< */
     TI_UINT8                            SNR;			/**< */
@@ -2554,7 +2566,7 @@ typedef struct
     TI_UINT8                            halCtrlArmClock;					/**< */
     TI_UINT16                           halCtrlBcnRxTime;					/**< */
     TI_BOOL                             halCtrlRxEnergyDetection;    		/**< */
-    TI_BOOL                             halCtrlTxEnergyDetection;			/**< */
+    TI_BOOL                             halCtrlCh14TelecCca;				/**< */
     TI_BOOL                             halCtrlEepromLessEnable;			/**< */
     TI_BOOL                             halCtrlRxDisableBroadcast;			/**< */
     TI_BOOL                             halCtrlRecoveryEnable;				/**< */
@@ -2605,6 +2617,7 @@ typedef struct
     TI_UINT8                            uHostFastWakeupSupport;             /**< */
     THalCoexActivityTable               halCoexActivityTable;               /**< */
     TFmCoexParams                       tFmCoexParams;                      /**< */
+    TI_UINT8                            uMaxAMPDU;                          /**< */
 
 } TGeneralInitParams;
 
@@ -2717,12 +2730,10 @@ typedef struct
     TArpIpFilterInitParams              tArpIpFilter;		 /**< ARP IP filter Initialization Parameters	*/
     TMacAddrFilterInitParams            tMacAddrFilter;		 /**< MAC Address Initialization Parameters		*/
     IniFileRadioParam                   tIniFileRadioParams; /**< Radio Initialization Parameters   		*/
-    IniFileGeneralParam                 tPlatformGenParams; /**< Radio Initialization Parameters   	        */
-    ACXSmartReflexConfigParams_t        tSmartReflexParams;       /**< Smart Refelx Parameters   	        */
-    ACXSmartReflexDebugParams_t         tSmartReflexDebugParams;  /**< Smart Refelx Debug Parameters   	    */
-    ACXSmartReflexState_t               tSmartReflexState;        /**< Smart Refelx state   	            */
+	IniFileExtendedRadioParam			tIniFileExtRadioParams; /**< Radio Initialization Parameters   		*/
+    IniFileGeneralParam                 tPlatformGenParams;  /**< Radio Initialization Parameters           */
 	RateMangeParams_t					tRateMngParams;			  
-    DcoItrimParams_t                    tDcoItrimParams;          /**< Dco Itrim Parameters   	            */
+    DcoItrimParams_t                    tDcoItrimParams;     /**< Dco Itrim Parameters                      */
    
 } TTwdInitParams;
 

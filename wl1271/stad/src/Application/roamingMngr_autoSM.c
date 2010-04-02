@@ -1,7 +1,7 @@
 /*
  * roamingMngr_autoSM.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -511,7 +511,12 @@ static void roamingMngr_smHandover(TI_HANDLE hRoamingMngr)
     TRACE3(pRoamingMngr->hReport, REPORT_SEVERITY_INFORMATION, "roamingMngr_smHandover, candidateApIndex=%d, requestType = %d, channel=%d \n", 							 pRoamingMngr->candidateApIndex, requestToApConn.requestType, pApToConnect->channel);
 
     requestToApConn.dataBufLength = 0;
+
+#ifdef XCC_MODULE_INCLUDED
+    apConn_connectToAP(pRoamingMngr->hAPConnection, pApToConnect, &requestToApConn, pRoamingMngr->bSendTspecInReassPkt);
+#else
     apConn_connectToAP(pRoamingMngr->hAPConnection, pApToConnect, &requestToApConn, TI_TRUE);
+#endif
 }
 
 /**

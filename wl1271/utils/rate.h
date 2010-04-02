@@ -1,7 +1,7 @@
 /*
  * rate.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -47,6 +47,7 @@
 typedef enum
 {
     NET_BASIC_MASK      = 0x80,
+    NET_RATE_AUTO       = 0x00,
     NET_RATE_1M         = 0x02,
     NET_RATE_2M         = 0x04,
     NET_RATE_5_5M       = 0x0B,
@@ -153,6 +154,7 @@ TI_UINT32 rate_DrvToNumber (ERate eRate);
 ERate     rate_NetToDrv (TI_UINT32 rate);
 ENetRate  rate_DrvToNet (ERate eRate);
 TI_STATUS rate_DrvBitmapToNetStr (TI_UINT32 uSuppRatesBitMap, TI_UINT32 uBasicRatesBitMap, TI_UINT8 *string, TI_UINT32 *len, TI_UINT32 *pFirstOfdmRate);
+TI_STATUS rate_DrvBitmapToNetStrIncluding11n (TI_UINT32 uSuppRatesBitMap, TI_UINT32 uBasicRatesBitMap, TI_UINT8 *string, TI_UINT32 *pFirstOfdmRate);
 TI_STATUS rate_NetStrToDrvBitmap (TI_UINT32 *pBitMap, TI_UINT8 *string, TI_UINT32 len);
 TI_STATUS rate_NetBasicStrToDrvBitmap (TI_UINT32 *pBitMap, TI_UINT8 *string, TI_UINT32 len);
 TI_STATUS rate_McsNetStrToDrvBitmap (TI_UINT32 *pBitMap, TI_UINT8 *string);

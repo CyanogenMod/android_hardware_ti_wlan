@@ -1,7 +1,7 @@
 /*
  * ticon.c
  *
- * Copyright 2001-2009 Texas Instruments, Inc. - http://www.ti.com/
+ * Copyright 2001-2010 Texas Instruments, Inc. - http://www.ti.com/
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -409,6 +409,17 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"cLear", (PS8)"Clear All Params", (FuncToken_t) CuCmd_ScanAppClear, NULL );
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"Display", (PS8)"Display Params", (FuncToken_t) CuCmd_ScanAppDisplay, NULL );
 	
+    {
+        ConParm_t aaa[]  = {
+            {(PS8)"Aging threshold", CON_PARM_RANGE, 0, 1000, 60 } };
+        Console_AddToken(pTiCon->hConsole,h1, (PS8)"Aging", (PS8)"Set aging threshiold", (FuncToken_t) CuCmd_ScanSetSra, aaa );
+    }
+    {
+        ConParm_t aaa[]  = {
+            {(PS8)"Rssi threshold", CON_PARM_RANGE | CON_PARM_SIGN, -100, 0, -80 } };
+        Console_AddToken(pTiCon->hConsole,h1, (PS8)"Rssi", (PS8)"Set rssi threshiold", (FuncToken_t) CuCmd_ScanSetRssi, aaa );
+    }
+
     CHK_NULL(h1 = (THandle) Console_AddDirExt (pTiCon->hConsole, (THandle)h, (PS8)"configpEriodic", (PS8)"Configure Periodic Application Scan" ) );
     {
         ConParm_t aaa[]  = {
@@ -923,7 +934,16 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
          ConParm_t aaa[]  = { {(PS8)"Index", CON_PARM_OPTIONAL,0,4096,0},
                               {(PS8)"Value", CON_PARM_OPTIONAL,0,4096,0}, CON_LAST_PARM };
           Console_AddToken(pTiCon->hConsole, h1, (PS8)"Get rate managment",  (PS8)"rate managment", (FuncToken_t) CuCmd_GetRateMngDebug, aaa );
+      }
 
+      {
+         ConParm_t aaa[]  = { {(PS8)"IpPart1", CON_PARM_OPTIONAL,0,255,0},
+                              {(PS8)"IpPart2", CON_PARM_OPTIONAL,0,255,0},
+                              {(PS8)"IpPart3", CON_PARM_OPTIONAL,0,255,0},
+                              {(PS8)"IpPart4", CON_PARM_OPTIONAL,0,255,0},
+                              CON_LAST_PARM };
+
+          Console_AddToken(pTiCon->hConsole, h1, (PS8)"set Arp ip filter",  (PS8)"arp ip filter", (FuncToken_t) CuCmd_SetArpIPFilter, aaa );
       }
 
      }

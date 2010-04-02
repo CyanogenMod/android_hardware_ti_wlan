@@ -1,7 +1,7 @@
 /*
  * trafficAdmControl.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -1167,7 +1167,7 @@ void trafficAdmCtrl_buildTSPec(trafficAdmCtrl_t	*pTrafficAdmCtrl,
 							   TI_UINT32		*len)
 {
 	tsInfo_t			tsInfo;
-	TI_UINT16		nominalMSDUSize;
+	TI_UINT16		nominalMSDUSize, maxMSDUSize;
 	TI_UINT32		suspensionInterval = 0;   /* disable */
 
 
@@ -1219,8 +1219,10 @@ void trafficAdmCtrl_buildTSPec(trafficAdmCtrl_t	*pTrafficAdmCtrl,
     if (pTrafficAdmCtrl->useFixedMsduSize)
 		nominalMSDUSize |= FIX_MSDU_SIZE;
 
+    maxMSDUSize = (nominalMSDUSize & (~FIX_MSDU_SIZE));
+    
 	COPY_WLAN_WORD(pDataBuf,      &nominalMSDUSize);			/* Nominal-MSDU-size. */
-	COPY_WLAN_WORD(pDataBuf +  2, &nominalMSDUSize);			/* Maximum-MSDU-size. */
+	COPY_WLAN_WORD(pDataBuf +  2, &maxMSDUSize);			    /* Maximum-MSDU-size. */
 	COPY_WLAN_LONG(pDataBuf +  4, &pTSpecInfo->uMinimumServiceInterval); /* Minimum service interval */
 	COPY_WLAN_LONG(pDataBuf +  8, &pTSpecInfo->uMaximumServiceInterval); /* Maximum service interval */
 	COPY_WLAN_LONG(pDataBuf + 16, &suspensionInterval);

@@ -1,7 +1,7 @@
 /*
  * TWDriver.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -59,7 +59,6 @@
 #include "CmdBld.h"
 #include "RxQueue_api.h"
 
-void TWD_CheckSRConfigParams(TTwd  *pTWD, ACXSmartReflexConfigParams_t *tSmartReflexParams);
 
 
 #define TWD_CB_MODULE_OWNER_MASK    0xff00
@@ -433,11 +432,12 @@ void TWD_Init (TI_HANDLE    hTWD,
                    pTWD->hTwIf);
 
     hwInit_Init (pTWD->hHwInit,
-                   pTWD->hReport, 
-                   hTWD, 
-	               hTWD, 
-		           (TFinalizeCb)TWD_FinalizeDownload, 
-                   TWD_InitHwCb);
+                 pTWD->hReport, 
+                 pTWD->hTimer, 
+                 hTWD, 
+	             hTWD, 
+		         (TFinalizeCb)TWD_FinalizeDownload, 
+                 TWD_InitHwCb);
 
     /*
      * Initialize the FW-Transfer modules
@@ -448,7 +448,7 @@ void TWD_Init (TI_HANDLE    hTWD,
 
     rxXfer_Init (pTWD->hRxXfer, pTWD->hFwEvent, pTWD->hReport, pTWD->hTwIf, pTWD->hRxQueue);
 
-    RxQueue_Init (pTWD->hRxQueue, pTWD->hReport);
+    RxQueue_Init (pTWD->hRxQueue, pTWD->hReport, pTWD->hTimer);
 
 #ifdef TI_DBG
     fwDbg_Init (pTWD->hFwDbg, pTWD->hReport, pTWD->hTwIf);
@@ -617,16 +617,17 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
 {
     TTwd         *pTWD = (TTwd *)hTWD;
 
-    TWlanParams         *pWlanParams = &DB_WLAN(pTWD->hCmdBld);
-    TKeepAliveList      *pKlvParams = &DB_KLV(pTWD->hCmdBld);
-    IniFileRadioParam   *pRadioParams = &DB_RADIO(pTWD->hCmdBld);
-    IniFileGeneralParam *pGenParams = &DB_GEN(pTWD->hCmdBld);
-	TRateMngParams      *pRateMngParams = &DB_RM(pTWD->hCmdBld);
-    TDmaParams          *pDmaParams = &DB_DMA(pTWD->hCmdBld);
+    TWlanParams         		*pWlanParams = &DB_WLAN(pTWD->hCmdBld);
+    TKeepAliveList      		*pKlvParams = &DB_KLV(pTWD->hCmdBld);
+    IniFileRadioParam   		*pRadioParams = &DB_RADIO(pTWD->hCmdBld);
+	IniFileExtendedRadioParam   *pExtRadioParams = &DB_EXT_RADIO(pTWD->hCmdBld);
+    IniFileGeneralParam 		*pGenParams = &DB_GEN(pTWD->hCmdBld);
+	TRateMngParams      		*pRateMngParams = &DB_RM(pTWD->hCmdBld);
+    TDmaParams          		*pDmaParams = &DB_DMA(pTWD->hCmdBld);
 
     TI_UINT32            k, uIndex;
     int iParam;
-   
+
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_SetDefaults: called\n");
 
     pTWD->bRecoveryEnabled = pInitParams->tGeneral.halCtrlRecoveryEnable;
@@ -678,7 +679,9 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     pWlanParams->ListenInterval             = (TI_UINT8)pInitParams->tGeneral.halCtrlListenInterval;
     pWlanParams->RateFallback               = pInitParams->tGeneral.halCtrlRateFallbackRetry;        
     pWlanParams->MacClock                   = pInitParams->tGeneral.halCtrlMacClock;     
-    pWlanParams->ArmClock                   = pInitParams->tGeneral.halCtrlArmClock;     
+    pWlanParams->ArmClock                   = pInitParams->tGeneral.halCtrlArmClock;
+
+	pWlanParams->ch14TelecCca = pInitParams->tGeneral.halCtrlCh14TelecCca;
 
     /* Data interrupts pacing */
     pWlanParams->TxCompletePacingThreshold  = pInitParams->tGeneral.TxCompletePacingThreshold; 
@@ -762,11 +765,13 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
      * 802.11n
      */
     pWlanParams->tTwdHtCapabilities.b11nEnable =            pInitParams->tGeneral.b11nEnable;
+    
     /* Configure HT capabilities setting */
-    pWlanParams->tTwdHtCapabilities.uChannelWidth =         CHANNEL_WIDTH_20MHZ;                  
-    pWlanParams->tTwdHtCapabilities.uRxSTBC =               RXSTBC_SUPPORTED_ONE_SPATIAL_STREAM;
-    pWlanParams->tTwdHtCapabilities.uMaxAMSDU =             MAX_MSDU_3839_OCTETS;                         
-    pWlanParams->tTwdHtCapabilities.uMaxAMPDU =             MAX_MPDU_8191_OCTETS;
+    pWlanParams->tTwdHtCapabilities.uChannelWidth = CHANNEL_WIDTH_20MHZ;                  
+    pWlanParams->tTwdHtCapabilities.uRxSTBC       = RXSTBC_NOT_SUPPORTED;
+    pWlanParams->tTwdHtCapabilities.uMaxAMSDU     = MAX_MSDU_3839_OCTETS;                         
+    pWlanParams->tTwdHtCapabilities.uMaxAMPDU     = pInitParams->tGeneral.uMaxAMPDU;
+
     pWlanParams->tTwdHtCapabilities.uAMPDUSpacing =         AMPDU_SPC_8_MICROSECONDS;
     pWlanParams->tTwdHtCapabilities.aRxMCS[0] =             (MCS_SUPPORT_MCS_0 |
                                                              MCS_SUPPORT_MCS_1 |
@@ -793,6 +798,7 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     pWlanParams->tTwdHtCapabilities.uMCSFeedback =           MCS_FEEDBACK_NO; 
 
     os_memoryCopy(pTWD->hOs, (void*)pRadioParams, (void*)&pInitParams->tIniFileRadioParams, sizeof(IniFileRadioParam));
+	os_memoryCopy(pTWD->hOs, (void*)pExtRadioParams, (void*)&pInitParams->tIniFileExtRadioParams, sizeof(IniFileExtendedRadioParam));
     os_memoryCopy(pTWD->hOs, (void*)pGenParams, (void*)&pInitParams->tPlatformGenParams, sizeof(IniFileGeneralParam));
     
     os_memoryCopy (pTWD->hOs,
@@ -828,40 +834,6 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
 
     return TI_OK;
 }
-
-/*
-#define MAX_SR_PARAM_LEN  14
-
-void TWD_CheckSRConfigParams(TTwd  *pTWD, ACXSmartReflexConfigParams_t *tSmartReflexParams)
-{
-  int i,j;
-  TI_UINT8 len;
-  TI_BOOL flag = TI_FALSE;
-
-
-  for (i = 0; i<3; i++)
-  {
-    len = tSmartReflexParams->errorTable[i].len;
-     if (len > MAX_SR_PARAM_LEN)
-          flag = TI_TRUE;
-     for (j=0;j<len-1;j++)
-     {
-      if (tSmartReflexParams->errorTable[i].values[j] == 0)
-         flag = TI_TRUE;
-     }
-     if (flag == TI_TRUE)
-      {
-        tSmartReflexParams->errorTable[i].len= 0 ;
-        tSmartReflexParams->errorTable[i].upperLimit = 0;
-        os_memoryZero(pTWD->hOs,tSmartReflexParams->errorTable[i].values,MAX_SR_PARAM_LEN) ;
-      }
-
-  }
-
-
-
-} */
-
 
 TI_STATUS TWD_ConfigFw (TI_HANDLE hTWD)
 {

@@ -1,7 +1,7 @@
 /*
  * sme.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -86,8 +86,8 @@ TI_HANDLE sme_Create (TI_HANDLE hOS)
     }
 
     /* Create SME scan result table */
-    pSme->hScanResultTable = scanResultTable_Create (hOS);
-    if (NULL == pSme->hScanResultTable)
+    pSme->hSmeScanResultTable = scanResultTable_Create (hOS, SME_SCAN_TABLE_ENTRIES);
+    if (NULL == pSme->hSmeScanResultTable)
     {
         WLAN_OS_REPORT (("sme_Create: unable to create scan result table. SME creation failed\n"));
         sme_Destroy ((TI_HANDLE)pSme);
@@ -126,7 +126,7 @@ void sme_Init (TStadHandlesList *pStadHandles)
 
 
     /* Initialize the scan result table object */
-    scanResultTable_Init (pSme->hScanResultTable, pStadHandles);
+    scanResultTable_Init (pSme->hSmeScanResultTable, pStadHandles, SCAN_RESULT_TABLE_CLEAR);
 
     /* Initialize the SME state-machine object */
     genSM_Init (pSme->hSmeSm, pStadHandles->hReport);
@@ -153,20 +153,25 @@ void sme_SetDefaults (TI_HANDLE hSme, TSmeModifiedInitParams *pModifiedInitParam
     /* initialize SME varaibles */   
     pSme->bRadioOn = pModifiedInitParams->bRadioOn;
     pSme->eConnectMode = pModifiedInitParams->eConnectMode;
+    if (CONNECT_MODE_AUTO == pSme->eConnectMode)
+    {
+        pSme->hScanResultTable = pSme->hSmeScanResultTable;
+    }
+    else if (CONNECT_MODE_MANUAL == pSme->eConnectMode) 
+    {
+        pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
+    }
+
     pSme->eBssType = pModifiedInitParams->eDesiredBssType;
     MAC_COPY (pSme->tBssid, pModifiedInitParams->tDesiredBssid);
 
     pSme->tSsid.len = pModifiedInitParams->tDesiredSsid.len;
-    /* It looks like it never happens. Anyway decided to check */
     if ( pSme->tSsid.len > MAX_SSID_LEN )
     {
-        TRACE2( pSme->hReport, REPORT_SEVERITY_ERROR,
-               "sme_SetDefaults. pSme->tSsid.len=%d exceeds the limit %d\n",
-                   pSme->tSsid.len, MAX_SSID_LEN);
-        handleRunProblem(PROBLEM_BUF_SIZE_VIOLATION);
-        return;
+        TRACE2( pSme->hReport, REPORT_SEVERITY_ERROR, "sme_SetDefaults. pSme->tSsid.len=%d exceeds the limit %d\n", pSme->tSsid.len, MAX_SSID_LEN);
+        pSme->tSsid.len = MAX_SSID_LEN;
     }
-    os_memoryCopy (pSme->hOS, &(pSme->tSsid.str[ 0 ]), &(pModifiedInitParams->tDesiredSsid.str[ 0 ]), pModifiedInitParams->tDesiredSsid.len);
+    os_memoryCopy (pSme->hOS, &(pSme->tSsid.str[ 0 ]), &(pModifiedInitParams->tDesiredSsid.str[ 0 ]), pSme->tSsid.len);
     if (OS_802_11_SSID_JUNK (pSme->tSsid.str, pSme->tSsid.len))
     {
         pSme->eSsidType = SSID_TYPE_INVALID;
@@ -198,6 +203,24 @@ void sme_SetDefaults (TI_HANDLE hSme, TSmeModifiedInitParams *pModifiedInitParam
 }
 
 /** 
+ * \fn      sme_setScanResultTable
+ * \brief   Sets the scanResultTable pointer for the manual mode.
+ * \param   hSme - handle to the SME object
+ * \param   hScanResultTable - pointer to ScanResultTable
+ * \return  none
+ */
+void sme_SetScanResultTable(TI_HANDLE hSme, TI_HANDLE hScanResultTable)
+{
+    TSme        *pSme = (TSme*)hSme;
+
+    pSme->hScanCncnScanResulTable = hScanResultTable;
+    if (CONNECT_MODE_MANUAL == pSme->eConnectMode) 
+    {
+        pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
+    }
+}
+
+/** 
  * \fn     sme_Destroy
  * \brief  Destroys the SME object. De-allocates system resources
  * 
@@ -212,9 +235,9 @@ void sme_Destroy (TI_HANDLE hSme)
     TSme        *pSme = (TSme*)hSme;
 
     /* destroy the scan result table */
-    if (NULL != pSme->hScanResultTable)
+    if (NULL != pSme->hSmeScanResultTable)
     {
-        scanResultTable_Destroy (pSme->hScanResultTable);
+        scanResultTable_Destroy (pSme->hSmeScanResultTable);
     }
 
     /* destroy the SME generic state machine */
@@ -255,7 +278,7 @@ void sme_Start (TI_HANDLE hSme)
     /* if radio is on, start the SM */
     if (TI_TRUE == pSme->bRadioOn)
     {
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_START, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_START, hSme);
     }
 }
 
@@ -280,7 +303,7 @@ void sme_Stop (TI_HANDLE hSme)
     pSme->bRunning = TI_FALSE;
 
     /* mark that running flag is send a stop event to the SM */
-    genSM_Event (pSme->hSmeSm, SME_SM_EVENT_STOP, hSme);
+    sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_STOP, hSme);
 }
 
 /** 
@@ -301,7 +324,7 @@ void sme_Restart (TI_HANDLE hSme)
 
     pSme->uScanCount = 0;
 
-    genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+    sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
 }
 
 /** 
@@ -334,21 +357,27 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             {
                 if(TI_TRUE == pSme->bRunning)
                 {
-                    genSM_Event (pSme->hSmeSm, SME_SM_EVENT_START, hSme);
+                    sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_START, hSme);
                 }
             }
             else
             {
-                genSM_Event (pSme->hSmeSm, SME_SM_EVENT_STOP, hSme);
+                sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_STOP, hSme);
             }
         }
         break;
 
     case SME_DESIRED_SSID_PARAM:
+
+        if (pParam->content.smeDesiredSSID.len > MAX_SSID_LEN)
+        {
+            return PARAM_VALUE_NOT_VALID;   /* SSID length is out of range */
+        }
+
         /* if new value is different than current one */
         if ((pSme->tSsid.len != pParam->content.smeDesiredSSID.len) || 
-            (0 != os_memoryCompare (pSme->hOS, &(pSme->tSsid.str[ 0 ]),
-                                    &(pParam->content.smeDesiredSSID.str[ 0 ]), pSme->tSsid.len)))
+            (0 != os_memoryCompare (pSme->hOS, (TI_UINT8 *)&(pSme->tSsid.str[ 0 ]),
+                                    (TI_UINT8 *)&(pParam->content.smeDesiredSSID.str[ 0 ]), pSme->tSsid.len)))
         {
             /* set new desired SSID */
             os_memoryCopy (pSme->hOS, &(pSme->tSsid.str[ 0 ]), &(pParam->content.smeDesiredSSID.str[ 0 ]), pParam->content.smeDesiredSSID.len);
@@ -357,23 +386,23 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             pSme->uScanCount = 0;
 
             /* now send a disconnect event */
-            genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+            sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         }
         break;
 
     case SME_DESIRED_SSID_ACT_PARAM:
+
         if (pParam->content.smeDesiredSSID.len > MAX_SSID_LEN)
         {
-            /* printk("SSID length(%d) is out of range. Discard it.\n", pParam->content.smeDesiredSSID.len);*/
-            return PARAM_VALUE_NOT_VALID; /* ssid length is out of range */
+            return PARAM_VALUE_NOT_VALID;   /* SSID length is out of range */
         }
 
         pSme->bRadioOn = TI_TRUE;
 
         /* if new value is different than current one */
         if ((pSme->tSsid.len != pParam->content.smeDesiredSSID.len) || 
-            (0 != os_memoryCompare (pSme->hOS, &(pSme->tSsid.str[ 0 ]),
-                                    &(pParam->content.smeDesiredSSID.str[ 0 ]), pSme->tSsid.len)))
+            (0 != os_memoryCompare (pSme->hOS, (TI_UINT8 *)&(pSme->tSsid.str[ 0 ]),
+                                    (TI_UINT8 *)&(pParam->content.smeDesiredSSID.str[ 0 ]), pSme->tSsid.len)))
         {
             /* set new desired SSID */
             os_memoryCopy (pSme->hOS, &(pSme->tSsid.str[ 0 ]), &(pParam->content.smeDesiredSSID.str[ 0 ]), pParam->content.smeDesiredSSID.len);
@@ -403,11 +432,8 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             pSme->bConstantScan = TI_FALSE;
         }
 
-        /* printk("SME_DESIRED_SSID_ACT_PARAM: bRadioOn = %d, bRunning = %d\n", pSme->bRadioOn, pSme->bRunning); */
-        pSme->bRunning = TI_TRUE; /* set it to TRUE in case it's accidentally altered. */
-
         /* now send a disconnect event */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         break;
 
     case SME_DESIRED_BSSID_PARAM:
@@ -417,8 +443,8 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             /* set new BSSID */
             MAC_COPY (pSme->tBssid, pParam->content.smeDesiredBSSID);
             pSme->uScanCount = 0;
-        /* now send a disconnect event */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+            /* now send a disconnect event */
+            sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         }
         break;
 
@@ -429,8 +455,16 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             /* set new connection mode */
             pSme->eConnectMode = pParam->content.smeConnectionMode;
             pSme->uScanCount = 0;
+            if (CONNECT_MODE_AUTO == pSme->eConnectMode)
+            {
+                pSme->hScanResultTable = pSme->hSmeScanResultTable;
+            }
+            else if (CONNECT_MODE_MANUAL == pSme->eConnectMode) 
+            {
+                pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
+            }
         /* now send a disconnect event */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         }
         break;
 
@@ -442,7 +476,7 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             pSme->eBssType = pParam->content.smeDesiredBSSType;
             pSme->uScanCount = 0;
             /* now send a disconnect event */
-            genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+            sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         }
         break;
 
@@ -453,7 +487,7 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
          pSme->bConstantScan = TI_TRUE;
          pSme->uScanCount = 0;
          /* now send a disconnect event */
-         genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+         sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         }
         else
         {
@@ -580,8 +614,8 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
             {
 #ifndef XCC_MODULE_INCLUDED
                 if ((pSme->tSsid.len == pFrameInfo->parsedIEs->content.iePacket.pSsid->hdr[ 1 ]) &&
-                    (0 == os_memoryCompare (pSme->hOS, &(pSme->tSsid.str[ 0 ]),
-                                            &(pFrameInfo->parsedIEs->content.iePacket.pSsid->serviceSetId[ 0 ]),
+                    (0 == os_memoryCompare (pSme->hOS, (TI_UINT8 *)&(pSme->tSsid.str[ 0 ]),
+                                            (TI_UINT8 *)&(pFrameInfo->parsedIEs->content.iePacket.pSsid->serviceSetId[ 0 ]),
                                             pSme->tSsid.len)))
 #endif
                 {
@@ -602,7 +636,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
         else
         /* manual mode */
         {
-            if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
+            if (TI_OK != scanResultTable_UpdateEntry (pSme->hSmeScanResultTable, pFrameInfo->bssId, pFrameInfo))
             {
                 TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_ScanResultCB: unable to update application scan entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
             }
@@ -635,7 +669,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
                {
                    TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_ScanResultCB: No candidate available, sending connect failure\n");
 
-                   genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+                   sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
                    break;
                }
 
@@ -668,7 +702,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
                    {
                        TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "IBSS SELECT FAILURE  - No channel !!!\n\n");
 
-                       genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+                       sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
 
                        break;
                    }
@@ -679,7 +713,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
                    {
                        TRACE0(pSme->hReport, REPORT_SEVERITY_ERROR , "IBSS SELECT FAILURE  - could not open self site !!!\n\n");
 
-                       genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+                       sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
 
                        break;
                    }
@@ -692,7 +726,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
            }
 
            /* a connection candidate is available, send a connect event */
-           genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
+           sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
         }
         break;        
 
@@ -702,7 +736,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
      */
     case SCAN_CRS_SCAN_STOPPED:
         TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_ScanResultCB: received scan stopped indication\n");
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
         break;
 
     default:
@@ -710,61 +744,6 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
         break;
     }
 }
-
-/** 
- * \fn     sme_AppScanResult
- * \brief  Callback function from scan concentrator app for results and scan complete indications
- * 
- * Callback function from scan concentrator app for results and scan complete indications, used
- * for scans wehen the SME is in manual.
- * 
- * \param  hSme - handle to the SME object
- * \param  eStatus - the reason for calling the CB  
- * \param  pFrameInfo - frame information (if the CB is called due to received frame)
- * \param  uResultCount - number of results rceived
- * \return None
- */ 
-void sme_AppScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
-                        TScanFrameInfo* pFrameInfo)
-{
-    TSme                *pSme = (TSme*)hSme;
-
-    /* in manual mode, store the frame in the SME scan result table */
-    if (CONNECT_MODE_MANUAL == pSme->eConnectMode)
-    { 
-        switch (eStatus)
-        {
-        /* a frame was received - update the scan result table */
-        case SCAN_CRS_RECEIVED_FRAME:
-            TRACE6(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_AppScanResult: received frame from BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
-    
-            if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
-            {
-                TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_AppScanResult: unable to update entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
-            }
-            break;
-    
-        /* scan was completed successfully */
-        case SCAN_CRS_SCAN_COMPLETE_OK:
-        /* an error occured, try selecting a site anyway */
-        case SCAN_CRS_SCAN_ABORTED_FW_RESET:
-        case SCAN_CRS_SCAN_STOPPED:
-        case SCAN_CRS_SCAN_ABORTED_HIGHER_PRIORITY:
-        case SCAN_CRS_SCAN_FAILED:
-        case SCAN_CRS_TSF_ERROR:
-            TRACE1(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_AppScanResult: received scan complete indication with status %d\n", eStatus);
-    
-            /* stablizie the scan result table - delete its contenst if no results were recived during last scan */
-            scanResultTable_SetStableState (pSme->hScanResultTable);
-            break;
-
-        default:
-            TRACE1(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_AppScanResult: received unrecognized status %d\n", eStatus);
-            break;
-        }
-    }
-}
-
 
 /** 
  * \fn     sme_MeansurementScanResult
@@ -786,7 +765,7 @@ void sme_MeansurementScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus, 
     case SCAN_CRS_RECEIVED_FRAME:
         TRACE6(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_MeansurementScanResult: received frame from BSSID %02x:%02x:%02x:%02x:%02x:%02x\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
     
-        if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))
+        if (TI_OK != scanResultTable_UpdateEntry (pSme->hSmeScanResultTable, pFrameInfo->bssId, pFrameInfo))
         {
             TRACE6(pSme->hReport, REPORT_SEVERITY_ERROR , "sme_MeansurementScanResult: unable to update entry for BSSID %02x:%02x:%02x:%02x:%02x:%02x because table is full\n", (*pFrameInfo->bssId)[ 0 ], (*pFrameInfo->bssId)[ 1 ], (*pFrameInfo->bssId)[ 2 ], (*pFrameInfo->bssId)[ 3 ], (*pFrameInfo->bssId)[ 4 ], (*pFrameInfo->bssId)[ 5 ]);
         }
@@ -803,7 +782,7 @@ void sme_MeansurementScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus, 
         TRACE1(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_MeansurementScanResult: received scan complete indication with status %d\n", eStatus);
 
         /* stablizie the scan result table - delete its contenst if no results were recived during last scan */
-        scanResultTable_SetStableState (pSme->hScanResultTable);
+        scanResultTable_SetStableState (pSme->hSmeScanResultTable);
         break;
 
     default:
@@ -838,7 +817,7 @@ void sme_ReportConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32 u
     /* connection was successful */
     case STATUS_SUCCESSFUL:
         pSme->bAuthSent = TI_TRUE;
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_SUCCESS, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_SUCCESS, hSme);
         break;
 
     case STATUS_ASSOC_REJECT:
@@ -859,11 +838,11 @@ void sme_ReportConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32 u
         /* if the next connection candidate exists */
         if (NULL != pSme->pCandidate)
         {
-            genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
+            sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
         }
         else
         {
-            genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+            sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
         }
         break;
 
@@ -872,7 +851,7 @@ void sme_ReportConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32 u
         /* we use this status at SME, if != 0 means that assoc frame sent */
     case STATUS_UNSPECIFIED:
             pSme->bAuthSent = TI_TRUE;
-            genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
         break;
 
     default:
@@ -907,7 +886,7 @@ void sme_ReportApConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32
     case STATUS_SG_RESELECT:
         pSme->bReselect = TI_TRUE;
         pSme->bConnectRequired = TI_TRUE;
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
         break;
 
     /* shouldn't happen (not from AP conn) */
@@ -926,11 +905,11 @@ void sme_ReportApConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32
         /* keep the disassociation status and code, for sending event to user-mode */
         pSme->tDisAssoc.eMgmtStatus = eStatusType;
         pSme->tDisAssoc.uStatusCode = uStatusCode;
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
         break;
 
     case STATUS_DISCONNECT_DURING_CONNECT:
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
         break;
 
     default:
@@ -940,20 +919,35 @@ void sme_ReportApConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32
 }
 
 /** 
- * \fn     sme_GetSmeScanResultTableHandler
- * \brief  get the handler to the Sme Scan Result Table.
+ * \fn     sme_ConnectScanReport
+ * \brief  get the handler to the Scan Result Table used for connection to AP.
  * 
  * \param  hSme - handle to the SME object
  * \param  uStatus code - extended status information (if available)
  * \return None
- * \sa     sme_ReportConnStatus
  */
-void sme_GetSmeScanResultTableHandler (TI_HANDLE hSme, TI_HANDLE *hScanResultTable)
+void sme_ConnectScanReport (TI_HANDLE hSme, TI_HANDLE *hScanResultTable)
 {
     TSme                *pSme = (TSme*)hSme;
 
     *hScanResultTable = pSme->hScanResultTable;
 }
+
+/** 
+ * \fn     sme_MeasureScanReport
+ * \brief  get the handler to the Sme Scan Result Table.
+ * 
+ * \param  hSme - handle to the SME object
+ * \param  uStatus code - extended status information (if available)
+ * \return None
+ */
+void sme_MeasureScanReport (TI_HANDLE hSme, TI_HANDLE *hScanResultTable)
+{
+    TSme                *pSme = (TSme*)hSme;
+
+    *hScanResultTable = pSme->hSmeScanResultTable;
+}
+
 
 /** 
  * \fn     SME_ConnectRequired
@@ -973,7 +967,7 @@ void SME_ConnectRequired (TI_HANDLE hSme)
     pSme->bConnectRequired = TI_TRUE;
 
     /* now send a disconnect event */
-    genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+    sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
 }
 
 /** 
@@ -993,5 +987,14 @@ void SME_Disconnect (TI_HANDLE hSme)
     pSme->bConstantScan = TI_FALSE;
 
     /* now send a disconnect event */
-    genSM_Event (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+    sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
+}
+
+void sme_SmEvent(TI_HANDLE hGenSm, TI_UINT32 uEvent, void* pData)
+{
+    TSme *pSme = (TSme*)pData;
+    TGenSM    *pGenSM = (TGenSM*)hGenSm;
+
+    TRACE2(pSme->hReport, REPORT_SEVERITY_INFORMATION, "sme_SmEvent: Current State = %d, sending event %d\n", (pGenSM->uCurrentState), (uEvent));
+    genSM_Event(pGenSM, uEvent, pData);
 }

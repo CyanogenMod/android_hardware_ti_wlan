@@ -1,7 +1,7 @@
 /*
  * osRgstry_parser.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -137,7 +137,8 @@ void NdisReadConfiguration( OUT PNDIS_STATUS  status, OUT PNDIS_CONFIGURATION_PA
     while(buf < end_buf)
     {
         buf = ltrim(buf);
-        if( !(s = mem_str(buf, name, end_buf)) )
+        s = mem_str(buf, name, end_buf);
+        if( !s )
             break;
 
         buf = ltrim(s + strlen(name));

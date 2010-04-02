@@ -1,7 +1,7 @@
 /*
  * currBss.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -134,6 +134,7 @@ typedef struct _currBSS_t
     TI_HANDLE   hReport;
     TI_HANDLE   hRegulatoryDomain;
     TI_HANDLE   hSiteMgr;
+	TI_HANDLE   hConn;
     TI_HANDLE   hScanMngr;
     TI_HANDLE   hEvHandler;
     TI_HANDLE   hTxCtrl;

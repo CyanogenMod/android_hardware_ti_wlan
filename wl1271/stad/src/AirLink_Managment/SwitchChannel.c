@@ -1,7 +1,7 @@
 /*
  * SwitchChannel.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -528,7 +528,12 @@ void switchChannel_recvCmd(TI_HANDLE hSwitchChannel, dot11_CHANNEL_SWITCH_t *cha
                 param.content.channelValidity.channelValidity = TI_FALSE;
                 regulatoryDomain_setParam(pSwitchChannel->hRegulatoryDomain, &param);
             }
-            apConn_reportRoamingEvent(pSwitchChannel->hApConn, ROAMING_TRIGGER_SWITCH_CHANNEL, NULL);
+            
+            if (TI_TRUE == pSwitchChannel->switchChannelStarted) 
+            {
+                   apConn_reportRoamingEvent(pSwitchChannel->hApConn, ROAMING_TRIGGER_SWITCH_CHANNEL, NULL); 
+            }
+            
         }
         else
         {   /* Invoke Switch Channel command */

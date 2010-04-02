@@ -1,7 +1,7 @@
 /*
  * qosMngr.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -130,6 +130,7 @@ typedef struct
     TI_HANDLE           hTxCtrl;
     TI_HANDLE           hTxMgmtQ;
     TI_HANDLE           hEvHandler;
+    TI_HANDLE           hRoamMng;
 
     TI_HANDLE           hMeasurementMngr;
     TI_HANDLE           hSmeSm;

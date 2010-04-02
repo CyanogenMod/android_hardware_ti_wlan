@@ -1,7 +1,7 @@
 /*
  * txCtrlParams.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -235,13 +235,12 @@ TI_STATUS txCtrlParams_AddToNotifMask(TI_HANDLE hTxCtrl, TI_HANDLE Notifh, TI_UI
 ****************************************************************************/
 TI_STATUS txCtrlParams_UnRegNotif(TI_HANDLE hTxCtrl, TI_HANDLE RegEventHandle)
 {
-    TI_STATUS status;
     txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
 
     if (!hTxCtrl)
         return TI_NOK;
 
-    return (status = DistributorMgr_UnReg(pTxCtrl->TxEventDistributor,RegEventHandle));
+    return (DistributorMgr_UnReg(pTxCtrl->TxEventDistributor,RegEventHandle));
 }
 
 
@@ -377,7 +376,6 @@ TI_STATUS txCtrlParams_getParam(TI_HANDLE hTxCtrl, paramInfo_t *pParamInfo)
     default:
         TRACE0(pTxCtrl->hReport, REPORT_SEVERITY_ERROR, ": PARAMETER NOT SUPPORTED\n");
         return PARAM_NOT_SUPPORTED;
-        break;
     }
 
     return TI_OK;

@@ -1,7 +1,7 @@
 /*
  * scanResultTable.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -46,7 +46,10 @@
 #include "freq.h"
 
 
-#define TABLE_ENTRIES_NUMBER    32
+//#define TABLE_ENTRIES_NUMBER    32
+
+#define MILISECONDS(seconds)                            (seconds * 1000)
+#define UPDATE_LOCAL_TIMESTAMP(pSite, hOs)              pSite->localTimeStamp = os_timeStampMs(hOs);
 
 #define UPDATE_BSSID(pSite, pFrame)                     MAC_COPY((pSite)->bssid, *((pFrame)->bssId))
 #define UPDATE_BAND(pSite, pFrame)                      (pSite)->eBand = (pFrame)->band
@@ -56,22 +59,6 @@
 #define UPDATE_AGILITY(pSite, pFrame)                   pSite->agility = (((pFrame)->parsedIEs->content.iePacket.capabilities >> CAP_AGILE_SHIFT) & CAP_AGILE_MASK) ? TI_TRUE : TI_FALSE
 #define UPDATE_SLOT_TIME(pSite, pFrame)                 pSite->newSlotTime = (((pFrame)->parsedIEs->content.iePacket.capabilities >> CAP_SLOT_TIME_SHIFT) & CAP_SLOT_TIME_MASK) ? PHY_SLOT_TIME_SHORT : PHY_SLOT_TIME_LONG
 #define UPDATE_PROTECTION(pSite, pFrame)                pSite->useProtection = ((pFrame)->parsedIEs->content.iePacket.useProtection)
-#define UPDATE_SSID(pScanResultTable, pSite, pFrame)    if ((pFrame)->parsedIEs->content.iePacket.pSsid != NULL) { \
-                                                            pSite->ssid.len = (pFrame)->parsedIEs->content.iePacket.pSsid->hdr[1]; \
-                                                            if (pSite->ssid.len > MAX_SSID_LEN) { \
-                                                               TRACE2( pScanResultTable->hReport, REPORT_SEVERITY_ERROR, \
-                                                                  "UPDATE_SSID. pSite->ssid.len=%d exceeds the limit. Set to limit value %d\n", \
-                                                                  pSite->ssid.len, MAX_SSID_LEN); \
-                                                               handleRunProblem(PROBLEM_BUF_SIZE_VIOLATION); \
-                                                               pSite->ssid.len = MAX_SSID_LEN; \
-                                                            } \
-                                                            os_memoryCopy(pScanResultTable->hOS, \
-                                                                (void *)pSite->ssid.str, \
-                                                                (void *)(pFrame)->parsedIEs->content.iePacket.pSsid->serviceSetId, \
-                                                                pSite->ssid.len); \
-                                                            if (pSite->ssid.len < MAX_SSID_LEN) { \
-                                                               pSite->ssid.str[pSite->ssid.len] = '\0';} \
-                                                        }
 #define UPDATE_CHANNEL(pSite, pFrame, rxChannel)        if ((pFrame)->parsedIEs->content.iePacket.pDSParamsSet == NULL) \
                                                             pSite->channel = rxChannel; \
                                                         else \
@@ -144,15 +131,19 @@ typedef struct
     TI_HANDLE       hSiteMgr;               /**< Handle to the site manager object */
     TSiteEntry      *pTable;                /**< site table */
     TI_UINT32       uCurrentSiteNumber;     /**< number of sites currently in the table */
+    TI_UINT32       uEntriesNumber;         /**< max size of the table */
     TI_UINT32       uIterator;              /**< table iterator used for getFirst / getNext */
+    TI_UINT32       uSraThreshold;          /**< Rssi threshold for frame filtering */
     TI_BOOL         bStable;                /**< table status (updating / stable) */
+    EScanResultTableClear  eClearTable;     /** inicates if table should be cleared at scan */
 } TScanResultTable;
 
 static TSiteEntry  *scanResultTbale_AllocateNewEntry (TI_HANDLE hScanResultTable);
 static void         scanResultTable_UpdateSiteData (TI_HANDLE hScanResultTable, TSiteEntry *pSite, TScanFrameInfo *pFrame);
 static void         scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, TScanFrameInfo *pFrame);
 static void         scanResultTable_UpdateWSCParams (TSiteEntry *pSite, TScanFrameInfo *pFrame);
-static TI_STATUS scanResultTable_CheckRxSignalValidity(TScanResultTable *pScanResultTable, siteEntry_t *pSite, TI_INT8 rxLevel, TI_UINT8 channel);
+static TI_STATUS    scanResultTable_CheckRxSignalValidity(TScanResultTable *pScanResultTable, siteEntry_t *pSite, TI_INT8 rxLevel, TI_UINT8 channel);
+static void         scanResultTable_RemoveEntry(TI_HANDLE hScanResultTable, TI_UINT32 uIndex);
 
 
 /** 
@@ -166,7 +157,7 @@ static TI_STATUS scanResultTable_CheckRxSignalValidity(TScanResultTable *pScanRe
  * \return Handle to the newly created scan result table object, NULL if an error occured.
  * \sa     scanResultTable_Init, scanResultTable_Destroy
  */ 
-TI_HANDLE scanResultTable_Create (TI_HANDLE hOS)
+TI_HANDLE scanResultTable_Create (TI_HANDLE hOS, TI_UINT32 uEntriesNumber)
 {
     TScanResultTable    *pScanResultTable = NULL;
 
@@ -183,16 +174,17 @@ TI_HANDLE scanResultTable_Create (TI_HANDLE hOS)
     pScanResultTable->hOS = hOS;
     /* allocate memory for sites' data */
     pScanResultTable->pTable = 
-        (TSiteEntry *)os_memoryAlloc (pScanResultTable->hOS, sizeof (TSiteEntry) * TABLE_ENTRIES_NUMBER);
+        (TSiteEntry *)os_memoryAlloc (pScanResultTable->hOS, sizeof (TSiteEntry) * uEntriesNumber);
     if (NULL == pScanResultTable->pTable)
     {
-        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_ERROR ,
-			   "scanResultTable_Create: Unable to allocate memory for %d entries of %d bytes\n",
-			   TABLE_ENTRIES_NUMBER, sizeof (TSiteEntry));
+        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_ERROR , 
+			   "scanResultTable_Create: Unable to allocate memory for %d entries of %d bytes\n", 
+			   uEntriesNumber , sizeof (TSiteEntry));
         os_memoryFree(pScanResultTable->hOS, pScanResultTable, sizeof(TScanResultTable));
         return NULL;
     }
-    os_memoryZero(pScanResultTable->hOS, pScanResultTable->pTable, sizeof(TSiteEntry) * TABLE_ENTRIES_NUMBER);
+    pScanResultTable->uEntriesNumber = uEntriesNumber;
+    os_memoryZero(pScanResultTable->hOS, pScanResultTable->pTable, sizeof(TSiteEntry) * uEntriesNumber);
     return (TI_HANDLE)pScanResultTable;
 }
 
@@ -204,10 +196,12 @@ TI_HANDLE scanResultTable_Create (TI_HANDLE hOS)
  * 
  * \param  hScanResultTable - handle to the scan result table object
  * \param  pStadHandles - modules handles table
+ * \param  eClearTable - indicates if the table should be cleared, used when a frame arrives 
+ *                       or setStable is called and the table is in stable state
  * \return None
  * \sa     scanResultTable_Create
  */ 
-void        scanResultTable_Init (TI_HANDLE hScanResultTable, TStadHandlesList *pStadHandles)
+void        scanResultTable_Init (TI_HANDLE hScanResultTable, TStadHandlesList *pStadHandles, EScanResultTableClear eClearTable)
 {
     TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
 
@@ -219,6 +213,9 @@ void        scanResultTable_Init (TI_HANDLE hScanResultTable, TStadHandlesList *
     pScanResultTable->uCurrentSiteNumber = 0;
     pScanResultTable->bStable = TI_TRUE;
     pScanResultTable->uIterator = 0;
+    pScanResultTable->eClearTable = eClearTable;
+    /* default Scan Result Aging threshold is 60 second */
+    pScanResultTable->uSraThreshold = 60;
 }
 
 
@@ -241,7 +238,7 @@ void        scanResultTable_Destroy (TI_HANDLE hScanResultTable)
     {
         /* free table memory */
         os_memoryFree (pScanResultTable->hOS, (void*)pScanResultTable->pTable, 
-                       sizeof (TSiteEntry) * TABLE_ENTRIES_NUMBER);
+                       sizeof (TSiteEntry) * pScanResultTable->uEntriesNumber);
     }
 
     /* free scan result table object memeory */
@@ -249,11 +246,27 @@ void        scanResultTable_Destroy (TI_HANDLE hScanResultTable)
 }
 
 /** 
+ * \fn     scanResultTable_SetSraThreshold
+ * \brief  set Scan Result Aging threshold 
+ *  
+ * \param  hScanResultTable - handle to the scan result table object
+ * \param  uSraThreshold - Scan Result Aging threshold
+ * \return None
+ * \sa     scanResultTable_performAging
+ */ 
+void scanResultTable_SetSraThreshold(TI_HANDLE hScanResultTable, TI_UINT32 uSraThreshold)
+{
+    TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
+    pScanResultTable->uSraThreshold = uSraThreshold;
+}
+
+/** 
  * \fn     scanResultTable_UpdateEntry
  * \brief  Update or insert a site data. 
  * 
- * Update a site's data in the table if it already exists, or create an antry if the site doesn't exist.
- * If the table is in stable state, will move it to updating state and clear its contents.
+ * Update a site's data in the table if it already exists, or create an entry if the site doesn't exist.
+ * If the table is in stable state, will move it to updating state and clear its contents if bClearTable
+ * is eClearTable.
  * 
  * \param  hScanResultTable - handle to the scan result table object
  * \param  pBssid - a pointer to the site BSSID
@@ -275,8 +288,12 @@ TI_STATUS scanResultTable_UpdateEntry (TI_HANDLE hScanResultTable, TMacAddr *pBs
         TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_UpdateEntry: table is stable, clearing table and moving to updating state\n");
         /* move the table to updating state */
         pScanResultTable->bStable = TI_FALSE;
-        /* and clear its contents */
-        pScanResultTable->uCurrentSiteNumber = 0;
+
+        if (SCAN_RESULT_TABLE_CLEAR == pScanResultTable->eClearTable) 
+        {
+            /* clear table contents */
+            pScanResultTable->uCurrentSiteNumber = 0;
+        }
     }
 
     /* Verify that the SSID IE is available (if not return NOK) */
@@ -286,18 +303,15 @@ TI_STATUS scanResultTable_UpdateEntry (TI_HANDLE hScanResultTable, TMacAddr *pBs
         return TI_NOK;
     }
 
-    /* use temporary SSID structure */
+    /* use temporary SSID structure, and verify SSID length */
     tTempSsid.len = pFrame->parsedIEs->content.iePacket.pSsid->hdr[1];
-    /* The change is made to "close" the issue 414 in KlockWork.
-       This is tricky for incorrect data case.
-       At least it looks better than running out of buffer in os_memoryCopy below */
-    if (MAX_SSID_LEN < tTempSsid.len)
+    if (tTempSsid.len > MAX_SSID_LEN)
     {
-        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION, "scanResultTable_UpdateEntry: SSID len=%d out of range. replaced by %d\n", tTempSsid.len, MAX_SSID_LEN);
-        handleRunProblem(PROBLEM_BUF_SIZE_VIOLATION);
-        tTempSsid.len = MAX_SSID_LEN;
+        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_WARNING, "scanResultTable_UpdateEntry: SSID len=%d out of range. replaced by %d\n", tTempSsid.len, MAX_SSID_LEN);
+        return TI_NOK;
     }
-    os_memoryCopy(pScanResultTable->hOS, (void *)&(tTempSsid.str[ 0 ]), 
+    os_memoryCopy(pScanResultTable->hOS, 
+                  (void *)&(tTempSsid.str[ 0 ]), 
                   (void *)&(pFrame->parsedIEs->content.iePacket.pSsid->serviceSetId[ 0 ]),
                   tTempSsid.len);
     if (MAX_SSID_LEN > tTempSsid.len)
@@ -341,17 +355,19 @@ TI_STATUS scanResultTable_UpdateEntry (TI_HANDLE hScanResultTable, TMacAddr *pBs
  * Moves the table to stable state. Also clears the tabel contents if required.
  * 
  * \param  hScanResultTable - handle to the scan result table object
+ * \param  eClearTable - indicates if the table should be cleared in case the table
+ *                       is in stable state (no result where received in last scan).
  * \return None
  * \sa     scanResultTable_UpdateEntry 
  */ 
-void        scanResultTable_SetStableState (TI_HANDLE hScanResultTable)
+void    scanResultTable_SetStableState (TI_HANDLE hScanResultTable)
 {
     TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
 
     TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_SetStableState: setting stable state\n");
 
     /* if also asked to clear the table, if it is at Stable mode means that no results were received, clear it! */
-    if (TI_TRUE == pScanResultTable->bStable)
+    if ((TI_TRUE == pScanResultTable->bStable) && (SCAN_RESULT_TABLE_CLEAR == pScanResultTable->eClearTable))
     {
         TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_SetStableState: also clearing table contents\n");
 
@@ -432,8 +448,8 @@ TSiteEntry  *scanResultTable_GetBySsidBssidPair (TI_HANDLE hScanResultTable, TSs
         /* if the BSSID and SSID match */
         if (MAC_EQUAL (*pBssid, pScanResultTable->pTable[ uIndex ].bssid) &&
             ((pSsid->len == pScanResultTable->pTable[ uIndex ].ssid.len) &&
-             (0 == os_memoryCompare (pScanResultTable->hOS, &(pSsid->str[ 0 ]),
-                                     &(pScanResultTable->pTable[ uIndex ].ssid.str[ 0 ]),
+             (0 == os_memoryCompare (pScanResultTable->hOS, (TI_UINT8 *)(&(pSsid->str[ 0 ])),
+                                     (TI_UINT8 *)(&(pScanResultTable->pTable[ uIndex ].ssid.str[ 0 ])),
                                      pSsid->len))))
         {
             TRACE1(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "Entry found at index %d\n", uIndex);
@@ -444,6 +460,107 @@ TSiteEntry  *scanResultTable_GetBySsidBssidPair (TI_HANDLE hScanResultTable, TSs
     /* site wasn't found: return NULL */
     TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_GetBySsidBssidPair: Entry was not found\n");
     return NULL;
+}
+
+/** 
+ * \fn     scanResultTable_FindHidden
+ * \brief  find entry with hidden SSID anfd return it's index
+ * 
+ * \param  hScanResultTable - handle to the scan result table object
+ * \param  uHiddenSsidIndex - entry index to return
+ * \return TI_OK if found, TI_NOT if not. 
+ */ 
+static TI_STATUS scanResultTable_FindHidden (TScanResultTable *pScanResultTable, TI_UINT32 *uHiddenSsidIndex)
+{
+    TI_UINT32 uIndex;
+
+    TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_FindHidden: Searching for hidden SSID\n");
+    
+    /* check all entries in the table */
+    for (uIndex = 0; uIndex < pScanResultTable->uCurrentSiteNumber; uIndex++)
+    {
+        /* check if entry is with hidden SSID */
+        if ( (pScanResultTable->pTable[ uIndex ].ssid.len == 0) ||
+            ((pScanResultTable->pTable[ uIndex ].ssid.len == 1) && (pScanResultTable->pTable[ uIndex ].ssid.str[0] == 0)))
+        {
+            TRACE1(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_FindHidden: Entry found at index %d\n", uIndex);
+            *uHiddenSsidIndex = uIndex;
+            return TI_OK;
+        }
+    }
+
+    /* site wasn't found: return NULL */
+    TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_FindHidden: Entry was not found\n");
+    return TI_NOK;
+}
+
+/** 
+ * \fn     scanResultTable_performAging 
+ * \brief  Deletes from table all entries which are older than the Sra threshold
+ * 
+ * \param  hScanResultTable - handle to the scan result table object
+ * \return None
+ * \sa     scanResultTable_SetSraThreshold
+ */ 
+void   scanResultTable_PerformAging(TI_HANDLE hScanResultTable)
+{
+    TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
+    TI_UINT32           uIndex = 0;
+
+    /* check all entries in the table */
+    while (uIndex < pScanResultTable->uCurrentSiteNumber)
+    {
+        /* check if the entry's age is old if it remove it */
+        if (pScanResultTable->pTable[uIndex].localTimeStamp < 
+            os_timeStampMs(pScanResultTable->hOS) - MILISECONDS(pScanResultTable->uSraThreshold))
+        {
+            /* The removeEntry places the last entry instead of the deleted entry
+             * in order to preserve the table's continuity. For this reason the
+             * uIndex is not incremented because we want to check the entry that 
+             * was placed instead of the entry deleted */
+            scanResultTable_RemoveEntry(hScanResultTable, uIndex);
+        }
+        else
+        {
+            /* If the entry was not deleted check the next entry */
+            uIndex++;
+        }
+    }
+}
+
+/** 
+ * \fn     scanResultTable_removeEntry 
+ * \brief  Deletes entry from table
+ *         the function keeps a continuty in the table by copying the last
+ *         entry in the table to the place the entry was deleted from
+ * 
+ * \param  hScanResultTable - handle to the scan result table object
+ * \param  uIndex           - index of the entry to be deleted
+ * \return TI_OK if entry deleted successfully TI_NOK otherwise
+ */ 
+void   scanResultTable_RemoveEntry(TI_HANDLE hScanResultTable, TI_UINT32 uIndex)
+{
+    TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
+
+    if (uIndex >= pScanResultTable->uCurrentSiteNumber) 
+    {
+        TRACE1(pScanResultTable->hReport, REPORT_SEVERITY_ERROR , "scanResultTable_removeEntry: %d out of bound entry index\n", uIndex);
+        return;
+    }
+
+    /* if uIndex is not the last entry, then copy the last entry in the table to the uIndex entry */
+    if (uIndex < (pScanResultTable->uCurrentSiteNumber - 1))
+    {
+        os_memoryCopy(pScanResultTable->hOS, 
+                      &(pScanResultTable->pTable[uIndex]), 
+                      &(pScanResultTable->pTable[pScanResultTable->uCurrentSiteNumber - 1]),
+                      sizeof(TSiteEntry));
+    }
+
+    /* clear the last entry */
+    os_memoryZero(pScanResultTable->hOS, &(pScanResultTable->pTable[pScanResultTable->uCurrentSiteNumber - 1]), sizeof(TSiteEntry));
+    /* decrease the current table size */
+    pScanResultTable->uCurrentSiteNumber--;
 }
 
 /** 
@@ -458,11 +575,24 @@ TSiteEntry  *scanResultTable_GetBySsidBssidPair (TI_HANDLE hScanResultTable, TSs
 TSiteEntry *scanResultTbale_AllocateNewEntry (TI_HANDLE hScanResultTable)
 {
     TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
+    TI_UINT32 uHiddenSsidIndex;
 
     /* if the table is full */
-    if (pScanResultTable->uCurrentSiteNumber >= TABLE_ENTRIES_NUMBER)
+    if (pScanResultTable->uCurrentSiteNumber >= pScanResultTable->uEntriesNumber)
     {
-        TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTbale_AllocateNewEntry: Table is full, can't allocate new entry\n");
+        /* replace hidden SSID entry with the new result */
+        if (scanResultTable_FindHidden(pScanResultTable, &uHiddenSsidIndex) == TI_OK)
+        {
+            TRACE1(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTbale_AllocateNewEntry: Table is full, found hidden SSID at index %d to replace with\n", uHiddenSsidIndex);
+            
+            /* Nullify new site data */
+            os_memoryZero(pScanResultTable->hOS, &(pScanResultTable->pTable[ uHiddenSsidIndex ]), sizeof (TSiteEntry));
+
+            /* return the site */
+            return &(pScanResultTable->pTable[ uHiddenSsidIndex ]);
+        }
+
+        TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTbale_AllocateNewEntry: Table is full, no Hidden SSDI to replace, can't allocate new entry\n");
         return NULL;
     }
 
@@ -492,11 +622,33 @@ void scanResultTable_UpdateSiteData (TI_HANDLE hScanResultTable, TSiteEntry *pSi
     TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
     paramInfo_t         param;
 
+    /* Update SSID */
+    if (pFrame->parsedIEs->content.iePacket.pSsid != NULL) 
+    {
+        pSite->ssid.len = pFrame->parsedIEs->content.iePacket.pSsid->hdr[1];
+        if (pSite->ssid.len > MAX_SSID_LEN) 
+        {
+           TRACE2( pScanResultTable->hReport, REPORT_SEVERITY_ERROR, "scanResultTable_UpdateSiteData: pSite->ssid.len=%d exceeds the limit. Set to limit value %d\n", pSite->ssid.len, MAX_SSID_LEN);
+           pSite->ssid.len = MAX_SSID_LEN;
+        }
+        os_memoryCopy(pScanResultTable->hOS,
+            (void *)pSite->ssid.str,
+            (void *)pFrame->parsedIEs->content.iePacket.pSsid->serviceSetId,
+            pSite->ssid.len);
+        if (pSite->ssid.len < MAX_SSID_LEN) 
+        {
+            pSite->ssid.str[pSite->ssid.len] = '\0';
+        }
+    }
+
+	/* Since a new scan was initiated the entry can be selected again */
+	pSite->bConsideredForSelect = TI_FALSE;
+    UPDATE_LOCAL_TIMESTAMP(pSite, pScanResultTable->hOS);
+
     UPDATE_BSSID (pSite, pFrame);
     UPDATE_BAND (pSite, pFrame);
     UPDATE_BEACON_INTERVAL (pSite, pFrame);
     UPDATE_CAPABILITIES (pSite, pFrame);
-    UPDATE_SSID (pScanResultTable, pSite, pFrame);
     UPDATE_PRIVACY (pSite, pFrame);
     UPDATE_RSN_IE (pScanResultTable, pSite, pFrame->parsedIEs->content.iePacket.pRsnIe, pFrame->parsedIEs->content.iePacket.rsnIeLen);
     UPDATE_APSD (pSite, pFrame);
@@ -520,7 +672,7 @@ void scanResultTable_UpdateSiteData (TI_HANDLE hScanResultTable, TSiteEntry *pSi
     if ((pFrame->parsedIEs->content.iePacket.pDSParamsSet != NULL)  &&
         (pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel != pFrame->channel))
     {
-        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_WARNING, "scanResultTable_UpdateSiteData: wrong channels, radio channel=%d, frame channel=%d\n", pFrame->channel, pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel);
+        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_ERROR , "scanResultTable_UpdateSiteData: wrong channels, radio channel=%d, frame channel=%d\n", pFrame->channel, pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel);
     }
     else
         UPDATE_CHANNEL (pSite, pFrame , pFrame->channel);
@@ -550,6 +702,8 @@ void scanResultTable_UpdateSiteData (TI_HANDLE hScanResultTable, TSiteEntry *pSi
             UPDATE_PROBE_MODULATION (pSite, pFrame);
         }
 
+        pSite->bChannelSwitchAnnoncIEFound = (pFrame->parsedIEs->content.iePacket.channelSwitch != NULL)?TI_TRUE:TI_FALSE;
+
         UPDATE_BEACON_RECV (pSite);
         UPDATE_FRAME_BUFFER (pScanResultTable, (pSite->beaconBuffer), (pSite->beaconLength), pFrame); 
     }
@@ -564,6 +718,8 @@ void scanResultTable_UpdateSiteData (TI_HANDLE hScanResultTable, TSiteEntry *pSi
 
         UPDATE_PROBE_RECV (pSite);
         UPDATE_FRAME_BUFFER (pScanResultTable, (pSite->probeRespBuffer), (pSite->probeRespLength), pFrame);
+
+        pSite->bChannelSwitchAnnoncIEFound = TI_FALSE;
     }
     else
     {
@@ -594,9 +750,7 @@ void scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, 
     TScanResultTable    *pScanResultTable = (TScanResultTable*)hScanResultTable;
     TI_UINT8            maxBasicRate = 0, maxActiveRate = 0;
     TI_UINT32           bitMapExtSupp = 0;
-/*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
-    TI_UINT32           uMcsSupportedRateMask = 0, uMcsbasicRateMask=0;
-/*** MODS_END_FOR_11N_RATE_REPORTING ***/
+	TI_UINT32           uMcsSupportedRateMask = 0, uMcsbasicRateMask = 0;
 
     if (pFrame->parsedIEs->content.iePacket.pRates == NULL)
     {
@@ -607,17 +761,17 @@ void scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, 
     }
 
     /* Update the rate elements */
-    maxBasicRate = rate_GetMaxBasicFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pRates->rates, 
-                                            pFrame->parsedIEs->content.iePacket.pRates->hdr[1], maxBasicRate);
-    maxActiveRate = rate_GetMaxActiveFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pRates->rates,
-                                              pFrame->parsedIEs->content.iePacket.pRates->hdr[1], maxActiveRate);
+    maxBasicRate = (TI_UINT8)rate_GetMaxBasicFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pRates->rates, 
+                                            pFrame->parsedIEs->content.iePacket.pRates->hdr[1], (ENetRate)maxBasicRate);
+    maxActiveRate = (TI_UINT8)rate_GetMaxActiveFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pRates->rates,
+                                              pFrame->parsedIEs->content.iePacket.pRates->hdr[1], (ENetRate)maxActiveRate);
 
     if (pFrame->parsedIEs->content.iePacket.pExtRates)
     {
-        maxBasicRate = rate_GetMaxBasicFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pExtRates->rates,
-                                                pFrame->parsedIEs->content.iePacket.pExtRates->hdr[1], maxBasicRate);
-        maxActiveRate = rate_GetMaxActiveFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pExtRates->rates,
-                                                  pFrame->parsedIEs->content.iePacket.pExtRates->hdr[1], maxActiveRate);
+        maxBasicRate = (TI_UINT8)rate_GetMaxBasicFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pExtRates->rates,
+                                                pFrame->parsedIEs->content.iePacket.pExtRates->hdr[1], (ENetRate)maxBasicRate);
+        maxActiveRate = (TI_UINT8)rate_GetMaxActiveFromStr ((TI_UINT8 *)pFrame->parsedIEs->content.iePacket.pExtRates->rates,
+                                                  pFrame->parsedIEs->content.iePacket.pExtRates->hdr[1], (ENetRate)maxActiveRate);
     }
 
     if (maxActiveRate == 0)
@@ -665,8 +819,7 @@ void scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, 
         pSite->rateMask.basicRateMask |= bitMapExtSupp;
     }
 
-/*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
-    if (pFrame->parsedIEs->content.iePacket.pHtCapabilities != NULL)
+	if (pFrame->parsedIEs->content.iePacket.pHtCapabilities != NULL)
     {
         /* MCS build rates bit map */
         rate_McsNetStrToDrvBitmap (&uMcsSupportedRateMask,
@@ -683,7 +836,6 @@ void scanResultTable_updateRates(TI_HANDLE hScanResultTable, TSiteEntry *pSite, 
 
         pSite->rateMask.basicRateMask |= uMcsbasicRateMask;
     }
-/*** MODS_END_FOR_11N_RATE_REPORTING ***/
 }
 
 /** 
@@ -706,7 +858,7 @@ void scanResultTable_UpdateWSCParams (TSiteEntry *pSite, TScanFrameInfo *pFrame)
         TI_UINT16   tlvPtrType,tlvPtrLen,selectedMethod=0;
     
         tlvPtr = (TI_UINT8*)pFrame->parsedIEs->content.iePacket.WSCParams->WSCBeaconOrProbIE;
-        endPtr = tlvPtr + pFrame->parsedIEs->content.iePacket.WSCParams->hdr[1] - (DOT11_OUI_LEN + 1);
+        endPtr = tlvPtr + pFrame->parsedIEs->content.iePacket.WSCParams->hdr[1] - DOT11_OUI_LEN;
     
         do
         {
@@ -744,6 +896,19 @@ void scanResultTable_UpdateWSCParams (TSiteEntry *pSite, TScanFrameInfo *pFrame)
     {
         pSite->WSCSiteMode = TIWLN_SIMPLE_CONFIG_OFF;
     }
+}
+
+/** 
+ * \fn     scanResultTable_GetNumOfBSSIDInTheList
+ * \brief  Returns the number of BSSID's in the scan result list
+ * 
+ * \param  hScanResultTable - handle to the scan result table
+ * \return The number of BSSID's in the list
+ * \sa scanResultTable_GetBssidSupportedRatesList
+ */ 
+TI_UINT32 scanResultTable_GetNumOfBSSIDInTheList (TI_HANDLE hScanResultTable)
+{
+	return ((TScanResultTable*)hScanResultTable)->uCurrentSiteNumber;
 }
 
 /** 
@@ -1096,6 +1261,58 @@ TI_STATUS scanResultTable_GetBssidList (TI_HANDLE hScanResultTable,
     *pLength = uLength;
 
     TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_GetBssidList: total length: %d, number of items: %d\n", uLength, pBssidList->NumberOfItems);
+
+    return TI_OK;
+}
+
+
+/** 
+ * \fn     scanResultTable_GetBssidSupportedRatesList
+ * \brief  Retrieves the Rate table corresponding with the site
+ * table
+ * 
+ * 
+ * \param  hScanResultTable - handle to the scan result table object
+ * \param  pRateList - pointer to a buffer large enough to hols
+ * the rate list
+ * \param  pLength - length of the supplied buffer,
+ * \return TI_STATUS
+ * \sa scanResultTable_GetBssidSupportedRatesList
+ */ 
+TI_STATUS scanResultTable_GetBssidSupportedRatesList (TI_HANDLE hScanResultTable,
+													  OS_802_11_N_RATES *pRateList,
+													  TI_UINT32 *pLength)
+{
+    TScanResultTable        *pScanResultTable = (TScanResultTable*)hScanResultTable;
+	TSiteEntry              *pSiteEntry;
+    TI_UINT32                uSiteIndex, firstOFDMloc = 0;
+	TI_UINT32                requiredLength;
+	OS_802_11_N_RATES	 	*pCurrRateString;
+
+    TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_GetBssidSupportedRatesList called");
+
+    /* Verify the supplied length is enough*/
+	requiredLength = pScanResultTable->uCurrentSiteNumber*sizeof(OS_802_11_N_RATES);
+	if (requiredLength > *pLength)
+    {
+        TRACE2(pScanResultTable->hReport, REPORT_SEVERITY_ERROR , "scanResultTable_GetBssidSupportedRatesList: received length %d, insufficient to hold list of size %d\n", *pLength, requiredLength);
+        *pLength = requiredLength;
+        return TI_NOK;
+    }
+
+    /* Create the rate list*/
+    for (uSiteIndex = 0; uSiteIndex < pScanResultTable->uCurrentSiteNumber; uSiteIndex++)
+    {
+		pCurrRateString = &(pRateList[uSiteIndex]);
+        pSiteEntry = &(pScanResultTable->pTable[ uSiteIndex ]);
+
+        /* Supported Rates */
+        os_memoryZero (pScanResultTable->hOS, (void *)pCurrRateString, sizeof(OS_802_11_N_RATES));
+        rate_DrvBitmapToNetStrIncluding11n (pSiteEntry->rateMask.supportedRateMask,
+												  pSiteEntry->rateMask.basicRateMask,
+												  (TI_UINT8*)pCurrRateString,
+												  &firstOFDMloc);
+	}
 
     return TI_OK;
 }

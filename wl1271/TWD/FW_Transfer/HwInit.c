@@ -1,7 +1,7 @@
 /*
  * HwInit.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -48,6 +48,7 @@
 #include "tidef.h"
 #include "osApi.h"
 #include "report.h"
+#include "timer.h"
 #include "HwInit_api.h"
 #include "FwEvent_api.h"
 #include "TwIf.h"
@@ -127,6 +128,21 @@ extern void cmdBld_FinalizeDownload (TI_HANDLE hCmdBld, TBootAttr *pBootAttr, Fw
 
 #define DRPw_MASK_CHECK  0xc0
 #define DRPw_MASK_SET    0x2000000
+
+/* time to wait till we check if fw is running */
+#define STALL_TIMEOUT   7
+
+#ifdef DOWNLOAD_TIMER_REQUIERD
+#define FIN_LOOP 10
+#endif
+
+
+#ifdef _VLCT_
+#define FIN_LOOP 10
+#else
+#define FIN_LOOP 20000
+#endif
+
 
 /************************************************************************
  * Macros
@@ -334,7 +350,8 @@ typedef struct
      TI_UINT32               uRegStage;
     TI_UINT32               uRegLoop;
     TI_UINT32               uRegSeqStage;
-    TI_UINT32               uRegData;  
+    TI_UINT32               uRegData;
+	TI_HANDLE               hStallTimer;
 
     /* Top register Read/Write SM temporary data*/
     TI_UINT32               uTopRegAddr;
@@ -375,8 +392,9 @@ static TI_STATUS hwInit_TopRegisterRead(TI_HANDLE hHwInit);
 static TI_STATUS hwInit_InitTopRegisterRead(TI_HANDLE hHwInit, TI_UINT32 uAddress);
 static TI_STATUS hwInit_TopRegisterWrite(TI_HANDLE hHwInit);
 static TI_STATUS hwInit_InitTopRegisterWrite(TI_HANDLE hHwInit, TI_UINT32 uAddress, TI_UINT32 uValue);
-
-
+#ifdef DOWNLOAD_TIMER_REQUIERD
+static void      hwInit_StallTimerCb                (TI_HANDLE hHwInit, TI_BOOL bTwdInitOccured);
+#endif
 
 
 /*******************************************************************************
@@ -431,6 +449,13 @@ TI_STATUS hwInit_Destroy (TI_HANDLE hHwInit)
 {
     THwInit *pHwInit = (THwInit *)hHwInit;
 
+    if (pHwInit->hStallTimer)
+    {
+#ifdef DOWNLOAD_TIMER_REQUIERD
+		tmr_DestroyTimer (pHwInit->hStallTimer);
+#endif
+    }        
+
     /* Free HwInit Module */
     os_memoryFree (pHwInit->hOs, pHwInit, sizeof(THwInit));
 
@@ -447,11 +472,12 @@ TI_STATUS hwInit_Destroy (TI_HANDLE hHwInit)
 *               TI_NOK - Configuration unsuccessful
 ***************************************************************************/
 TI_STATUS hwInit_Init (TI_HANDLE      hHwInit,
-                         TI_HANDLE      hReport,
-                         TI_HANDLE      hTWD,
-                         TI_HANDLE 	hFinalizeDownload, 
-			 TFinalizeCb    fFinalizeDownload, 
-                         TEndOfHwInitCb fInitHwCb)
+                       TI_HANDLE      hReport,
+                       TI_HANDLE      hTimer,
+                       TI_HANDLE      hTWD,
+                       TI_HANDLE 	  hFinalizeDownload, 
+                       TFinalizeCb    fFinalizeDownload, 
+                       TEndOfHwInitCb fInitHwCb)
 {
     THwInit   *pHwInit = (THwInit *)hHwInit;
     TTxnStruct* pTxn;
@@ -484,6 +510,14 @@ TI_STATUS hwInit_Init (TI_HANDLE      hHwInit,
         /* Setting write as default transaction */
         TXN_PARAM_SET(pTxn, TXN_LOW_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_WRITE, TXN_INC_ADDR)
     }
+
+#ifdef DOWNLOAD_TIMER_REQUIERD
+	pHwInit->hStallTimer = tmr_CreateTimer (hTimer);
+	if (pHwInit->hStallTimer == NULL) 
+	{
+		return TI_NOK;
+	}
+#endif
 
     TRACE0(pHwInit->hReport, REPORT_SEVERITY_INIT, ".....HwInit configured successfully\n");
     
@@ -1021,11 +1055,6 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
     TI_STATUS status = TI_OK;
     TTxnStruct* pTxn;
 
-#ifdef _VLCT_
-    #define FIN_LOOP 10
-#else
-    #define FIN_LOOP 20000
-#endif
 
     while (TI_TRUE)
     {
@@ -1092,7 +1121,9 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
             {           
                 pHwInit->uFinStage = 4;
 
-                os_StalluSec (pHwInit->hOs, 50);
+#ifndef DOWNLOAD_TIMER_REQUIERD
+				os_StalluSec (pHwInit->hOs, 50);
+#endif
 
                 /* Read interrupt status register */
                 BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, ACX_REG_INTERRUPT_NO_CLEAR, 0, 
@@ -1136,8 +1167,15 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
             {
                 pHwInit->uFinStage = 3;
                 pHwInit->uFinLoop ++;
+
+#ifdef DOWNLOAD_TIMER_REQUIERD
+                tmr_StartTimer (pHwInit->hStallTimer, hwInit_StallTimerCb, hHwInit, STALL_TIMEOUT, TI_FALSE);
+                return TXN_STATUS_PENDING;
+#endif
             }
+#ifndef DOWNLOAD_TIMER_REQUIERD
             continue;
+#endif
 
         case 5:  
             pHwInit->uFinStage++;
@@ -1231,16 +1269,9 @@ static TI_STATUS hwInit_ResetSm (TI_HANDLE hHwInit)
         /* Disable Rx/Tx */
     BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, REG_ENABLE_TX_RX, 0x0, 
                                REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-    twIf_Transact(pHwInit->hTwIf, pTxn);
-
-    pHwInit->uTxnIndex++;
-
-        /* Disable auto calibration on start */
-    BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, SPARE_A2, 0xFFFF, 
-                               REGISTER_SIZE, TXN_DIRECTION_WRITE,(TTxnDoneCb)hwInit_BootSm, hHwInit)
     status = twIf_Transact(pHwInit->hTwIf, pTxn);
-
-    return status;
+	pHwInit->uTxnIndex++;
+	return status;
 }
 
 
@@ -2309,3 +2340,21 @@ TI_STATUS hwInit_InitTopRegisterRead(TI_HANDLE hHwInit, TI_UINT32 uAddress)
      } /* End while */
 
  }
+
+
+/****************************************************************************
+*                      hwInit_StallTimerCb ()
+****************************************************************************
+* DESCRIPTION: CB timer function in fTimerFunction format that calls hwInit_StallTimerCb
+* INPUTS:  TI_HANDLE hHwInit    
+* 
+* OUTPUT:  None
+* 
+* RETURNS: None
+****************************************************************************/
+#ifdef DOWNLOAD_TIMER_REQUIERD
+ static void hwInit_StallTimerCb (TI_HANDLE hHwInit, TI_BOOL bTwdInitOccured)
+{
+	hwInit_FinalizeDownloadSm (hHwInit);
+}
+#endif

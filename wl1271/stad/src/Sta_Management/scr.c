@@ -1,7 +1,7 @@
 /*
  * scr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -441,7 +441,7 @@ void scr_notifyFWReset( TI_HANDLE hScr )
             if ( NULL != pScr->clientArray[ pScr->runningClient[ uResourceIndex ] ].clientRequestCB )
             {
                 pScr->clientArray[ pScr->runningClient[ uResourceIndex ] ].clientRequestCB( pScr->clientArray[ pScr->runningClient[ uResourceIndex ] ].ClientRequestCBObj,
-                                                                                          SCR_CRS_FW_RESET, uResourceIndex, SCR_PR_NONE );
+                                                                                          SCR_CRS_FW_RESET, (EScrResourceId)uResourceIndex, SCR_PR_NONE );
             }
             else
             {
@@ -503,7 +503,7 @@ void scr_setGroup( TI_HANDLE hScr, EScrGroupId newGroup )
                 if ( NULL != pScr->clientArray[ i ].clientRequestCB )
                 {
                     pScr->clientArray[ i ].clientRequestCB( pScr->clientArray[ i ].ClientRequestCBObj, 
-                                                            SCR_CRS_PEND, uResourceIndex, SCR_PR_DIFFERENT_GROUP_RUNNING );
+                                                            SCR_CRS_PEND, (EScrResourceId)uResourceIndex, SCR_PR_DIFFERENT_GROUP_RUNNING );
                 }
                 else
                 {
@@ -529,7 +529,7 @@ void scr_setGroup( TI_HANDLE hScr, EScrGroupId newGroup )
                 if ( NULL != pScr->clientArray[ highestPending ].clientRequestCB )
                 {
                     pScr->clientArray[ highestPending ].clientRequestCB( pScr->clientArray[ highestPending ].ClientRequestCBObj, 
-                                                                         SCR_CRS_RUN, uResourceIndex, SCR_PR_NONE );
+                                                                         SCR_CRS_RUN, (EScrResourceId)uResourceIndex, SCR_PR_NONE );
                 }
                 else
                 {
@@ -585,7 +585,7 @@ void scr_setMode( TI_HANDLE hScr, EScrModeId newMode )
                 TRACE2( pScr->hReport, REPORT_SEVERITY_INFORMATION, "Sending abort request to client %d for resource %d\n", pScr->runningClient[ uResourceIndex ], uResourceIndex);
                 pScr->clientArray[ pScr->runningClient[ uResourceIndex ] ].clientRequestCB( pScr->clientArray[ pScr->runningClient[ uResourceIndex ] ].ClientRequestCBObj,
                                                                                             SCR_CRS_ABORT,
-                                                                                            uResourceIndex,
+                                                                                            (EScrResourceId)uResourceIndex,
                                                                                             SCR_PR_NONE );
             }
             else
@@ -610,7 +610,7 @@ void scr_setMode( TI_HANDLE hScr, EScrModeId newMode )
                 if ( NULL != pScr->clientArray[ i ].clientRequestCB )
                 {
                     pScr->clientArray[ i ].clientRequestCB( pScr->clientArray[ i ].ClientRequestCBObj, 
-                                                            SCR_CRS_PEND, uResourceIndex, 
+                                                            SCR_CRS_PEND, (EScrResourceId)uResourceIndex, 
                                                             SCR_PR_DIFFERENT_GROUP_RUNNING );
                 }
                 else
@@ -634,7 +634,7 @@ void scr_setMode( TI_HANDLE hScr, EScrModeId newMode )
                 if ( NULL != pScr->clientArray[ highestPending ].clientRequestCB )
                 {
                     pScr->clientArray[ highestPending ].clientRequestCB( pScr->clientArray[ highestPending ].ClientRequestCBObj, 
-                                                                         SCR_CRS_RUN, uResourceIndex,
+                                                                         SCR_CRS_RUN, (EScrResourceId)uResourceIndex,
                                                                          SCR_PR_NONE );
                 }
                 else
@@ -925,7 +925,7 @@ EScrClientId scrFindHighest( TI_HANDLE hScr,
              (requiredState == pScr->clientArray[ i ].state[ eResource ])) /* client is in required state */
         {
             /* and if so, return the client index */
-            return i;
+            return (EScrClientId)i;
         }
     }
 

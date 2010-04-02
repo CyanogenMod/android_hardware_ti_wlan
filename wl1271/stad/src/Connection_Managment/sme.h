@@ -1,7 +1,7 @@
 /*
  * sme.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -46,6 +46,8 @@
 #include "ScanCncn.h"
 #include "paramOut.h"
 
+#define SME_SCAN_TABLE_ENTRIES 32
+
 typedef enum
 {
     SSID_TYPE_ANY = 0,
@@ -73,7 +75,9 @@ void        sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
 void        sme_MeansurementScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus, TScanFrameInfo* pFrameInfo);
 void        sme_ReportConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32 uStatusCode);
 void        sme_ReportApConnStatus (TI_HANDLE hSme, mgmtStatus_e eStatusType, TI_UINT32 uStatusCode);
-void        sme_GetSmeScanResultTableHandler (TI_HANDLE hSme, TI_HANDLE *hScanResultTable);
+
+void        sme_ConnectScanReport (TI_HANDLE hSme, TI_HANDLE *hScanResultTable);
+void        sme_MeasureScanReport (TI_HANDLE hSme, TI_HANDLE *hScanResultTable);
 
 #endif /* __SME_H__ */
 

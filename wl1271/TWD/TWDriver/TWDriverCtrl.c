@@ -1,7 +1,7 @@
 /*
  * TWDriverCtrl.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -836,11 +836,11 @@ TI_STATUS TWD_CfgSetFwHtInformation (TI_HANDLE hTWD, Tdot11HtInformationUnparse 
 
     uHtProtection = (pHtInformationIe->aHtInformationIe[2] & HT_INF_OPERATION_MOD_BITMASK);
 
-    uGfProtection = (pHtInformationIe->aHtInformationIe[3] & HT_INF_NON_GF_PRES_BITMASK) >> 2; 
+    uGfProtection = (pHtInformationIe->aHtInformationIe[2] & HT_INF_NON_GF_PRES_BITMASK) >> 2; 
 
-    uHtTxBurstLimit = (pHtInformationIe->aHtInformationIe[3] & HT_INF_TX_BURST_LIMIT_BITMASK) >> 3; 
+    uHtTxBurstLimit = 0; /* not in use */
 
-    uDualCtsProtection = (pHtInformationIe->aHtInformationIe[4] & HT_INF_DUAL_BEACON_BITMASK) >> 6; 
+    uDualCtsProtection = (pHtInformationIe->aHtInformationIe[4] & HT_INF_DUAL_CTS_PROTECTION_BITMASK) >> 7; 
 
     return cmdBld_CfgSetFwHtInformation (pTWD->hCmdBld,
                                          uRifsMode,

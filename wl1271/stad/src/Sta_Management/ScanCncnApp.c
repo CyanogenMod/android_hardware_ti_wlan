@@ -1,7 +1,7 @@
 /*
  * ScanCncnApp.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -82,6 +82,9 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
         /* set one-shot scan as running app scan client */
         pScanCncn->eCurrentRunningAppScanClient = SCAN_SCC_APP_ONE_SHOT;
 
+        /* Perform aging process before the scan */
+        scanResultTable_PerformAging(pScanCncn->hScanResultTable);
+
         /* start the scan */
         if (SCAN_CRS_SCAN_RUNNING != 
             scanCncn_Start1ShotScan (hScanCncn, SCAN_SCC_APP_ONE_SHOT, pParam->content.pScanParams))
@@ -111,6 +114,9 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
         /* set one-shot scan as running app scan client */
         pScanCncn->eCurrentRunningAppScanClient = SCAN_SCC_APP_PERIODIC;
+
+        /* Perform aging process before the scan */
+        scanResultTable_PerformAging(pScanCncn->hScanResultTable);
 
         /* start the scan */
         if (SCAN_CRS_SCAN_RUNNING !=
@@ -183,6 +189,14 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
         break;
 
+    case SCAN_CNCN_SET_SRA:
+        scanResultTable_SetSraThreshold(pScanCncn->hScanResultTable, pParam->content.uSraThreshold);
+        break;
+
+    case SCAN_CNCN_SET_RSSI:
+        pScanCncn->tInitParams.nRssiThreshold = pParam->content.nRssiThreshold;
+        break;
+
     default:
         TRACE1(pScanCncn->hReport, REPORT_SEVERITY_ERROR , "scanCncnApp_SetParam: unrecognized param type :%d\n", pParam->paramType);
         return PARAM_NOT_SUPPORTED;
@@ -210,6 +224,13 @@ TI_STATUS scanCncnApp_GetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
     switch (pParam->paramType)
     {
+
+	case SCAN_CNCN_NUM_BSSID_IN_LIST_PARAM:
+        /* retrieve the number of BSSID's in the scan result table*/
+		pParam->paramLength = sizeof(TI_UINT32);
+		pParam->content.uNumBssidInList = scanResultTable_GetNumOfBSSIDInTheList (pScanCncn->hScanResultTable);
+        break;
+        
     case SCAN_CNCN_BSSID_LIST_SIZE_PARAM:
         /* retrieves the size to allocate for the app scan result taBle BBSID list (see next code) */
         pParam->paramLength = sizeof(TI_UINT32);
@@ -218,9 +239,14 @@ TI_STATUS scanCncnApp_GetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
     case SCAN_CNCN_BSSID_LIST_PARAM:
         /* retrieve the app scan result table */
-        return scanResultTable_GetBssidList (pScanCncn->hScanResultTable, pParam->content.pBssidList, 
+  		return scanResultTable_GetBssidList (pScanCncn->hScanResultTable, pParam->content.pBssidList, 
                                              &pParam->paramLength, TI_TRUE);
-        break;
+
+	case SCAN_CNCN_BSSID_RATE_LIST_PARAM:
+        /* retrieve supported rates list equivalent to the supported rates list
+		 in the scan result table, but is extended to include 11n rates as well*/
+		return scanResultTable_GetBssidSupportedRatesList (pScanCncn->hScanResultTable, pParam->content.pRateList,
+														   &pParam->paramLength);
 
     default:
         TRACE1(pScanCncn->hReport, REPORT_SEVERITY_ERROR , "scanCncnApp_GetParam: unrecognized param type :%d\n", pParam->paramType);
@@ -248,8 +274,8 @@ void scanCncn_AppScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status
     TScanCncn   *pScanCncn = (TScanCncn*)hScanCncn;
     TI_UINT32	statusData;
 
-    /* forward all data to SME */
-    sme_AppScanResult (pScanCncn->hSme, status, frameInfo);
+    /* Since in Manual Mode the app and the SME use the same table
+     * there is no need to forward data to SME */
 
     switch (status)
     {
@@ -273,7 +299,7 @@ void scanCncn_AppScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status
         }
         else
         {
-            /* move the scan result table to stable state, clear it if no results were received */
+            /* move the scan result table to stable state */
             scanResultTable_SetStableState (pScanCncn->hScanResultTable);
 
             /* mark that no app scan is running */
@@ -299,7 +325,7 @@ void scanCncn_AppScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status
         }
         else
         {
-            /* move the scan result table to stable state, clear it if no results were received */
+            /* move the scan result table to stable state */
             scanResultTable_SetStableState (pScanCncn->hScanResultTable);
 
             /* mark that no app scan is running */
@@ -329,7 +355,7 @@ void scanCncn_AppScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status
         }
         else
         {
-            /* move the scan result table to stable state, clear it if no results were received */
+            /* move the scan result table to stable state */
             scanResultTable_SetStableState (pScanCncn->hScanResultTable);
 
             /* mark that no app scan is running */

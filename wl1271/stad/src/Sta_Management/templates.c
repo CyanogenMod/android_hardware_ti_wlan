@@ -1,7 +1,7 @@
 /*
  * templates.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -229,7 +229,7 @@ TI_STATUS buildProbeReqTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate, TS
 	TI_UINT32			 len = 0, ofdmIndex = 0;
 	TI_UINT32			 suppRatesLen, extSuppRatesLen;
 	TI_UINT8			 ratesBuf[DOT11_MAX_SUPPORTED_RATES];
-	TI_UINT8             WSCOuiIe[DOT11_OUI_LEN+1] = { 0x00, 0x50, 0xf2, 0x04};
+	TI_UINT8             WSCOuiIe[DOT11_OUI_LEN] = { 0x00, 0x50, 0xf2, 0x04};
 	TI_UINT32			 supportedRateMask,basicRateMask;	
 	TI_UINT16			 fc = DOT11_FC_PROBE_REQ;
 
@@ -287,15 +287,15 @@ TI_STATUS buildProbeReqTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate, TS
     if (radioBand == RADIO_BAND_2_4_GHZ)
 	{
         /* Basic rates: 1,2,5.5,11 */  
-		basicRateMask = rate_BasicToDrvBitmap(pSiteMgr->pDesiredParams->siteMgrRegstryBasicRate[DOT11_G_MODE], TI_FALSE);
+		basicRateMask = rate_BasicToDrvBitmap((EBasicRateSet)(pSiteMgr->pDesiredParams->siteMgrRegstryBasicRate[DOT11_G_MODE]), TI_FALSE);
         /* Extended: 6,9,12,18,24,36,48,54 */
-        supportedRateMask = rate_SupportedToDrvBitmap(pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[DOT11_G_MODE], TI_FALSE);
+        supportedRateMask = rate_SupportedToDrvBitmap((ESupportedRateSet)(pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[DOT11_G_MODE]), TI_FALSE);
     }
     else if (radioBand == RADIO_BAND_5_0_GHZ)
     {   /* Basic rates: 6,12,24 */
-        basicRateMask = rate_BasicToDrvBitmap(pSiteMgr->pDesiredParams->siteMgrRegstryBasicRate[DOT11_A_MODE], TI_TRUE);
+        basicRateMask = rate_BasicToDrvBitmap((EBasicRateSet)(pSiteMgr->pDesiredParams->siteMgrRegstryBasicRate[DOT11_A_MODE]), TI_TRUE);
          /* Extended: 9,18,24,36,48,54 */
-        supportedRateMask = rate_SupportedToDrvBitmap(pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[DOT11_A_MODE], TI_TRUE);
+        supportedRateMask = rate_SupportedToDrvBitmap((ESupportedRateSet)(pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[DOT11_A_MODE]), TI_TRUE);
 	}
 	else
 	{
@@ -309,7 +309,8 @@ TI_STATUS buildProbeReqTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate, TS
 	
 	rate_DrvBitmapToNetStr (supportedRateMask, basicRateMask, ratesBuf, &len, &ofdmIndex);
 
-TRACE5(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "buildProbeReqTemplate, supportedRateMask=0x%x, basicRateMask=0x%x, len=%d, ofdmIndex=%d, radioBand =%d\n",							 supportedRateMask,basicRateMask,len, ofdmIndex, radioBand);
+    TRACE5(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "buildProbeReqTemplate, supportedRateMask=0x%x, basicRateMask=0x%x, len=%d, ofdmIndex=%d, radioBand =%d\n",							 supportedRateMask,basicRateMask,len, ofdmIndex, radioBand);
+
     /* It looks like it never happens. Anyway decided to check */
     if ( len > DOT11_MAX_SUPPORTED_RATES )
     {
@@ -346,27 +347,25 @@ TRACE5(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "buildProbeReqTemplate, s
 
 
     /* add HT capabilities IE */
-    StaCap_GetHtCapabilitiesIe (pSiteMgr->hStaCap, pBuf, &len);
+    StaCap_GetHtCapabilitiesIe (pSiteMgr->hStaCap, (TI_UINT8 *)pBuf, &len);
     size += len;
     pBuf += len;
 
-
-	/* WiFi Simple Config */
-	if (pSiteMgr->includeWSCinProbeReq)
+    /* WiFi Simple Config */
+    if (pSiteMgr->includeWSCinProbeReq && (pSiteMgr->siteMgrWSCCurrMode != TIWLN_SIMPLE_CONFIG_OFF))
     {
-	if(pSiteMgr->siteMgrWSCCurrMode != TIWLN_SIMPLE_CONFIG_OFF)
-	{
-		 ((dot11_WSC_t *)(pBuf))->hdr[0] = DOT11_WSC_PARAM_ELE_ID;
-		 ((dot11_WSC_t *)(pBuf))->hdr[1] = DOT11_WSC_PROBE_REQ_MAX_LENGTH + DOT11_OUI_LEN + 1;
-         pBuf += sizeof(dot11_eleHdr_t);
-         /* This looks like a typo: 5 bytes are copied from an array of 4 bytes. Then the last byte is overriten by the next command 
-         os_memoryCopy(pSiteMgr->hOs, pBuf, &WSCOuiIe, DOT11_OUI_LEN+2);*/
-         os_memoryCopy(pSiteMgr->hOs, pBuf, &WSCOuiIe, DOT11_OUI_LEN+1);
-		 os_memoryCopy(pSiteMgr->hOs, pBuf + DOT11_OUI_LEN+1, &pSiteMgr->siteMgrWSCProbeReqParams, DOT11_WSC_PROBE_REQ_MAX_LENGTH - (DOT11_OUI_LEN+2));
-		 size += sizeof(dot11_eleHdr_t) + DOT11_WSC_PROBE_REQ_MAX_LENGTH + DOT11_OUI_LEN + 1;
-		 pBuf += sizeof(dot11_eleHdr_t) + DOT11_WSC_PROBE_REQ_MAX_LENGTH + DOT11_OUI_LEN + 1;	
-	  }
-	}
+        ((dot11_WSC_t *)pBuf)->hdr[0] = DOT11_WSC_PARAM_ELE_ID;
+        ((dot11_WSC_t *)pBuf)->hdr[1] = pSiteMgr->uWscIeSize + DOT11_OUI_LEN;
+        pBuf += sizeof(dot11_eleHdr_t);
+        os_memoryCopy(pSiteMgr->hOs, pBuf, &WSCOuiIe, DOT11_OUI_LEN);
+        os_memoryCopy(pSiteMgr->hOs, 
+                      pBuf + DOT11_OUI_LEN, 
+                      &pSiteMgr->siteMgrWSCProbeReqParams, 
+                      pSiteMgr->uWscIeSize);
+        size += sizeof(dot11_eleHdr_t) + pSiteMgr->uWscIeSize + DOT11_OUI_LEN;
+        pBuf += sizeof(dot11_eleHdr_t) + pSiteMgr->uWscIeSize + DOT11_OUI_LEN;	
+    }
+
 	pTemplate->len = size;
 	
 	return TI_OK;
@@ -739,15 +738,18 @@ TRACE0(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "No Primary site so canno
 
 
 /************************************************************************
- *                        buildArpRspTemplate								*
+ *                        buildArpRspTemplate							*
  ************************************************************************
-DESCRIPTION: This function build a ARP Response template to set to the HAL 
-				when joining an infrastructure network
-				performs the following:
-				-	Build a template & set the template len, the template type is set in the site mgr
-                                                                                                   
-INPUT:      pSiteMgr	-	Handle to site manager	
-			pTemplate	-	Pointer to the template structure		
+DESCRIPTION: This function builds an ARP Response template to set to 
+			 the HAL when joining an infrastructure network.
+
+             The function's steps:
+             - It builds the template & set the template len. 
+             - If QoS is inactive, it discards the QoS Control Field.
+             ** The template type is set in the site mgr.
+                                           
+INPUT:       pSiteMgr  - Handle to site manager.
+			 pTemplate - Pointer to the template structure.
 
 
 OUTPUT:		
@@ -758,53 +760,116 @@ RETURN:     TI_OK
 ************************************************************************/
 TI_STATUS buildArpRspTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate, TIpAddr staIp)
 {
-    ArpRspTemplate_t   *pBuffer = (ArpRspTemplate_t *)pTemplate->ptr;
-    paramInfo_t param;
-    TI_UINT16 fc; 
-    TI_UINT8 *ptr = (TI_UINT8 *)pBuffer;
-    TI_UINT16 offset, len;
-    
-    os_memoryZero(pSiteMgr->hOs, pBuffer, sizeof(ArpRspTemplate_t));
-    /* Fill the WLAN header fields as in the NULL template */
-    buildQosNullDataTemplate(pSiteMgr, pTemplate, 0 /* userPriority*/);
-    /* overwrite the fc bytes by data_QOS */
-    fc = DOT11_FC_DATA_QOS | (1 << DOT11_FC_TO_DS_SHIFT);
-	COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
+	siteEntry_t		   *pPrimarySite = pSiteMgr->pSitesMgmtParams->pPrimarySite;
+	ArpRspTemplate_t   *pBuffer      = (ArpRspTemplate_t *)pTemplate->ptr;
+	TI_UINT8           *ptr          = (TI_UINT8 *)pBuffer;
 
-    pBuffer->LLC.DSAP = 0xaa;
-    pBuffer->LLC.SSAP = 0xaa;
+	paramInfo_t         param;          /* To get Site and QoS params */
+	TI_UINT16           fc;             /* Frame Control field in MAC header */
+	TI_UINT16           macAddrItr;
+	TI_BOOL   			privacyInvoked;
+	TI_UINT8  			encryptionFieldSize, copyPayloadOffset, lenToCopy;
+
+
+
+	/* Reset the buffer */
+	os_memoryZero(pSiteMgr->hOs, pBuffer, sizeof(ArpRspTemplate_t));
+
+
+	/* Turn on the To_DS bit in the Frame Control field */
+	fc = (1 << DOT11_FC_TO_DS_SHIFT);
+
+    /* Set MAC header address fields:
+		-----------------------------
+		Since To_DS is on and From_DS is off the address meaning is as follows:
+		Address1 - BSSID
+		Address2 - Source Address
+		Address3 - Destination Address
+		Address4 - Not present */
+
+	/* - Set BSSID */
+    if (pPrimarySite)
+	{
+		MAC_COPY (pBuffer->hdr.address1, pPrimarySite->bssid);
+	}
+	else
+	{
+		TRACE0(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "No Primary site so cannot fill QosNullData template.\n");
+	}
+    /* - Set Source Address */
+    param.paramType = CTRL_DATA_MAC_ADDRESS;
+    ctrlData_getParam(pSiteMgr->hCtrlData, &param);
+	MAC_COPY (pBuffer->hdr.address2, param.content.ctrlDataDeviceMacAddress);
+	/* - Set Destination Address: ARP response should be sent with broadcast DA - Set accordingly */
+	for (macAddrItr = 0; macAddrItr < MAC_ADDR_LEN; macAddrItr++)
+    {
+        pBuffer->hdr.address3[macAddrItr] = 0xFF;
+    }
+
+    pBuffer->LLC.DSAP    = 0xaa;
+    pBuffer->LLC.SSAP    = 0xaa;
     pBuffer->LLC.Control = 0x03;
-    /* pBuffer->LLC.Control.OUI these 3 bytes are zeroed already */
-    pBuffer->LLC.Type = WLANTOHS((TI_UINT16)0x806);
 
+	/* pBuffer->LLC.Control.OUI these 3 bytes are zeroed already */
+    pBuffer->LLC.Type = WLANTOHS((TI_UINT16)0x806);
     pBuffer->hardType = WLANTOHS((TI_UINT16)1);
     pBuffer->protType = WLANTOHS((TI_UINT16)0x800);
     pBuffer->hardSize = 6;
     pBuffer->protSize = 4;
-    pBuffer->op = WLANTOHS((TI_UINT16)2); /*filled as for ARP-RSP, not for RARP_RSP */
-    MAC_COPY (pBuffer->StaMac, pBuffer->hdr.address2);
+    pBuffer->op       = WLANTOHS((TI_UINT16)2); /*filled as for ARP-RSP, not for RARP_RSP */
+
+	MAC_COPY(pBuffer->StaMac, pBuffer->hdr.address2);
     IP_COPY(pBuffer->StaIp, staIp);
     
     pTemplate->len = sizeof(ArpRspTemplate_t);
 
-    /* Get QoS type */
+
+	/* Get encryption status */
+    txCtrlParams_getCurrentEncryptionInfo (pSiteMgr->hTxCtrl,  &privacyInvoked, &encryptionFieldSize);
+
+    /* If no encryption is used, encryptionFieldSize has garbage value */
+    encryptionFieldSize = privacyInvoked ? encryptionFieldSize : 0;
+
+	/* Set the subtype field of fc with WEP_BIT */
+	fc |= (privacyInvoked << DOT11_FC_WEP_SHIFT);
+	
+
+    /* Get QoS type to check if QoS is active */
     param.paramType = QOS_MNGR_ACTIVE_PROTOCOL;
     qosMngr_getParams(pSiteMgr->hQosMngr, &param);
 
-    if(param.content.qosSiteProtocol == QOS_NONE)
+
+    if(param.content.qosSiteProtocol == QOS_NONE)   /* QoS is not active */
     {
-        /* if QOS is inactive the QoS Control field MUST be absent.
-           Remove the field and move the rest of the packet accordingly */
-        offset = sizeof(dot11_header_t);
-        len = sizeof(ArpRspTemplate_t) - sizeof(dot11_header_t);
-        ptr= (TI_UINT8 *)&pBuffer->LLC.DSAP;
-        /* hope this will work in spite of buffers overlap */
-        os_memoryCopy(pSiteMgr->hOs, ptr-2, ptr, len);
-        pTemplate->len -=2;
+		copyPayloadOffset = sizeof(pBuffer->hdr.qosControl) + AES_AFTER_HEADER_FIELD_SIZE - encryptionFieldSize;
+        /* Set the subtype field of fc with DATA value (non Qos) */
+        fc |= DOT11_FC_DATA;
     }
-     return TI_OK;
-} 
-   
+    else    /* QoS is active */
+    {
+		copyPayloadOffset = AES_AFTER_HEADER_FIELD_SIZE - encryptionFieldSize;
+        /* Set the subtype field of fc with DATA_QOS */
+        fc |= DOT11_FC_DATA_QOS;
+    }
+
+        
+    /* Need to copy backward to overwrite security or QoS offset */
+    if (copyPayloadOffset > 0)   
+    {  
+		ptr = (TI_UINT8 *)&pBuffer->LLC.DSAP;
+        /* Copy back the actual payload without header & security */
+        lenToCopy = sizeof(ArpRspTemplate_t) - sizeof(dot11_header_t) - AES_AFTER_HEADER_FIELD_SIZE;
+
+        os_memoryCopy(pSiteMgr->hOs, ptr - copyPayloadOffset, ptr, lenToCopy);  
+        pTemplate->len -= copyPayloadOffset;   
+    }
+
+
+    COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
+
+	return TI_OK;
+}
+
    
    
    

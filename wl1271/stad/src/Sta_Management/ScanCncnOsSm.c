@@ -1,7 +1,7 @@
 /*
  * ScanCncnOsSm.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -219,7 +219,7 @@ void scanCncnOsSm_ActionStartGScan (TI_HANDLE hScanCncn)
         pScanCncn->tOsScanParams.scanType = SCAN_TYPE_TRIGGERED_ACTIVE;
         /* also set number and rate of probe requests */
         pScanCncn->tOsScanParams.probeReqNumber = SCAN_OID_DEFAULT_PROBE_REQUEST_NUMBER_G;
-        pScanCncn->tOsScanParams.probeRequestRate = SCAN_OID_DEFAULT_PROBE_REQUEST_RATE_G;
+        pScanCncn->tOsScanParams.probeRequestRate = (ERateMask)SCAN_OID_DEFAULT_PROBE_REQUEST_RATE_G;
     }
     
     /* add supported channels on G */
@@ -318,7 +318,7 @@ void scanCncnOsSm_ActionStartAScan (TI_HANDLE hScanCncn)
         pScanCncn->tOsScanParams.scanType = SCAN_TYPE_TRIGGERED_ACTIVE;
         /* also set number and rate of probe requests */
         pScanCncn->tOsScanParams.probeReqNumber = SCAN_OID_DEFAULT_PROBE_REQUEST_NUMBER_A;
-        pScanCncn->tOsScanParams.probeRequestRate = SCAN_OID_DEFAULT_PROBE_REQUEST_RATE_A;
+        pScanCncn->tOsScanParams.probeRequestRate = (ERateMask)SCAN_OID_DEFAULT_PROBE_REQUEST_RATE_A;
     }
     
     /* add supported channels on G */
@@ -389,7 +389,7 @@ void scanCncnOsSm_ActionCompleteScan (TI_HANDLE hScanCncn)
      * SME connection mode. However, it is expected that the SME will NOT attempt to connect when an OID
      * scan request will be received
      */
-    scanResultTable_SetStableState (pScanCncn->hScanResultTable);
+		  scanResultTable_SetStableState (pScanCncn->hScanResultTable);
 	 }
 	 else
 	 {

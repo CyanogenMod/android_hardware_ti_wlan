@@ -1,7 +1,7 @@
 /*
  * CmdBldCmdIE.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -200,14 +200,18 @@ TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCom
 TI_STATUS cmdBld_CmdIeEnableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld  *pCmdBld = (TCmdBld *)hCmdBld;
-    TI_UINT8  uChannelNumber;
+    TI_UINT8  aEnableRx_buf[4];
 
-    uChannelNumber = DB_DEFAULT_CHANNEL (hCmdBld);
+    aEnableRx_buf[0] = DB_DEFAULT_CHANNEL (hCmdBld);
+    aEnableRx_buf[1] = 0; /* padding */
+    aEnableRx_buf[2] = 0; /* padding */
+    aEnableRx_buf[3] = 0; /* padding */
+
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
                              CMD_ENABLE_RX, 
-                             (TI_CHAR *)&uChannelNumber, 
-                             sizeof(TI_UINT8),
+                             (TI_CHAR *)aEnableRx_buf, 
+                             sizeof(aEnableRx_buf),
                              fCb,
                              hCb,
                              NULL);
@@ -230,11 +234,17 @@ TI_STATUS cmdBld_CmdIeEnableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 TI_STATUS cmdBld_CmdIeEnableTx (TI_HANDLE hCmdBld, TI_UINT8 channel, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
+    TI_UINT8  aEnableTx_buf[4];
+
+    aEnableTx_buf[0] = channel;
+    aEnableTx_buf[1] = 0; /* padding */
+    aEnableTx_buf[2] = 0; /* padding */
+    aEnableTx_buf[3] = 0; /* padding */
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
                              CMD_ENABLE_TX, 
-                             (TI_CHAR *)&channel, 
-                             sizeof(TI_UINT8),
+                             (TI_CHAR *)aEnableTx_buf, 
+                             sizeof(aEnableTx_buf),
                              fCb,
                              hCb,
                              NULL);
@@ -396,9 +406,14 @@ TI_STATUS cmdBld_CmdIeSetKey (TI_HANDLE hCmdBld,
 
     /* 
      * Preserve TKIP/AES security sequence number after recovery.
+     * If not in reconfig set to 0 so the FW will ignore it and keep its own number.
      * Note that our STA Tx is currently using only one sequence-counter 
      * for all ACs (unlike the Rx which is separated per AC).  
      */
+    if (pCmdBld->bReconfigInProgress == TI_FALSE)
+    {
+        uSecuritySeqNumLow = uSecuritySeqNumHigh = 0;
+    }
     pCmd->AcSeqNum16[0] = ENDIAN_HANDLE_WORD((TI_UINT16)uSecuritySeqNumLow);
     pCmd->AcSeqNum16[1] = 0;
     pCmd->AcSeqNum16[2] = 0;

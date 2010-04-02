@@ -1,7 +1,7 @@
 /*
  * TWDriverScan.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -68,7 +68,6 @@ This file is included by the TWDriver.h , it should not be included apart. !!!!!
 #define PERIODIC_SCAN_MAX_INTERVAL_NUM  					16
 #define PERIODIC_SCAN_MAX_CHANNEL_NUM   					37 /* G-14 + A-23 */
 
-#define MAX_SSID_LEN  										32
 
  /*
  ***********************************************************************

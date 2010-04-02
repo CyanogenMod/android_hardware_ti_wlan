@@ -1,6 +1,7 @@
 STATIC_LIB ?= y
 DEBUG ?= y
 BUILD_SUPPL ?= y
+SUPPL ?= WPA
 WPA_ENTERPRISE ?= y
 XCC ?= n
 #enable/disable wireless simple config (WPS) support
@@ -28,6 +29,9 @@ DEBUGFLAGS+= -DHOST_COMPILE -DANDROID
 ifeq ($(XCC), y)
 	DK_DEFINES = -D XCC_MODULE_INCLUDED 
 endif    
+ifeq ($(GEM), y)
+	DK_DEFINES += -D GEM_SUPPORTED 
+endif  
 ifeq ($(WPA_ENTERPRISE), y)
 	DK_DEFINES += -D WPA_ENTERPRISE
 endif

@@ -1,7 +1,7 @@
 /*
  * SdioBusDrv.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -238,7 +238,7 @@ TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv,
      *           SDIO driver into pBusDrv->pDmaBuffer.
      */
 
-    iStatus = sdioAdapt_ConnectBus (busDrv_TxnDoneCb, 
+    iStatus = sdioAdapt_ConnectBus ((void *)busDrv_TxnDoneCb, 
                                     hBusDrv, 
                                     pBusDrv->uBlkSizeShift, 
                                     pBusDrvCfg->tSdioCfg.uBusDrvThreadPriority,

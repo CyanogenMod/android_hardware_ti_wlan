@@ -1,7 +1,7 @@
 /*
  * rate.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -152,7 +152,7 @@ ENetRate rate_DrvToNet (ERate rate)
     switch (rate)
     {
         case DRV_RATE_AUTO:
-            return 0;
+            return NET_RATE_AUTO;
 
         case DRV_RATE_1M:
             return NET_RATE_1M;
@@ -218,7 +218,7 @@ ENetRate rate_DrvToNet (ERate rate)
             return NET_RATE_MCS7;
 
         default:
-            return 0;
+            return NET_RATE_AUTO;
     }
 }
 
@@ -412,9 +412,9 @@ ENetRate rate_GetMaxBasicFromStr (TI_UINT8 *pRatesString, TI_UINT32 len, ENetRat
     
     for (i = 0; i < len; i++)
     {
-        if (NET_BASIC_RATE (pRatesString[i]) && rate_ValidateNet (pRatesString[i]) == TI_OK)
+        if (NET_BASIC_RATE (pRatesString[i]) && rate_ValidateNet ((ENetRate)pRatesString[i]) == TI_OK)
         {
-            eMaxRate = TI_MAX (pRatesString[i], eMaxRate);
+            eMaxRate = TI_MAX ((ENetRate)pRatesString[i], eMaxRate);
         }
     }
 
@@ -440,9 +440,9 @@ ENetRate rate_GetMaxActiveFromStr (TI_UINT8 *pRatesString, TI_UINT32 len, ENetRa
     
     for (i = 0; i < len; i++)
     {
-        if (NET_ACTIVE_RATE (pRatesString[i]) && rate_ValidateNet (pRatesString[i]) == TI_OK)
+        if (NET_ACTIVE_RATE (pRatesString[i]) && rate_ValidateNet ((ENetRate)pRatesString[i]) == TI_OK)
         {
-            eMaxRate = TI_MAX (pRatesString[i], eMaxRate);
+            eMaxRate = TI_MAX ((ENetRate)pRatesString[i], eMaxRate);
         }
     }
 
@@ -703,14 +703,38 @@ TI_STATUS rate_DrvBitmapToNetStr (TI_UINT32   uSuppRatesBitMap,
         }
     }
 
-/* 
- * Don't convert MCS rates, 
- * it is only for basic and extended rates, otherwise it will exceed 16 bytes string 
- * the code below is a sample and can be used in the future, if need to parse MCS rates bit map to string
- */
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
-#if 1   // enable the 11n rate conversions
-/* MODS_END_FOR_11N_RATE_REPORTING */
+    *len = i;
+    
+    return TI_OK;
+}
+
+
+/************************************************************************
+ *                        bitMapToNetworkStringRates                    *
+ ************************************************************************
+DESCRIPTION: Converts bit map to the rates string
+                                                                                                   
+INPUT:      suppRatesBitMap     -   bit map of supported rates
+            basicRatesBitMap    -   bit map of basic rates
+
+OUTPUT:     string - network format rates array,
+            len - rates array length
+            firstOFDMrateLoc - the index of first OFDM rate in the rates array.
+
+
+RETURN:     None
+
+************************************************************************/
+TI_STATUS rate_DrvBitmapToNetStrIncluding11n (TI_UINT32   uSuppRatesBitMap,
+											  TI_UINT32   uBasicRatesBitMap,
+											  TI_UINT8    *string,
+											  TI_UINT32   *pFirstOfdmRate)
+{
+    TI_UINT32   i = 0;
+
+
+	rate_DrvBitmapToNetStr (uSuppRatesBitMap, uBasicRatesBitMap, string, &i, pFirstOfdmRate);
+
     if (uSuppRatesBitMap & DRV_RATE_MASK_MCS_0_OFDM)
     {
         if (uBasicRatesBitMap & DRV_RATE_MASK_MCS_0_OFDM)
@@ -806,8 +830,7 @@ TI_STATUS rate_DrvBitmapToNetStr (TI_UINT32   uSuppRatesBitMap,
             string[i++] = NET_RATE_MCS7;
         }
     }
-#endif
-    *len = i;
+
     
     return TI_OK;
 }
@@ -1204,7 +1227,7 @@ TI_STATUS rate_DrvBitmapToHwBitmap (TI_UINT32 uDrvBitMap, TI_UINT32 *pHwBitmap)
 
 TI_STATUS rate_PolicyToDrv (ETxRateClassId ePolicyRate, ERate *eAppRate)
 {
-    TI_UINT8     Rate = 0;
+    ERate     Rate = DRV_RATE_AUTO;
     TI_STATUS status = TI_OK;
 
     switch (ePolicyRate)

@@ -1,7 +1,7 @@
 /*
  * 802_11Defs.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -48,7 +48,7 @@
 #include "osDot11XCC.h"
 #endif
 
-#define DOT11_OUI_LEN                       3
+#define DOT11_OUI_LEN                       4
 #define DOT11_COUNTRY_STRING_LEN            3
 #define DOT11_MAX_SUPPORTED_RATES           32
 
@@ -457,12 +457,12 @@ typedef TI_UINT8 dot11_eleHdr_t[2];  /* Byte-0: IE-ID,  Byte-1: IE-Length  */
 #define DOT11_SSID_ELE_ID   0
 
 /* Max SSID length */
-#define DOT11_SSID_MAX_LEN  32
+#define MAX_SSID_LEN        32
 
 typedef struct 
 {
-  dot11_eleHdr_t    hdr;
-  char              serviceSetId[DOT11_SSID_MAX_LEN];
+    dot11_eleHdr_t    hdr;
+    char              serviceSetId[MAX_SSID_LEN];
 }  dot11_SSID_t;
 
 
@@ -503,7 +503,6 @@ typedef struct
 #define WEP_AFTER_HEADER_FIELD_SIZE  IV_FIELD_SIZE
 #define TKIP_AFTER_HEADER_FIELD_SIZE (IV_FIELD_SIZE + EIV_FIELD_SIZE)
 #define AES_AFTER_HEADER_FIELD_SIZE  8
-
 
 /* DS params Information Element */
 #define DOT11_DS_PARAMS_ELE_ID      3
@@ -1043,7 +1042,7 @@ typedef enum
                                          sizeof( dot11_RATES_t ) +
                                          sizeof( dot11_RATES_t ) +
                                          sizeof( Tdot11HtCapabilitiesUnparse ) +
-                                         sizeof( DOT11_WSC_PROBE_REQ_MAX_LENGTH ) +
+                                         DOT11_WSC_PROBE_REQ_MAX_LENGTH +
                                          sizeof( XCC_radioManagmentCapability_IE_t )
                                         ];
     } probeReqTemplate_t;
@@ -1057,7 +1056,7 @@ typedef enum
                                          sizeof( dot11_RATES_t ) +
                                          sizeof( dot11_RATES_t ) +
                                          sizeof( Tdot11HtCapabilitiesUnparse ) +
-                                         sizeof( DOT11_WSC_PROBE_REQ_MAX_LENGTH )
+                                         DOT11_WSC_PROBE_REQ_MAX_LENGTH
                                         ];
     } probeReqTemplate_t;
 
@@ -1091,6 +1090,7 @@ typedef struct
 typedef struct
 {
     dot11_header_t   hdr;
+	TI_UINT8 	securityOverhead[AES_AFTER_HEADER_FIELD_SIZE];
     Wlan_LlcHeader_T LLC;
     TI_UINT16 hardType;
     TI_UINT16 protType;

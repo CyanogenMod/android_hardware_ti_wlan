@@ -1,7 +1,7 @@
 /*
  * siteMgr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -227,7 +227,6 @@ static TI_UINT16 incrementTxSessionCount(siteMgr_t *pSiteMgr);
 static void siteMgr_TxPowerAdaptation(TI_HANDLE hSiteMgr, RssiEventDir_e highLowEdge);
 static void siteMgr_TxPowerLowThreshold(TI_HANDLE hSiteMgr, TI_UINT8 *data, TI_UINT8 dataLength);
 static void siteMgr_TxPowerHighThreshold(TI_HANDLE hSiteMgr, TI_UINT8 *data, TI_UINT8 dataLength);
-
 
 /************************************************************************
 *                        siteMgr_setTemporaryTxPower                    *
@@ -714,16 +713,16 @@ TI_STATUS siteMgr_setParam(TI_HANDLE        hSiteMgr,
 
     case SITE_MGR_SIMPLE_CONFIG_MODE: /* Setting the WiFiSimpleConfig mode */
 		
-		/* Modify the current mode */
+        /* Modify the current mode and IE size */
 		pSiteMgr->siteMgrWSCCurrMode = pParam->content.siteMgrWSCMode.WSCMode;
+		pSiteMgr->uWscIeSize = pParam->content.siteMgrWSCMode.uWscIeSize;
 
-        TRACE1(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "Setting SimpleConfig Mode to %d\n", pSiteMgr->siteMgrWSCCurrMode);
+        TRACE2(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "Setting SimpleConfig Mode to %d, IE Size = %d\n", pSiteMgr->siteMgrWSCCurrMode, pSiteMgr->uWscIeSize);
 
 		/* In case the WSC is on ,the ProbeReq WSC IE need to be updated */
-
-		if(pSiteMgr->siteMgrWSCCurrMode != TIWLN_SIMPLE_CONFIG_OFF)
+        if(pSiteMgr->siteMgrWSCCurrMode != TIWLN_SIMPLE_CONFIG_OFF)
 		{
-			os_memoryCopy(pSiteMgr->hOs, &pSiteMgr->siteMgrWSCProbeReqParams, &pParam->content.siteMgrWSCMode.probeReqWSCIE, DOT11_WSC_PROBE_REQ_MAX_LENGTH);
+			os_memoryCopy(pSiteMgr->hOs, &pSiteMgr->siteMgrWSCProbeReqParams, &pParam->content.siteMgrWSCMode.probeReqWSCIE, pSiteMgr->uWscIeSize);
 
 			param.paramType = RSN_WPA_PROMOTE_OPTIONS;	
            	param.content.rsnWPAPromoteFlags = ADMCTRL_WPA_OPTION_ENABLE_PROMOTE_AUTH_MODE;
@@ -752,6 +751,9 @@ TI_STATUS siteMgr_setParam(TI_HANDLE        hSiteMgr,
             param.content.powerMngPowerMode.PowerMngPriority = POWER_MANAGER_USER_PRIORITY;
             powerMgr_setParam(pSiteMgr->hPowerMgr,&param);
 		}
+
+        /* Update the FW prob request templates to reflect the new WSC state */
+        setDefaultProbeReqTemplate (hSiteMgr);
 
         /* update the SME on the WPS mode */
         param.paramType = SME_WSC_PB_MODE_PARAM;
@@ -981,7 +983,7 @@ TI_STATUS siteMgr_setParam(TI_HANDLE        hSiteMgr,
             TWD_CmdTemplate (pSiteMgr->hTWD, &templateStruct, NULL, NULL);
 
             /* configuring the IP to 0.0.0.0 by app means disable filtering */
-            if ((staIp[0] | staIp[0] | staIp[1] | staIp[0]) == 0) 
+            if ((staIp[0] | staIp[1] | staIp[2] | staIp[3]) == 0) 
             {
                 filterType = ArpFilterDisabled;
             }
@@ -2580,14 +2582,12 @@ RETURN:
 ************************************************************************/
 static void updateWSCParams(siteMgr_t *pSiteMgr, siteEntry_t *pSite, mlmeFrameInfo_t *pFrameInfo)
 {
-   int res;
-
    TRACE6(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "updateWSCParams called (BSSID: %X-%X-%X-%X-%X-%X)\n",pSite->bssid[0], pSite->bssid[1], pSite->bssid[2], pSite->bssid[3], pSite->bssid[4], pSite->bssid[5]);
 
 	/* if the IE is not null => the WSC is on - check which method is supported */
 	if (pFrameInfo->content.iePacket.WSCParams  != NULL)
 	{
-         res = parseWscMethodFromIE (pSiteMgr, pFrameInfo->content.iePacket.WSCParams, &pSite->WSCSiteMode);
+         parseWscMethodFromIE (pSiteMgr, pFrameInfo->content.iePacket.WSCParams, &pSite->WSCSiteMode);
 
          TRACE1(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "pSite->WSCSiteMode = %d\n",pSite->WSCSiteMode);
 	}
@@ -2604,7 +2604,7 @@ static int parseWscMethodFromIE (siteMgr_t *pSiteMgr, dot11_WSC_t *WSCParams, TI
    TI_UINT16   tlvPtrType,tlvPtrLen,selectedMethod=0;
 
    tlvPtr = (TI_UINT8*)WSCParams->WSCBeaconOrProbIE;
-   endPtr = tlvPtr + WSCParams->hdr[1] - (DOT11_OUI_LEN + 1);
+   endPtr = tlvPtr + WSCParams->hdr[1] - DOT11_OUI_LEN;
 
    do
    {
@@ -3136,8 +3136,7 @@ RETURN:
 ************************************************************************/
 static ERate translateRateMaskToValue(siteMgr_t *pSiteMgr, TI_UINT32 rateMask)
 {
- /* MODS_BEGIN_FOR_11N_RATE_REPORTING */
-    if (rateMask & DRV_RATE_MASK_MCS_7_OFDM)
+	if (rateMask & DRV_RATE_MASK_MCS_7_OFDM)
         return DRV_RATE_MCS_7;
     if (rateMask & DRV_RATE_MASK_MCS_6_OFDM)
         return DRV_RATE_MCS_6;
@@ -3153,7 +3152,6 @@ static ERate translateRateMaskToValue(siteMgr_t *pSiteMgr, TI_UINT32 rateMask)
         return DRV_RATE_MCS_1;
     if (rateMask & DRV_RATE_MASK_MCS_0_OFDM)
         return DRV_RATE_MCS_0;
-/* MODS_END_FOR_11N_RATE_REPORTING */
     if (rateMask & DRV_RATE_MASK_54_OFDM)
         return DRV_RATE_54M;
     if (rateMask & DRV_RATE_MASK_48_OFDM)
@@ -3608,8 +3606,6 @@ void siteMgr_updateRates(TI_HANDLE hSiteMgr, TI_BOOL dot11a, TI_BOOL updateToOS)
 TI_BOOL siteMgr_SelectRateMatch (TI_HANDLE hSiteMgr, TSiteEntry *pCurrentSite)
 {
     siteMgr_t *pSiteMgr = (siteMgr_t *)hSiteMgr;
-    TI_UINT32 MatchedBasicRateMask;
-    TI_UINT32 MatchedSupportedRateMask;
 	TI_UINT32 StaTotalRates;
 	TI_UINT32 SiteTotalRates;
 
@@ -3636,12 +3632,6 @@ TI_BOOL siteMgr_SelectRateMatch (TI_HANDLE hSiteMgr, TSiteEntry *pCurrentSite)
 
 	SiteTotalRates = pCurrentSite->rateMask.basicRateMask | pCurrentSite->rateMask.supportedRateMask;
     
-	MatchedBasicRateMask = SiteTotalRates 
-				& pSiteMgr->pDesiredParams->siteMgrCurrentDesiredRateMask.basicRateMask;
- 
-    MatchedSupportedRateMask = SiteTotalRates &
-				pSiteMgr->pDesiredParams->siteMgrCurrentDesiredRateMask.supportedRateMask;
-
     if ((StaTotalRates & pCurrentSite->rateMask.basicRateMask) != pCurrentSite->rateMask.basicRateMask)
     {
         TRACE0(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "siteMgr_SelectRateMatch: Basic or Supported Rates Doesn't Match \n");
@@ -3722,30 +3712,23 @@ void siteMgr_ConfigRate(TI_HANDLE hSiteMgr)
             pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[OperationMode] = SUPPORTED_RATE_SET_1_2_5_5_11;
     }
 
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
-#if 0
     /* use HT MCS rates */
-    StaCap_IsHtEnable (pSiteMgr->hStaCap, &b11nEnable);
-#else
-    {
-        if (pSiteMgr->pDesiredParams->siteMgrDesiredBSSType == BSS_INFRASTRUCTURE)
-            b11nEnable = TI_TRUE;
-        else
-            b11nEnable = TI_FALSE;
-    }
-#endif
-/* MODS_END_FOR_11N_RATE_REPORTING */
-
-    if (TI_TRUE == b11nEnable)
-    {
-        OperationMode = DOT11_N_MODE;
-    }
+    if (pSiteMgr->pDesiredParams->siteMgrDesiredBSSType == BSS_INFRASTRUCTURE)
+	{
+		b11nEnable = TI_TRUE;
+		OperationMode = DOT11_N_MODE;
+	}
+	else
+	{
+		b11nEnable = TI_FALSE;
+	}
+    
 
     pSiteMgr->pDesiredParams->siteMgrRegstryBasicRateMask =
-        rate_BasicToDrvBitmap (pSiteMgr->pDesiredParams->siteMgrRegstryBasicRate[OperationMode], dot11a);
+        rate_BasicToDrvBitmap ((EBasicRateSet)(pSiteMgr->pDesiredParams->siteMgrRegstryBasicRate[OperationMode]), dot11a);
 
     pSiteMgr->pDesiredParams->siteMgrRegstrySuppRateMask =
-        rate_SupportedToDrvBitmap (pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[OperationMode], dot11a);
+        rate_SupportedToDrvBitmap ((EBasicRateSet)(pSiteMgr->pDesiredParams->siteMgrRegstrySuppRate[OperationMode]), dot11a);
 
     siteMgr_updateRates(pSiteMgr, dot11a, TI_TRUE);
 

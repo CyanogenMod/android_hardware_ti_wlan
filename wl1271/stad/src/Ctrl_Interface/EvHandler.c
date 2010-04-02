@@ -1,7 +1,7 @@
 /*
  * EvHandler.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -55,6 +55,13 @@ TI_HANDLE EvHandler_Create (TI_HANDLE hOs)
 
     PRINT(DBG_INIT_LOUD, (" EvHandlerInit\n"));
     pEvHandler = os_memoryAlloc(hOs,sizeof(TEvHandlerObj));
+
+    if(NULL == pEvHandler)
+    {
+        PRINT(DBG_INIT_LOUD, ("EvHandler_Create() - Allocation failed! Returning NULL.\n"));
+        return NULL;
+    }
+
     os_memoryZero(hOs,pEvHandler,sizeof(TEvHandlerObj));
 
     #ifdef EV_HANDLER_DEBUG

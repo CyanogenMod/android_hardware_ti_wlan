@@ -1,7 +1,7 @@
 /*
  * qosMngr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -60,6 +60,7 @@
 #include "TWDriver.h"
 #include "DrvMainModules.h"
 #include "StaCap.h"
+#include "roamingMngrApi.h"
 
 
 extern int WMEQosTagToACTable[MAX_NUM_OF_802_1d_TAGS];
@@ -72,6 +73,9 @@ const TI_UINT32 WMEQosMateTid[MAX_NUM_OF_802_1d_TAGS] = { 3, 2, 1, 0, 5, 4, 7, 6
 
 /* Used to indicate no user priority is assigned for AC */
 #define INACTIVE_USER_PRIORITY 0xFF
+
+/* Used for TSPEC nominal fixed size */
+#define FIXED_NOMINAL_MSDU_SIZE_MASK 0x8000
 
 
 /********************************************************************************/
@@ -227,6 +231,7 @@ void qosMngr_init (TStadHandlesList *pStadHandles)
 	pQosMngr->hXCCMgr          = pStadHandles->hXCCMngr;
 	pQosMngr->hTimer           = pStadHandles->hTimer;
     pQosMngr->hStaCap          = pStadHandles->hStaCap;
+    pQosMngr->hRoamMng         = pStadHandles->hRoamingMngr;
 
     pQosMngr->isConnected = TI_FALSE;
 }
@@ -2131,15 +2136,6 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_SetPsRxStreaming: Not 
 		return NOT_CONNECTED;
 	}
 
-#if 0
-	/* Verify that the AP supports QOS_WME */
-	if (pQosMngr->activeProtocol != QOS_WME)
-	{
-TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_SetPsRxStreaming: Not connected to a QOS AP - Ignoring request !!!\n");
-		return NO_QOS_AP;
-	}
-#endif
-
 	/* Check TID validity */
 	if (uCurrTid > MAX_USER_PRIORITY)
 	{
@@ -2264,7 +2260,7 @@ TRACE2(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_requestAdmission: AC =
 	}
 
 	/* check msdu size validity */
-	if( addTspecParams->uNominalMSDUsize > MAX_DATA_BODY_LENGTH)
+	if( (addTspecParams->uNominalMSDUsize & (~FIXED_NOMINAL_MSDU_SIZE_MASK)) > MAX_DATA_BODY_LENGTH)
 	{
 TRACE1(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "uNominalMSDUsize = %d > 2312, !!!\n",addTspecParams->uNominalMSDUsize);
 		return TI_NOK;
@@ -2588,7 +2584,7 @@ TI_STATUS qosMngr_setAdmissionInfo(TI_HANDLE    hQosMngr,
         addtsReasonCode.uMinimumServiceInterval = pTspecInfo->uMinimumServiceInterval;
         addtsReasonCode.uMaximumServiceInterval = pTspecInfo->uMaximumServiceInterval;
         addtsReasonCode.uUserPriority = pTspecInfo->userPriority;
-        addtsReasonCode.uNominalMSDUsize = pTspecInfo->nominalMsduSize;
+        addtsReasonCode.uNominalMSDUsize = pTspecInfo->nominalMsduSize & ~FIXED_NOMINAL_MSDU_SIZE_MASK;
         addtsReasonCode.uMeanDataRate = pTspecInfo->meanDataRate;   
         addtsReasonCode.uMinimumPHYRate = pTspecInfo->minimumPHYRate;
         addtsReasonCode.uSurplusBandwidthAllowance = pTspecInfo->surplausBwAllowance;
@@ -2713,7 +2709,7 @@ TI_STATUS qosMngr_setAdmissionInfo(TI_HANDLE    hQosMngr,
         addtsReasonCode.uMinimumServiceInterval = pTspecInfo->uMinimumServiceInterval;
         addtsReasonCode.uMaximumServiceInterval = pTspecInfo->uMaximumServiceInterval;
         addtsReasonCode.uUserPriority = pQosMngr->resourceMgmtTable.candidateTspecInfo[acID].userPriority;
-        addtsReasonCode.uNominalMSDUsize = pTspecInfo->nominalMsduSize;
+        addtsReasonCode.uNominalMSDUsize = pTspecInfo->nominalMsduSize & ~FIXED_NOMINAL_MSDU_SIZE_MASK;
         addtsReasonCode.uMeanDataRate = pTspecInfo->meanDataRate;   
         addtsReasonCode.uMinimumPHYRate = pTspecInfo->minimumPHYRate;
         addtsReasonCode.uSurplusBandwidthAllowance = pTspecInfo->surplausBwAllowance;
@@ -2767,12 +2763,14 @@ RETURN:     TI_OK on success, TI_NOK otherwise
 ************************************************************************/
 TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UINT8 action, TI_UINT32 bodyLen)
 {
-	TI_UINT8					acID;
-	tsInfo_t				tsInfo;
-	TI_UINT8					userPriority;
-    OS_802_11_QOS_TSPEC_PARAMS addtsReasonCode;
-
-
+	TI_UINT8					    acID;
+	tsInfo_t				        tsInfo;
+	TI_UINT8					    userPriority;
+    OS_802_11_QOS_TSPEC_PARAMS      addtsReasonCode;
+    TI_UINT8                        statusCode = 0;
+#ifdef XCC_MODULE_INCLUDED
+	paramInfo_t                     param;
+#endif
     qosMngr_t *pQosMngr = (qosMngr_t *)hQosMngr;
 
 	/* check if STA is already connected to AP */
@@ -2838,6 +2836,35 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 	/* if action code is ADDTS call trafficAdmCtrl object API function */
 	else if (action == ADDTS_RESPONSE_ACTION) 
 	{
+        statusCode = *(pData+1);
+
+#ifdef XCC_MODULE_INCLUDED
+
+        if (ADDTS_STATUS_CODE_SUCCESS != statusCode)
+        {
+            tspecInfo_t tspecInfo;
+            param.paramType = ROAMING_MNGR_TRIGGER_EVENT;
+            param.content.roamingTriggerType =  ROAMING_TRIGGER_TSPEC_REJECTED;
+            roamingMngr_setParam(pQosMngr->hRoamMng, &param);
+
+                       
+            trafficAdmCtrl_parseTspecIE(&tspecInfo, pData+2);
+            
+            addtsReasonCode.uAPSDFlag = tspecInfo.UPSDFlag;
+            addtsReasonCode.uMinimumServiceInterval = tspecInfo.uMinimumServiceInterval;
+            addtsReasonCode.uMaximumServiceInterval = tspecInfo.uMaximumServiceInterval;
+            addtsReasonCode.uUserPriority = (TI_UINT32)tspecInfo.userPriority;
+            addtsReasonCode.uReasonCode = ADDTS_RESPONSE_REJECT;
+            addtsReasonCode.uNominalMSDUsize = (TI_UINT32)tspecInfo.nominalMsduSize & ~FIXED_NOMINAL_MSDU_SIZE_MASK;
+            addtsReasonCode.uMeanDataRate = tspecInfo.meanDataRate;	
+            addtsReasonCode.uMinimumPHYRate = tspecInfo.minimumPHYRate;
+            addtsReasonCode.uSurplusBandwidthAllowance = (TI_UINT32)tspecInfo.surplausBwAllowance;
+            addtsReasonCode.uMediumTime = (TI_UINT32)tspecInfo.mediumTime;
+            
+            EvHandlerSendEvent(pQosMngr->hEvHandler, IPC_EVENT_TSPEC_STATUS, (TI_UINT8*)(&addtsReasonCode), sizeof(OS_802_11_QOS_TSPEC_PARAMS));
+        }
+#endif
+        
 		if (trafficAdmCtrl_recv(pQosMngr->pTrafficAdmCtrl, pData, action) == TI_OK)
 		{
 #ifdef XCC_MODULE_INCLUDED
@@ -2965,7 +2992,7 @@ static void qosMngr_storeTspecCandidateParams (tspecInfo_t *pCandidateParams, OS
 	pCandidateParams->tid = (TI_UINT8)pTSPECParams->uUserPriority;
 	pCandidateParams->userPriority = (TI_UINT8)pTSPECParams->uUserPriority;
 	pCandidateParams->meanDataRate = pTSPECParams->uMeanDataRate;
-	pCandidateParams->nominalMsduSize = (TI_UINT16)pTSPECParams->uNominalMSDUsize;
+	pCandidateParams->nominalMsduSize = ((TI_UINT16)pTSPECParams->uNominalMSDUsize) | FIXED_NOMINAL_MSDU_SIZE_MASK;
 	pCandidateParams->UPSDFlag = (TI_BOOL)pTSPECParams->uAPSDFlag;
 	pCandidateParams->uMinimumServiceInterval = pTSPECParams->uMinimumServiceInterval;
 	pCandidateParams->uMaximumServiceInterval = pTSPECParams->uMaximumServiceInterval;

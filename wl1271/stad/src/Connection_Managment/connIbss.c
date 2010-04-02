@@ -1,7 +1,7 @@
 /*
  * connIbss.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -238,11 +238,6 @@ static TI_STATUS selfWait_to_rsnWait (void *pData)
 	/* Update TxMgmtQueue SM to enable EAPOL packets. */
 	txMgmtQ_SetConnState (pConn->hTxMgmtQ, TX_CONN_STATE_EAPOL);
 
-    /*
-     *  Notify that the driver is associated to the supplicant\IP stack. 
-     */
-    EvHandlerSendEvent (pConn->hEvHandler, IPC_EVENT_ASSOCIATED, NULL, 0);
-
     return rsn_start (pConn->hRsn);
 }
 
@@ -303,11 +298,6 @@ static TI_STATUS selfw_merge_rsnw(void *pData)
 
 	/* Update TxMgmtQueue SM to enable EAPOL packets. */
 	txMgmtQ_SetConnState (pConn->hTxMgmtQ, TX_CONN_STATE_EAPOL);
-
-    /*
-     *  Notify that the driver is associated to the supplicant\IP stack. 
-     */
-    EvHandlerSendEvent (pConn->hEvHandler, IPC_EVENT_ASSOCIATED, NULL, 0);
 
     return rsn_start (pConn->hRsn);
 
@@ -447,7 +437,7 @@ RETURN:     TI_OK on success, TI_NOK otherwise
 ************************************************************************/
 static TI_STATUS rsnWait_to_waitToDisconnCmplt(void *pData)
 {
-    paramInfo_t     param;  
+    paramInfo_t     param;
 	TI_STATUS		tStatus;
 
     tStatus = rsn_stop(((conn_t *)pData)->hRsn, TI_FALSE);
@@ -530,6 +520,9 @@ static TI_STATUS idle_to_selfWait (void *pData)
                     (TI_HANDLE)pConn,
                     pConn->timeout + randomTime,
                     TI_FALSE);
+
+	/*  Notify that the driver is associated to the supplicant\IP stack. */
+    EvHandlerSendEvent (pConn->hEvHandler, IPC_EVENT_ASSOCIATED, NULL, 0);
 
     return TI_OK;
 }

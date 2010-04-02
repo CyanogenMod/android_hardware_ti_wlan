@@ -1,7 +1,7 @@
 /*
  * STADExternalIf.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -342,6 +342,7 @@ typedef struct
 typedef struct 
 {
     TIWLN_SIMPLE_CONFIG_MODE  WSCMode;						/**< WiFi Simple Configuration mode 			   			*/
+    TI_UINT32 uWscIeSize; 						            /**< Simple Config IE actual size (the part after the OUI) */
     TI_UINT8 probeReqWSCIE[DOT11_WSC_PROBE_REQ_MAX_LENGTH];	/**< Buffer which holds the parameters of ProbeReq - WSC IE	*/
 }  TWscMode;
 

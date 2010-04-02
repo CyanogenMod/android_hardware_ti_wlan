@@ -1,7 +1,7 @@
 /*
  * osRgstry.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -161,10 +161,8 @@ NDIS_STRING STRdot11BasicRateMask_A           = NDIS_STRING_CONST( "dot11BasicRa
 NDIS_STRING STRdot11SupportedRateMask_A       = NDIS_STRING_CONST( "dot11SupportedRateMaskA");
 NDIS_STRING STRdot11BasicRateMask_AG           = NDIS_STRING_CONST( "dot11BasicRateMaskAG");
 NDIS_STRING STRdot11SupportedRateMask_AG       = NDIS_STRING_CONST( "dot11SupportedRateMaskAG");
-/*** MODS_BEGIN_FOR_11N_RATE_REPORTING ***/
-NDIS_STRING STRdot11BasicRateMask_N           = NDIS_STRING_CONST( "dot11BasicRateMask_N");
-NDIS_STRING STRdot11SupportedRateMask_N       = NDIS_STRING_CONST( "dot11SupportedRateMask_N");
-/*** MODS_END_FOR_11N_RATE_REPORTING ***/
+NDIS_STRING STRdot11BasicRateMask_N           = NDIS_STRING_CONST( "dot11BasicRateMaskN");
+NDIS_STRING STRdot11SupportedRateMask_N       = NDIS_STRING_CONST( "dot11SupportedRateMaskN");
 
 NDIS_STRING STRRadio11_RxLevel              = NDIS_STRING_CONST( "Radio11_RxLevel");
 NDIS_STRING STRRadio11_LNA                  = NDIS_STRING_CONST( "Radio11_LNA");
@@ -179,8 +177,8 @@ NDIS_STRING STRdot11SlotTime                = NDIS_STRING_CONST( "ShortSlotTime"
 NDIS_STRING STRdot11IbssProtection          = NDIS_STRING_CONST( "IbssProtectionType");
 NDIS_STRING STRdot11RtsCtsProtection        = NDIS_STRING_CONST( "dot11RtsCtsProtection");
 
-NDIS_STRING STRRxEnergyDetection              = NDIS_STRING_CONST( "RxEnergyDetection" );
-NDIS_STRING STRTxEnergyDetection              = NDIS_STRING_CONST( "TxEnergyDetection" );
+NDIS_STRING STRRxEnergyDetection            = NDIS_STRING_CONST( "RxEnergyDetection" );
+NDIS_STRING STRCh14TelecCca                 = NDIS_STRING_CONST( "Ch14TelecCCA" );
 NDIS_STRING STRCrtCalibrationInterval       = NDIS_STRING_CONST( "CrtCalibrationInterval" );
 NDIS_STRING STRTddCalibrationInterval       = NDIS_STRING_CONST( "TddCalibrationInterval" );
 NDIS_STRING STRMacClockRate                 = NDIS_STRING_CONST( "MacClockRate" );
@@ -246,11 +244,6 @@ NDIS_STRING STRSRState                      = NDIS_STRING_CONST( "SRState" );
 NDIS_STRING STRSRConfigParam1               = NDIS_STRING_CONST( "SRF1" );
 NDIS_STRING STRSRConfigParam2               = NDIS_STRING_CONST( "SRF2" );
 NDIS_STRING STRSRConfigParam3               = NDIS_STRING_CONST( "SRF3" );
-NDIS_STRING STRSRSenNP                      = NDIS_STRING_CONST( "SR_SEN_N_P" );
-NDIS_STRING STRSRSenNPGain                  = NDIS_STRING_CONST( "SR_SEN_N_P_Gain" );
-NDIS_STRING STRSRSenPrn                     = NDIS_STRING_CONST( "SR_SEN_PRN" );
-NDIS_STRING STRSRSenNrn                     = NDIS_STRING_CONST( "SR_SEN_NRN" );
-NDIS_STRING STRSRDebugTable                 = NDIS_STRING_CONST( "SR_Debug_Table" );
 
 
 /*
@@ -473,10 +466,15 @@ NDIS_STRING STRTrafficIntensityTestInterval     = NDIS_STRING_CONST("TrafficInte
 NDIS_STRING STRTrafficIntensityThresholdEnabled = NDIS_STRING_CONST("TrafficIntensityThresholdEnabled");
 NDIS_STRING STRTrafficMonitorMinIntervalPercentage = NDIS_STRING_CONST("TrafficMonitorMinIntervalPercent");
 
-
 /* Packet Burst parameters */
 NDIS_STRING STRQOSPacketBurstEnable             = NDIS_STRING_CONST("QOS_PacketBurstEnable");
 NDIS_STRING STRQOSPacketBurstTxOpLimit          = NDIS_STRING_CONST("QOS_PacketBurstTxOpLimit");
+
+/* Performance Boost (for speed or for QoS) */
+NDIS_STRING STRPerformanceBoost                 = NDIS_STRING_CONST("PerformanceBoost");
+
+/* Maximum AMPDU Size */
+NDIS_STRING STRMaxAMPDU                         = NDIS_STRING_CONST("MaxAMPDU");
 
 /*-----------------------------------*/
 /*        QOS classifier Parameters  */
@@ -675,6 +673,9 @@ NDIS_STRING STRMinimumDurationBetweenOsScans     = NDIS_STRING_CONST( "MinimumDu
 NDIS_STRING STRDfsPassiveDwellTimeMs             = NDIS_STRING_CONST( "DfsPassiveDwellTimeMs" );
 NDIS_STRING STRScanPushMode                      = NDIS_STRING_CONST( "ScanPushMode" );
 
+NDIS_STRING STRScanResultAging                   = NDIS_STRING_CONST( "ScanResultAging" );
+NDIS_STRING STRScanCncnRssiThreshold             = NDIS_STRING_CONST( "ScanCncnRssiThreshold" );
+
 NDIS_STRING STRParseWSCInBeacons      = NDIS_STRING_CONST( "ParseWSCInBeacons" );
 
 /*-----------------------------------*/
@@ -736,6 +737,9 @@ NDIS_STRING STRDC2DCMode =    	    	            NDIS_STRING_CONST("DC2DCMode");
 NDIS_STRING STRSingle_Dual_Band_Solution =          NDIS_STRING_CONST("Single_Dual_Band_Solution");
 NDIS_STRING STRSettings = 							NDIS_STRING_CONST("Settings");
 
+NDIS_STRING STRTxPerChannelPowerCompensation_2_4G =    NDIS_STRING_CONST("TxPerChannelPowerCompensation_2_4G");
+NDIS_STRING STRTxPerChannelPowerCompensation_5G_OFDM =    NDIS_STRING_CONST("TxPerChannelPowerCompensation_5G_OFDM");
+
 /*-----------------------------------*/
 /*      Driver-Main parameters       */
 /*-----------------------------------*/
@@ -748,6 +752,7 @@ NDIS_STRING STRSdioBlkSizeShift      = NDIS_STRING_CONST("SdioBlkSizeShift");
 /*      Roaming parameters    */
 /*-----------------------------------*/
 NDIS_STRING STRRoamingOperationalMode = NDIS_STRING_CONST("RoamingOperationalMode");
+NDIS_STRING STRSendTspecInReassPkt    = NDIS_STRING_CONST("SendTspecInReassPkt");
 
 /*-----------------------------------*/
 /*      FM Coexistence parameters    */
@@ -786,14 +791,9 @@ NDIS_STRING STRRateMngRateRetryPolicy     = NDIS_STRING_CONST("RateMngRateRetryP
 
 NDIS_STRING STRincludeWSCinProbeReq                 = NDIS_STRING_CONST("IncludeWSCinProbeReq");
 
-/*
-NDIS_STRING STRPctACXRxMemoryPool       = NDIS_STRING_CONST( "PctACXRxMemoryPool" );
-NDIS_STRING STRSendPacketsPerOID        = NDIS_STRING_CONST( "Dot11SendPacketsPerOID" );
-NDIS_STRING STRFragCacheSize            = NDIS_STRING_CONST( "FragCacheSize" );
-*/
 
-static void regConvertStringtoMACAddress(TI_UINT8 *staMACAddressString,TI_UINT8 *MacAddressArray);
-static void regConvertStringtoBeaconIETable(TI_UINT8 *staIpAddressString,TI_UINT8 *BeaconIEArray, TI_UINT8 size);
+static void parseTwoDigitsSequenceHex (TI_UINT8 *sInString, TI_UINT8 *uOutArray, TI_UINT8 uSize);
+
 static void regConvertStringtoCoexActivityTable(TI_UINT8 *strCoexActivityTable, TI_UINT32 numOfElements, TCoexActivity *CoexActivityArray, TI_UINT8 strSize);
 
 static int decryptWEP( TI_INT8* pSrc, TI_INT8* pDst, TI_UINT32 len);
@@ -916,73 +916,6 @@ static TI_UINT32 tiwlnstrtoi_hex (TI_UINT8 *num, TI_UINT32 length)
   return value;
 }
 
-/*-----------------------------------------------------------------------------
-
-Routine Name:
-
-    regConvertStringtoMACAddress
-
-Routine Description: Converts the MAC Adrress in a form of string readen from the Registry
-to the MAC Address Array to be stored in the init_table struct
-
-
-Arguments:
-
-
-Return Value:
-
-    None
-
------------------------------------------------------------------------------*/
-static void regConvertStringtoMACAddress(TI_UINT8 *staMACAddressString, TI_UINT8 *MacAddressArray)
-{
-    char *ptr;
-    TI_UINT8 *tmpMacAddr;
-    TI_UINT8 value = 0, value_l, value_h, add_value;
-    int i, str_len;
-
-    /* Take the pointer to the string MAC Address to convert it to the Array MAC Address */
-    ptr = (char *)staMACAddressString;
-    tmpMacAddr = MacAddressArray;
-    str_len = 3 * MAC_ADDR_LEN - 1;
-
-    for(i=0;(i < MAC_ADDR_LEN);ptr++,str_len--)
-    {
-        if (str_len > 0) {
-            /* The value can be or "0-9" or from "a-f" */
-            value_l = (*ptr - '0');
-            value_h = (*ptr - 'a');
-        }
-        else { /* last element */
-            value_l = value_h = 16;
-        }
-        /*PRINTF(DBG_REGISTRY,("value_l [%d] value_h [%d] *ptr %c value %d\n",value_l,value_h,*ptr,value));*/
-
-        if( (value_l <= 9) || (value_h <= 15 ) )
-        {
-            /* We are in an expected range */
-            /* Check if 0-9 */
-            if(value_l <= 9 )
-            {
-                add_value = value_l;
-            }
-            /* Check if a-f */
-            else
-            {
-                /* 'a' is in fact 10 decimal in hexa */
-                add_value = value_h + 10;
-            }
-            value = value * 16 + add_value;
-        }
-        else
-        {
-            tmpMacAddr[i] = value;
-            value = 0;
-            i++;
-        }
-    }
-}
-
 
 /*-----------------------------------------------------------------------------
 
@@ -1014,10 +947,10 @@ regFillInitTable(
     /* EEPROM-less : MAC address */
     static TI_UINT8 regMACstrLen = REG_MAC_ADDR_STR_LEN;
     static TI_UINT8 staMACAddress[REG_MAC_ADDR_STR_LEN];
-    static TI_UINT8 defStaMacAddress0[]= "00 22 11 33 44 55";
+    static TI_UINT8 defStaMacAddress0[]= "10 01 02 03 04 05";
     static TI_UINT8 regArpIpStrLen = REG_ARP_IP_ADDR_STR_LEN;
     static TI_UINT8 staArpIpAddress[REG_ARP_IP_ADDR_STR_LEN];
-    static TI_UINT8 defArpIpAddress[] =  "0a 00 00 0a" ;       /*value by default*/
+    static TI_UINT8 defArpIpAddress[] =  "0a 02 0a b7" ;       /*value by default*/
 
     /*defaults values for beacon IE table*/
     /*TI_UINT8 defBeaconIETableSize = 0 ;*/
@@ -1051,8 +984,9 @@ regFillInitTable(
     static    TI_UINT16  reportSeverityTableLen;
 
     static    TI_UINT32  uWiFiMode = 0;
-    static    TI_INT8    SRConfigParams[14];
-    static    TI_UINT8   len,TempSRCnt;
+    static    TI_UINT32  uPerformanceBoostMode = PERFORMANCE_BOOST_MODE_DEF;
+    TI_INT8    SRConfigParams[MAX_SMART_REFLEX_PARAM];
+    static    TI_UINT32   len,TempSRCnt;
     static    TI_UINT8   uTempRatePolicyList[RATE_MNG_MAX_RETRY_POLICY_PARAMS_LEN];
     static    TI_UINT32  uTempRatePolicyCnt=0;
 
@@ -1113,7 +1047,7 @@ regFillInitTable(
                             (TI_INT8*)(defBeaconIETable), strSize,
                             (TI_UINT8*)staBeaconFilterIETable, &strSize);
 
-            regConvertStringtoBeaconIETable(staBeaconFilterIETable, (TI_UINT8*)&p->siteMgrInitParams.beaconFilterParams.IETable[0]/*(TI_UINT8*)&(tmpIeTable[0] )*/, tmpIeTableSize);
+            parseTwoDigitsSequenceHex (staBeaconFilterIETable, (TI_UINT8*)&p->siteMgrInitParams.beaconFilterParams.IETable[0], tmpIeTableSize);
             os_memoryFree(pAdapter, staBeaconFilterIETable, BEACON_FILTER_STRING_MAX_LEN);
         }
     }
@@ -1152,7 +1086,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress7), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[7]);
+            parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[7], MAC_ADDR_LEN);
             --macIndex;
             }
 
@@ -1163,7 +1097,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress6), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[6]);
+        parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[6], MAC_ADDR_LEN);   
             --macIndex;
             }
 
@@ -1174,7 +1108,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress5), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[5]);
+        parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[5], MAC_ADDR_LEN);   
             --macIndex;
             }
 
@@ -1185,7 +1119,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress4), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[4]);
+        parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[4], MAC_ADDR_LEN);   
             --macIndex;
             }
 
@@ -1196,7 +1130,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress3), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress, (TI_UINT8*)&p->twdInitParams.tMacAddrFilter.macAddrTable[3]);
+        parseTwoDigitsSequenceHex (staMACAddress, (TI_UINT8*)&p->twdInitParams.tMacAddrFilter.macAddrTable[3], MAC_ADDR_LEN);       
             --macIndex;
             }
 
@@ -1207,7 +1141,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress2), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[2]);
+        parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[2], MAC_ADDR_LEN);   
             --macIndex;
             }
 
@@ -1218,7 +1152,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress1), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[1]);
+        parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[1], MAC_ADDR_LEN);   
             --macIndex;
             }
 
@@ -1229,7 +1163,7 @@ regFillInitTable(
                                 (TI_INT8*)(defStaMacAddress0), REG_MAC_ADDR_STR_LEN,
                                 (TI_UINT8*)staMACAddress, &regMACstrLen);
 
-            regConvertStringtoMACAddress(staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[0]);
+        parseTwoDigitsSequenceHex (staMACAddress,(TI_UINT8*) &p->twdInitParams.tMacAddrFilter.macAddrTable[0], MAC_ADDR_LEN);   
             }
 
         default:
@@ -1320,10 +1254,10 @@ regFillInitTable(
             sizeof p->twdInitParams.tGeneral.halCtrlRxEnergyDetection,
             (TI_UINT8*)&p->twdInitParams.tGeneral.halCtrlRxEnergyDetection);
 
-   regReadIntegerParameter(pAdapter, &STRTxEnergyDetection,
+   regReadIntegerParameter(pAdapter, &STRCh14TelecCca,
             TI_FALSE, TI_FALSE, TI_TRUE, 
-            sizeof p->twdInitParams.tGeneral.halCtrlTxEnergyDetection,
-            (TI_UINT8*)&p->twdInitParams.tGeneral.halCtrlTxEnergyDetection);
+            sizeof p->twdInitParams.tGeneral.halCtrlCh14TelecCca,
+            (TI_UINT8*)&p->twdInitParams.tGeneral.halCtrlCh14TelecCca);
 
     regReadIntegerParameter(pAdapter, &STRTddCalibrationInterval,
             300, 1, 0xFFFFFFFF, 
@@ -2487,113 +2421,66 @@ regReadIntegerTable (pAdapter, &STRTxPerRatePowerLimits_5G_Extreme, RADIO_TX_PER
                      NUMBER_OF_RATE_GROUPS_E, NULL, (TI_INT8*)&p->twdInitParams.tIniFileRadioParams.tDynRadioParams.TxPerRatePowerLimits_5G_Extreme, 
                      (TI_UINT32*)&uTempEntriesCount, sizeof (TI_UINT8),TI_TRUE);
 
+/*--------------- Extended Radio Parameters --------------------------*/
+
+regReadIntegerTable (pAdapter, &STRTxPerChannelPowerCompensation_2_4G, RADIO_TX_PER_CH_POWER_COMPENSATION_2_4_DEF,
+                     HALF_NUMBER_OF_2_4_G_CHANNELS, NULL, (TI_INT8*)&p->twdInitParams.tIniFileExtRadioParams.TxPerChannelPowerCompensation_2_4G, 
+                     (TI_UINT32*)&uTempEntriesCount, sizeof (TI_UINT8),TI_TRUE);
+
+regReadIntegerTable (pAdapter, &STRTxPerChannelPowerCompensation_5G_OFDM, RADIO_TX_PER_CH_POWER_COMPENSATION_5_DEF,
+                     HALF_NUMBER_OF_5G_CHANNELS, NULL, (TI_INT8*)&p->twdInitParams.tIniFileExtRadioParams.TxPerChannelPowerCompensation_5G_OFDM, 
+                     (TI_UINT32*)&uTempEntriesCount, sizeof (TI_UINT8),TI_TRUE);
+
+
 regReadIntegerParameter(pAdapter, &STRSettings,
-						1,0,255,
+						65,0,255,
                         sizeof p->twdInitParams.tPlatformGenParams.GeneralSettings,
                         (TI_UINT8*)&p->twdInitParams.tPlatformGenParams.GeneralSettings);
 
 /*---------------------- Smart Reflex Configration -----------------------*/
-      regReadIntegerParameter(pAdapter,
-                            &STRSRState,
-                            SMART_REFLEX_STATE_DEF,
-                            SMART_REFLEX_STATE_MIN,
-                            SMART_REFLEX_STATE_MAX,
-                            sizeof p->twdInitParams.tPlatformGenParams.SRState,
-                            (TI_UINT8*)&p->twdInitParams.tPlatformGenParams.SRState);
-
-
-      NdisZeroMemory(&SRConfigParams[0],MAX_SMART_REFLEX_PARAM );
-
-      regReadIntegerTable (pAdapter, &STRSRConfigParam1, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE,
-                           MAX_SMART_REFLEX_PARAM, NULL, (TI_INT8*)&SRConfigParams, 
-                          (TI_UINT32*)&TempSRCnt, sizeof (TI_INT8),TI_TRUE);
-
-	  len = SRConfigParams[0];
-      
-		  NdisZeroMemory(&(p->twdInitParams.tPlatformGenParams.SRF1[0]),MAX_SMART_REFLEX_PARAM);
-
-      if ((len < MAX_SMART_REFLEX_PARAM) &&
-          ((TempSRCnt <= len + 1) || (TempSRCnt == MAX_SMART_REFLEX_PARAM)))
-	  {
-		  memcpy(&(p->twdInitParams.tPlatformGenParams.SRF1[0]), &SRConfigParams[0],TempSRCnt);
-	  }
-
-      NdisZeroMemory(&SRConfigParams[0],MAX_SMART_REFLEX_PARAM );
-     
-      regReadIntegerTable (pAdapter, &STRSRConfigParam2, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE,
-                           MAX_SR_PARAM_LEN, NULL, (TI_INT8*)&SRConfigParams,
-                          (TI_UINT32*)&TempSRCnt, sizeof (TI_INT8),TI_TRUE);
-
-	  len = SRConfigParams[0];
-	 
-      if ((len > MAX_SR_PARAM_LEN)|| (TempSRCnt > len + 1))
-      {
-		  NdisZeroMemory(&(p->twdInitParams.tPlatformGenParams.SRF2[0]),MAX_SMART_REFLEX_PARAM);
-      }
-      else
-	  {
-		 memcpy(&(p->twdInitParams.tPlatformGenParams.SRF2[0]), &SRConfigParams[0],TempSRCnt);
-	  }
-
-	  NdisZeroMemory(&SRConfigParams[0],MAX_SMART_REFLEX_PARAM );
-
-      regReadIntegerTable (pAdapter, &STRSRConfigParam3, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE,
-                           MAX_SR_PARAM_LEN, NULL, (TI_INT8*)&SRConfigParams, 
-                          (TI_UINT32*)&TempSRCnt, sizeof (TI_INT8),TI_TRUE);
-
-      len = SRConfigParams[0];
-
-      if ((len > MAX_SR_PARAM_LEN)|| (TempSRCnt > len + 1))
-      {
-		  NdisZeroMemory(&(p->twdInitParams.tPlatformGenParams.SRF3[0]),MAX_SMART_REFLEX_PARAM );
-      }
-      else
-	  {
-		  memcpy(&(p->twdInitParams.tPlatformGenParams.SRF3[0]), &SRConfigParams[0],TempSRCnt);
-	  }
-
-
-      regReadIntegerParameter(pAdapter,
-                            &STRSRSenNP,
-                            SMART_REFLEX_DEBUG_DEF,
-                            SMART_REFLEX_DEBUG_MIN,
-                            SMART_REFLEX_DEBUG_MAX,
-                            sizeof p->twdInitParams.tSmartReflexDebugParams.senN_P,
-                            (TI_UINT8*)&p->twdInitParams.tSmartReflexDebugParams.senN_P);
-
-      regReadIntegerParameter(pAdapter,
-                            &STRSRSenNPGain,
-                            SMART_REFLEX_DEBUG_DEF,
-                            SMART_REFLEX_DEBUG_MIN,
-                            SMART_REFLEX_DEBUG_MAX,
-                            sizeof p->twdInitParams.tSmartReflexDebugParams.senN_P_Gain,
-                            (TI_UINT8*)&p->twdInitParams.tSmartReflexDebugParams.senN_P_Gain);
-
-      regReadIntegerParameter(pAdapter,
-                            &STRSRSenPrn,
-                            SMART_REFLEX_DEBUG_DEF,
-                            SMART_REFLEX_DEBUG_MIN,
-                            SMART_REFLEX_DEBUG_MAX,
-                            sizeof p->twdInitParams.tSmartReflexDebugParams.senPRN,
-                            (TI_UINT8*)&p->twdInitParams.tSmartReflexDebugParams.senPRN);
-
-      regReadIntegerParameter(pAdapter,
-                            &STRSRSenNrn,
-                            SMART_REFLEX_DEBUG_DEF,
-                            SMART_REFLEX_DEBUG_MIN,
-                            SMART_REFLEX_DEBUG_MAX,
-                            sizeof (p->twdInitParams.tSmartReflexDebugParams.senNRN),
-                            (TI_UINT8*)&p->twdInitParams.tSmartReflexDebugParams.senNRN);
-
-
-      regReadIntegerTable (pAdapter, &STRSRDebugTable, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE,
-                           MAX_SR_PARAM_LEN, NULL, (TI_INT8*)&p->twdInitParams.tSmartReflexDebugParams.errorTable,
-                           (TI_UINT32 *)&TempSRCnt, sizeof (TI_UINT8),TI_FALSE);
-
-
-
-
-
+    regReadIntegerParameter(pAdapter, &STRSRState,
+                          SMART_REFLEX_STATE_DEF, SMART_REFLEX_STATE_MIN, SMART_REFLEX_STATE_MAX,
+                          sizeof p->twdInitParams.tPlatformGenParams.SRState,
+                          (TI_UINT8*)&p->twdInitParams.tPlatformGenParams.SRState);
+    
+    NdisZeroMemory(&SRConfigParams[0],MAX_SMART_REFLEX_PARAM );
+    regReadIntegerTable (pAdapter, &STRSRConfigParam1, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF1,
+                         MAX_SMART_REFLEX_PARAM, NULL, (TI_INT8*)&SRConfigParams, 
+                        (TI_UINT32*)&TempSRCnt, sizeof (TI_INT8),TI_TRUE);
+    len = SRConfigParams[0];
+    NdisZeroMemory(&(p->twdInitParams.tPlatformGenParams.SRF1[0]),MAX_SMART_REFLEX_PARAM);
+    if ((len < MAX_SMART_REFLEX_PARAM) && ((TempSRCnt <= len + 1) || (TempSRCnt == MAX_SMART_REFLEX_PARAM)))
+    {
+        memcpy(&(p->twdInitParams.tPlatformGenParams.SRF1[0]), &SRConfigParams[0],TempSRCnt);
+    }
+    
+    NdisZeroMemory(&SRConfigParams[0],MAX_SMART_REFLEX_PARAM );
+    regReadIntegerTable (pAdapter, &STRSRConfigParam2, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF2,
+                         MAX_SR_PARAM_LEN, NULL, (TI_INT8*)&SRConfigParams, 
+                         (TI_UINT32*)&TempSRCnt, sizeof (TI_INT8),TI_TRUE);
+    len = SRConfigParams[0];
+    if ((len > MAX_SR_PARAM_LEN) || (TempSRCnt > len + 1))
+    {
+        NdisZeroMemory(&(p->twdInitParams.tPlatformGenParams.SRF2[0]),MAX_SMART_REFLEX_PARAM);
+    }
+    else
+    {
+       memcpy(&(p->twdInitParams.tPlatformGenParams.SRF2[0]), &SRConfigParams[0],TempSRCnt);
+    }
+    
+    NdisZeroMemory(&SRConfigParams[0],MAX_SMART_REFLEX_PARAM);
+    regReadIntegerTable (pAdapter, &STRSRConfigParam3, SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF3,
+                         MAX_SR_PARAM_LEN, NULL, (TI_INT8*)&SRConfigParams, 
+                         (TI_UINT32*)&TempSRCnt, sizeof (TI_INT8), TI_TRUE);
+    len = SRConfigParams[0];
+    if ((len > MAX_SR_PARAM_LEN)|| (TempSRCnt > len + 1))
+    {
+        NdisZeroMemory(&(p->twdInitParams.tPlatformGenParams.SRF3[0]),MAX_SMART_REFLEX_PARAM );
+    }
+    else
+    {
+        memcpy(&(p->twdInitParams.tPlatformGenParams.SRF3[0]), &SRConfigParams[0],TempSRCnt);
+    }
 
 /*---------------------- Power Management Configuration -----------------------*/
     regReadIntegerParameter(pAdapter,
@@ -2840,22 +2727,22 @@ regReadIntegerParameter(pAdapter, &STRSettings,
                             sizeof p->txDataInitParams.ClsfrInitParam.uNumActiveEntries,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.uNumActiveEntries);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier00_CodePoint,
-                            DSCP_CLASSIFIER_CODE_POINT_DEF, CLASSIFIER_CODE_POINT_MIN, 
+                            DSCP_CLASSIFIER_CODE_POINT_00, CLASSIFIER_CODE_POINT_MIN, 
                             CLASSIFIER_CODE_POINT_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[0].Dscp.CodePoint,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[0].Dscp.CodePoint);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier01_CodePoint,
-                            DSCP_CLASSIFIER_CODE_POINT_DEF, CLASSIFIER_CODE_POINT_MIN, 
+                            DSCP_CLASSIFIER_CODE_POINT_01, CLASSIFIER_CODE_POINT_MIN, 
                             CLASSIFIER_CODE_POINT_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[1].Dscp.CodePoint,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[1].Dscp.CodePoint);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier02_CodePoint,
-                            DSCP_CLASSIFIER_CODE_POINT_DEF, CLASSIFIER_CODE_POINT_MIN, 
+                            DSCP_CLASSIFIER_CODE_POINT_02, CLASSIFIER_CODE_POINT_MIN, 
                             CLASSIFIER_CODE_POINT_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[2].Dscp.CodePoint,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[2].Dscp.CodePoint);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier03_CodePoint,
-                            DSCP_CLASSIFIER_CODE_POINT_DEF, CLASSIFIER_CODE_POINT_MIN, 
+                            DSCP_CLASSIFIER_CODE_POINT_03, CLASSIFIER_CODE_POINT_MIN, 
                             CLASSIFIER_CODE_POINT_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[3].Dscp.CodePoint,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[3].Dscp.CodePoint);
@@ -2925,22 +2812,22 @@ regReadIntegerParameter(pAdapter, &STRSettings,
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[0].DTag,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[0].DTag);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier01_DTag,
-                            DSCP_CLASSIFIER_DTAG_DEF, CLASSIFIER_DTAG_MIN, 
+                            DSCP_CLASSIFIER_DTAG_00, CLASSIFIER_DTAG_MIN, 
                             CLASSIFIER_DTAG_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[1].DTag,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[1].DTag);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier02_DTag,
-                            DSCP_CLASSIFIER_DTAG_DEF, CLASSIFIER_DTAG_MIN, 
+                            DSCP_CLASSIFIER_DTAG_01, CLASSIFIER_DTAG_MIN, 
                             CLASSIFIER_DTAG_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[2].DTag,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[2].DTag);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier03_DTag,
-                            DSCP_CLASSIFIER_DTAG_DEF, CLASSIFIER_DTAG_MIN, 
+                            DSCP_CLASSIFIER_DTAG_02, CLASSIFIER_DTAG_MIN, 
                             CLASSIFIER_DTAG_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[3].DTag,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[3].DTag);
             regReadIntegerParameter(pAdapter, &STRDSCPClassifier04_DTag,
-                            DSCP_CLASSIFIER_DTAG_DEF, CLASSIFIER_DTAG_MIN, 
+                            DSCP_CLASSIFIER_DTAG_03, CLASSIFIER_DTAG_MIN, 
                             CLASSIFIER_DTAG_MAX,                         
                             sizeof p->txDataInitParams.ClsfrInitParam.ClsfrTable[4].DTag,
                             (TI_UINT8*)&p->txDataInitParams.ClsfrInitParam.ClsfrTable[4].DTag);
@@ -3557,7 +3444,17 @@ regReadIntegerParameter(pAdapter, &STRSettings,
                             sizeof uWiFiMode,
                             (TI_UINT8*)&uWiFiMode);
 
-	regReadIntegerParameter(pAdapter, &STRStopNetStackTx,
+    regReadIntegerParameter(pAdapter, &STRPerformanceBoost,
+                            PERFORMANCE_BOOST_MODE_DEF, PERFORMANCE_BOOST_MODE_MIN, PERFORMANCE_BOOST_MODE_MAX,                         
+                            sizeof uPerformanceBoostMode,
+                            (TI_UINT8*)&uPerformanceBoostMode);
+
+    regReadIntegerParameter(pAdapter, &STRMaxAMPDU,
+                            MAX_MPDU_DEF, MAX_MPDU_MIN_VALUE, MAX_MPDU_MAX_VALUE,
+                            sizeof p->twdInitParams.tGeneral.uMaxAMPDU,
+                            (TI_UINT8*)&p->twdInitParams.tGeneral.uMaxAMPDU);
+
+    regReadIntegerParameter(pAdapter, &STRStopNetStackTx,
                             STOP_NET_STACK_TX_DEF, STOP_NET_STACK_TX_MIN,
                             STOP_NET_STACK_TX_MAX,
 							sizeof p->txDataInitParams.bStopNetStackTx,
@@ -3588,7 +3485,7 @@ regReadIntegerParameter(pAdapter, &STRSettings,
         p->qosMngrInitParams.MsduLifeTime[QOS_AC_VI] = QOS_MSDU_LIFE_TIME_VI_DEF_WIFI_MODE;
         p->qosMngrInitParams.MsduLifeTime[QOS_AC_VO] = QOS_MSDU_LIFE_TIME_VO_DEF_WIFI_MODE;
 
-        p->twdInitParams.tGeneral.uRxMemBlksNum = RX_MEM_BLKS_NUM_DEF_WIFI_MODE;
+        p->twdInitParams.tGeneral.uRxMemBlksNum         = RX_MEM_BLKS_NUM_DEF_WIFI_MODE;
         p->twdInitParams.tGeneral.RxIntrPacingThreshold = TWD_RX_INTR_THRESHOLD_DEF_WIFI_MODE; 
         p->txDataInitParams.bStopNetStackTx             = STOP_NET_STACK_TX_DEF_WIFI_MODE;
         p->txDataInitParams.uTxSendPaceThresh           = TX_SEND_PACE_THRESH_DEF_WIFI_MODE;
@@ -3596,7 +3493,18 @@ regReadIntegerParameter(pAdapter, &STRSettings,
         /* remove the flags of DRPw mode when WiFi active */
         p->twdInitParams.tPlatformGenParams.GeneralSettings &= ~DRPw_MASK_CHECK;
     }
-    
+
+    /* If NOT in WiFi mode and IN performance-boost mode, optimize some traffic params for speed (on expense of QoS)  */
+    else if (uPerformanceBoostMode == BOOST_MODE_OPTIMIZE_FOR_SPEED)
+    {
+        p->twdInitParams.tGeneral.TxBlocksThresholdPerAc[QOS_AC_BE] = QOS_TX_BLKS_THRESHOLD_BE_DEF_BOOST_MODE;
+        p->twdInitParams.tGeneral.TxBlocksThresholdPerAc[QOS_AC_BK] = QOS_TX_BLKS_THRESHOLD_BK_DEF_BOOST_MODE;
+        p->twdInitParams.tGeneral.TxBlocksThresholdPerAc[QOS_AC_VI] = QOS_TX_BLKS_THRESHOLD_VI_DEF_BOOST_MODE;
+        p->twdInitParams.tGeneral.TxBlocksThresholdPerAc[QOS_AC_VO] = QOS_TX_BLKS_THRESHOLD_VO_DEF_BOOST_MODE;
+
+        p->twdInitParams.tGeneral.uRxMemBlksNum = RX_MEM_BLKS_NUM_DEF_BOOST_MODE;
+    }
+
     regReadIntegerParameter(pAdapter, &STRQOSShortRetryLimitBE,
                             QOS_SHORT_RETRY_LIMIT_BE_DEF, QOS_SHORT_RETRY_LIMIT_BE_MIN,
                             QOS_SHORT_RETRY_LIMIT_BE_MAX,
@@ -3701,13 +3609,12 @@ regReadIntegerParameter(pAdapter, &STRSettings,
                             QOS_PACKET_BURST_ENABLE_MAX,                         
                             sizeof p->qosMngrInitParams.PacketBurstEnable,
                             (TI_UINT8*)&p->qosMngrInitParams.PacketBurstEnable); 
-    PRINTF(DBG_REGISTRY,( "STRQOSPacketBurstEnable = %d\n", p->qosMngrInitParams.PacketBurstEnable));
+
     regReadIntegerParameter(pAdapter, &STRQOSPacketBurstTxOpLimit,
                             QOS_PACKET_BURST_TXOP_LIMIT_DEF, QOS_PACKET_BURST_TXOP_LIMIT_MIN, 
                             QOS_PACKET_BURST_TXOP_LIMIT_MAX,                         
                             sizeof p->qosMngrInitParams.PacketBurstTxOpLimit,
                             (TI_UINT8*)&p->qosMngrInitParams.PacketBurstTxOpLimit); 
-
 
 
     /*---------------------------
@@ -3890,6 +3797,17 @@ regReadIntegerParameter(pAdapter, &STRSettings,
                              SCAN_CNCN_APP_PUSH_MODE_DEF, SCAN_CNCN_APP_PUSH_MODE_MIN, SCAN_CNCN_APP_PUSH_MODE_MAX,
                              sizeof p->tScanCncnInitParams.bPushMode,
                              (TI_UINT8*)&p->tScanCncnInitParams.bPushMode);
+
+    regReadIntegerParameter(pAdapter, &STRScanResultAging,
+                            SCAN_CNCN_APP_SRA_DEF, SCAN_CNCN_APP_SRA_MIN, SCAN_CNCN_APP_SRA_MAX,
+                            sizeof p->tScanCncnInitParams.uSraThreshold,
+                            (TI_UINT8*)&p->tScanCncnInitParams.uSraThreshold);
+
+
+    regReadIntegerParameter(pAdapter, &STRScanCncnRssiThreshold,
+                            SCAN_CNCN_RSSI_DEF, SCAN_CNCN_RSSI_MIN, SCAN_CNCN_RSSI_MAX,
+                            sizeof p->tScanCncnInitParams.nRssiThreshold,
+                            (TI_UINT8*)&p->tScanCncnInitParams.nRssiThreshold);
 
 /*----------------------------------
  WSC 
@@ -4077,9 +3995,9 @@ regReadIntegerTable (pAdapter, &STRTxPerChannelPowerLimits_5G_OFDM, RADIO_TX_PER
                             (TI_INT8*)(defRxRssiAndProcessCompensation_2_4G), RssiSize,
                             (TI_UINT8*)staRssiAndProcessCompensation, &RssiSize);
 
-        regConvertStringtoBeaconIETable(staRssiAndProcessCompensation , 
-                                        (TI_UINT8*)&p->twdInitParams.tIniFileRadioParams.tStatRadioParams.RxRssiAndProcessCompensation_2_4G, 
-                                        RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE);
+        parseTwoDigitsSequenceHex (staRssiAndProcessCompensation , 
+                                      (TI_UINT8*)&p->twdInitParams.tIniFileRadioParams.tStatRadioParams.RxRssiAndProcessCompensation_2_4G, 
+                                      RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE);
  
 
 
@@ -4210,6 +4128,13 @@ regReadIntegerParameter(pAdapter, & STRRoamingOperationalMode,
                         (TI_UINT8*)&p->tRoamScanMngrInitParams.RoamingOperationalMode);
 
 
+regReadIntegerParameter(pAdapter, & STRSendTspecInReassPkt,
+                        ROAMING_MNGR_SEND_TSPEC_IN_REASSO_PKT_DEF,
+                        ROAMING_MNGR_SEND_TSPEC_IN_REASSO_PKT_MIN,
+                        ROAMING_MNGR_SEND_TSPEC_IN_REASSO_PKT_MAX,
+                        sizeof p->tRoamScanMngrInitParams.bSendTspecInReassPkt,
+                        (TI_UINT8*)&p->tRoamScanMngrInitParams.bSendTspecInReassPkt);
+
 /*-----------------------------------*/
 /*      currBss parameters           */
 /*-----------------------------------*/
@@ -4278,7 +4203,7 @@ regReadIntegerParameter(pAdapter, &STRFmCoexSwallowClkDif,
 
 
 /*----------------------------------------------*/
-/*          Rate Management parameters          */
+/* 			Rate Management parameters	        */
 /*----------------------------------------------*/
 
 regReadIntegerParameter(pAdapter, &STRRateMngRateRetryScore,
@@ -4509,7 +4434,7 @@ static void regReadIntegerParameterHex (
 
     if (paramFound) 
     {
-        value = tiwlnstrtoi_hex (pParameter, parameterSize);
+        value = tiwlnstrtoi_hex ((TI_UINT8 *)pParameter, parameterSize);
 
         if (value < minValue || value > maxValue)
         {
@@ -5171,6 +5096,12 @@ regReadIntegerTable(
                 case 'd':
                 case 'e':
                 case 'f':
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                case 'E':
+                case 'F':
                     if (bHex)
                     {
                         pTempBuffer[tempBufferIndex] = pBuffer[index];
@@ -5241,7 +5172,7 @@ regReadIntegerTable(
             }
             else
             {
-                myNumber = tiwlnstrtoi_hex(pTempBuffer,tempBufferIndex-1);
+                myNumber = tiwlnstrtoi_hex((TI_UINT8 *)pTempBuffer,tempBufferIndex-1);
             }
             myNumber = -(myNumber);
         }
@@ -5253,7 +5184,7 @@ regReadIntegerTable(
         }
             else
             {
-                myNumber = tiwlnstrtoi_hex(pTempBuffer,tempBufferIndex);
+                myNumber = tiwlnstrtoi_hex((TI_UINT8 *)pTempBuffer,tempBufferIndex);
             }
         }
 
@@ -5299,7 +5230,7 @@ regReadIntegerTable(
         }
 
         ++parameterIndex;
- 
+
     }while ((index<bufferSize)&&(endOfLine==TI_FALSE));
 
     *pEntriesNumber = parameterIndex; /* return number of entries read */
@@ -5329,74 +5260,33 @@ void assignRegValue(TI_UINT32* lValue, PNDIS_CONFIGURATION_PARAMETER ndisParamet
     }
   }
 
+
 /*-----------------------------------------------------------------------------
-
-Routine Name:
-
-    regConvertStringtoBeaconIETable
+Routine Name:   parseTwoDigitsSequenceHex
     
-Routine Description: Converts the Ip Adrress in a form of string readen from the Registry 
-to the Ip Address Array to be stored in the init_table struct 
+Routine Description: Parse a sequence of two digit hex numbers from the input string to the output array.
 
+Arguments:  sInString - The input string - a sequence of two digit hex numbers with seperators between them (comma or space)
+            uOutArray - The output array containing the translated values (each index contains one two digit value)
+            uSize     - The number of two digit items.
 
-Arguments:
-
-
-Return Value:
-
-    None
-
+Return Value:  None
 -----------------------------------------------------------------------------*/
-static void regConvertStringtoBeaconIETable(TI_UINT8 *staIpAddressString, TI_UINT8 *IpAddressArray, TI_UINT8 size)
+static void parseTwoDigitsSequenceHex (TI_UINT8 *sInString, TI_UINT8 *uOutArray, TI_UINT8 uSize)
 {
-    char *ptr;
-    TI_UINT8 *tmpIpAddr;
-    TI_UINT8 value = 0, value_l, value_h, add_value;
-    int i, str_len;
+    int i;
 
-    /* Take the pointer to the string MAC Address to convert it to the Array MAC Address */
-    ptr = (char *)staIpAddressString;
-    tmpIpAddr = IpAddressArray;
-    str_len = 3 * size - 1;
-
-    for(i=0;(i < size);ptr++,str_len--)
+    /* Convert the MAC Address string into the MAC Address array */
+    for (i = 0; i < uSize; i++)
     {
-        if (str_len > 0) {
-            /* The value can be or "0-9" or from "a-f" */
-            value_l = (*ptr - '0');
-            value_h = (*ptr - 'a');
-        }
-        else { /* last element */
-            value_l = value_h = 16;
-        }
-        /*PRINTF(DBG_REGISTRY,("value_l [%d] value_h [%d] *ptr %c value %d\n",value_l,value_h,*ptr,value));*/
+        /* translate two digit string to value */
+        uOutArray[i] = tiwlnstrtoi_hex (sInString, 2);
 
-        if( (value_l <= 9) || (value_h <= 15 ) )
-        {
-            /* We are in an expected range */
-            /* Check if 0-9 */
-            if(value_l <= 9 )
-            {
-                add_value = value_l;
-            }
-            /* Check if a-f */
-            else
-            {
-                /* 'a' is in fact 10 decimal in hexa */
-                add_value = value_h + 10;
-            }
-            value = value * 16 + add_value;
-            /*PRINTF(DBG_REGISTRY,("value %d add_value %d  \n",value,add_value));*/
-        }
-        else
-        {
-            tmpIpAddr[i] = value;
-            /*PRINTF(DBG_REGISTRY,("tmpMacAddr[%d]  is %x\n",i,tmpMacAddr[i]));*/
-            value = 0;
-            i++;
-        }
+        /* progress to next two digits (plus space) */
+        sInString += 3;
     }
 }
+
 
 /*-----------------------------------------------------------------------------
 

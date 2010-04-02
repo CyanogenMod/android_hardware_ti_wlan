@@ -217,7 +217,8 @@ void txCtrlBlk_Free (TI_HANDLE hTxCtrlBlk, TTxCtrlBlk *pCurrentEntry)
 	TTxCtrlBlkObj   *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
 	TTxCtrlBlk *pFirstFreeEntry = &(pTxCtrlBlk->aTxCtrlBlkTbl[0]);
 
-	if (!pTxCtrlBlk) {
+	if (!pTxCtrlBlk)
+    {
 		return;
 	}
 

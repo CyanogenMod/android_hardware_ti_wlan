@@ -1,7 +1,7 @@
 /*
  * roamingMngr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -358,18 +358,18 @@ TI_STATUS roamingMngr_connStatusCb(TI_HANDLE hRoamingMngr, void *pData)
     {
          switch (connStatus)
          {
-          case CONN_STATUS_CONNECTED:
-        		roamingEvent = ROAMING_MANUAL_EVENT_START;
-                apConn_getStaCapabilities(pRoamingMngr->hAPConnection,&pRoamingMngr->staCapabilities);
-                break;
+          case CONN_STATUS_CONNECTED: 
+        		roamingEvent = (roamingMngr_smEvents)ROAMING_MANUAL_EVENT_START;
+                apConn_getStaCapabilities(pRoamingMngr->hAPConnection,&pRoamingMngr->staCapabilities); 
+                break;     
           case CONN_STATUS_NOT_CONNECTED:
-                roamingEvent = ROAMING_MANUAL_EVENT_STOP;
+                roamingEvent = (roamingMngr_smEvents)ROAMING_MANUAL_EVENT_STOP;
                 break;
           case CONN_STATUS_HANDOVER_SUCCESS:
-                roamingEvent = ROAMING_MANUAL_EVENT_SUCCESS;
+                roamingEvent = (roamingMngr_smEvents)ROAMING_MANUAL_EVENT_SUCCESS;
                 break;
           case CONN_STATUS_HANDOVER_FAILURE:
-                roamingEvent = ROAMING_MANUAL_EVENT_FAIL;
+                roamingEvent = (roamingMngr_smEvents)ROAMING_MANUAL_EVENT_FAIL;
                 break;
           default:
         	return TI_NOK;
@@ -730,6 +730,7 @@ TI_STATUS roamingMngr_setDefaults (TI_HANDLE hRoamingMngr, TRoamScanMngrInitPara
     pRoamingMngr->listOfCandidateAps.numOfPreAuthBSS = 0;
     pRoamingMngr->listOfCandidateAps.numOfRegularBSS = 0;
     pRoamingMngr->RoamingOperationalMode =  pInitParam->RoamingOperationalMode;
+    pRoamingMngr->bSendTspecInReassPkt = pInitParam->bSendTspecInReassPkt;
 
 	if (pInitParam->RoamingScanning_2_4G_enable)
     {

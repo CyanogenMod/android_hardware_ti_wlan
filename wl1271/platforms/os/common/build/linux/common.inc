@@ -76,6 +76,9 @@ TI_TRACE_BUFFER ?= n
 ## Driver Compilation Directives
 ##
 ##
+ifeq "$(HOST_PLATFORM)" "omap2430"	
+	DK_DEFINES += -D HOST_PLATFORM_OMAP2430
+endif
 ifeq "$(HOST_PLATFORM)" "omap3430"
 	DK_DEFINES += -D HOST_PLATFORM_OMAP3430
 endif

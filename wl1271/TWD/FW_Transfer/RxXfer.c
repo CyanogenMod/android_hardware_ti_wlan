@@ -1,7 +1,7 @@
 /*
  * RxXfer.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -312,8 +312,8 @@ void rxXfer_Register_CB (TI_HANDLE hRxXfer, TI_UINT32 CallBackID, void *CBFunc, 
 static void rxXfer_ForwardPacket (TRxXfer *pRxXfer, TTxnStruct *pTxn)
 {
     TI_UINT32 uBufNum;
-#ifdef TI_DBG   /* for packet sanity check */
     RxIfDescriptor_t *pRxInfo  = (RxIfDescriptor_t*)(pTxn->aBuf[0]);
+#ifdef TI_DBG   /* for packet sanity check */
     TI_UINT16        uLenFromRxInfo;
 #endif
 

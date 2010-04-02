@@ -1,7 +1,7 @@
 /*
  * connInfra.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -633,7 +633,7 @@ static TI_STATUS rsnWait_to_configHW(void *pData)
     PowerMgr_startPS(pConn->hPwrMngr);
     
     TRACE1(pConn->hReport, REPORT_SEVERITY_INFORMATION, "rsnWait_to_configHW: setStaStatus %d\n",STA_STATE_CONNECTED);
-    TWD_CmdSetStaState(pConn->hTWD, STA_STATE_CONNECTED, conn_ConfigHwFinishCb, pData);
+    TWD_CmdSetStaState(pConn->hTWD, STA_STATE_CONNECTED, (void *)conn_ConfigHwFinishCb, pData);
 
     return TI_OK;
 }

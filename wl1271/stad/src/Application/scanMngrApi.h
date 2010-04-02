@@ -1,7 +1,7 @@
 /*
  * scanMngrApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -329,6 +329,8 @@ TI_STATUS scanMngr_startContinuousScanByApp (TI_HANDLE hScanMngr, channelList_t*
 
 TI_STATUS scanMngr_stopContinuousScanByApp (TI_HANDLE hScanMngr);
 
+void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitParams);
+
 /********** New APIs added for EMP manual scan support ******/
 
 
@@ -390,7 +392,5 @@ void scanMngrDebugPrintNeighborAPList( TI_HANDLE hScanMngr );
 void scanMngrDebugPrintObject( TI_HANDLE hScanMngr );
 
 #endif /* TI_DBG */
-
-void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitParams);
 
 #endif /* __SCAN_MNGR_API_H__ */

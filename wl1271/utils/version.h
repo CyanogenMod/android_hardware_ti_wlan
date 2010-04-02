@@ -1,7 +1,7 @@
 /*
  * version.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -43,11 +43,11 @@
 #ifndef _VERSION_H_                                                                                                             
 #define _VERSION_H_                                                                                                             
 
-#define SW_VERSION_STR      "WiLink_Driver_6.1.0.0.115"
+#define SW_VERSION_STR      "WiLink_Driver_6.1.0.0.131"
 
-#define SW_RELEASE_MONTH    11
-#define SW_RELEASE_DAY      10
-#define SW_RELEASE_YEAR     2009
+#define SW_RELEASE_MONTH    03
+#define SW_RELEASE_DAY      21
+#define SW_RELEASE_YEAR     2010
 
 #endif /* _VERSION_H_ */
                                                                                                        

@@ -1,7 +1,7 @@
 /*
  * timer.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -135,11 +135,7 @@ TI_STATUS tmr_Destroy (TI_HANDLE hTimerModule)
     {
         WLAN_OS_REPORT (("tmr_Destroy():  ERROR - Destroying Timer module but not all timers were destroyed!!\n"));
     }
-#if 0
-    /* Clear queues (critical section is used inside these functions) */
-    tmr_ClearInitQueue (hTimerModule);
-    tmr_ClearOperQueue (hTimerModule);
-#endif
+
     /* Destroy the module's queues (protect in critical section)) */
     context_EnterCriticalSection (pTimerModule->hContext);
     que_Destroy (pTimerModule->hInitQueue);

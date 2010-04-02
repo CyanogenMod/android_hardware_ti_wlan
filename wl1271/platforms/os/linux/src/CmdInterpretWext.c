@@ -1,7 +1,7 @@
 /*
  * CmdInterpretWext.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -55,13 +55,21 @@
 #include "CmdDispatcher.h"
 #include "EvHandler.h"
 #include "admCtrl.h"
+#include "freq.h"
 
 static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData);
 static int cmdInterpret_setSecurityParams (TI_HANDLE hCmdInterpret);
 static int cmdInterpret_initEvents(TI_HANDLE hCmdInterpret);
 static int cmdInterpret_unregisterEvents(TI_HANDLE hCmdInterpret, TI_HANDLE hEvHandler);
 
+#define WEXT_FREQ_CHANNEL_NUM_MAX_VAL	1000
+#define WEXT_FREQ_KHZ_CONVERT			3
+#define WEXT_FREQ_MUL_VALUE				500000
+#define WEXT_MAX_RATE_VALUE				63500000
+#define WEXT_MAX_RATE_REAL_VALUE		65000000
+
 #define CHECK_PENDING_RESULT(x,y)     if (x == COMMAND_PENDING) { os_printf ("Unexpected COMMAND PENDING result (cmd = 0x%x)\n",y->paramType);  break; }
+#define CALCULATE_RATE_VALUE(x)                   ((x & 0x7f) * WEXT_FREQ_MUL_VALUE);
 
 static const char *ieee80211_modes[] = {
     "?", "IEEE 802.11 B", "IEEE 802.11 A", "IEEE 802.11 BG", "IEEE 802.11 ABG"
@@ -161,12 +169,39 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
         /* Set channel / frequency */
     case SIOCSIWFREQ:
         {
+			int freq = wrqu->freq.m;
+
+            /* If the input is frequency convert it to channel number -
+				See explanation in [struct iw_freq] definition in wireless_copy.h*/
+            if (freq >= WEXT_FREQ_CHANNEL_NUM_MAX_VAL)
+            {
+				int div = WEXT_FREQ_KHZ_CONVERT - wrqu->freq.e;
+                /* Convert received frequency to a value in KHz*/
+				if (div >= 0)
+                {
+                    while (div-- > 0)
+                    {
+                        freq /= 10;             /* down convert to KHz */
+                    }
+                }
+                else
+                {
+                    while (div++ < 0)          /* up convert to KHz */
+                    {
+                        freq *= 10;
+                    }
+                }
+				
+                /* Convert KHz frequency to channel number*/
+                freq = Freq2Chan(freq); /* convert to chan num */
+            }
+                
             /* If there is a given channel */
-            if (wrqu->freq.m != 0)
+            if (freq != 0)
             {
                 pParam->paramType = SITE_MGR_DESIRED_CHANNEL_PARAM;
                 pParam->paramLength = sizeof(TI_UINT32);
-                pParam->content.siteMgrDesiredChannel = wrqu->freq.m;
+                pParam->content.siteMgrDesiredChannel = freq;
 
                 res = cmdDispatch_SetParam (pCmdInterpret->hCmdDispatch, pParam);
                 CHECK_PENDING_RESULT(res,pParam)
@@ -300,10 +335,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             struct iw_point *data = (struct iw_point *) cmdObj->buffer1;
             struct iw_range *range = (struct iw_range *) cmdObj->buffer2;
             int i;
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
             ScanBssType_e smeDesiredBssType = BSS_ANY;
             paramInfo_t *pParam2;
-/* MODS_END_FOR_11N_RATE_REPORTING */
 
             /* Reset structure */
             data->length = sizeof(struct iw_range);
@@ -337,7 +370,6 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             res = cmdDispatch_GetParam (pCmdInterpret->hCmdDispatch, pParam );
 
             CHECK_PENDING_RESULT(res,pParam)
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
             pParam2 = (paramInfo_t *)os_memoryAlloc(pCmdInterpret->hOs, sizeof(paramInfo_t));
             if (pParam2)
             {
@@ -348,13 +380,10 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 smeDesiredBssType = pParam2->content.smeDesiredBSSType;
                 os_memoryFree(pCmdInterpret->hOs, pParam2, sizeof(paramInfo_t));
             }
-/* MODS_END_FOR_11N_RATE_REPORTING */
-
             /* Number of entries in the rates list */
             range->num_bitrates = pParam->content.siteMgrDesiredSupportedRateSet.len;
             for (i=0; i<pParam->content.siteMgrDesiredSupportedRateSet.len; i++)
             {
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
                 switch(pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F)
                 {
                     case NET_RATE_MCS0:
@@ -368,14 +397,13 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                          if (BSS_INDEPENDENT == smeDesiredBssType)
                              continue;
                     default:
-                        range->bitrate[i] = ((pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i] & 0x7F) * 500000);
-                        if (63500000 == range->bitrate[i])
-                        {
-                            range->bitrate[i] = 65000000;   /* convert special code 0x7F to 65Mbps */
-                        }
-                        break;
+                         range->bitrate[i] = CALCULATE_RATE_VALUE(pParam->content.siteMgrDesiredSupportedRateSet.ratesString[i])
+                         if (WEXT_MAX_RATE_VALUE == range->bitrate[i])
+                         {
+                             range->bitrate[i] = WEXT_MAX_RATE_REAL_VALUE;   /* convert special code 0x7F to 65Mbps */
+                         }
+                         break;
                 }
-/* MODS_END_FOR_11N_RATE_REPORTING */
             }
 
             /* RTS threshold */
@@ -551,23 +579,27 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
         /* trigger scanning (list cells) */
     case SIOCSIWSCAN:
         {
-            struct iw_scan_req scanReq;
+            struct iw_scan_req pScanReq;
             TScanParams scanParams;
 
             pParam->content.pScanParams = &scanParams;
 
             /* Init the parameters in case the Supplicant doesn't support them*/
             pParam->content.pScanParams->desiredSsid.len = 0;
-            scanReq.scan_type = SCAN_TYPE_TRIGGERED_ACTIVE;
+            pScanReq.scan_type = SCAN_TYPE_TRIGGERED_ACTIVE;
 
-            if (cmdObj->param3)
+            if (wrqu->data.pointer)
             {
-                os_memoryCopy(pCmdInterpret->hOs, &scanReq, cmdObj->param3, sizeof(scanReq));
-
+                if ( copy_from_user( &pScanReq, wrqu->data.pointer, sizeof(pScanReq)) )
+                {
+                    printk("CRITICAL: Could not copy data from user space!!!");
+                    res = -EFAULT;
+                    goto cmd_end;
+                }
                 if (wrqu->data.flags & IW_SCAN_THIS_ESSID)
                 {
-                    pParam->content.pScanParams->desiredSsid.len = scanReq.essid_len;
-                    os_memoryCopy(pCmdInterpret->hOs,pParam->content.pScanParams->desiredSsid.str, scanReq.essid, scanReq.essid_len);
+                    pParam->content.pScanParams->desiredSsid.len = pScanReq.essid_len;
+                    os_memoryCopy(pCmdInterpret->hOs,pParam->content.pScanParams->desiredSsid.str, pScanReq.essid, pScanReq.essid_len);
                 }
                 else
                 {
@@ -576,7 +608,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             }
 
             /* set the scan type according to driver trigger scan */
-            if (IW_SCAN_TYPE_PASSIVE == scanReq.scan_type)
+            if (IW_SCAN_TYPE_PASSIVE == pScanReq.scan_type)
             {
                 pParam->content.pScanParams->scanType = SCAN_TYPE_TRIGGERED_PASSIVE;
             }
@@ -599,9 +631,11 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             char *event = (char *)cmdObj->buffer2;
             struct iw_event iwe;
             char *end_buf, *current_val;
-            int allocated_size;
+            int allocated_size, rates_allocated_size;
             OS_802_11_BSSID_LIST_EX *my_list;
             OS_802_11_BSSID_EX *my_current;
+			OS_802_11_N_RATES *rate_list;
+			TI_UINT8 *current_rates;
             int offset;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
@@ -633,8 +667,32 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             res = cmdDispatch_GetParam (pCmdInterpret->hCmdDispatch, pParam );
             CHECK_PENDING_RESULT(res,pParam)
 
+            /* Get the number of entries in the scan result list and allocate enough memory to hold rate list
+               for every entry. This rate list is extended to include 11n rates */
+            pParam->paramType = SCAN_CNCN_NUM_BSSID_IN_LIST_PARAM;
+            pParam->paramLength = 0;
+            res = cmdDispatch_GetParam (pCmdInterpret->hCmdDispatch, pParam );
+            CHECK_PENDING_RESULT(res,pParam)
+
+            rates_allocated_size = pParam->content.uNumBssidInList * sizeof(OS_802_11_N_RATES);
+
+            /* Allocate required memory */
+            rate_list = os_memoryAlloc (pCmdInterpret->hOs, rates_allocated_size);
+            if (!rate_list) {
+                os_memoryFree (pCmdInterpret->hOs, my_list, allocated_size);
+                res = -ENOMEM;
+                goto cmd_end;
+            }
+
+            /* And retrieve the list */
+            pParam->paramType = SCAN_CNCN_BSSID_RATE_LIST_PARAM;
+            pParam->content.pRateList = rate_list;
+            pParam->paramLength = rates_allocated_size;
+            res = cmdDispatch_GetParam (pCmdInterpret->hCmdDispatch, pParam );
+            CHECK_PENDING_RESULT(res,pParam)
+
             my_current = &my_list->Bssid[0];
-            i=0;
+            i = 0;
             if(wrqu->data.flags)
             {
                 for (i=0; i<wrqu->data.flags; i++)
@@ -644,7 +702,6 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
 
             for (; i<my_list->NumberOfItems; i++)
             {
-
                 if (event + my_current->Length > end_buf)
                 {
                     break;
@@ -746,21 +803,21 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 os_memorySet (pCmdInterpret->hOs, &iwe, 0, sizeof(iwe));
                 iwe.cmd = SIOCGIWRATE;
                 current_val = event + IW_EV_LCP_LEN;
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
+
+                current_rates = (TI_UINT8 *)(rate_list[i]);
+
                 for (j=0; j<32; j++)
-		{
-                    if (my_current->SupportedRates[j])
+                {
+                    if (current_rates[j])
                     {
-                        if ((my_current->SupportedRates[j] & 0x7f) == NET_RATE_MCS7)
+                        if ((current_rates[j] & 0x7f) == NET_RATE_MCS7)
                         {
-                            iwe.u.bitrate.value = 65000000;  /* convert the special code 0x7f to 65Mbps */
+                            iwe.u.bitrate.value = WEXT_MAX_RATE_REAL_VALUE;  /* convert the special code 0x7f to 65Mbps */
                         }
                         else
                         {
-                            iwe.u.bitrate.value = ((my_current->SupportedRates[j] & 0x7f) * 500000);
+                            iwe.u.bitrate.value = CALCULATE_RATE_VALUE(current_rates[j])
                         }
-                        /* printk("Supported Rates [%d] = %d\n", j, iwe.u.bitrate.value); */
-/* MODS_END_FOR_11N_RATE_REPORTING */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27)
                         current_val = iwe_stream_add_value(event, current_val, end_buf, &iwe,IW_EV_PARAM_LEN);
 #else
@@ -788,8 +845,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 offset = sizeof(OS_802_11_FIXED_IEs);
                 while(offset < my_current->IELength)
                 {
-						OS_802_11_VARIABLE_IEs *pIE;
-						pIE = (OS_802_11_VARIABLE_IEs*)&(my_current->IEs[offset]);
+                        OS_802_11_VARIABLE_IEs *pIE;
+                        pIE = (OS_802_11_VARIABLE_IEs*)&(my_current->IEs[offset]);
                         iwe.u.data.flags = 1;
                         iwe.u.data.length = pIE->Length + 2;
 
@@ -815,6 +872,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             }
 
             os_memoryFree (pCmdInterpret->hOs, my_list, allocated_size);
+            os_memoryFree (pCmdInterpret->hOs, rate_list, rates_allocated_size);
             cmdObj->return_code = WEXT_OK;
         }
 

@@ -1,7 +1,7 @@
 /*
  * public_infoele.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -120,9 +120,6 @@ typedef enum
     ACX_PEER_HT_CAP             = 0x0057,
     ACX_HT_BSS_OPERATION        = 0x0058,
     ACX_COEX_ACTIVITY           = 0x0059,
-    ACX_SET_SMART_REFLEX_DEBUG  = 0x005A,
-	ACX_SET_SMART_REFLEX_STATE  = 0x005B,
-	ACX_SET_SMART_REFLEX_PARAMS = 0x005F,
 	ACX_BURST_MODE				= 0x005C,
 
     ACX_SET_RATE_MAMAGEMENT_PARAMS = 0x005D,
@@ -1956,6 +1953,7 @@ typedef struct
     uint8       enable;     /* 1 - enable, 0 - disable the data data filtering feature */
     filter_e    action;     /* default action that should be implemented for packets that wont
                                match any of the filters, or in case no filter is configured */
+    uint8   padding[2];     /* alignment to 32bits boundary   */        
 } DataFilterDefault_t;
 
 
@@ -2379,69 +2377,6 @@ typedef struct
     int32  curveCorrectionStep;
 }AcxRateMangeReadParams;
 
-
-
-/******************************************************************************
-
-    Name:	ACX_SET_SMART_REFLEX_STATE
-    Desc:   Configure smart reflex state (enable/disable).
-    Type:   Configuration
-    Access: Write Only
-    Length:
-
-******************************************************************************/
-
-typedef struct
-{
-	INFO_ELE_HDR
-    Bool_e  enable;
-    uint8 padding [3];
-}ACXSmartReflexState_t;
-
-
-/******************************************************************************
-
-    Name:	ACX_SET_SMART_REFLEX_DEBUG
-    Desc:   Configure smart reflex mechanism parameters - for debug mode.
-    Type:   Configuration
-    Access: Write Only
-    Length:
-
-******************************************************************************/
-typedef struct
-{
-	uint8 len; //maximum length is 14
-	int8 upperLimit;
-	int8 values[14]; //this is the maximum length (in rows) of the error table
-}SmartReflexErrTable_t;
-
-typedef struct
-{
-	INFO_ELE_HDR
-	SmartReflexErrTable_t errorTable;
-	uint16 senN_P;
-	uint16 senNRN;
-	uint16 senPRN;
-	uint16 senN_P_Gain;
-}ACXSmartReflexDebugParams_t;
-
-
-/******************************************************************************
-
-    Name:	ACX_SET_SMART_REFLEX_PARAMS
-    Desc:   Configure smart reflex mechanism tables - 1 for each FAB.
-			The FW will choose the correct FAB, according to what is burned in the Efuse.
-    Type:   Configuration
-    Access: Write Only
-    Length:
-
-******************************************************************************/
-
-typedef struct
-{
-	INFO_ELE_HDR
-	SmartReflexErrTable_t errorTable[3];
-}ACXSmartReflexConfigParams_t;
 
 /******************************************************************************
 

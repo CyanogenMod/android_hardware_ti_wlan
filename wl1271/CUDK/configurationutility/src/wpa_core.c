@@ -1,7 +1,7 @@
 /*
  * wpa_core.c
  *
- * Copyright 2001-2009 Texas Instruments, Inc. - http://www.ti.com/
+ * Copyright 2001-2010 Texas Instruments, Inc. - http://www.ti.com/
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,12 +159,6 @@ THandle WpaCore_Create(PS32 pRes, PS8 pSupplIfFile)
 VOID WpaCore_Destroy(THandle hWpaCore)
 {
 	TWpaCore* pWpaCore = (TWpaCore*)hWpaCore;
-
-#ifdef ANDROID
-	/* Restore configuration back to AP_SCAN 1 for Android */
-	IpcWpa_Command(pWpaCore->hIpcWpa, (PS8)"AP_SCAN 1", FALSE);
-	IpcWpa_Command(pWpaCore->hIpcWpa, (PS8)"SAVE_CONFIG", FALSE);
-#endif
 
 	if(pWpaCore->hIpcWpa)
 		IpcWpa_Destroy(pWpaCore->hIpcWpa);

@@ -1,7 +1,7 @@
 /*
  * smeApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -64,5 +64,5 @@ TI_STATUS   sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam);
 TI_STATUS   sme_GetParam (TI_HANDLE hSme, paramInfo_t *pParam);
 void        SME_ConnectRequired (TI_HANDLE hSme);
 void        SME_Disconnect (TI_HANDLE hSme);
-void        sme_AppScanResult (TI_HANDLE hSme, EScanCncnResultStatus eStatus,TScanFrameInfo* pFrameInfo);
+void        sme_SetScanResultTable(TI_HANDLE hSme, TI_HANDLE hScanResultTable);
 #endif /* __SME_API_H__ */

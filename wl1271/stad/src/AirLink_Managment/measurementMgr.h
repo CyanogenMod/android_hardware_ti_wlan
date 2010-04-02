@@ -1,7 +1,7 @@
 /*
  * measurementMgr.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -107,6 +107,8 @@ typedef struct
     TI_UINT16                   trafficIntensityThreshold;
     TI_UINT16                   maxDurationOnNonServingChannel;
 
+    TI_BOOL                     bMeasurementScanExecuted; /* flag indicating if measurment scan was 
+                                                      executed by AP after the last connection */
 
     /* State Machine Params */
     fsm_stateMachine_t *        pMeasurementMgrSm;

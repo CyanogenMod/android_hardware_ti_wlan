@@ -1,7 +1,7 @@
 /*
  * measurementMgrSM.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -335,6 +335,9 @@ TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Connected flag 
 	pMeasurementMgr->Connected = TI_TRUE;
 
     TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Connected flag has been set\n");
+
+    /* upon connection to a new AP set the measurment scan flag to FALSE */
+    pMeasurementMgr->bMeasurementScanExecuted = TI_FALSE;
 
 	/* get the current serving channel */
 	param.paramType = SITE_MGR_CURRENT_CHANNEL_PARAM;
@@ -955,6 +958,9 @@ static TI_STATUS measurementMgrSM_acStartMeasurement(void * pData)
         return measurementMgrSM_event((TI_UINT8 *) &(pMeasurementMgr->currentState), 
 				MEASUREMENTMGR_EVENT_COMPLETE, pMeasurementMgr);  
 	}
+
+    /* set the measurement scan executed flag to TRUE */
+    pMeasurementMgr->bMeasurementScanExecuted = TI_TRUE;
 
 	/* Yalla, start measuring */
     TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Finished preparing request. Handing over to MeasurementSRV...\n");

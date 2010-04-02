@@ -1,7 +1,7 @@
 /*
  * scanMngr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -102,7 +102,7 @@ static void scanMngr_setManualScanDefaultParams(TI_HANDLE hScanMngr)
     pScanMngr->manualScanParams.scanType= SCAN_TYPE_NORMAL_ACTIVE;
     pScanMngr->manualScanParams.band = RADIO_BAND_2_4_GHZ;
     pScanMngr->manualScanParams.probeReqNumber =  3;
-    pScanMngr->manualScanParams.probeRequestRate = RATE_MASK_UNSPECIFIED;
+    pScanMngr->manualScanParams.probeRequestRate = (ERateMask)RATE_MASK_UNSPECIFIED;
 }
 
 
@@ -4043,7 +4043,7 @@ void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitPa
         defaultScanPolicy.bandScanPolicy[ 0 ].trackingMethod.method.basicMethodParams.maxChannelDwellTime = 0;
         defaultScanPolicy.bandScanPolicy[ 0 ].trackingMethod.method.basicMethodParams.minChannelDwellTime = 0;
 
-        defaultScanPolicy.bandScanPolicy[ 0 ].trackingMethod.method.basicMethodParams.probReqParams.bitrate = RATE_MASK_UNSPECIFIED; /* Let the FW select */
+        defaultScanPolicy.bandScanPolicy[ 0 ].trackingMethod.method.basicMethodParams.probReqParams.bitrate = (ERateMask)RATE_MASK_UNSPECIFIED; /* Let the FW select */
         defaultScanPolicy.bandScanPolicy[ 0 ].trackingMethod.method.basicMethodParams.probReqParams.numOfProbeReqs = 0;
         defaultScanPolicy.bandScanPolicy[ 0 ].trackingMethod.method.basicMethodParams.probReqParams.txPowerDbm = 0;
 
@@ -4052,7 +4052,7 @@ void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitPa
         defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.ETMaxNumberOfApFrames = 0;
         defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.maxChannelDwellTime = 0;
         defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.minChannelDwellTime = 0;
-        defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.probReqParams.bitrate = RATE_MASK_UNSPECIFIED; /* Let the FW select */
+        defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.probReqParams.bitrate = (ERateMask)RATE_MASK_UNSPECIFIED; /* Let the FW select */
         defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.probReqParams.numOfProbeReqs = 0;
         defaultScanPolicy.bandScanPolicy[ 0 ].discoveryMethod.method.basicMethodParams.probReqParams.txPowerDbm = 0;
 
@@ -4062,7 +4062,7 @@ void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitPa
         defaultScanPolicy.bandScanPolicy[0].immediateScanMethod.method.basicMethodParams.earlyTerminationEvent = SCAN_ET_COND_DISABLE;
         defaultScanPolicy.bandScanPolicy[0].immediateScanMethod.method.basicMethodParams.ETMaxNumberOfApFrames = 0;
         defaultScanPolicy.bandScanPolicy[0].immediateScanMethod.method.basicMethodParams.probReqParams.numOfProbeReqs = 3;
-        defaultScanPolicy.bandScanPolicy[0].immediateScanMethod.method.basicMethodParams.probReqParams.bitrate = 4;//RATE_MASK_UNSPECIFIED; /* Let the FW select */
+        defaultScanPolicy.bandScanPolicy[0].immediateScanMethod.method.basicMethodParams.probReqParams.bitrate = (ERateMask)4;//RATE_MASK_UNSPECIFIED; /* Let the FW select */
         defaultScanPolicy.bandScanPolicy[0].immediateScanMethod.method.basicMethodParams.probReqParams.txPowerDbm = MAX_TX_POWER;
 
         pParam->paramType = SCAN_MNGR_SET_CONFIGURATION;
@@ -4094,7 +4094,6 @@ void scanMngr_SetDefaults (TI_HANDLE hScanMngr, TRoamScanMngrInitParams *pInitPa
 void scanMngr_startManual(TI_HANDLE hScanMngr)
 {
 	scanMngr_t* pScanMngr = (scanMngr_t*)hScanMngr;
-    TScanBandPolicy* gPolicy;
 
     pScanMngr->scanningOperationalMode = SCANNING_OPERATIONAL_MODE_MANUAL;
     pScanMngr->connStatus = CONNECTION_STATUS_CONNECTED;
@@ -4103,7 +4102,7 @@ void scanMngr_startManual(TI_HANDLE hScanMngr)
     TRACE0(pScanMngr->hReport,REPORT_SEVERITY_INFORMATION, "scanMngr_startManual() called. \n");
 
     /* get policies by band */
-    gPolicy = scanMngrGetPolicyByBand( hScanMngr, RADIO_BAND_2_4_GHZ ); /* TODO: check if neccessary!!!*/
+    scanMngrGetPolicyByBand( hScanMngr, RADIO_BAND_2_4_GHZ ); /* TODO: check if neccessary!!!*/
 }
 
 /**

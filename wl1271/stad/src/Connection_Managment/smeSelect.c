@@ -1,7 +1,7 @@
 /*
  * smeSelect.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -76,6 +76,7 @@ TSiteEntry *sme_Select (TI_HANDLE hSme)
     TI_INT8         iSelectedSiteRssi = -127; /* minimum RSSI */
     TI_BOOL         bWscPbAbort, pWscPbApFound = TI_FALSE;
     int             apFoundCtr =0;
+    TIWLN_SIMPLE_CONFIG_MODE eWscMode;
 
     TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_Select called\n");
 
@@ -182,7 +183,10 @@ TSiteEntry *sme_Select (TI_HANDLE hSme)
         }
 
         /* and security match */
-        if (pCurrentSite->WSCSiteMode == TIWLN_SIMPLE_CONFIG_OFF) /* we don't need to check RSN match while WSC is active */
+        siteMgr_getParamWSC(pSme->hSiteMgr, &eWscMode); 
+
+        /* we don't need to check RSN match while WSC is active */
+        if ((pCurrentSite->WSCSiteMode == TIWLN_SIMPLE_CONFIG_OFF) || (pCurrentSite->WSCSiteMode != eWscMode))
         {
             if (TI_FALSE == sme_SelectRsnMatch (hSme, pCurrentSite))
             /* site doesn't match */
@@ -205,6 +209,16 @@ TSiteEntry *sme_Select (TI_HANDLE hSme)
             pCurrentSite = scanResultTable_GetNext (pSme->hScanResultTable);
             continue;
         }
+
+        if (TI_TRUE == pCurrentSite->bChannelSwitchAnnoncIEFound)
+        {
+            TRACE6(pSme->hReport, REPORT_SEVERITY_INFORMATION , "sme_Select: BSSID: %02x:%02x:%02x:%02x:%02x:%02x has channel switch IE so ignore it \n", pCurrentSite->bssid[ 0 ], pCurrentSite->bssid[ 1 ], pCurrentSite->bssid[ 2 ], pCurrentSite->bssid[ 3 ], pCurrentSite->bssid[ 4 ], pCurrentSite->bssid[ 5 ]);
+            pCurrentSite->bConsideredForSelect = TI_TRUE; /* don't try this site again */
+            /* get the next site and continue the loop */
+            pCurrentSite = scanResultTable_GetNext (pSme->hScanResultTable);
+            continue;
+        }
+
         /* if this site RSSI is higher than current maximum, select it */
         if (pCurrentSite->rssi > iSelectedSiteRssi)
         {
@@ -231,10 +245,17 @@ TSiteEntry *sme_Select (TI_HANDLE hSme)
          * copy candidate AP to Site module site Table.
          */
         siteMgr_CopyToPrimarySite(pSme->hSiteMgr, pSelectedSite);
+
+		/* copy the result, rather than returning a pointer to the entry in the scan result table.
+		 * This is done since the table might change durring the connection process, and the pointer 
+		 * will point to the wrong entry in the table, causing connection/disconnection problems */
+		os_memoryCopy(pSme->hOS, &(pSme->tCandidate), pSelectedSite, sizeof(TSiteEntry));
+
+		return &(pSme->tCandidate);
     }
 
-    /* return the selected site (or NULL, if no site was selected) */
-    return pSelectedSite;
+    /* return NULL if no site was selected */
+    return NULL;
 }
 
 /** 
@@ -278,7 +299,7 @@ TI_BOOL sme_SelectSsidMatch (TI_HANDLE hSme, TSsid *pSiteSsid, TSsid *pDesiredSs
     }
     /* otherwise, check if the SSIDs match */
     if ((pSiteSsid->len == pDesiredSsid->len) && /* lngth match */
-        (0 == os_memoryCompare (pSme->hOS, &(pSiteSsid->str[ 0 ]), &(pDesiredSsid->str[ 0 ]), pSiteSsid->len))) /* content match */
+        (0 == os_memoryCompare (pSme->hOS, (TI_UINT8 *)&(pSiteSsid->str[ 0 ]), (TI_UINT8 *)&(pDesiredSsid->str[ 0 ]), pSiteSsid->len))) /* content match */
     {
         return TI_TRUE;
     }

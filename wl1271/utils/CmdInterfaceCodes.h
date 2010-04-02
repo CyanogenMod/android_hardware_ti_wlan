@@ -1,7 +1,7 @@
 /*
  * CmdInterfaceCodes.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -282,7 +282,7 @@ typedef enum
 																										* Allocate Bit: OFF	\n
 																										* GET Bit: ON	\n
 																										* SET Bit: ON	\n
-*/
+																										*/
     
     SITE_MGRT_SET_RATE_MANAGMENT             = SET_BIT | SITE_MGR_MODULE_PARAM | 0x06 ,                 /**< Site Manager Desired Preamble Type Parameter (Site Manager Module Set/Get Command): \n 
                                                                                                         * Used for Setting/Getting Desired Preamble Type to/from OS abstraction layer\n
@@ -308,7 +308,7 @@ typedef enum
 */
 
 
-
+																									   
 	SITE_MGR_CURRENT_CHANNEL_PARAM              = 	SET_BIT | GET_BIT | SITE_MGR_MODULE_PARAM | 0x0E,	/**< Site Manager Current Channel Parameter (Site Manager Module Set/Get Command): \n 
 																										* Used for Setting/Getting Current Channel to/from OS abstraction layer\n
 																										* Done Sync with no memory allocation\n 
@@ -452,9 +452,9 @@ typedef enum
 																										* GET Bit: ON	\n
 																										* SET Bit: OFF	\n
 																										*/
-    SITE_MGR_SET_WLAN_IP_PARAM				=             SET_BIT | SITE_MGR_MODULE_PARAM | 0x43,	/**< Site Manager WLAN interface IP Parameter (Site Manager Module Set Command): \n
+    SITE_MGR_SET_WLAN_IP_PARAM				=             SET_BIT | SITE_MGR_MODULE_PARAM | 0x43,	/**< Site Manager WLAN interface IP Parameter (Site Manager Module Set Command): \n  
 																										* Used for Setting the WLAN interface IP from OS abstraction layer\n
-																										* Done Sync with no memory allocation\n
+																										* Done Sync with no memory allocation\n 
 																										* Parameter Number:	0x43	\n
 																										* Module Number: Site Manager Module Number \n
 																										* Async Bit: OFF	\n
@@ -638,7 +638,7 @@ typedef enum
 																														* GET Bit: OFF	\n
 																														* SET Bit: ON	\n
 																														*/
-    SCAN_CNCN_BSSID_LIST_SIZE_PARAM             =   GET_BIT |           SCAN_CNCN_PARAM | 0x06,							/**< Scan Concentrator BSSID List Size Parameter (Scan Concentrator Module Get Command): \n  
+	SCAN_CNCN_NUM_BSSID_IN_LIST_PARAM           =   GET_BIT |           SCAN_CNCN_PARAM | 0x06,							/**< Scan Concentrator BSSID List Size Parameter (Scan Concentrator Module Get Command): \n  
 																														* Used for retrieving the size to allocate for the application scan result list\n
 																														* Done Sync with no memory allocation\n 
 																														* Parameter Number:	0x06	\n
@@ -648,7 +648,17 @@ typedef enum
 																														* GET Bit: ON	\n
 																														* SET Bit: OFF	\n
 																														*/
-    SCAN_CNCN_BSSID_LIST_PARAM                  =   GET_BIT |           SCAN_CNCN_PARAM | 0x07,							/**< Scan Concentrator BSSID List Parameter (Scan Concentrator Module Get Command): \n  
+    SCAN_CNCN_BSSID_LIST_SIZE_PARAM             =   GET_BIT |           SCAN_CNCN_PARAM | 0x07,							/**< Scan Concentrator BSSID List Size Parameter (Scan Concentrator Module Get Command): \n  
+																														* Used for retrieving the size to allocate for the application scan result list\n
+																														* Done Sync with no memory allocation\n 
+																														* Parameter Number:	0x06	\n
+																														* Module Number: Scan Concentrator Module Number \n
+																														* Async Bit: OFF	\n
+																														* Allocate Bit: OFF	\n
+																														* GET Bit: ON	\n
+																														* SET Bit: OFF	\n
+																														*/
+    SCAN_CNCN_BSSID_LIST_PARAM                  =   GET_BIT |           SCAN_CNCN_PARAM | 0x08,							/**< Scan Concentrator BSSID List Parameter (Scan Concentrator Module Get Command): \n  
 																														* Used for retrieving the application scan result table\n
 																														* Done Sync with no memory allocation\n 
 																														* Parameter Number:	0x07	\n
@@ -657,6 +667,35 @@ typedef enum
 																														* Allocate Bit: OFF	\n
 																														* GET Bit: ON	\n
 																														* SET Bit: OFF	\n
+																														*/
+	SCAN_CNCN_BSSID_RATE_LIST_PARAM             =   GET_BIT |           SCAN_CNCN_PARAM | 0x09,							/**< Scan Concentrator Rate List Parameter (Scan Concentrator Module Get Command): \n  
+																														* Used for retrieving the application scan rates result table\n
+																														* Done Sync with no memory allocation\n 
+																														* Parameter Number:	0x08	\n
+																														* Module Number: Scan Concentrator Module Number \n
+																														* Async Bit: OFF	\n
+																														* Allocate Bit: OFF	\n
+																														* GET Bit: ON	\n
+																														* SET Bit: OFF	\n
+																														*/
+    SCAN_CNCN_SET_SRA                           =   SET_BIT |           SCAN_CNCN_PARAM | 0x0A,                         /**< Scan Concentrator set scan result aging (Scan Concentrator Module Get Command): \n  
+																														* Used for aging threshold\n
+																														* Parameter Number:	0x09	\n
+																														* Module Number: Scan Concentrator Module Number \n
+																														* Async Bit: OFF	\n
+																														* Allocate Bit: OFF	\n
+																														* GET Bit: OFF	\n
+																														* SET Bit: ON	\n
+																														*/
+
+    SCAN_CNCN_SET_RSSI                          =   SET_BIT |           SCAN_CNCN_PARAM | 0x0B,                         /**< Scan Concentrator set rssi filter threshold (Scan Concentrator Module Get Command): \n  
+																														* Used for rssi threshold\n
+																														* Parameter Number:	0x0A	\n
+																														* Module Number: Scan Concentrator Module Number \n
+																														* Async Bit: OFF	\n
+																														* Allocate Bit: OFF	\n
+																														* GET Bit: OFF	\n
+																														* SET Bit: ON	\n
 																														*/
 
 	/* Scan Manager module */
@@ -957,7 +996,7 @@ typedef enum
 
     RSN_SET_PROTECTION_RX_PARAM					=	SET_BIT | RSN_MODULE_PARAM | ASYNC_PARAM | 0x0C,					        /**< Robust Security NW (RSN) Set Protection RX Parameter (RSN Module Set/Get Command): \n  
                                                                                                                                 * Used for setting protection for RX during external RSN mode to RSN Module\n
-                                                                                                                                * Done ASync with no memory allocation\n
+                                                                                                                                * Done ASync with no memory allocation\n 
                                                                                                                                 * Parameter Number:	0x0C	\n
                                                                                                                                 * Module Number: RSN Module Number \n
                                                                                                                                 * Async Bit: ON	\n
@@ -967,9 +1006,9 @@ typedef enum
                                                                                                                                 */
 
 
-    RSN_SET_PROTECTION_RX_TX_PARAM					=	SET_BIT | RSN_MODULE_PARAM | 0x0D,							            /**< Robust Security NW (RSN) Set Protection RX TX Parameter (RSN Module Set/Get Command): \n
+    RSN_SET_PROTECTION_RX_TX_PARAM					=	SET_BIT | RSN_MODULE_PARAM | 0x0D,							            /**< Robust Security NW (RSN) Set Protection RX TX Parameter (RSN Module Set/Get Command): \n  
                                                                                                                                 * Used for setting protection for both RX and TX during external RSN mode to RSN Module\n
-                                                                                                                                * Done Sync with no memory allocation\n
+                                                                                                                                * Done Sync with no memory allocation\n 
                                                                                                                                 * Parameter Number:	0x0C	\n
                                                                                                                                 * Module Number: RSN Module Number \n
                                                                                                                                 * Async Bit: OFF	\n
@@ -978,9 +1017,9 @@ typedef enum
                                                                                                                                 * SET Bit: ON	\n
                                                                                                                                 */
 
-    RSN_PORT_STATUS_PARAM		 			    =	SET_BIT | GET_BIT | RSN_MODULE_PARAM | 0x0D,							    /**< Robust Security NW (RSN)  Port Status (RSN Module Set/Get Command): \n
+    RSN_PORT_STATUS_PARAM		 			    =	SET_BIT | GET_BIT | RSN_MODULE_PARAM | 0x0D,							    /**< Robust Security NW (RSN)  Port Status (RSN Module Set/Get Command): \n  
                                                                                                                                 * Used for setting port status during external RSN mode to RSN Module\n
-                                                                                                                                * Done Sync with no memory allocation\n
+                                                                                                                                * Done Sync with no memory allocation\n 
                                                                                                                                 * Parameter Number:	0x0D	\n
                                                                                                                                 * Module Number: RSN Module Number \n
                                                                                                                                 * Async Bit: OFF	\n
@@ -989,9 +1028,9 @@ typedef enum
                                                                                                                                 * SET Bit: ON	\n
                                                                                                                                 */
 
-    RSN_GENERIC_IE_PARAM		 			      = SET_BIT           | RSN_MODULE_PARAM | 0x0E,							    /**< Robust Security NW (RSN)  Generic IE (RSN Module Set Command): \n
+    RSN_GENERIC_IE_PARAM		 			      = SET_BIT           | RSN_MODULE_PARAM | 0x0E,							    /**< Robust Security NW (RSN)  Generic IE (RSN Module Set Command): \n  
                                                                                                                                 * Used for setting the Generic IE passed to the AP during association to RSN Module\n
-                                                                                                                                * Done Sync with no memory allocation\n
+                                                                                                                                * Done Sync with no memory allocation\n 
                                                                                                                                 * Parameter Number:	0x0E	\n
                                                                                                                                 * Module Number: RSN Module Number \n
                                                                                                                                 * Async Bit: OFF	\n
@@ -1000,9 +1039,9 @@ typedef enum
                                                                                                                                 * SET Bit: ON	\n
                                                                                                                                 */
 
-    RSN_EXTERNAL_MODE_PARAM		 			      =          SET_BIT | GET_BIT | RSN_MODULE_PARAM | 0x0F,							    /**< Robust Security NW (RSN)  External Mode Parameter: \n
+    RSN_EXTERNAL_MODE_PARAM		 			      =          SET_BIT | GET_BIT | RSN_MODULE_PARAM | 0x0F,							    /**< Robust Security NW (RSN)  External Mode Parameter: \n  
                                                                                                                                 * Used for getting the RSN External Mode\n
-                                                                                                                                * Done Sync with no memory allocation\n
+                                                                                                                                * Done Sync with no memory allocation\n 
                                                                                                                                 * Parameter Number:     0x0F    \n
                                                                                                                                 * Module Number: RSN Module Number \n
                                                                                                                                 * Async Bit: OFF        \n
@@ -1011,9 +1050,9 @@ typedef enum
                                                                                                                                 * SET Bit: ON   \n
                                                                                                                                 */
 
-    RSN_GEM_DATA_PARAM                                                =                     RSN_MODULE_PARAM | 0x10,                                                        /**< Robust Security NW (RSN)  External Mode Parameter: \n
+    RSN_GEM_DATA_PARAM                                                =                     RSN_MODULE_PARAM | 0x10,                                                        /**< Robust Security NW (RSN)  External Mode Parameter: \n  
                                                                                                                                 * Used for setting GEM data\n
-                                                                                                                                * Done Sync with no memory allocation\n
+                                                                                                                                * Done Sync with no memory allocation\n 
                                                                                                                                 * Parameter Number:     0x10    \n
                                                                                                                                 * Module Number: RSN Module Number \n
                                                                                                                                 * Async Bit: OFF	\n
@@ -1076,7 +1115,7 @@ typedef enum
 																																				* GET Bit: ON	\n
 																																				* SET Bit: ON	\n
 																																				*/
-
+	
 	TWD_FM_COEX_PARAM               						=   SET_BIT |    TWD_MODULE_PARAM | TWD_FM_COEX_PARAM_ID,	                        /**< TWD Control FM-Coexistence Parameters (TWD Control Module Set/Get Command): \n  
 																																				* Used for setting the FM-Coexistence Parameters\n
 																																				* Done Async with no memory allocation\n 
@@ -1088,9 +1127,9 @@ typedef enum
 																																				* SET Bit: ON	\n
 																																				*/
 
-    TWD_DCO_ITRIM_PARAMS                			=   SET_BIT | GET_BIT | TWD_MODULE_PARAM | TWD_DCO_ITRIM_PARAMS_ID,		/**< TWD Control DCO Itrim Parameters (TWD Control Module Set/Get Command): \n
+    TWD_DCO_ITRIM_PARAMS                			=   SET_BIT | GET_BIT | TWD_MODULE_PARAM | TWD_DCO_ITRIM_PARAMS_ID,		/**< TWD Control DCO Itrim Parameters (TWD Control Module Set/Get Command): \n  
 																																* Used for getting DCO Itrim Parameters from TWD Control Module or setting DCO Itrim Parameters to FW and TWD Control Module\n
-																																* Done Sync with no memory allocation\n
+																																* Done Sync with no memory allocation\n 
 																																* Parameter Number:	TWD_DCO_ITRIM_PARAMS_ID	\n
 																																* Module Number: TWD Control Module Number \n
 																																* Async Bit: OFF	\n
@@ -1098,7 +1137,7 @@ typedef enum
 																																* GET Bit: ON	\n
 																																* SET Bit: ON	\n
 																																*/
-	/* Roaming manager */
+    /* Roaming manager */
     ROAMING_MNGR_APPLICATION_CONFIGURATION		= 	SET_BIT | GET_BIT | ROAMING_MANAGER_MODULE_PARAM | 0x01,	/**< Roaming Manager Application Configuration Parameter (Roaming Manager Module Set/Get Command): \n  
 																												* Used for setting/getting Roaming Manager Application Configuration to/from Roaming Manager Module and State-Machine\n
 																												* Done Sync with no memory allocation\n 

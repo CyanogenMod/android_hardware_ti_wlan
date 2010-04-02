@@ -1,7 +1,7 @@
 /*
  * CmdBld.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -225,6 +225,7 @@ typedef struct
     TI_HANDLE                  hJoinCmpltOriginalCbHndl;
 
     TI_UINT32                  uIniSeq;         /* Init sequence counter */
+    TI_BOOL                    bReconfigInProgress;
 
     TI_UINT32                  uLastElpCtrlMode;/* Init sleep mode */
 
@@ -256,8 +257,8 @@ typedef struct
 #define DB_KEYS(HCMDBLD)            (((TCmdBld *)HCMDBLD)->tDb.keys)
 #define DB_RX_DATA_FLTR(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.rxDataFilters)
 #define DB_RADIO(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tRadioIniParams)
+#define DB_EXT_RADIO(HCMDBLD)		(((TCmdBld *)HCMDBLD)->tDb.tExtRadioIniParams)
 #define DB_GEN(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tPlatformGenParams)
-#define DB_SR(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tSmartReflex)
 #define DB_RM(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tRateMngParams)
 
 

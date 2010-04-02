@@ -1,7 +1,7 @@
 /*
  * apConn.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -1231,10 +1231,9 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
         if (pAPConnection->APDisconnect.uStatusCode == STATUS_CODE_802_1X_AUTHENTICATION_FAILED)
         {
           #ifdef XCC_MODULE_INCLUDED
-            TI_STATUS    status;
 
             /* Raise the EAP-Failure as event */
-            status = XCCMngr_rogueApDetected (pAPConnection->hXCCMngr, RSN_AUTH_STATUS_CHALLENGE_FROM_AP_FAILED);
+            XCCMngr_rogueApDetected (pAPConnection->hXCCMngr, RSN_AUTH_STATUS_CHALLENGE_FROM_AP_FAILED);
           #endif
 
             
@@ -1289,7 +1288,7 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
         else
         {
             /* Infra-structure BSS case - disconnect the link */
-            if (roamingEventType >= ROAMING_TRIGGER_AP_DISCONNECT)
+            if (roamingEventType >= ROAMING_TRIGGER_AP_DISCONNECT && (roamingEventType != ROAMING_TRIGGER_TSPEC_REJECTED))
             {
                 pAPConnection->removeKeys = TI_TRUE;
             }
@@ -1324,6 +1323,14 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
             EvHandlerSendEvent(pAPConnection->hEvHandler, IPC_EVENT_LOW_RSSI, NULL,0);
         }
         /* Report to Roaming Manager */
+
+#ifdef XCC_MODULE_INCLUDED
+        /* For XCC only - if the is reason is TSPEC reject - mark this as BssLoss - To be changed later */
+        if (roamingEventType == ROAMING_TRIGGER_TSPEC_REJECTED)
+        {
+            roamingEventType = ROAMING_TRIGGER_BSS_LOSS;
+        }
+#endif        
         pAPConnection->roamEventCallb(pAPConnection->hRoamMng, &roamingEventType, reasonCode);
     }
 
@@ -1579,8 +1586,11 @@ static TI_STATUS apConn_smEvent(TI_UINT8 *currState, TI_UINT8 event, void* data)
     apConn_t  *pAPConnection = (apConn_t *)data;
     TGenSM    *pGenSM = (TGenSM*)pAPConnection->hAPConnSM;
 
+	TRACE2(pAPConnection->hReport, REPORT_SEVERITY_INFORMATION, "apConn_smEvent: currState = %d, event = %d\n", pGenSM->uCurrentState, event);
     genSM_Event (pAPConnection->hAPConnSM, (TI_UINT32)event, data);
     pAPConnection->currentState = pGenSM->uCurrentState;
+
+	TRACE1(pAPConnection->hReport, REPORT_SEVERITY_INFORMATION, "apConn_smEvent: newState = %d\n", pAPConnection->currentState);
 
     return TI_OK;
 }
@@ -1802,7 +1812,7 @@ static void apConn_smStopConnection(void *pData)
 	/* Stop Connection state machine - always immediate TBD */
 	conn_stop(pAPConnection->hConnSm, 
 			  disConnType,
-			  pAPConnection->deauthPacketReasonCode,
+			  (mgmtStatus_e)pAPConnection->deauthPacketReasonCode,
 			  pAPConnection->removeKeys, /* for Roaming, do not remove the keys */
 			  apConn_DisconnCompleteInd,
 			  pAPConnection);
@@ -2053,7 +2063,12 @@ static void apConn_smInvokeConnectionToNewAp(void *data)
     staPrivacySupported = (param.content.rsnEncryptionStatus == TWD_CIPHER_NONE) ? TI_FALSE : TI_TRUE;
     apPrivacySupported  = ((pAPConnection->newAP->capabilities >> CAP_PRIVACY_SHIFT) & CAP_PRIVACY_MASK) ? TI_TRUE : TI_FALSE;
 
+#ifdef GEM_SUPPORTED
+	// For GEM – ignore the privacy bit of the AP. Some GEM AP’s don’t turn on the privacy
+ if ((staPrivacySupported != apPrivacySupported) && (param.content.rsnEncryptionStatus != TWD_CIPHER_GEM))
+#else 
     if (staPrivacySupported != apPrivacySupported)
+#endif
     {
         param.paramType = RSN_MIXED_MODE;
         rsn_getParam(pAPConnection->hPrivacy, &param);
@@ -2077,7 +2092,7 @@ static void apConn_smInvokeConnectionToNewAp(void *data)
     }
 
     /* Update re-associate parameter of MLME */
-    if (pAPConnection->requestType == AP_CONNECT_FAST_TO_AP)
+    if (pAPConnection->requestType == AP_CONNECT_FAST_TO_AP || pAPConnection->requestType == AP_CONNECT_RECONNECT_CURR_AP)
     {
         connType = CONN_TYPE_ROAM;
     }
@@ -2265,8 +2280,13 @@ static void apConn_smHandleTspecReneg (void *pData)
     apConn_t *pAPConnection = (apConn_t *)pData;
     paramInfo_t param;
 
-    if (pAPConnection->voiceTspecConfigured && pAPConnection->reNegotiateTSPEC)
-    {
+    if (pAPConnection->voiceTspecConfigured
+#ifndef XCC_MODULE_INCLUDED
+          && pAPConnection->reNegotiateTSPEC
+#endif
+        )
+        {
+#ifndef XCC_MODULE_INCLUDED        
         param.paramType = QOS_MNGR_VOICE_RE_NEGOTIATE_TSPEC;
         qosMngr_getParams(pAPConnection->hQos, &param);
 
@@ -2276,6 +2296,7 @@ static void apConn_smHandleTspecReneg (void *pData)
             apConn_smEvent(&(pAPConnection->currentState), AP_CONNECT_EVENT_FINISHED_OK, pAPConnection);
         }
         else
+#endif
         {
             param.paramType = QOS_MNGR_RESEND_TSPEC_REQUEST;
             param.content.qosRenegotiateTspecRequest.callback = (void *)apConn_qosMngrReportResultCallb;

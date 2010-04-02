@@ -1,7 +1,7 @@
 /*
  * smeSm.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -196,12 +196,12 @@ void smeSm_Start (TI_HANDLE hSme)
     if ((TI_FALSE == pSme->bRadioOn) || (TI_FALSE == pSme->bRunning)) 
     {
         /* Radio is off so send stop event */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_STOP, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_STOP, hSme);
     }
     else if (TI_TRUE == pSme->bConnectRequired)
     {
         /* if connection was required, start the process */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
     }
 }
 
@@ -255,7 +255,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
     if (NULL != pSme->pCandidate)
     {
         /* candidate is available - attempt connection */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
     }
     /* no candidate */
     else
@@ -267,7 +267,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
             {
                 TRACE0(pSme->hReport, REPORT_SEVERITY_ERROR , "smeSm_PreConnect: unable to start scan, stopping the SME\n");
                 pSme->bRadioOn = TI_FALSE;
-                genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+                sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
             }
 
             /* update scan count counter */
@@ -287,7 +287,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
 
 				TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "smeSm_PreConnect: No candidate available, sending connect failure\n");
                 /* manual mode and no connection candidate is available - connection failed */
-                genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+                sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
 			}
 
 			else		/* IBSS */
@@ -331,7 +331,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
 				{
 				   TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "IBSS SELECT FAILURE  - No channel !!!\n\n");
 
-				   genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+				   sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
 
 				   return;
 				}
@@ -342,7 +342,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
 				{
 				   TRACE0(pSme->hReport, REPORT_SEVERITY_ERROR , "IBSS SELECT FAILURE  - could not open self site !!!\n\n");
 
-				   genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+				   sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
 
 				   return;
 				}
@@ -352,7 +352,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
                 WLAN_OS_REPORT (("%%%%%%%%%%%%%%	SELF SELECT SUCCESS, bssid: %02x.%02x.%02x.%02x.%02x.%02x %%%%%%%%%%%%%%\n\n", pSme->pCandidate->bssid[0], pSme->pCandidate->bssid[1], pSme->pCandidate->bssid[2], pSme->pCandidate->bssid[3], pSme->pCandidate->bssid[4], pSme->pCandidate->bssid[5]));
 #endif
 				/* a connection candidate is available, send a connect event */
-				genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
+				sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT, hSme);
 			}
         }
     }
@@ -378,7 +378,7 @@ void smeSm_Connect (TI_HANDLE hSme)
     if (NULL == pSme->pCandidate)
     {
         TRACE0(pSme->hReport, REPORT_SEVERITY_ERROR , "smeSm_Connect: No candidate available, sending connect failure\n");
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_CONNECT_FAILURE, hSme);
     }
     else
     {
@@ -620,7 +620,7 @@ void smeSm_CheckStartConditions (TI_HANDLE hSme)
     if ((TI_TRUE == pSme->bRunning) && (TI_TRUE == pSme->bRadioOn))
     {
         /* send a start event */
-        genSM_Event (pSme->hSmeSm, SME_SM_EVENT_START, hSme);
+        sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_START, hSme);
     }
 }
 
@@ -667,7 +667,7 @@ TI_STATUS sme_StartScan (TI_HANDLE hSme)
     /* get country validity for all bands */
     for (uIndex = 0; uIndex < RADIO_BAND_NUM_OF_BANDS; uIndex++)
     {
-        pParam->content.eRadioBand = uIndex;
+        pParam->content.eRadioBand = (ERadioBand)uIndex;
         regulatoryDomain_getParam (pSme->hRegDomain, pParam);
         bBandCountryFound[ uIndex ] = pParam->content.bIsCountryFound;
         /* also nullify the channel exist indication for this band */

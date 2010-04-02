@@ -1,7 +1,7 @@
 /*
  * rsn.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -1252,6 +1252,7 @@ TI_STATUS rsn_reportStatus (rsn_t *pRsn, TI_STATUS rsnStatus)
 
 		if (pRsn->bRsnExternalMode) {
 				param.content.txDataCurrentPrivacyInvokedMode = TI_TRUE;
+                txCtrlParams_setEapolEncryptionStatus (pRsn->hTxCtrl, TI_FALSE);
 		}
 
 		txCtrlParams_setCurrentPrivacyInvokedMode(pRsn->hTxCtrl, param.content.txDataCurrentPrivacyInvokedMode);
@@ -1610,6 +1611,8 @@ TI_STATUS rsn_setKey (rsn_t *pRsn, TSecurityKeys *pKey)
 #ifdef GEM_SUPPORTED
 					case KEY_GEM:
 							tTwdParam.content.rsnEncryptionStatus = (ECipherSuite)TWD_CIPHER_GEM;
+							status = pRsn->pAdmCtrl->setUcastSuite (pRsn->pAdmCtrl, TWD_CIPHER_GEM);
+							status = pRsn->pAdmCtrl->setBcastSuite (pRsn->pAdmCtrl, TWD_CIPHER_GEM);
 							break;
 #endif
 					case KEY_WEP:

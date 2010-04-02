@@ -1,7 +1,7 @@
 /*
  * osapi.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -159,7 +159,8 @@ void os_printf(const char *format ,...)
 		printk(&msg[0]);
         }
         
-        from_new_line = ( msg[message_len] == '\n' );
+	from_new_line = ( msg[message_len - 1] == '\n' );
+
 	va_end(ap);
 }
 

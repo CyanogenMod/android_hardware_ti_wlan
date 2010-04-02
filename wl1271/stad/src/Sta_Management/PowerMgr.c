@@ -1,7 +1,7 @@
 /*
  * PowerMgr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -720,7 +720,6 @@ TI_STATUS powerMgr_setParam(TI_HANDLE thePowerMgrHandle,
     case POWER_MGR_KEEP_ALIVE_ENA_DIS:
     case POWER_MGR_KEEP_ALIVE_ADD_REM:
         return powerMgrKL_setParam (pPowerMgr->hPowerMgrKeepAlive, theParamP);
-        break;
 
     default:
         TRACE1(pPowerMgr->hReport, REPORT_SEVERITY_ERROR, "PowerMgr_setParam - ERROR - Param is not supported, %d\n\n", theParamP->paramType);
@@ -758,7 +757,6 @@ TI_STATUS powerMgr_getParam(TI_HANDLE thePowerMgrHandle,
 
     case POWER_MGR_KEEP_ALIVE_GET_CONFIG:
         return powerMgrKL_getParam (pPowerMgr->hPowerMgrKeepAlive, theParamP);
-        break;
 
     case POWER_MGR_GET_POWER_CONSUMPTION_STATISTICS:
        
@@ -769,7 +767,6 @@ TI_STATUS powerMgr_getParam(TI_HANDLE thePowerMgrHandle,
 
 
 
-             break;
 
 
     default:
@@ -974,17 +971,16 @@ RETURN:    void.\n
 static void powerMgrRetryPsTimeout(TI_HANDLE hPowerMgr, TI_BOOL bTwdInitOccured)
 {
     PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
-    TI_STATUS powerStatus;
 
     TRACE0( pPowerMgr->hReport, REPORT_SEVERITY_INFORMATION, "powerMgrRetryPsTimeout: timer expired.\n");
 
     if ( pPowerMgr->lastPsTransaction == ENTER_POWER_SAVE_FAIL )
     {
-        powerStatus = TWD_SetPsMode (pPowerMgr->hTWD, POWER_SAVE_ON, TI_TRUE, hPowerMgr,powerSaveCompleteCB, NULL);/*NULL as GWSI callback*/
+        TWD_SetPsMode (pPowerMgr->hTWD, POWER_SAVE_ON, TI_TRUE, hPowerMgr,powerSaveCompleteCB, NULL);/*NULL as GWSI callback*/
     }
     else
     {
-        powerStatus = TWD_SetPsMode (pPowerMgr->hTWD, POWER_SAVE_OFF, TI_TRUE, hPowerMgr, powerSaveCompleteCB, NULL);/*NULL as GWSI callback*/
+        TWD_SetPsMode (pPowerMgr->hTWD, POWER_SAVE_OFF, TI_TRUE, hPowerMgr, powerSaveCompleteCB, NULL);/*NULL as GWSI callback*/
     }
 	return;
 }
@@ -1003,7 +999,6 @@ RETURN:    void.\n
 static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_PowerMode_e desiredPowerMode)
 {
     PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
-    TI_STATUS powerStatus;
 
     tmr_StopTimer (pPowerMgr->hRetryPsTimer);
 
@@ -1017,7 +1012,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
 
     case POWER_MODE_ACTIVE:
         /* set AWAKE through */
-        powerStatus = TWD_SetPsMode (pPowerMgr->hTWD,
+        TWD_SetPsMode (pPowerMgr->hTWD,
                                           POWER_SAVE_OFF, 
                                           TI_TRUE, 
                                           hPowerMgr,
@@ -1037,7 +1032,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
             powerMgrSendMBXWakeUpConditions(hPowerMgr,pPowerMgr->beaconListenInterval,TNET_WAKE_ON_BEACON);     
         }
 
-        powerStatus = TWD_SetPsMode (pPowerMgr->hTWD, 
+        TWD_SetPsMode (pPowerMgr->hTWD, 
                                           POWER_SAVE_ON, 
                                           TI_TRUE, 
                                           hPowerMgr,
@@ -1056,7 +1051,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
         {
             powerMgrSendMBXWakeUpConditions(hPowerMgr,pPowerMgr->dtimListenInterval,TNET_WAKE_ON_DTIM);     
         }
-        powerStatus = TWD_SetPsMode (pPowerMgr->hTWD, 
+        TWD_SetPsMode (pPowerMgr->hTWD, 
                                           POWER_SAVE_ON, 
                                           TI_TRUE, 
                                           hPowerMgr,
@@ -1070,7 +1065,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
 		/* When in SG PS mode, configure the user desired wake-up condition */
 		powerMgr_SGSetUserDesiredwakeUpCond(pPowerMgr);
 
-        powerStatus = TWD_SetPsMode (pPowerMgr->hTWD, 
+        TWD_SetPsMode (pPowerMgr->hTWD, 
                                           POWER_SAVE_ON, 
                                           TI_TRUE, 
                                           hPowerMgr,

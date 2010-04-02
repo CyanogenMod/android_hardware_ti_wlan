@@ -1,7 +1,7 @@
 /*
  * tidef.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -70,11 +70,6 @@
  * \brief NOT OK return value
  */
 #define TI_NOK                      1
-/**
- * \def TI_PENDING
- * \brief Pending return value
- */
-#define TI_PENDING					2
 /**
  * \def MAC_ADDR_LEN
  * \brief Length of Standart MAC address

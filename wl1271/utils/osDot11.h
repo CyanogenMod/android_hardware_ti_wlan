@@ -1,7 +1,7 @@
 /*
  * osDot11.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -201,9 +201,9 @@ typedef enum _OS_802_11_NETWORK_MODE
 /**/
 typedef TI_UINT8 OS_802_11_RATES[8];
 
-/* MODS_BEGIN_FOR_11N_RATE_REPORTING */
-typedef TI_UINT8 OS_802_11_RATES_EX[32];
-/* MODS_END_FOR_11N_RATE_REPORTING */
+typedef TI_UINT8 OS_802_11_RATES_EX[16];
+
+typedef TI_UINT8 OS_802_11_N_RATES[32];
 
 typedef struct _OS_802_11_FIXED_IEs 
 {

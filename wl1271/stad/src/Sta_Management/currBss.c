@@ -1,7 +1,7 @@
 /*
  * currBss.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -81,14 +81,13 @@
 #include "apConn.h"
 #include "scanMngrApi.h" 
 #include "MacServices_api.h"
-#include "smePrivate.h"
-#include "conn.h"
 #include "smeApi.h"
 #include "sme.h"
 #include "TWDriver.h"
 #include "EvHandler.h"
 #include "DrvMainModules.h"
 #include "siteMgrApi.h"
+#include "connApi.h"
 #include "roamingMngrTypes.h"
 
 /* Constants */
@@ -231,6 +230,7 @@ void currBSS_init (TStadHandlesList *pStadHandles)
     pCurrBSS->hPowerMngr    = pStadHandles->hPowerMgr;
     pCurrBSS->hSme          = pStadHandles->hSme;
     pCurrBSS->hSiteMgr      = pStadHandles->hSiteMgr;
+	pCurrBSS->hConn         = pStadHandles->hConn;
     pCurrBSS->hReport       = pStadHandles->hReport;
     pCurrBSS->hScanMngr     = pStadHandles->hScanMngr;
     pCurrBSS->hEvHandler    = pStadHandles->hEvHandler;
@@ -548,11 +548,40 @@ TRACE1(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION, "CurrBSS_SGConf: SG =%d\n
 void currBSS_updateBSSLoss(currBSS_t   *pCurrBSS)
 {
     TRroamingTriggerParams roamingTriggersParams;
+	TI_UINT16 desiredBeaconInterval = 0;
+	TI_UINT32 connSelfTimeout = 0;
+	paramInfo_t *pParam;
 
-    /* In Ad-Hoc we use default parameter */
+	pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
+    if (pParam)
+    {
+		pParam->paramType = SITE_MGR_DESIRED_BEACON_INTERVAL_PARAM;
+		siteMgr_getParam(pCurrBSS->hSiteMgr, pParam);
+		desiredBeaconInterval = pParam->content.siteMgrDesiredBeaconInterval;
+
+		pParam->paramType = CONN_SELF_TIMEOUT_PARAM;
+		conn_getParam(pCurrBSS->hConn, pParam);
+		connSelfTimeout = pParam->content.connSelfTimeout;
+
+		os_memoryFree(pCurrBSS->hOs, pParam, sizeof(paramInfo_t));
+	}
+	else
+	{
+		TRACE0(pCurrBSS->hReport, REPORT_SEVERITY_ERROR, "currBSS_updateBSSLoss: Error allocating paramInfo_t\n");
+	}
+
     if (pCurrBSS->type == BSS_INDEPENDENT)
     {
-       roamingTriggersParams.TsfMissThreshold = OUT_OF_SYNC_IBSS_THRESHOLD; 
+       if (desiredBeaconInterval > 0)
+       {
+		   /* Calculate the number of beacons for miss timeout */
+           roamingTriggersParams.TsfMissThreshold = connSelfTimeout / desiredBeaconInterval;
+       }
+	   else
+	   {
+		   /* Use default parameter */
+		   roamingTriggersParams.TsfMissThreshold = OUT_OF_SYNC_IBSS_THRESHOLD; 
+	   }
     }
     else /* In Infra we use the saved parameter */
     {
@@ -562,7 +591,6 @@ void currBSS_updateBSSLoss(currBSS_t   *pCurrBSS)
     roamingTriggersParams.BssLossTimeout = NO_BEACON_DEFAULT_TIMEOUT;
     
     TRACE2(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION, ": SG=%d, Band=%d\n", pCurrBSS->bUseSGParams, pCurrBSS->currAPInfo.band);
-
 
     /* if Soft Gemini is enabled - increase the BSSLoss value (because BT activity might over-run beacons) */
     if ((pCurrBSS->bUseSGParams) && (pCurrBSS->currAPInfo.band == RADIO_BAND_2_4_GHZ))
@@ -708,6 +736,7 @@ TI_STATUS currBSS_beaconReceivedCallb(TI_HANDLE hCurrBSS,
     currBSS_t           *pCurrBSS = (currBSS_t *)hCurrBSS;
     paramInfo_t         *pParam;
     ScanBssType_e       eFrameBssType, eCurrentBSSType;
+	TMacAddr            desiredBSSID;
 
     pParam = (paramInfo_t *)os_memoryAlloc(pCurrBSS->hOs, sizeof(paramInfo_t));
     if (!pParam)
@@ -725,21 +754,54 @@ TI_STATUS currBSS_beaconReceivedCallb(TI_HANDLE hCurrBSS,
     /* Get current BSSID */
     pParam->paramType = SITE_MGR_CURRENT_BSSID_PARAM;
     siteMgr_getParam(pCurrBSS->hSiteMgr, pParam);   
+	TRACE12(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION,
+			"currBSS_beaconReceivedCallb: bssid = %02x.%02x.%02x.%02x.%02x.%02x, siteMgrDesiredBSSID = %02x.%02x.%02x.%02x.%02x.%02x\n",
+			(*bssid)[0], (*bssid)[1], (*bssid)[2], (*bssid)[3], (*bssid)[4], (*bssid)[5],
+			pParam->content.siteMgrDesiredBSSID[0],
+			pParam->content.siteMgrDesiredBSSID[1],
+			pParam->content.siteMgrDesiredBSSID[2],
+			pParam->content.siteMgrDesiredBSSID[3],
+			pParam->content.siteMgrDesiredBSSID[4],
+			pParam->content.siteMgrDesiredBSSID[5]);
+	MAC_COPY(desiredBSSID, pParam->content.siteMgrDesiredBSSID);
 
     if (pCurrBSS->isConnected && (eCurrentBSSType == eFrameBssType))
     {
-        if (MAC_EQUAL(pParam->content.siteMgrDesiredBSSID, *bssid))
+		TI_BOOL bFramePrivacy = 0, bCurrentSitePrivacy = 0;
+        /* if the bss type is ibss save set the current site privacy (the beacons transimted by STA)
+		   and set the privacy from the received frame, so that if the privacy is different there will
+		   be no connection */
+		if (eFrameBssType == BSS_INDEPENDENT)
+		{
+			pParam->paramType = SITE_MGR_SITE_CAPABILITY_PARAM;
+			siteMgr_getParam(pCurrBSS->hSiteMgr, pParam);
+
+			bCurrentSitePrivacy = ((pParam->content.siteMgrSiteCapability >> CAP_PRIVACY_SHIFT) & CAP_PRIVACY_MASK) ? TI_TRUE : TI_FALSE;
+			bFramePrivacy       = ((pFrameInfo->content.iePacket.capabilities >> CAP_PRIVACY_SHIFT) & CAP_PRIVACY_MASK) ? TI_TRUE : TI_FALSE;
+		}
+
+        if (MAC_EQUAL(desiredBSSID, *bssid))
         {
-            siteMgr_updateSite(pCurrBSS->hSiteMgr, bssid, pFrameInfo, pRxAttr->channel, (ERadioBand)pRxAttr->band, TI_FALSE);
-            /* Save the IE part of the beacon buffer in the site table */
-            siteMgr_saveBeaconBuffer(pCurrBSS->hSiteMgr, bssid, (TI_UINT8 *)dataBuffer, bufLength);
+            if ((eFrameBssType == BSS_INFRASTRUCTURE) || 
+			    ((eFrameBssType == BSS_INDEPENDENT) && (bCurrentSitePrivacy == bFramePrivacy)) )
+			{
+				siteMgr_updateSite(pCurrBSS->hSiteMgr, bssid, pFrameInfo, pRxAttr->channel, (ERadioBand)pRxAttr->band, TI_FALSE);
+				/* Save the IE part of the beacon buffer in the site table */
+				siteMgr_saveBeaconBuffer(pCurrBSS->hSiteMgr, bssid, (TI_UINT8 *)dataBuffer, bufLength);
+			}
         }
     	else if (eFrameBssType == BSS_INDEPENDENT)
         {
-    		siteMgr_IbssMerge(pCurrBSS->hSiteMgr, pParam->content.siteMgrDesiredBSSID, *bssid,
-    						  pFrameInfo, pRxAttr->channel, (ERadioBand)pRxAttr->band);
-            siteMgr_updateSite(pCurrBSS->hSiteMgr, bssid, pFrameInfo, pRxAttr->channel, (ERadioBand)pRxAttr->band, TI_FALSE);
-    		siteMgr_saveBeaconBuffer(pCurrBSS->hSiteMgr, bssid, (TI_UINT8 *)dataBuffer, bufLength);
+           /* Check if the Station sending the beacon uses privacy for the ibss and
+			   compare it to the self site. If privacy usage mathces, merge ibss
+			   and if not continue using self site */
+			if (bCurrentSitePrivacy == bFramePrivacy) 
+			{
+				siteMgr_IbssMerge(pCurrBSS->hSiteMgr, desiredBSSID, *bssid,
+								  pFrameInfo, pRxAttr->channel, (ERadioBand)pRxAttr->band);
+				siteMgr_updateSite(pCurrBSS->hSiteMgr, bssid, pFrameInfo, pRxAttr->channel, (ERadioBand)pRxAttr->band, TI_FALSE);
+				siteMgr_saveBeaconBuffer(pCurrBSS->hSiteMgr, bssid, (TI_UINT8 *)dataBuffer, bufLength);
+			}
     	}
     }
 
@@ -1020,9 +1082,6 @@ static void currBSS_reportRoamingEvent(currBSS_t *pCurrBSS,
                                        apConn_roamingTrigger_e roamingEventType,
                                        roamingEventData_u *pRoamingEventData)
 {
-    TSme   *pSme = (TSme*)pCurrBSS->hSme;
-    conn_t *pConn = (conn_t *)pSme->hConn;
-
     TRACE1(pCurrBSS->hReport, REPORT_SEVERITY_INFORMATION, "currBSS_reportRoamingEvent: trigger %d\n", roamingEventType);
 
     if (pCurrBSS->isConnected)
@@ -1033,19 +1092,12 @@ static void currBSS_reportRoamingEvent(currBSS_t *pCurrBSS,
         }
         else /* IBSS */
         { 
-            if (roamingEventType == ROAMING_TRIGGER_BSS_LOSS)
+            if( roamingEventType == ROAMING_TRIGGER_BSS_LOSS )
             {
                 /* If in IBSS call the SME restart function, this logic issues a DISCONNECT 
                  * event and tries to connect to other STA or establish self connection.
                  */
-                if (pConn->currentConnType == CONNECTION_SELF)
-                {
-                    return;
-                }
-                else 
-                {
-                    sme_Restart (pCurrBSS->hSme);
-                }
+                sme_Restart (pCurrBSS->hSme);
             }
         }
     }

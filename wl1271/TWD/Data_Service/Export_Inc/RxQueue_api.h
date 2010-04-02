@@ -1,7 +1,7 @@
 /*
  * RxQueue_api.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -48,7 +48,7 @@
  */
 TI_HANDLE RxQueue_Create        (TI_HANDLE hOs);
 TI_STATUS RxQueue_Destroy       (TI_HANDLE hRxQueue);
-TI_STATUS RxQueue_Init          (TI_HANDLE hRxQueue, TI_HANDLE hReport);
+TI_STATUS RxQueue_Init          (TI_HANDLE hRxQueue, TI_HANDLE hReport, TI_HANDLE hTimerModule);
 void      RxQueue_CloseBaSession(TI_HANDLE hRxQueue, TI_UINT8 uFrameTid);
 void      RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void *aFrame);
 void      RxQueue_Register_CB   (TI_HANDLE hRxQueue, TI_UINT32 CallBackID, void *CBFunc, TI_HANDLE CBObj);

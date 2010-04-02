@@ -1,7 +1,7 @@
 /*
  * windows_types.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -160,7 +160,7 @@ typedef struct _NDIS_802_11_TEST
             NDIS_802_11_AUTHENTICATION_REQUEST Request[1];
 		} AuthenticationEvent;
 		NDIS_802_11_RSSI RssiTrigger;
-	};
+	} UNION_NDIS_TEST;
 } NDIS_802_11_TEST, *PNDIS_802_11_TEST;
 
 /* Added new encryption types*/

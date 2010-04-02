@@ -1,7 +1,7 @@
 /*
  * smePrivate.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -65,7 +65,9 @@ typedef struct
     TI_HANDLE       hEvHandler;
     TI_HANDLE       hSiteMgr;
     TI_HANDLE       hRsn;
-    TI_HANDLE       hScanResultTable;
+    TI_HANDLE       hScanResultTable;          /* Working table - points to one of the next two tables */
+    TI_HANDLE       hSmeScanResultTable;       /* Sme local table */
+    TI_HANDLE       hScanCncnScanResulTable;   /* Scan Cncn table - table used by the application */
     TI_HANDLE       hSmeSm;
     TI_HANDLE       hDrvMain;
     TI_HANDLE       hTwd;
@@ -88,6 +90,7 @@ typedef struct
 
     TI_BOOL         bConstantScan;  /* scan constantly, for WSC PB mode */
     TSiteEntry      *pCandidate;
+	TSiteEntry      tCandidate;     /* used to store the selected entry of sme_Select*/
     TDisAssocReason tDisAssoc;
 
     TSmeInitParams  tInitParams;

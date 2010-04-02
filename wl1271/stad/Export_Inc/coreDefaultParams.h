@@ -1,7 +1,7 @@
 /*
  * coreDefaultParams.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -148,7 +148,7 @@
 
 /* 1 - Dtag, 2 - Port, 3 - IP & port */ 
 #define CLSFR_TYPE_MIN                          1 
-#define CLSFR_TYPE_DEF                      3
+#define CLSFR_TYPE_DEF                      1
 #define CLSFR_TYPE_MAX                      3
 
 /* general values of D-tags */
@@ -183,13 +183,21 @@ point) classifier parameters
 
 #define NUM_OF_CODE_POINTS_MIN              0
 #define NUM_OF_CODE_POINTS_MAX              16
-#define NUM_OF_CODE_POINTS_DEF              0
+#define NUM_OF_CODE_POINTS_DEF              4
 
 /* def values of code points in the DSCP classification table*/
 #define DSCP_CLASSIFIER_CODE_POINT_DEF  0x0
+#define DSCP_CLASSIFIER_CODE_POINT_00  0
+#define DSCP_CLASSIFIER_CODE_POINT_01  8
+#define DSCP_CLASSIFIER_CODE_POINT_02  40
+#define DSCP_CLASSIFIER_CODE_POINT_03  56
 
 /* def values of D-tags in the DSCP classification table*/
 #define DSCP_CLASSIFIER_DTAG_DEF            0
+#define DSCP_CLASSIFIER_DTAG_00            0
+#define DSCP_CLASSIFIER_DTAG_01            1
+#define DSCP_CLASSIFIER_DTAG_02            5
+#define DSCP_CLASSIFIER_DTAG_03            6
 
 /* Port Classifier parameters 
 --------------------------------*/
@@ -312,26 +320,45 @@ IP&Port classification table  */
 #define  QOS_WME_PS_MODE_VO_DEF                 PS_SCHEME_UPSD_TRIGGER
 
 
-/* Minimum reserved Tx mem block in FW per AC */
+/* Minimum reserved Tx mem block in FW per AC: */
+/***********************************************/
+/* By default, partially optimize for Tx QoS on expense of Rx throughput */
 #define  QOS_TX_BLKS_THRESHOLD_BK_DEF           0
-#define  QOS_TX_BLKS_THRESHOLD_BE_DEF           10
-#define  QOS_TX_BLKS_THRESHOLD_VI_DEF           10
-#define  QOS_TX_BLKS_THRESHOLD_VO_DEF           10
-#define  QOS_TX_BLKS_THRESHOLD_BK_DEF_WIFI_MODE           0
+#define  QOS_TX_BLKS_THRESHOLD_BE_DEF           20
+#define  QOS_TX_BLKS_THRESHOLD_VI_DEF           20
+#define  QOS_TX_BLKS_THRESHOLD_VO_DEF           20
+/* In WiFi mode, fully optimized for Tx QoS on expense of Rx throughput */
+#define  QOS_TX_BLKS_THRESHOLD_BK_DEF_WIFI_MODE 0
 #define  QOS_TX_BLKS_THRESHOLD_BE_DEF_WIFI_MODE 30
-#define  QOS_TX_BLKS_THRESHOLD_VI_DEF_WIFI_MODE           30
-#define  QOS_TX_BLKS_THRESHOLD_VO_DEF_WIFI_MODE           30
+#define  QOS_TX_BLKS_THRESHOLD_VI_DEF_WIFI_MODE 30
+#define  QOS_TX_BLKS_THRESHOLD_VO_DEF_WIFI_MODE 30
+/* In performance-boost, optimize for Rx throughput on expense of Tx QoS */
+#define  QOS_TX_BLKS_THRESHOLD_BK_DEF_BOOST_MODE 0
+#define  QOS_TX_BLKS_THRESHOLD_BE_DEF_BOOST_MODE 10
+#define  QOS_TX_BLKS_THRESHOLD_VI_DEF_BOOST_MODE 10
+#define  QOS_TX_BLKS_THRESHOLD_VO_DEF_BOOST_MODE 10
 
 /* HW Rx mem-blocks Number */
-#define  RX_MEM_BLKS_NUM_DEF                    70
 #define  RX_MEM_BLKS_NUM_MIN                    20
 #define  RX_MEM_BLKS_NUM_MAX                    120
-#define  RX_MEM_BLKS_NUM_DEF_WIFI_MODE          40
+#define  RX_MEM_BLKS_NUM_DEF                    50   /* By default, partially optimize for Tx QoS on expense of Rx throughput */
+#define  RX_MEM_BLKS_NUM_DEF_WIFI_MODE          40   /* In WiFi mode, fully optimize for Tx QoS on expense of Rx throughput */
+#define  RX_MEM_BLKS_NUM_DEF_BOOST_MODE         70   /* In performance-boost, optimize for Rx throughput on expense of Tx QoS */
 
 /* WiFi mode on/off */
 #define  WIFI_MODE_DEF                          0
 #define  WIFI_MODE_MIN                          0
 #define  WIFI_MODE_MAX                          1
+
+/* Performance-boost mode (QoS/Speed tradeoff) */
+#define  BOOST_MODE_OPTIMIZE_FOR_QOS            0   /* Optimize for Tx QoS on expense of Rx throughput */
+#define  BOOST_MODE_OPTIMIZE_FOR_SPEED          1   /* Optimize for Rx throughput on expense of Tx QoS */
+#define  PERFORMANCE_BOOST_MODE_DEF             BOOST_MODE_OPTIMIZE_FOR_QOS
+#define  PERFORMANCE_BOOST_MODE_MIN             BOOST_MODE_OPTIMIZE_FOR_QOS
+#define  PERFORMANCE_BOOST_MODE_MAX             BOOST_MODE_OPTIMIZE_FOR_SPEED
+
+/* Maximum AMPDU Size */
+#define MAX_MPDU_DEF                            MAX_MPDU_8191_OCTETS
 
 /* STOP NETWORK STACK TX mode defines */
 #define  STOP_NET_STACK_TX_DEF                  0
@@ -465,7 +492,7 @@ IP&Port classification table  */
 
 #define QOS_CW_CWMIN_MIN                        QOS_CWMIN_MIN
 #define QOS_CW_CWMIN_MAX                        QOS_CWMIN_MAX
-#define QOS_CW_CWMIN_DEF                        CW_MIN_MAX
+#define QOS_CW_CWMIN_DEF                        CW_MIN_DEF
 
 #define QOS_CW_CWMAX_MIN                        QOS_CWMAX_MIN
 #define QOS_CW_CWMAX_MAX                        QOS_CWMAX_MAX
@@ -530,6 +557,11 @@ IP&Port classification table  */
 #define ROAMING_MNGR_OPERATIONAL_MODE_MIN       0 /* 0 - manual , 1 - auto*/
 #define ROAMING_MNGR_OPERATIONAL_MODE_MAX       1
 #define ROAMING_MNGR_OPERATIONAL_MODE_DEF       1
+
+#define ROAMING_MNGR_SEND_TSPEC_IN_REASSO_PKT_MIN       0 /* 0 - do not send , 1 - send */
+#define ROAMING_MNGR_SEND_TSPEC_IN_REASSO_PKT_MAX       1
+#define ROAMING_MNGR_SEND_TSPEC_IN_REASSO_PKT_DEF       1
+
 
 /*---------------------------
     Measurement parameters
@@ -880,6 +912,14 @@ IP&Port classification table  */
 #define SCAN_CNCN_APP_PUSH_MODE_MIN             TI_FALSE
 #define SCAN_CNCN_APP_PUSH_MODE_MAX             TI_TRUE
 
+#define SCAN_CNCN_APP_SRA_DEF                   20
+#define SCAN_CNCN_APP_SRA_MIN                   0
+#define SCAN_CNCN_APP_SRA_MAX                   1000
+
+#define SCAN_CNCN_RSSI_DEF                      (-100)
+#define SCAN_CNCN_RSSI_MIN                      (-100)
+#define SCAN_CNCN_RSSI_MAX                      0
+
 /* Current BSS init paramaters - keep alive default interval */
 #define NULL_KL_PERIOD_DEF      10
 #define NULL_KL_PERIOD_MIN      0
@@ -895,7 +935,7 @@ IP&Port classification table  */
 #define WSC_PARSE_IN_BEACON_MIN 0
 #define WSC_PARSE_IN_BEACON_MAX 1
 
-#define WSC_INCLUDE_IN_BEACON_DEF 0
+#define WSC_INCLUDE_IN_BEACON_DEF 1
 #define WSC_INCLUDE_IN_BEACON_MIN 0
 #define WSC_INCLUDE_IN_BEACON_MAX 1
 
@@ -928,8 +968,8 @@ IP&Port classification table  */
 #define SOFT_GEMINI_PARAMS_NFS_SAMPLE_INTERVAL_DEF	400
 
 #define SOFT_GEMINI_PARAMS_LOAD_RATIO_MIN				0
-#define SOFT_GEMINI_PARAMS_LOAD_RATIO_MAX				100
-#define SOFT_GEMINI_PARAMS_LOAD_RATIO_DEF				50
+#define SOFT_GEMINI_PARAMS_LOAD_RATIO_MAX				65000
+#define SOFT_GEMINI_PARAMS_LOAD_RATIO_DEF				200
 
 #define SOFT_GEMINI_PARAMS_AUTO_PS_MODE_MIN				0
 #define SOFT_GEMINI_PARAMS_AUTO_PS_MODE_MAX				1
@@ -1118,11 +1158,11 @@ IP&Port classification table  */
 
 #define SOFT_GEMINI_TEMP_PARAM_4_MIN    0
 #define SOFT_GEMINI_TEMP_PARAM_4_MAX 	100000
-#define SOFT_GEMINI_TEMP_PARAM_4_DEF 	0
+#define SOFT_GEMINI_TEMP_PARAM_4_DEF 	23
 
 #define SOFT_GEMINI_TEMP_PARAM_5_MIN    0
 #define SOFT_GEMINI_TEMP_PARAM_5_MAX 	100000
-#define SOFT_GEMINI_TEMP_PARAM_5_DEF 	0
+#define SOFT_GEMINI_TEMP_PARAM_5_DEF 	22
 
 
 #define WIFI_WMM_PS_MIN                         0  
@@ -1186,7 +1226,7 @@ IP&Port classification table  */
 #define FM_COEX_ENABLE_MIN                             TI_FALSE  
 #define FM_COEX_ENABLE_MAX                             TI_TRUE 
 
-#define FM_COEX_SWALLOW_PERIOD_DEF                     0xFF
+#define FM_COEX_SWALLOW_PERIOD_DEF                     5
 #define FM_COEX_SWALLOW_PERIOD_MIN                     0
 #define FM_COEX_SWALLOW_PERIOD_MAX                     0xFF
 
@@ -1194,11 +1234,11 @@ IP&Port classification table  */
 #define FM_COEX_N_DIVIDER_FREF_SET1_MIN                0
 #define FM_COEX_N_DIVIDER_FREF_SET1_MAX                0xFF
 
-#define FM_COEX_N_DIVIDER_FREF_SET2_DEF                0xFF                  
+#define FM_COEX_N_DIVIDER_FREF_SET2_DEF                12                  
 #define FM_COEX_N_DIVIDER_FREF_SET2_MIN                0   
 #define FM_COEX_N_DIVIDER_FREF_SET2_MAX                0xFF
 
-#define FM_COEX_M_DIVIDER_FREF_SET1_DEF                0xFFFF   
+#define FM_COEX_M_DIVIDER_FREF_SET1_DEF                148   
 #define FM_COEX_M_DIVIDER_FREF_SET1_MIN                0   
 #define FM_COEX_M_DIVIDER_FREF_SET1_MAX                0xFFFF
 
@@ -1317,16 +1357,16 @@ IP&Port classification table  */
 
 
 /* Configurable radio parameters */
-#define RADIO_TX_PER_POWER_LIMITS_2_4_NORMAL_DEF_TABLE      "1c,1f,22,24,28,29"
-#define RADIO_TX_PER_POWER_LIMITS_2_4_DEGRADED_DEF_TABLE    "19,1f,22,23,27,28"
-#define RADIO_TX_PER_POWER_LIMITS_2_4_EXTREME_DEF_TABLE     "19,1c,1e,20,24,25"
+#define RADIO_TX_PER_POWER_LIMITS_2_4_NORMAL_DEF_TABLE      "1d,1f,22,26,28,29"
+#define RADIO_TX_PER_POWER_LIMITS_2_4_DEGRADED_DEF_TABLE    "1a,1f,22,24,26,28"
+#define RADIO_TX_PER_POWER_LIMITS_2_4_EXTREME_DEF_TABLE     "16,1d,1e,20,24,25"
 
 
 #define RADIO_TX_PER_POWER_LIMITS_2_4_11B_DEF_TABLE         "50,50,50,50,50,50,50,50,50,50,50,50,50,50"
 #define RADIO_TX_PER_POWER_LIMITS_2_4_OFDM_DEF_TABLE        "50,50,50,50,50,50,50,50,50,50,50,50,50,50"
 #define RADIO_TX_PA_GAIN_VS_BIAS_OFFSET_2_4_DEF_TABLE       "f3,54,55,56,57,58"
-#define RADIO_TX_PD_VS_RATE_OFFSET_2_4_DEF_TABLE            "00,00,00,00,00,00 "
-#define RADIO_TX_BIAS_2_4_DEF_TABLE                         "11,11,15,11,15,15"
+#define RADIO_TX_PD_VS_RATE_OFFSET_2_4_DEF_TABLE            "01,02,02,02,02,00"
+#define RADIO_TX_BIAS_2_4_DEF_TABLE                         "11,11,15,11,15,0f"
 #define RADIO_TX_BIP_REF_VOLTAGE_DEF_TABLE_5G               "173,188,187,18b,18a,186,18c"
 #define RADIO_TX_BIP_REF_POWER_DEF_TABLE_5G                 "80,80,80,80,80,80,80"
 #define RADIO_TX_BIP_OFF_BD_5G                              "00,00,00,00,00,00"
@@ -1344,7 +1384,7 @@ IP&Port classification table  */
 #define RADIO_TX_TRACE_LOSS_5_DEF_TABLE                     "00,00,00,00,00,00,00"
 
 #define RADIO_RX_FEM_INSERT_LOSS_2_4_MIN                    0
-#define RADIO_RX_FEM_INSERT_LOSS_2_4_DEF                    350  /* 0x15e
+#define RADIO_RX_FEM_INSERT_LOSS_2_4_DEF                    375  /* 0x15e
  */
 #define RADIO_RX_FEM_INSERT_LOSS_2_4_MAX                    0xffff
 
@@ -1372,6 +1412,9 @@ IP&Port classification table  */
 
 #define RADIO_RX_RSSI_PROCESS_2_4_DEF_TABLE                 "7a,7b,7c,7d,7e,7f,80,81,82,83,84,85,86,87,88"
 #define RADIO_RX_RSSI_PROCESS_5_DEF_TABLE                   "00,00,00,00,00,00,00,00,00,00,00,00,00,00,00"
+
+#define RADIO_TX_PER_CH_POWER_COMPENSATION_2_4_DEF	       "00,00,00,00,00,00,00"
+#define RADIO_TX_PER_CH_POWER_COMPENSATION_5_DEF	       "00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00"
 
 #define RADIO_FREF_CLOCK_SETTING_TIME_MIN    				0
 #define RADIO_FREF_CLOCK_SETTING_TIME_DEF    				5

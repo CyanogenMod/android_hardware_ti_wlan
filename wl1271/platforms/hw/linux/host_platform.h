@@ -1,7 +1,7 @@
 /*
  * host_platform.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -44,7 +44,6 @@
 
 #include <mach/hardware.h>
 
-//OMAP343X_CTRL_BASE =  0x48002000
 
 #define OMAP_HSMMC1_BASE		0x4809C000
 #define OMAP_HSMMC2_BASE		0x480B4000

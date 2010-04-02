@@ -1,7 +1,7 @@
 /*
  * measurementMgr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -189,6 +189,7 @@ void measurementMgr_init (TStadHandlesList *pStadHandles)
     pMeasurementMgr->currentFrameType = MSR_FRAME_TYPE_NO_ACTIVE;
     pMeasurementMgr->measuredChannelID = 0;
     pMeasurementMgr->currentNumOfRequestsInParallel = 0;
+    pMeasurementMgr->bMeasurementScanExecuted = TI_FALSE;
     
     /* config sub modules */
     RequestHandler_config(pMeasurementMgr->hRequestH, pStadHandles->hReport, pStadHandles->hOs);
@@ -470,14 +471,11 @@ TI_STATUS measurementMgr_disable(TI_HANDLE hMeasurementMgr)
 TI_STATUS measurementMgr_destroy(TI_HANDLE hMeasurementMgr)
 {
     measurementMgr_t *pMeasurementMgr = (measurementMgr_t *) hMeasurementMgr;
-    TI_UINT32 initVec;
 
     if (pMeasurementMgr == NULL)
         return TI_OK;
 
     TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": MeasurementMgr is being destroyed\n");
-
-    initVec = 0xFFFF;   /* release everything */
 
     measurementMgr_releaseModule (pMeasurementMgr);
 

@@ -1,7 +1,7 @@
 /*
  * tiQosTypes.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -43,7 +43,7 @@
 #define TI_QOS_TYPES_H
 
 
-#include "TWDriver.h"
+#define MAX_NUM_OF_802_1d_TAGS          8
 
 /*
  * This enum defines the protocol modes of the QOS management object
@@ -228,7 +228,7 @@ typedef struct _OS_802_11_QOS_DESIRED_PS_MODE
 typedef enum
 {
     ADDTS_RESPONSE_ACCEPT = 0,
-/*  ADDTS_RESPONSE_REJECT,  - according to the standard*/
+    ADDTS_RESPONSE_REJECT = 3,
     ADDTS_RESPONSE_AP_PARAM_INVALID = 253,
     ADDTS_RESPONSE_TIMEOUT = 254,
     TSPEC_DELETED_BY_AP = 255

@@ -149,7 +149,6 @@ void genSM_SetDefaults (TI_HANDLE hGenSM, TI_UINT32 uStateNum, TI_UINT32 uEventN
 void genSM_Event (TI_HANDLE hGenSM, TI_UINT32 uEvent, void *pData)
 {
     TGenSM              *pGenSM =       (TGenSM*)hGenSM;
-    TI_UINT32           uCurrentState;
     TGenSM_actionCell   *pCell;
 
 	if (pGenSM == NULL)
@@ -200,9 +199,6 @@ void genSM_Event (TI_HANDLE hGenSM, TI_UINT32 uEvent, void *pData)
         /* mark that pending event is being handled */
         pGenSM->bEventPending = TI_FALSE;
         
-        /* keep current state */
-        uCurrentState = pGenSM->uCurrentState;
-
         /* update current state */
         pGenSM->uCurrentState = pCell->uNextState;
 

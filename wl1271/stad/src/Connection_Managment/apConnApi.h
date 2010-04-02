@@ -1,7 +1,7 @@
 /*
  * apConnApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -111,8 +111,9 @@ typedef enum
 
 /*	9	*/	ROAMING_TRIGGER_AP_DISCONNECT, 					/**< AP disconnect (de-authenticate or disassociate)	*/
 /*	10	*/	ROAMING_TRIGGER_SECURITY_ATTACK,				/**< Security attack	*/
-
-/*	11	*/	ROAMING_TRIGGER_LAST							/**< Maximum roaming trigger - must be last!!!	*/
+/*	11	*/	ROAMING_TRIGGER_TSPEC_REJECTED,	                /**< TSPEC Rejected	*/
+    
+/*	12	*/	ROAMING_TRIGGER_LAST							/**< Maximum roaming trigger - must be last!!!	*/
 
 } apConn_roamingTrigger_e;
 

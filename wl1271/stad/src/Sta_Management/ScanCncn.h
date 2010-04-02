@@ -1,7 +1,7 @@
 /*
  * ScanCncn.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -44,6 +44,8 @@
 #include "TWDriver.h"
 #include "scrApi.h"
 #include "mlmeApi.h"
+
+#define SCAN_CNCN_APP_SCAN_TABLE_ENTRIES 64
 
 /** \enum EScanCncnClient
  * \brief	Scan Concentrator Client

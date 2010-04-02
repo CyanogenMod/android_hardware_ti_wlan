@@ -1,7 +1,7 @@
 /*
  * CmdBld.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -297,6 +297,9 @@ static void cmdBld_ConfigFwCb (TI_HANDLE hCmdBld, TI_STATUS status, void *pData)
 
     pDmaParams->PacketMemoryPoolStart = (TI_UINT32)pMemMap->packetMemoryPoolStart;
 
+    /* Indicate that the reconfig process is over. */
+    pCmdBld->bReconfigInProgress = TI_FALSE;
+
     /* Call the upper layer callback */
     (*((TConfigFwCb)pCmdBld->fConfigFwCb)) (pCmdBld->hConfigFwCb, TI_OK);
 }
@@ -320,6 +323,7 @@ TI_STATUS cmdBld_ConfigFw (TI_HANDLE hCmdBld, void *fConfigFwCb, TI_HANDLE hConf
     pCmdBld->fConfigFwCb = fConfigFwCb;
     pCmdBld->hConfigFwCb = hConfigFwCb; 
     pCmdBld->uIniSeq = 0;
+    pCmdBld->bReconfigInProgress = TI_TRUE;
     /* should be re-initialized for recovery,   pCmdBld->uLastElpCtrlMode = ELPCTRL_MODE_KEEP_AWAKE; */
 
     /* Start configuration sequence */
@@ -377,23 +381,6 @@ static TI_STATUS __cmd_burst_mode_enable (TI_HANDLE hCmdBld)
 							  hCmdBld);
 }
 
-
-static TI_STATUS __cmd_smart_reflex_debug (TI_HANDLE hCmdBld)
-{
-    return cmdBld_CfgIeSRDebug (hCmdBld,
-							   &(DB_SR(hCmdBld).tSmartReflexDebugParams),
-							   (void *)cmdBld_ConfigSeq,
-							   hCmdBld);
-}
-
-
-static TI_STATUS __cmd_smart_reflex_state (TI_HANDLE hCmdBld)
-{
-	return cmdBld_CfgIeSRState (hCmdBld,
-							   (uint8) DB_SR(hCmdBld).tSmartReflexState.enable,
-							   (void *)cmdBld_ConfigSeq,
-							   hCmdBld);
-}
 
 static TI_STATUS __cmd_disconn (TI_HANDLE hCmdBld)
 {
@@ -790,7 +777,7 @@ static TI_STATUS __cfg_arp_ip_filter (TI_HANDLE hCmdBld)
 {
     return cmdBld_CfgIeArpIpFilter (hCmdBld, 
                                     DB_WLAN(hCmdBld).arp_IP_addr, 
-                                    (TI_BOOL)DB_WLAN(hCmdBld).arpFilterType, 
+                                    (EArpFilterType)DB_WLAN(hCmdBld).arpFilterType, 
                                     (void *)cmdBld_ConfigSeq, 
                                     hCmdBld);
 }
@@ -935,7 +922,7 @@ static TI_STATUS __cfg_coex_activity_table (TI_HANDLE hCmdBld)
 static TI_STATUS __cfg_cca_threshold (TI_HANDLE hCmdBld)
 {
     return cmdBld_CfgIeCcaThreshold (hCmdBld, 
-                                     DB_WLAN(hCmdBld).EnergyDetection, 
+                                     DB_WLAN(hCmdBld).ch14TelecCca, 
                                      (void *)cmdBld_ConfigSeq, 
                                      hCmdBld);
 }
@@ -1165,6 +1152,16 @@ static TI_STATUS __cfg_radio_params (TI_HANDLE hCmdBld)
                                     (void *)cmdBld_ConfigSeq, 
                                     hCmdBld);
 }
+
+
+static TI_STATUS __cfg_extended_radio_params (TI_HANDLE hCmdBld)
+{
+    return cmdBld_CfgIeExtendedRadioParams (hCmdBld,
+											&DB_EXT_RADIO(hCmdBld),
+											(void *)cmdBld_ConfigSeq,
+											hCmdBld);
+}
+
 
 static TI_STATUS __cfg_platform_params (TI_HANDLE hCmdBld)
 {
@@ -1472,7 +1469,7 @@ static TI_STATUS __cmd_start_join (TI_HANDLE hCmdBld)
          * Call the hardware to start/join the bss 
          */
         return cmdBld_CmdStartJoin (hCmdBld, 
-                                    DB_BSS(hCmdBld).ReqBssType, 
+                                    (ScanBssType_e)DB_BSS(hCmdBld).ReqBssType, 
                                     (void *)cmdBld_DummyCb, 
                                     hCmdBld);
     }
@@ -1521,7 +1518,7 @@ static TI_STATUS __cfg_preamble_join (TI_HANDLE hCmdBld)
     if (DB_WLAN(hCmdBld).bJoin)
     {
         /* Preamble type must be set after doing join */
-        return cmdBld_CfgPreamble (hCmdBld, DB_WLAN(hCmdBld).preamble, (void *)cmdBld_ConfigSeq, hCmdBld);              
+        return cmdBld_CfgPreamble (hCmdBld, (Preamble_e) DB_WLAN(hCmdBld).preamble, (void *)cmdBld_ConfigSeq, hCmdBld);              
     }
 
     return TI_NOK;
@@ -1793,7 +1790,7 @@ static TI_STATUS __cfg_fm_coex (TI_HANDLE hCmdBld)
 
 static TI_STATUS __cfg_rate_management (TI_HANDLE hCmdBld)
 {
-	DB_RM(hCmdBld).rateMngParams.paramIndex = 0xFF;
+	DB_RM(hCmdBld).rateMngParams.paramIndex = (rateAdaptParam_e) 0xFF;
 
 	return cmdBld_CfgIeRateMngDbg(hCmdBld,
 						   &DB_RM(hCmdBld).rateMngParams,
@@ -1821,6 +1818,7 @@ static const TCmdCfgFunc aCmdIniSeq [] =
 {
     __cfg_platform_params,
     __cfg_radio_params,
+	__cfg_extended_radio_params,
     __cmd_probe_req,
     __cmd_null_data,
     __cmd_disconn,
@@ -1905,8 +1903,6 @@ static const TCmdCfgFunc aCmdIniSeq [] =
     __cmd_sta_state,
     __cmd_power_auth,
 	__cmd_burst_mode_enable,
-    __cmd_smart_reflex_state,
-    __cmd_smart_reflex_debug,
 	__cfg_rate_management,
     __cmd_arp_rsp_join,
     /* Interrogate command -> must be last!! */

@@ -1,7 +1,7 @@
 /*
  * rx.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -966,7 +966,7 @@ void rxData_receivePacketFromWlan (TI_HANDLE hRxData, void *pBuffer, TRxAttr* pR
         /* distribute mgmt pBuffer to mlme */
         if( mlmeParser_recv(pRxData->hMlme, pBuffer, pRxAttr) != TI_OK )
         {
-            TRACE0(pRxData->hReport, REPORT_SEVERITY_WARNING, " rxData_receivePacketFromWlan() : MLME returned error \n");
+            TRACE0(pRxData->hReport, REPORT_SEVERITY_ERROR, " rxData_receivePacketFromWlan() : MLME returned error \n");
         }
         break;
 
@@ -985,7 +985,7 @@ void rxData_receivePacketFromWlan (TI_HANDLE hRxData, void *pBuffer, TRxAttr* pR
         }
 
     default:
-        TRACE0(pRxData->hReport, REPORT_SEVERITY_WARNING, " rxData_receivePacketFromWlan(): Received unspecified packet type !!! \n");
+        TRACE0(pRxData->hReport, REPORT_SEVERITY_ERROR, " rxData_receivePacketFromWlan(): Received unspecified packet type !!! \n");
         RxBufFree(pRxData->hOs, pBuffer); 
         break;
     }
@@ -1176,7 +1176,7 @@ static void rxData_rcvPacketInOpenNotify (TI_HANDLE hRxData, void *pBuffer, TRxA
 {
     rxData_t *pRxData = (rxData_t *)hRxData;
 
-    TRACE0(pRxData->hReport, REPORT_SEVERITY_WARNING, " rxData_rcvPacketInOpenNotify: receiving data packet while in rx port status is open notify\n");
+    TRACE0(pRxData->hReport, REPORT_SEVERITY_ERROR, " rxData_rcvPacketInOpenNotify: receiving data packet while in rx port status is open notify\n");
 
     pRxData->rxDataDbgCounters.rcvUnicastFrameInOpenNotify++;
 
@@ -1719,7 +1719,7 @@ static void rxData_ReceivePacket (TI_HANDLE   hRxData,
 
         TRACE0(pRxData->hReport, REPORT_SEVERITY_INFORMATION , "Receive good Packet\n");
         
-        if (rate_PolicyToDrv (pRxParams->rate, &appRate) != TI_OK)
+        if (rate_PolicyToDrv ((ETxRateClassId)(pRxParams->rate), &appRate) != TI_OK)
         {
             TRACE1(pRxData->hReport, REPORT_SEVERITY_ERROR , "rxData_ReceivePacket: can't convert hwRate=0x%x\n", pRxParams->rate);
         }
@@ -1737,7 +1737,7 @@ static void rxData_ReceivePacket (TI_HANDLE   hRxData,
         /* for now J band not implemented */
         RxAttr.band       = ((pRxParams->flags & RX_DESC_BAND_MASK) == RX_DESC_BAND_A) ? 
                             RADIO_BAND_5_0_GHZ : RADIO_BAND_2_4_GHZ ;
-        RxAttr.eScanTag   = pRxParams->proccess_id_tag;
+        RxAttr.eScanTag   = (EScanResultTag)(pRxParams->proccess_id_tag);
         /* timestamp is 32 bit so do bytes copy to avoid exception in case the RxInfo is in 2 bytes offset */
         os_memoryCopy (pRxData->hOs,
                        (void *)&(RxAttr.TimeStamp), 

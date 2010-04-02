@@ -1,7 +1,7 @@
 /*
  * admCtrlWpa.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -96,14 +96,14 @@ typedef struct
 
 	TI_UINT8  				elementid;	   /* WPA information element id is 0xDD */	   
 	TI_UINT8  				length;			   
-    TI_UINT8  				oui[DOT11_OUI_LEN];
+    TI_UINT8  				oui[DOT11_OUI_LEN - 1];
 	TI_UINT8  				ouiType;
     TI_UINT16 				version;
-    TI_UINT8 				groupSuite[DOT11_OUI_LEN+1];
+    TI_UINT8 				groupSuite[DOT11_OUI_LEN];
     TI_UINT16 				pairwiseSuiteCnt;
-	TI_UINT8				pairwiseSuite[DOT11_OUI_LEN+1];
+	TI_UINT8				pairwiseSuite[DOT11_OUI_LEN];
 	TI_UINT16 				authKeyMngSuiteCnt;
-	TI_UINT8				authKeyMngSuite[DOT11_OUI_LEN+1];
+	TI_UINT8				authKeyMngSuite[DOT11_OUI_LEN];
     TI_UINT16				capabilities;
 } wpaIePacket_t;
 

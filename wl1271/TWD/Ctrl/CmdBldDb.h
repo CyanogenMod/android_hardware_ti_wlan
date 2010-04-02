@@ -1,7 +1,7 @@
 /*
  * CmdBldDb.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -111,7 +111,7 @@ typedef struct
     TI_UINT32                  PsPollTemplateSize;
     TI_UINT32                  qosNullDataTemplateSize;
     TI_UINT32                  ArpRspTemplateSize;
-    TI_BOOL                    EnergyDetection;
+    TI_BOOL                    ch14TelecCca;
     TI_UINT8                   PacketDetectionThreshold;
     TI_UINT8                   FcsErrThrsh;
     TI_UINT8                   UseDeviceErrorInterrupt;
@@ -310,14 +310,6 @@ typedef struct
 
 typedef struct
 {
- ACXSmartReflexConfigParams_t     tSmartReflexParams;
- ACXSmartReflexDebugParams_t      tSmartReflexDebugParams;
- ACXSmartReflexState_t            tSmartReflexState;
-
-}TSmartReflexParams ;
-
-typedef struct
-{
 	RateMangeParams_t rateMngParams;
 
 } TRateMngParams;
@@ -343,9 +335,9 @@ typedef struct
     TKeepAliveList             klvList;             /* Keep-Alive paramters     */  
     TSecurReconf               keys;                /* Security keys            */
     TRxDataFiltersTable        rxDataFilters;       /* Rx data filters          */
-    IniFileGeneralParam        tPlatformGenParams;  /* platfrom gen params from public_radio.h  */
+    IniFileGeneralParam        tPlatformGenParams;  /* platfrom gen params from public_radio.h  */   
     IniFileRadioParam          tRadioIniParams;     /* Radio ini params from public_radio.h     */
-    TSmartReflexParams         tSmartReflex;
+	IniFileExtendedRadioParam  tExtRadioIniParams;  /* Extended Radio ini params from public_radio.h     */
 	TRateMngParams		       tRateMngParams;      /* rate management params */
 } TCmdBldDb;
 

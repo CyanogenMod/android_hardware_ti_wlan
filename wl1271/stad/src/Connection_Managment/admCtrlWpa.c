@@ -1,7 +1,7 @@
 /*
  * admCtrlWpa.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -527,11 +527,10 @@ TI_STATUS admCtrlWpa_getInfoElement(admCtrl_t *pAdmCtrl, TI_UINT8 *pIe, TI_UINT3
     wpaIePacket_t   *pWpaIePacket;
     TI_UINT8        length;
     TI_UINT16       tempInt;
-    TI_STATUS       status;
     TIWLN_SIMPLE_CONFIG_MODE wscMode;
 
     /* Get Simple-Config state */
-    status = siteMgr_getParamWSC(pAdmCtrl->pRsn->hSiteMgr, &wscMode); /* SITE_MGR_SIMPLE_CONFIG_MODE */
+    siteMgr_getParamWSC(pAdmCtrl->pRsn->hSiteMgr, &wscMode); /* SITE_MGR_SIMPLE_CONFIG_MODE */
 
     if (pIe==NULL)
     {
@@ -621,11 +620,11 @@ TI_STATUS admCtrlWpa_getInfoElement(admCtrl_t *pAdmCtrl, TI_UINT8 *pIe, TI_UINT3
 		case RSN_EXT_AUTH_MODE_WPA:
 			{
 #ifdef XCC_MODULE_INCLUDED
-				TI_UINT8	akmSuite[DOT11_OUI_LEN+1];
+				TI_UINT8	akmSuite[DOT11_OUI_LEN];
 
 				if (admCtrlXCC_getCckmAkm(pAdmCtrl, akmSuite))
 				{
-					os_memoryCopy(pAdmCtrl->hOs, (void*)pWpaIePacket->authKeyMngSuite, akmSuite, DOT11_OUI_LEN+1);
+					os_memoryCopy(pAdmCtrl->hOs, (void*)pWpaIePacket->authKeyMngSuite, akmSuite, DOT11_OUI_LEN);
 				}
 				else
 #endif
@@ -1071,14 +1070,7 @@ TI_STATUS admCtrlWpa_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSiteP
         wpaData.unicastSuite[0] = admCtrlWpa_validity.unicast;
         *pEvaluation = admCtrlWpa_validity.evaluation;
     }
-/*** OMAPS00214746_CHANGE_START ***/
-#if 0
-    if ((encryptionStatus == TWD_CIPHER_TKIP) && (pRsnSiteParams->pHTCapabilities->tHdr[0] != TI_FALSE) && (pRsnSiteParams->pHTInfo->tHdr[0] != TI_FALSE))
-	{
-		TRACE0(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION,"Dismiss AP - HT with TKIP is not valid");
-        return TI_NOK; /* if the encyption is TKIP and the site does support HT(11n) the site can not be a candidate */
-	}
-#endif
+
 	/* Check privacy bit if not in mixed mode */
     if (!pAdmCtrl->mixedMode)
     {   /* There's no mixed mode, so make sure that the privacy Bit matches the privacy mode*/
@@ -1217,7 +1209,7 @@ TI_STATUS admCtrlWpa_parseIe(admCtrl_t *pAdmCtrl, TI_UINT8 *pWpaIe, wpaIeData_t 
     {
         TI_UINT16              keyMngSuiteCnt = ENDIAN_HANDLE_WORD(*curWpaIe);
         TI_UINT16              index;
-        ERsnKeyMngSuite   maxKeyMngSuite = WPA_IE_KEY_MNG_NONE;
+        ERsnKeyMngSuite   maxKeyMngSuite = (ERsnKeyMngSuite)WPA_IE_KEY_MNG_NONE;
 
         /* Include all AP key management supported suites in the wpaData structure */
         pWpaData->KeyMngSuiteCnt = keyMngSuiteCnt;

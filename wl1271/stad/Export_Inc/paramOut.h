@@ -1,7 +1,7 @@
 /*
  * paramOut.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -750,8 +750,13 @@ typedef struct{
         TScanParams                 		*pScanParams;
         TPeriodicScanParams         		*pPeriodicScanParams;
         TI_UINT32                   		uBssidListSize;
+		TI_UINT32                   		uNumBssidInList;
         OS_802_11_BSSID_LIST_EX     		*pBssidList;
+		OS_802_11_N_RATES					*pRateList;
         TSsid                   			tScanDesiredSSID;
+
+        TI_UINT32                           uSraThreshold;
+        TI_INT32                            nRssiThreshold;
 
         /* tx data qos related parameters */
         TTxDataQosParams           			txDataQosParams;
@@ -926,6 +931,7 @@ typedef struct
 {
     TI_BOOL  RoamingScanning_2_4G_enable;
 	TI_UINT8 RoamingOperationalMode;
+    TI_UINT8 bSendTspecInReassPkt;
 }   TRoamScanMngrInitParams;
 
 typedef struct
@@ -1121,6 +1127,9 @@ typedef struct
     TI_UINT32       uMinimumDurationBetweenOsScans;
     TI_UINT32       uDfsPassiveDwellTimeMs;
     TI_BOOL	        bPushMode; /*  True means Push mode. False is the default mode, storing scan results in table. */
+    TI_UINT32       uSraThreshold;
+    TI_INT32        nRssiThreshold;
+
 } TScanCncnInitParams;
 
 typedef struct

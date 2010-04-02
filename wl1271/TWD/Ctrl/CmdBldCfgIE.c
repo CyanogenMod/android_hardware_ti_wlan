@@ -1,7 +1,7 @@
 /*
  * CmdBldCfgIE.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -1883,6 +1883,47 @@ TI_STATUS cmdBld_CfgIeRadioParams (TI_HANDLE hCmdBld, IniFileRadioParam *pIniFil
 }
 
 
+/** 
+ * \fn     cmdBld_CfgIeExtendedRadioParams 
+ * \brief  configure extended radio parameters setting in the
+ * FW.
+ *
+ * \note    
+ * \return TI_OK on success or TI_NOK on failure 
+ * \sa 
+ */ 
+TI_STATUS cmdBld_CfgIeExtendedRadioParams (TI_HANDLE hCmdBld,
+										   IniFileExtendedRadioParam *pIniFileExtRadioParams,
+										   void *fCb,
+										   TI_HANDLE hCb)
+{
+    TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
+    TI_STATUS status = TI_NOK;
+    TTestCmd *pTestCmd;
+
+    pTestCmd = os_memoryAlloc(pCmdBld->hOs, sizeof(TTestCmd));
+    if (!pTestCmd)
+    {
+        return status;
+    }
+
+    pTestCmd->testCmdId = TEST_CMD_INI_FILE_RF_EXTENDED_PARAM;
+    
+    os_memoryCopy(pCmdBld->hOs, &pTestCmd->testCmd_u.IniFileExtendedRadioParams,
+				  pIniFileExtRadioParams, sizeof(IniFileExtendedRadioParam));
+
+    status = cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
+                             CMD_TEST, 
+                             (void *)pTestCmd, 
+                             sizeof(IniFileExtendedRadioParam) + 4,
+                             fCb, 
+                             hCb, 
+                             NULL);
+    os_memoryFree(pCmdBld->hOs, pTestCmd, sizeof(TTestCmd));
+    return status;
+}
+
+
 TI_STATUS cmdBld_CfgPlatformGenParams (TI_HANDLE hCmdBld, IniFileGeneralParam *pGenParams, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
@@ -1942,74 +1983,6 @@ TI_STATUS cmdBld_CfgIeBurstMode (TI_HANDLE hCmdBld, TI_BOOL bEnabled, void *fCb,
 	return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, pCfg, sizeof(*pCfg), fCb, hCb, NULL);
 }
 
-/****************************************************************************
- *                      cmdBld_CfgIeSRstate()
- ****************************************************************************
- * DESCRIPTION: Configure sart reflex state
- *
- * INPUTS:  hCmdBld     - handle to command builder object
- *          bEnabled    - is enabled flag
- *          fCB         - callback function for command complete
- *          hCb         - handle to be apssed to callback function
- *
- * OUTPUT:  None
- *
- * RETURNS: OK or NOK
- ****************************************************************************/
-
-TI_STATUS cmdBld_CfgIeSRState (TI_HANDLE hCmdBld, uint8 SRstate, void *fCb, TI_HANDLE hCb)
-{
-    TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
-    ACXSmartReflexState_t tSmartReflexState;
-    ACXSmartReflexState_t *pCfg = &tSmartReflexState;
-
-    /* set IE header */
-    pCfg->EleHdr.id = ACX_SET_SMART_REFLEX_STATE;
-    pCfg->EleHdr.len = sizeof(*pCfg) - sizeof(EleHdrStruct);
-
-    /* set smart refelx state */
-    pCfg->enable = SRstate;
-
-    /* send the command to the FW */
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, pCfg, sizeof(*pCfg), fCb, hCb, NULL);
-
-}
-
-/****************************************************************************
- *                      cmdBld_CfgIeSRDebug()
- ****************************************************************************
- * DESCRIPTION: Send debug param just if it's configured in ini file
- * INPUTS:  hCmdBld     - handle to command builder object
- *          bEnabled    - is enabled flag
- *          fCB         - callback function for command complete
- *          hCb         - handle to be apssed to callback function
- *
- * OUTPUT:  None
- *
- * RETURNS: OK or NOK
- ****************************************************************************/
-TI_STATUS cmdBld_CfgIeSRDebug (TI_HANDLE hCmdBld, ACXSmartReflexDebugParams_t *pSRDebug, void *fCb, TI_HANDLE hCb)
-{
-    TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
-    ACXSmartReflexDebugParams_t tSmartReflexDebug;
-    ACXSmartReflexDebugParams_t *pCfg = &tSmartReflexDebug;
-
-   /* send this command to FW just in case it's initialize in ini file */
-    if (pSRDebug->senNRN == 0) {
-        return TI_NOK;
-    }
-
-    /* copy smart reflex debug params*/
-    os_memoryCopy(pCmdBld->hOs, pCfg, pSRDebug, sizeof(ACXSmartReflexDebugParams_t));
-
-    /* set IE header */
-    pCfg->EleHdr.id = ACX_SET_SMART_REFLEX_DEBUG;
-    pCfg->EleHdr.len = sizeof(*pCfg) - sizeof(EleHdrStruct);
-
-    /* send the command to the FW */
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, pCfg, sizeof(*pCfg), fCb, hCb, NULL);
-
-}
 
 /****************************************************************************
  *                      cmdBld_CfgIeDcoItrimParams()

@@ -1,7 +1,7 @@
 /*
  * mlmeParser.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -281,7 +281,7 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
                 */
 
                 /* check if this is WME IE */
-                if((os_memoryCompare(pHandle->hOs, wpaIeOuiIe, pData+2, DOT11_OUI_LEN) == 0) && 
+                if((os_memoryCompare(pHandle->hOs, wpaIeOuiIe, pData+2, DOT11_OUI_LEN - 1) == 0) && 
 						((*(TI_UINT8*)(pData+5)) == dot11_WME_OUI_TYPE))
                 {
                     pHandle->tempFrameInfo.frame.content.assocRsp.WMEParams = &(pHandle->tempFrameInfo.WMEParams);
@@ -296,7 +296,7 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
                 }
 #ifdef XCC_MODULE_INCLUDED
 				/* check if this is XCC vendor specific OUI */
-				else if (os_memoryCompare(pHandle->hOs, XCC_oui, pData+2, DOT11_OUI_LEN) == 0) 
+				else if (os_memoryCompare(pHandle->hOs, XCC_oui, pData+2, DOT11_OUI_LEN - 1) == 0) 
 				{
 					pXCCIeParameter = &(pHandle->tempFrameInfo.frame.content.assocRsp.XCCIEs[WMEQosTagToACTable[*(pData+6)]]);
 					mlmeParser_readXCCOui(pData, bodyDataLen, &readLen, pXCCIeParameter);
@@ -504,7 +504,7 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
                                           pRxAttr, 
                                           &(pHandle->tempFrameInfo.bssid), 
                                           &(pHandle->tempFrameInfo.frame), 
-                                          (char *)pMgmtFrame->body+TIME_STAMP_LEN+4, 
+                                          (TI_UINT8 *)(pMgmtFrame->body+TIME_STAMP_LEN+4), 
                                           RX_BUF_LEN(pBuffer)-WLAN_HDR_LEN-TIME_STAMP_LEN-4);
         }
 
@@ -631,7 +631,7 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
 			currBSS_beaconReceivedCallb(pHandle->hCurrBss, pRxAttr, 
                                     &(pHandle->tempFrameInfo.bssid), 
                                     &(pHandle->tempFrameInfo.frame), 
-                                    (char *)pMgmtFrame->body+TIME_STAMP_LEN+4, 
+                                    (TI_UINT8 *)(pMgmtFrame->body+TIME_STAMP_LEN+4), 
                                     RX_BUF_LEN(pBuffer)-WLAN_HDR_LEN-TIME_STAMP_LEN-4);
         }
 
@@ -1109,14 +1109,14 @@ TI_STATUS mlmeParser_readWMEParams(mlme_t *pMlme,TI_UINT8 *pData, TI_UINT32 data
 
 	if (dataLen < *pReadLen)
 	{
-		TRACE2(pMlme->hReport, REPORT_SEVERITY_WARNING, "MLME_PARSER: WME Parameter: eleLen=%d is too long (%d)\n", *pReadLen, dataLen);
+		TRACE2(pMlme->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: WME Parameter: eleLen=%d is too long (%d)\n", *pReadLen, dataLen);
 		*pReadLen = dataLen;
 		return TI_NOK;
 	}
 
 	if ((pWMEParamIE->hdr[1]> WME_TSPEC_IE_LEN) || (pWMEParamIE->hdr[1]< DOT11_WME_ELE_LEN))
 	{
-		TRACE1(pMlme->hReport, REPORT_SEVERITY_WARNING, "MLME_PARSER: WME Parameter IE error: eleLen=%d\n", pWMEParamIE->hdr[1]);
+        TRACE1(pMlme->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: WME Parameter IE error: eleLen=%d\n", pWMEParamIE->hdr[1]);
 		return TI_NOK;
 	}
 
@@ -1549,13 +1549,13 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
 			CHECK_PARSING_ERROR_CONDITION((status != TI_OK), ("MLME_PARSER: error reading DS parameters\n"),TI_TRUE);
 			if (RADIO_BAND_2_4_GHZ == params->band )
 			{
-#if CHECK_PARSING_ERROR_CONDITION_PRINT
 				if (frame->pDSParamsSet->currChannel != params->rxChannel)
 				{
 					TRACE2(pHandle->hReport, REPORT_SEVERITY_ERROR, "Channel ERROR - incompatible channel source information: Frame=%d Vs Radio=%d.\nparser ABORTED!!!\n",
 						frame->pDSParamsSet->currChannel , params->rxChannel);
+
+					return TI_NOK;
 				}
-#endif
 			}
 			break;
 		/* read CF parameter set */
@@ -1596,11 +1596,13 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
 			break;
 
 		/* read Channel Switch Mode */
-		case CHANNEL_SWITCH_ANNOUNCEMENT_IE_ID:
-			if (params->myBssid)
+        case CHANNEL_SWITCH_ANNOUNCEMENT_IE_ID:
+            
+            frame->channelSwitch = &params->channelSwitch;
+
+            if (params->myBssid)
 			{   /* Ignore Switch Channel commands from non my BSSID */
 				params->recvChannelSwitchAnnoncIE = TI_TRUE;
-				frame->channelSwitch = &params->channelSwitch;
 				status = mlmeParser_readChannelSwitch(pHandle, pData, bodyDataLen, &readLen, frame->channelSwitch, params->rxChannel);
 				if (status != TI_OK)
 				{

@@ -1,7 +1,7 @@
 /*
  * systemConfig.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -184,7 +184,8 @@ siteEntry_t *addSelfSite(TI_HANDLE hSiteMgr)
 	if (OS_802_11_SSID_JUNK (pSsid->str, pSsid->len))
 		return NULL;
 
-	if (MAC_BROADCAST (pSiteMgr->pDesiredParams->siteMgrDesiredBSSID))
+	if ((MAC_BROADCAST (pSiteMgr->pDesiredParams->siteMgrDesiredBSSID)) ||
+		(BSS_INDEPENDENT == pSiteMgr->pDesiredParams->siteMgrDesiredBSSType))
 	{
 		MAC_COPY (bssid, pSiteMgr->ibssBssid);
 	}
@@ -280,7 +281,9 @@ static TI_STATUS sendProbeResponse(siteMgr_t *pSiteMgr, TMacAddr *pBssid)
 	if (rsnStatus == TWD_CIPHER_NONE)
 	{
 		frame.content.iePacket.capabilities |= (TI_FALSE << CAP_PRIVACY_SHIFT);
-	} else {
+	} 
+    else 
+    {
 		frame.content.iePacket.capabilities |= (TI_TRUE << CAP_PRIVACY_SHIFT);
 	}
 	
@@ -296,22 +299,15 @@ static TI_STATUS sendProbeResponse(siteMgr_t *pSiteMgr, TMacAddr *pBssid)
 	/* Build ssid */
 	os_memoryZero(pSiteMgr->hOs, (void *)ssid.serviceSetId, MAX_SSID_LEN);
 
-	if (pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len == 0)
-		ssid.hdr[1] = 0;
-    /* It looks like it never happens. Anyway decided to check */
-    else  if ( pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len > DOT11_SSID_MAX_LEN )
+    ssid.hdr[1] = pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len;   
+    if (ssid.hdr[1] > MAX_SSID_LEN)
     {
-        TRACE2( pSiteMgr->hReport, REPORT_SEVERITY_ERROR,
+        TRACE2(pSiteMgr->hReport, REPORT_SEVERITY_ERROR,
                "sendProbeResponse. siteMgrDesiredSSID.len=%d exceeds the limit %d\n",
-                   pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len, DOT11_SSID_MAX_LEN);
-        handleRunProblem(PROBLEM_BUF_SIZE_VIOLATION);
-        return TI_NOK;
+               pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len, MAX_SSID_LEN);
+        ssid.hdr[1] = MAX_SSID_LEN;
     }
-	else
-	{
-		os_memoryCopy(pSiteMgr->hOs, (void *)ssid.serviceSetId, (void *)pSiteMgr->pDesiredParams->siteMgrDesiredSSID.str, pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len);
-		ssid.hdr[1] = pSiteMgr->pDesiredParams->siteMgrDesiredSSID.len;
-	}
+    os_memoryCopy(pSiteMgr->hOs, (void *)ssid.serviceSetId, (void *)pSiteMgr->pDesiredParams->siteMgrDesiredSSID.str, ssid.hdr[1]);
 	
 	if(pSiteMgr->pDesiredParams->siteMgrDesiredChannel <= MAX_GB_MODE_CHANEL)
 		siteMgr_updateRates(pSiteMgr, TI_FALSE, TI_TRUE);
@@ -667,7 +663,7 @@ TI_STATUS systemConfig(siteMgr_t *pSiteMgr)
 	
 #ifdef XCC_MODULE_INCLUDED
 	/* set XCC TPC if present */
-	if(XCC_ParseClientTP(pSiteMgr->hOs,pPrimarySite,&ExternTxPower,pIeBuffer,PktLength) == TI_OK)
+	if(XCC_ParseClientTP(pSiteMgr->hOs,pPrimarySite,(TI_INT8 *)&ExternTxPower,pIeBuffer,PktLength) == TI_OK)
     {
         TRACE1(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "Select XCC_ParseClientTP == OK: Dbm = %d\n",ExternTxPower);
         pParam->paramType = REGULATORY_DOMAIN_EXTERN_TX_POWER_PREFERRED;

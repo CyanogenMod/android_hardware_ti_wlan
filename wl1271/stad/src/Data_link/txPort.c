@@ -1,7 +1,7 @@
 /*
  * txPort.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -85,12 +85,6 @@ typedef struct
  * The txPort local functions:
  */
 static void updateQueuesStates(TTxPortObj *pTxPort);
-#ifdef TI_DBG
-static char *txPortMuxStateNameStr(EQueuesMuxState queuesMuxState);
-static char *txPortActionNameStr(EQueueAction queueAction);
-#endif
-
-
 
 /****************************************************************************
  *                      txPort_Create()
@@ -235,10 +229,6 @@ static void updateQueuesStates (TTxPortObj *pTxPort)
 {
 	EQueueAction mgmtQueueAction = QUEUE_ACTION_NONE;
 	EQueueAction dataQueueAction = QUEUE_ACTION_NONE;
-#ifdef TI_DBG
-	char *pMuxStateNameStr;
-	char *pPortActionNameStr;
-#endif
 
 	/* 
 	 * If the Tx path is not suspended:
@@ -278,10 +268,8 @@ static void updateQueuesStates (TTxPortObj *pTxPort)
 
 
 #ifdef TI_DBG
-	pMuxStateNameStr = txPortMuxStateNameStr(pTxPort->queuesMuxState);
 	TRACE1(pTxPort->hReport, REPORT_SEVERITY_INFORMATION, ":  queuesMuxState = , TxSuspend = %d\n", pTxPort->txSuspended);
 		
-	pPortActionNameStr = txPortActionNameStr (mgmtQueueAction);
 	TRACE2(pTxPort->hReport, REPORT_SEVERITY_INFORMATION, ":  PrevMgmtEnabled = %d,  PrevDataEnabled = %d, MgmtAction = , DataAction = \n", pTxPort->mgmtQueueEnabled, pTxPort->dataQueueEnabled);
 #endif /* TI_DBG */
 
@@ -311,36 +299,4 @@ static void updateQueuesStates (TTxPortObj *pTxPort)
 		txDataQ_WakeAll (pTxPort->hTxDataQ);
 	}
 }
-
-
-
-#ifdef TI_DBG
-
-/****************************************************************************
- *	Debug functions:	txPortMuxStateNameStr()
- *                      txPortActionNameStr()
- ****************************************************************************/ 
-static char *txPortMuxStateNameStr(EQueuesMuxState queuesMuxState)
-{
-	switch (queuesMuxState)
-	{
-		case MUX_MGMT_QUEUES:	return "MUX_MGMT_QUEUES";
-		case MUX_DATA_QUEUES:	return "MUX_DATA_QUEUES";
-		default:				return "UNKNOWN STATE";
-	}
-}
-
-static char *txPortActionNameStr(EQueueAction queueAction)
-{
-	switch (queueAction)
-	{
-		case QUEUE_ACTION_NONE:	return "QUEUE_ACTION_NONE";
-		case QUEUE_ACTION_STOP:	return "QUEUE_ACTION_STOP";
-		case QUEUE_ACTION_WAKE:	return "QUEUE_ACTION_WAKE";
-		default:				return "UNKNOWN ACTION";
-	}
-} 
-		
-#endif /* TI_DBG */
-
 

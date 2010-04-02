@@ -1,7 +1,7 @@
 /*
  * cu_cmd.c
  *
- * Copyright 2001-2009 Texas Instruments, Inc. - http://www.ti.com/
+ * Copyright 2001-2010 Texas Instruments, Inc. - http://www.ti.com/
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -297,7 +297,12 @@ static named_value_t report_module[] =
     { FILE_ID_130 ,  (PS8)"queue                   " },
     { FILE_ID_131 ,  (PS8)"rate                    " },
     { FILE_ID_132 ,  (PS8)"report                  " },
-    { FILE_ID_133 ,  (PS8)"stack                   " }
+    { FILE_ID_133 ,  (PS8)"stack                   " },
+	{ FILE_ID_134 ,  (PS8)"externalSec             " },
+	{ FILE_ID_135 ,  (PS8)"roamingMngr_autoSM      " },
+	{ FILE_ID_136 ,  (PS8)"roamingMngr_manualSM    " },
+	{ FILE_ID_137 ,  (PS8)"cmdinterpretoid         " },
+	{ FILE_ID_138 ,  (PS8)"WlanDrvIf               " }
 };
 
 static named_value_t report_severity[] = {
@@ -1362,7 +1367,7 @@ VOID CuCmd_GetTxRate(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 VOID CuCmd_ModifyBssType(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
     CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
-    U32 BssType;
+    U32 BssType = 0;
     S32 i;
     
     if( nParms == 0 )
@@ -1403,6 +1408,7 @@ VOID CuCmd_ModifyBssType(THandle hCuCmd, ConParm_t parm[], U16 nParms)
         if(pCuCmd->hWpaCore == NULL)
         {
             CuCommon_SetU32(pCuCmd->hCuCommon, CTRL_DATA_CURRENT_BSS_TYPE_PARAM, BssType);
+            CuCommon_SetU32(pCuCmd->hCuCommon, SME_DESIRED_BSS_TYPE_PARAM, BssType);
         }
         else
         {
@@ -2340,6 +2346,28 @@ VOID CuCmd_ScanAppDisplay(THandle hCuCmd, ConParm_t parm[], U16 nParms)
                pNormalChannel->txPowerDbm);
     }
     os_error_printf(CU_MSG_INFO2, (PS8)"\n");
+}
+
+VOID CuCmd_ScanSetSra(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+
+    if (OK != CuCommon_SetU32(pCuCmd->hCuCommon, SCAN_CNCN_SET_SRA, parm[0].value) )
+    {
+        os_error_printf(CU_MSG_INFO2, (PS8) "Failed setting Scan Result Aging");
+    }
+    os_error_printf(CU_MSG_INFO2, (PS8) "Scan Result Aging set succesfully to %d seconds", parm[0].value);
+}
+
+VOID CuCmd_ScanSetRssi(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+
+    if (OK != CuCommon_SetU32(pCuCmd->hCuCommon, SCAN_CNCN_SET_RSSI, parm[0].value) )
+    {
+        os_error_printf(CU_MSG_INFO2, (PS8) "Failed setting Rssi filter threshold");
+    }
+    os_error_printf(CU_MSG_INFO2, (PS8) "Rssi filter set succesfully to %d", parm[0].value);
 }
 
 VOID CuCmd_StartScan(THandle hCuCmd, ConParm_t parm[], U16 nParms)
@@ -5283,7 +5311,7 @@ VOID nvsUpdateFile(THandle hCuCmd, TNvsStruct nvsStruct, TI_UINT8 version,  S8 u
 #ifdef _WINDOWS
     PS8 nvsFilePath = (PS8)"/windows/nvs_map.bin";
 #else
-    PS8 nvsFilePath = (PS8)"/system/etc/wifi/nvs_map.bin";
+    PS8 nvsFilePath = (PS8)"./nvs_map.bin";
 #endif /*_WINDOWS*/
 	TI_UINT8		currentNVSbuffer[1500];
 	TI_UINT16		lengthOfCurrentNVSBufer;
@@ -6295,6 +6323,34 @@ VOID CuCmd_ShowKeepAlive (THandle hCuCmd, ConParm_t parm[], U16 nParms)
             os_error_printf (CU_MSG_ERROR, (PS8)"%-8d %-8d %-9s %-10d %s\n", uIndex, 0, (PS8)"N/A", 0, (PS8)"N/A");
         }
     }
+}
+
+
+VOID CuCmd_SetArpIPFilter (THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+
+    TIpAddr     staIp;
+    CuCmd_t     *pCuCmd = (CuCmd_t*)hCuCmd;
+    TI_UINT8    length = 4;
+
+    if (length != nParms)
+    {
+        os_error_printf (CU_MSG_ERROR, (PS8)"Error! IP format requires 4 parameters as follows: <Part1> <Part2> <Part3> <Part4>  \n");
+        os_error_printf (CU_MSG_ERROR, (PS8)"Please note! IP of 0 0 0 0 will disable the arp filtering feature \n");
+        return;
+    }
+
+    staIp[0] = (TI_UINT8)parm[0].value;
+    staIp[1] = (TI_UINT8)parm[1].value;
+    staIp[2] = (TI_UINT8)parm[2].value;
+    staIp[3] = (TI_UINT8)parm[3].value;
+
+
+     if (OK != CuCommon_SetBuffer (pCuCmd->hCuCommon, SITE_MGR_SET_WLAN_IP_PARAM, staIp, length))
+    {
+        os_error_printf (CU_MSG_ERROR, (PS8)"Unable to configure ARP IP filter \n");
+    }
+
 }
 
 VOID CuCmd_ShowAbout(THandle hCuCmd, ConParm_t parm[], U16 nParms)

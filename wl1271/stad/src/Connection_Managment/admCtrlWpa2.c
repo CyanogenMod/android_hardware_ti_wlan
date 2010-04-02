@@ -1,7 +1,7 @@
 /*
  * admCtrlWpa2.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -568,11 +568,11 @@ TI_STATUS admCtrlWpa2_getInfoElement(admCtrl_t *pAdmCtrl, TI_UINT8 *pIe, TI_UINT
     case RSN_EXT_AUTH_MODE_WPA:   /* for Any-WPA/WPA-Mixed mode */
         {
 #ifdef XCC_MODULE_INCLUDED
-            TI_UINT8   akmSuite[DOT11_OUI_LEN+1];
+            TI_UINT8   akmSuite[DOT11_OUI_LEN];
 
             if (admCtrlXCC_getCckmAkm(pAdmCtrl, akmSuite))
             {
-                os_memoryCopy(pAdmCtrl->hOs, (void*)pWpa2IePacket->authKeyMngSuite, akmSuite, DOT11_OUI_LEN+1);
+                os_memoryCopy(pAdmCtrl->hOs, (void*)pWpa2IePacket->authKeyMngSuite, akmSuite, DOT11_OUI_LEN);
             }
             else
 #endif
@@ -820,13 +820,7 @@ TI_STATUS admCtrlWpa2_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSite
     TI_STATUS               status;
     wpa2IeData_t            wpa2Data;
     TI_UINT8                *pWpa2Ie;
-/*** OMAPS00214746_CHANGE_START ***/
-#if 0
-    ECipherSuite            uSuite, bSuite,encryptionStatus;
-#else
     ECipherSuite            uSuite, bSuite; 
-#endif
-/*** OMAPS00214746_CHANGE_END ***/
     TI_UINT8                i = 0;
     TIWLN_SIMPLE_CONFIG_MODE  wscMode = TIWLN_SIMPLE_CONFIG_OFF;
 
@@ -845,17 +839,6 @@ TI_STATUS admCtrlWpa2_evalSite(admCtrl_t *pAdmCtrl, TRsnData *pRsnData, TRsnSite
     {
         return TI_NOK;
     }
-/*** OMAPS00214746_CHANGE_START ***/
-#if 0  /*** Delete the following check ***/
-
-	pAdmCtrl->getCipherSuite(pAdmCtrl, &encryptionStatus);
-	if ((encryptionStatus == TWD_CIPHER_TKIP) && (pRsnSiteParams->pHTCapabilities->tHdr[0] != TI_FALSE) && (pRsnSiteParams->pHTInfo->tHdr[0] != TI_FALSE))
-	{
-		TRACE0(pAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION,"Dismiss AP - HT with TKIP is not valid");
-        return TI_NOK; /* if the encyption is TKIP and the site does support HT(11n) the site can not be a candidate */
-	}
-#endif /*** End of Deletion ***/
-/*** OMAPS00214746_CHANGE_END ***/
 
     /* Get Simple-Config state */
     siteMgr_getParamWSC(pAdmCtrl->pRsn->hSiteMgr, &wscMode); /* SITE_MGR_SIMPLE_CONFIG_MODE */

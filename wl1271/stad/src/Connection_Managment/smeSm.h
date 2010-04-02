@@ -1,7 +1,7 @@
 /*
  * smeSm.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -41,6 +41,8 @@
 #define __SME_SM_H__
 
 #include "GenSM.h"
+
+void sme_SmEvent(TI_HANDLE hGenSm, TI_UINT32 uEvent, void* pData);
 
 typedef enum
 {
