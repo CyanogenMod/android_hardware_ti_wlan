@@ -629,6 +629,9 @@ TI_STATUS rsn_stop (TI_HANDLE hRsn, TI_BOOL removeKeys)
     if (removeKeys)
     {   /* reset PMKID list if exist */
         pRsn->pAdmCtrl->resetPmkidList (pRsn->pAdmCtrl);
+        /* reset unicast and broadcast ciphers after disconnect */
+        pRsn->pAdmCtrl->unicastSuite = TWD_CIPHER_NONE;
+        pRsn->pAdmCtrl->broadcastSuite = TWD_CIPHER_NONE;
     }
 
     return status;
@@ -2374,7 +2377,7 @@ TI_STATUS rsn_getGenInfoElement(rsn_t *pRsn, TI_UINT8 *out_buff, TI_UINT32 *out_
  */
 void rsn_clearGenInfoElement(rsn_t *pRsn )
 {
-		/*pRsn->genericIE.length = 0; */
+    os_memoryZero(pRsn->hOs, &pRsn->genericIE, sizeof(pRsn->genericIE));
 }
 
 
