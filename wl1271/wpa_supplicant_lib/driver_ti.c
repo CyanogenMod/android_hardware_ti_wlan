@@ -299,11 +299,15 @@ static int wpa_driver_tista_scan( void *priv, const u8 *ssid, size_t ssid_len )
 
 	res = wpa_driver_tista_private_send(priv, TIWLN_802_11_START_APP_SCAN_SET, &scanParams, sizeof(scanParams), NULL, 0);
 
-	if (0 != res)
+	if (0 != res) {
 		wpa_printf(MSG_ERROR, "ERROR - Failed to do tista scan!");
-	else
+		if (wpa_s->scanning) {
+			res = 0;
+			wpa_printf(MSG_ERROR, "Ongoing Scan action...");
+		}
+	} else {
 		wpa_printf(MSG_DEBUG, "wpa_driver_tista_scan success");
-
+	}
 	timeout = 30;
 	wpa_printf(MSG_DEBUG, "Scan requested (ret=%d) - scan timeout %d sec",
 			res, timeout);
