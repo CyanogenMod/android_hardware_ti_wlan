@@ -1432,9 +1432,10 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
     TI_STATUS    eStatus    = TI_NOK;
     TI_HANDLE    hOs        = pDrvMain->tStadHandles.hOs;
     TI_UINT32    uSdioConIndex = 0;
+    TI_BOOL      tmpRecovery;
 
     TRACE2(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_INFORMATION , "drvMain_Sm():  State = %d, Event = %d\n", pDrvMain->eSmState, eEvent);
-    
+
     /* 
      *  General explenations:
      *  =====================
@@ -1495,7 +1496,7 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
 			/* : We should split the call to txnQ_ConnectBus to other state in order to support Async bus connection */
             eStatus = txnQ_ConnectBus(pDrvMain->tStadHandles.hTxnQ, &pDrvMain->tBusDrvCfg, NULL, NULL, &pDrvMain->uRxDmaBufLen, &pDrvMain->uTxDmaBufLen); 
 
-			if((eStatus != TI_OK) &&
+            if((eStatus != TI_OK) &&
 			   (uSdioConIndex < (SDIO_CONNECT_THRESHOLD - 1)))
             {
                      TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_WARNING , "SDBus Connect Failed\n");
@@ -1508,22 +1509,22 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
             }
         }
 
-		if(eStatus != TI_OK)
-		{
+        if(eStatus != TI_OK)
+        {
 			WLAN_OS_REPORT(("SDBus Connect Failed, Set Object Event !!\r\n"));
 			TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "SDBus Connect Failed, Set Object Event !!\r\n");
 			if (!pDrvMain->bRecovery)
 			{
 				os_SignalObjectSet(hOs, pDrvMain->hSignalObj);
 			}
-		}
-		else /* SDBus Connect success */
+        }
+        else /* SDBus Connect success */
         {
             /*
              * We've got the NVS file.
              * Start HW-Init process providing the NVS file.
              */
-			if (eEvent == SM_EVENT_NVS_FILE_READY)
+            if (eEvent == SM_EVENT_NVS_FILE_READY)
             {
                 pDrvMain->eSmState = SM_STATE_HW_INIT;
                 eStatus = drvMain_InitHw (hDrvMain, pDrvMain->tFileInfo.pBuffer, pDrvMain->tFileInfo.uLength);
@@ -1600,13 +1601,14 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
          * Enable STOP action
          * We are now in OPERATIONAL state, i.e. the driver is fully operational!
          */
-      
+
+        tmpRecovery = pDrvMain->bRecovery;
         if (eEvent == SM_EVENT_FW_CONFIG_COMPLETE) 
         {
             pDrvMain->eSmState = SM_STATE_OPERATIONAL;
             if (pDrvMain->bRecovery) 
             {
-				pDrvMain->uNumOfRecoveryAttempts = 0;
+                pDrvMain->uNumOfRecoveryAttempts = 0;
                 drvMain_RecoveryNotify (pDrvMain);
                 pDrvMain->bRecovery = TI_FALSE;
             }
@@ -1621,7 +1623,7 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
             eStatus = TI_OK;
            
         }
-        if (!pDrvMain->bRecovery)
+        if (!tmpRecovery)
         {
             os_SignalObjectSet(hOs, pDrvMain->hSignalObj);
         }
@@ -1723,21 +1725,22 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
         pDrvMain->eSmState = SM_STATE_FAILED;
         txnQ_DisconnectBus (pDrvMain->tStadHandles.hTxnQ);
         hPlatform_DevicePowerOff ();
-        WLAN_OS_REPORT(("[WLAN] Exit application\n"));
-        if (!pDrvMain->bRecovery) 
+        if (!pDrvMain->bRecovery)
         {
             os_SignalObjectSet (hOs, pDrvMain->hSignalObj);
-		}
-		else if (pDrvMain->uNumOfRecoveryAttempts < MAX_NUM_OF_RECOVERY_TRIGGERS) 
-		{
-			pDrvMain->eSmState = SM_STATE_STOPPING;
-			eStatus = drvMain_StopActivities (pDrvMain);
-		}
+        }
+        else if (pDrvMain->uNumOfRecoveryAttempts < MAX_NUM_OF_RECOVERY_TRIGGERS) 
+        {
+            pDrvMain->eSmState = SM_STATE_STOPPING;
+            eStatus = drvMain_StopActivities (pDrvMain);
+        }
+        WLAN_OS_REPORT(("[WLAN] Exit application\n"));
+        pDrvMain->bRecovery = TI_FALSE;
         break;
     case SM_STATE_FAILED:
         /* Nothing to do except waiting for Destroy */
         break;
- default:
+    default:
         TRACE2(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "drvMain_Sm: Unknown state, eEvent=%u at state=%u\n", eEvent, pDrvMain->eSmState);
         /* Note: Handled below as a failure since the status remains TI_NOK */
         break;  

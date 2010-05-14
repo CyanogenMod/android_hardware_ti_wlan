@@ -40,7 +40,7 @@
 
 #define TB_TRACE_H
 
-#define TB_MALLOC(size) kmalloc(size, GFP_ATOMIC);
+#define TB_MALLOC(size) kmalloc(size, GFP_KERNEL);
 #define TB_FREE         kfree
 #define TB_PRINTF       printk
 #define TB_ID           current->pid
