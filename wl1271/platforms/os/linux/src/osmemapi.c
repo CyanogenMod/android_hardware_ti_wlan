@@ -99,6 +99,7 @@ os_memoryAlloc(
 {
 	struct os_mem_block *blk;
 	__u32 total_size = Size + sizeof(struct os_mem_block) + sizeof(__u32);
+	gfp_t flags = (in_atomic()) ? GFP_ATOMIC : GFP_KERNEL;
 
 #ifdef TI_MEM_ALLOC_TRACE
 	os_printf("MTT:%s:%d ::os_memoryAlloc(0x%p, %lu) : %lu\n",__FUNCTION__, __LINE__,OsContext,Size,total_size);
@@ -115,14 +116,7 @@ os_memoryAlloc(
 	if (total_size < 2 * 4096)
 #endif
 	{
-		if (in_atomic())
-		{
-			blk = kmalloc(total_size, GFP_ATOMIC);
-		}
-		else
-		{
-			blk = kmalloc(total_size, GFP_KERNEL);
-		}
+		blk = kmalloc(total_size, flags);
 		if (!blk)
 		{
 			printk("%s: NULL\n",__func__);	
@@ -303,13 +297,15 @@ os_memoryAlloc4HwDma(
 {
 	struct os_mem_block *blk;
 	__u32 total_size = Size + sizeof(struct os_mem_block) + sizeof(__u32);
+	gfp_t flags = (in_atomic()) ? GFP_ATOMIC : GFP_KERNEL;
+
 	/* 
 	if the size is greater than 2 pages then we cant allocate the memory
 	    through kmalloc so the function fails
 	*/
 	if (Size < 2 * OS_PAGE_SIZE)
 	{
-		blk = kmalloc(total_size, GFP_ATOMIC|GFP_DMA);
+		blk = kmalloc(total_size, flags | GFP_DMA);
 		if (!blk) {
 			printk("%s: NULL\n",__func__);
 			return NULL;

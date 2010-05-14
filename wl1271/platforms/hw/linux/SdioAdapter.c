@@ -148,7 +148,7 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
 	}
 	/* Provide the DMA buffer address to the upper layer so it will use it as the transactions host buffer. */
 	if (pTxDmaSrcAddr) { /* Dm: check what to do with it */
-		*pTxDmaSrcAddr = kmalloc(TIWLAN_MMC_MAX_DMA, GFP_ATOMIC | GFP_DMA);
+		*pTxDmaSrcAddr = kmalloc(TIWLAN_MMC_MAX_DMA, GFP_KERNEL | GFP_DMA);
 	}
 	return 0;
 }
@@ -309,7 +309,7 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
 	/* Allocate a DMA-able buffer and provide it to the upper layer to be used for all read and write transactions */
 	if (pDmaBufAddr == 0) /* allocate only once (in case this function is called multiple times) */
 	{
-		pDmaBufAddr = kmalloc (MAX_BUS_TXN_SIZE, GFP_ATOMIC | GFP_DMA);
+		pDmaBufAddr = kmalloc(MAX_BUS_TXN_SIZE, GFP_KERNEL | GFP_DMA);
 		if (pDmaBufAddr == 0)
 		{
 			iStatus = -1;
