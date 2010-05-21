@@ -243,6 +243,8 @@ typedef struct OMAP3430_sdiodrv
 	size_t dma_write_size;
 	struct workqueue_struct *sdio_wq; /* Work Queue */
 	struct work_struct sdiodrv_work;
+	struct timer_list inact_timer;
+	int inact_timer_running;
 } OMAP3430_sdiodrv_t;
 
 struct omap_hsmmc_regs {
@@ -280,6 +282,7 @@ static int sdiodrv_fclk_got = 0;
 static void sdioDrv_hsmmc_save_ctx(void);
 static void sdioDrv_hsmmc_restore_ctx(void);
 static void sdiodrv_dma_shutdown(void);
+static void sdioDrv_inact_timer(unsigned long);
 
 #ifndef TI_SDIO_STANDALONE
 void sdio_init( int sdcnum )
@@ -327,6 +330,26 @@ static void sdioDrv_hsmmc_restore_ctx(void)
         OMAP_HSMMC_WRITE(IE, hsmmc_ctx.ie);
         OMAP_HSMMC_WRITE(SYSCTL, hsmmc_ctx.sysctl);
         OMAP_HSMMC_WRITE(HCTL, OMAP_HSMMC_READ(HCTL) | SDBP);
+}
+
+static void sdioDrv_inact_timer(unsigned long data)
+{
+	sdioDrv_clk_disable();
+	g_drv.inact_timer_running = 0;
+}
+
+void sdioDrv_start_inact_timer(void)
+{
+	mod_timer(&g_drv.inact_timer, jiffies + msecs_to_jiffies(1000));
+	g_drv.inact_timer_running = 1;
+}
+
+void sdioDrv_cancel_inact_timer(void)
+{
+	if(g_drv.inact_timer_running) {
+		del_timer_sync(&g_drv.inact_timer);
+		g_drv.inact_timer_running = 0;
+	}
 }
 
 void sdiodrv_task(struct work_struct *unused)
@@ -547,6 +570,8 @@ static void OMAP3430_mmc_set_clock(unsigned int clock, OMAP3430_sdiodrv_t *host)
 
 static void sdiodrv_free_resources(void)
 {
+	sdioDrv_cancel_inact_timer();
+
 	if(g_drv.ifclks_enabled) {
 		sdioDrv_clk_disable();
 	}
@@ -1143,6 +1168,11 @@ static int sdioDrv_probe(struct platform_device *pdev)
 
 	/* Disabling clocks for now */
 	sdioDrv_clk_disable();
+
+	/* inactivity timer initialization*/
+	init_timer(&g_drv.inact_timer);
+	g_drv.inact_timer.function = sdioDrv_inact_timer;
+	g_drv.inact_timer_running = 0;
 
 	return 0;
 err:
