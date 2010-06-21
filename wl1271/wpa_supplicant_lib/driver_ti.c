@@ -1405,6 +1405,7 @@ const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.scan = wpa_driver_tista_scan,
 #ifdef WPA_SUPPLICANT_VER_0_6_X
 	.get_scan_results2 = wpa_driver_tista_get_scan_results,
+	.combo_scan = NULL,
 #else
 	.get_scan_results = wpa_driver_tista_get_scan_results,
 #endif
