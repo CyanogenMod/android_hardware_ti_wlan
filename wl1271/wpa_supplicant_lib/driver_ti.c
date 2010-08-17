@@ -330,7 +330,7 @@ Return Value: pointer to BSSID
 const u8 *wpa_driver_tista_get_mac_addr( void *priv )
 {
 	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
-	u8 mac[ETH_ALEN];
+	u8 mac[ETH_ALEN] = {0};
 
 	TI_CHECK_DRIVER( drv->driver_is_loaded, NULL );
 	if(0 != wpa_driver_tista_private_send(priv, CTRL_DATA_MAC_ADDRESS, NULL, 0,
@@ -355,6 +355,7 @@ static int wpa_driver_tista_get_rssi(void *priv, int *rssi_data, int *rssi_beaco
 	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
 	TCuCommon_RoamingStatisticsTable buffer;
 
+	os_memset(&buffer, 0, sizeof(TCuCommon_RoamingStatisticsTable));
 	*rssi_data = 0;
 	*rssi_beacon = 0;
 	if (wpa_driver_tista_get_bssid(priv, bssid) == 0 &&
@@ -448,7 +449,7 @@ static int wpa_driver_tista_enable_bt_coe(void *priv, u32 mode)
 static int wpa_driver_tista_get_bt_coe_status(void *priv, u32 *mode)
 {
 	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
-	u32 mode_get;
+	u32 mode_get = 0;
 
 	if(0 != wpa_driver_tista_private_send(priv, SOFT_GEMINI_GET_CONFIG, NULL, 0,
 		&mode_get, sizeof(u32)))
@@ -740,6 +741,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 		u32 mode;
 		TPowerMgr_PowerMode tMode;
 
+		os_memset(&tMode, 0, sizeof(TPowerMgr_PowerMode));
 		ret = wpa_driver_tista_config_power_management( priv, &tMode, 0 );
 		if( ret == 0 ) {
 			ret = sprintf(buf, "powermode = %u\n", tMode.PowerMode);
@@ -778,6 +780,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 		TCuCommon_RxDataFilteringStatistics stats;
 		int len, i;
 
+		os_memset(&stats, 0, sizeof(TCuCommon_RxDataFilteringStatistics));
 		wpa_printf(MSG_DEBUG,"Rx Data Filter Statistics command");
 		ret = wpa_driver_tista_driver_rx_data_filter_statistics( priv, &stats );
 		if( ret == 0 ) {
