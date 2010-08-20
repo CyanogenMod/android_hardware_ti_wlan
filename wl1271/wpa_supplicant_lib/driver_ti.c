@@ -582,6 +582,17 @@ static int wpa_driver_tista_driver_rx_data_filter_statistics( void *priv,
 	return res;
 }
 
+static int get_num_of_channels(char *country)
+{
+	int channels = NUMBER_SCAN_CHANNELS_FCC;
+
+	if (os_strcasecmp(country, "EU"))
+		channels = NUMBER_SCAN_CHANNELS_ETSI;
+	else if (os_strcasecmp(country, "JP"))
+		channels = NUMBER_SCAN_CHANNELS_MKK1;
+	return channels;
+}
+
 /*-----------------------------------------------------------------------------
 Routine Name: wpa_driver_tista_driver_cmd
 Routine Description: executes driver-specific commands
@@ -659,6 +670,11 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
  		wpa_printf(MSG_DEBUG,"Link Speed command");
 		drv->link_speed = wpa_s->link_speed / 1000000;
 		ret = sprintf(buf,"LinkSpeed %u\n", drv->link_speed);
+		wpa_printf(MSG_DEBUG, "buf %s", buf);
+	}
+	else if( os_strncasecmp(cmd, "country", 7) == 0 ) {
+		drv->scan_channels = get_num_of_channels(cmd + 8);
+		ret = sprintf(buf,"Scan-Channels = %d\n", drv->scan_channels);
 		wpa_printf(MSG_DEBUG, "buf %s", buf);
 	}
 	else if( os_strncasecmp(cmd, "scan-channels", 13) == 0 ) {
