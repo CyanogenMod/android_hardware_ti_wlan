@@ -959,11 +959,6 @@ regFillInitTable(
     static    TI_UINT8 tmpIeTableSize = 37;
     static    TI_UINT8 strSize = 113;
 
-    static    TI_UINT8 defRxRssiAndProcessCompensation_2_4G[] = "ec,f6,00,0c,18,f8,fc,00,08,10,f0,f8,00,0a,14";
-    static    TI_UINT8 tmpRssiTableSize = RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE;
-    static    TI_UINT8 staRssiAndProcessCompensation[RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE] ;
-    static    TI_UINT8 RssiSize = 44;
-
     /* defaults values for CoexActivity table*/
     /* example: WLAN(0), BT_VOICE(0), defPrio(20), raisePrio(25), minServ(0), maxServ(1ms) */
     static    TI_UINT8 defCoexActivityTable[] = ""; /* Sample "01 00 14 19 0000 0001 " */
@@ -3987,24 +3982,13 @@ regReadIntegerTable (pAdapter, &STRTxPerChannelPowerLimits_5G_OFDM, RADIO_TX_PER
                      NUMBER_OF_5G_CHANNELS, NULL, (TI_INT8*)&p->twdInitParams.tIniFileRadioParams.tDynRadioParams.TxPerChannelPowerLimits_5G_OFDM, 
                      (TI_UINT32*)&uTempEntriesCount, sizeof (TI_UINT8),TI_TRUE);
 
-/* in case of zero value, use this methode */
-        RssiSize = tmpRssiTableSize*2 +tmpRssiTableSize - 1 ; /*includes spaces between bytes*/
-  
-    
-        regReadStringParameter(pAdapter, &STRRxRssiAndProcessCompensation_2_4G ,
-                            (TI_INT8*)(defRxRssiAndProcessCompensation_2_4G), RssiSize,
-                            (TI_UINT8*)staRssiAndProcessCompensation, &RssiSize);
-
-        parseTwoDigitsSequenceHex (staRssiAndProcessCompensation , 
-                                      (TI_UINT8*)&p->twdInitParams.tIniFileRadioParams.tStatRadioParams.RxRssiAndProcessCompensation_2_4G, 
-                                      RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE);
- 
-
+regReadIntegerTable (pAdapter, &STRRxRssiAndProcessCompensation_2_4G, RADIO_RX_RSSI_PROCESS_2_4_DEF_TABLE,
+                     RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE, NULL, (TI_INT8*)p->twdInitParams.tIniFileRadioParams.tStatRadioParams.RxRssiAndProcessCompensation_2_4G,
+                     (TI_UINT32*)&uTempEntriesCount, sizeof (TI_UINT8),TI_TRUE);
 
 regReadIntegerTable (pAdapter, &STRRxRssiAndProcessCompensation_5G, RADIO_RX_RSSI_PROCESS_5_DEF_TABLE,
                      RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE, NULL, (TI_INT8*)p->twdInitParams.tIniFileRadioParams.tStatRadioParams.RxRssiAndProcessCompensation_5G, 
                      (TI_UINT32*)&uTempEntriesCount, sizeof (TI_UINT8),TI_TRUE);
-
 
 regReadIntegerTable (pAdapter, &STRTxPDVsRateOffsets_2_4G, RADIO_TX_PD_VS_RATE_OFFSET_2_4_DEF_TABLE,
                      NUMBER_OF_RATE_GROUPS_E, NULL, (TI_INT8*)&p->twdInitParams.tIniFileRadioParams.tDynRadioParams.TxPDVsRateOffsets_2_4G, 
