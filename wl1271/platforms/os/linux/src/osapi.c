@@ -81,9 +81,9 @@ TI_BOOL bRedirectOutputToLogger = TI_FALSE;
 TI_BOOL use_debug_module = TI_FALSE;
 
 /****************************************************************************************
- *                        																*
- *						OS Report API													*       
- *																						*
+ *                        								*
+ *					OS Report API					*       
+ *											*
  ****************************************************************************************/
 static void SendLoggerData (TI_HANDLE OsContext, TI_UINT8 *pMsg, TI_UINT16 len)
 {    
@@ -132,7 +132,7 @@ void os_printf(const char *format ,...)
 	static int from_new_line = 1;		/* Used to save the last message EOL */
 	va_list ap;
 	static char msg[MAX_MESSAGE_SIZE];
-	char *p_msg = msg;					/* Pointer to the message */
+	char *p_msg = msg;			/* Pointer to the message */
 	TI_UINT16 message_len;					
 	TI_UINT32 sec = 0;
 	TI_UINT32 uSec = 0;
@@ -141,33 +141,36 @@ void os_printf(const char *format ,...)
 	/* Format the message and keep the message length */
 	va_start(ap,format);
 	message_len = vsnprintf(&msg[0], sizeof(msg) -1 , format, ap);
-	if( from_new_line )
-        {
-            if (msg[1] == '$')
-            {
-                p_msg += 4;
-            }
+
+	if(message_len > 0)
+	{
+		if( from_new_line )
+        	{
+			if (msg[1] == '$')
+			{
+				p_msg += 4;
+			}
             
-            sec = os_timeStampUs(NULL);
-            uSec = sec % MICROSECOND_IN_SECONDS;
-            sec /= MICROSECOND_IN_SECONDS;
-            
-            printk(KERN_INFO DRIVER_NAME ": %d.%06d: %s",sec,uSec,p_msg);
-        }
-        else
-        {
-		printk(&msg[0]);
-        }
-        
-	from_new_line = ( msg[message_len - 1] == '\n' );
+			sec = os_timeStampUs(NULL);
+			uSec = sec % MICROSECOND_IN_SECONDS;
+			sec /= MICROSECOND_IN_SECONDS;
+			printk(KERN_INFO DRIVER_NAME ": %d.%06d: %s",sec,uSec,p_msg);
+        	}
+        	else
+        	{
+			printk(&msg[0]);
+        	}
+ 
+		from_new_line = ( msg[message_len - 1] == '\n' );
+	}
 
 	va_end(ap);
 }
 
 /****************************************************************************************
- *                        																*
- *							OS TIMER API												*
- *																						*
+ *                      								*
+ *					OS TIMER API					*
+ *											*
  ****************************************************************************************/
 
 /****************************************************************************************
@@ -339,11 +342,11 @@ void os_StalluSec (TI_HANDLE OsContext, TI_UINT32 uSec)
 
 
 /****************************************************************************************
- *                        																*
- *							Protection services	API										*
- *																						*
+ *											*
+ *					Protection services API				*
+ *											*
  ****************************************************************************************
- * OS protection is implemented as spin_lock_irqsave and spin_unlock_irqrestore  								*
+ * OS protection is implemented as spin_lock_irqsave and spin_unlock_irqrestore 	*
  ****************************************************************************************/
 
 
@@ -608,6 +611,17 @@ int os_wake_lock_timeout (TI_HANDLE OsContext)
 
 	if (drv) {
 		spin_lock_irqsave(&drv->lock, flags);
+
+#ifdef CONNECTION_SCAN_PM
+	if (!drv->wake_locks_enabled) {
+		/* release the spin lock */
+		spin_unlock_irqrestore(&drv->lock, flags);
+
+		/* return success */
+		return 0;
+	}
+#endif
+
 		ret = drv->wl_packet;
 		if (drv->wl_packet) {
 			drv->wl_packet = 0;
@@ -638,11 +652,70 @@ int os_wake_lock_timeout_enable (TI_HANDLE OsContext)
 
 	if (drv) {
 		spin_lock_irqsave(&drv->lock, flags);
+
+#ifdef CONNECTION_SCAN_PM
+	if (!drv->wake_locks_enabled) {
+		/* release the spin lock */
+		spin_unlock_irqrestore(&drv->lock, flags);
+
+		/* return success */
+		return 0;
+	}
+#endif
+
 		ret = drv->wl_packet = 1;
 		spin_unlock_irqrestore(&drv->lock, flags);
 	}
 	return ret;
 }
+
+
+
+#ifdef CONNECTION_SCAN_PM
+/*-----------------------------------------------------------------------------
+ * Routine Name:  os_disable_wake_locks
+ * Routine Description: Called in order to disable any use of the OS wake locks
+ * Arguments:     OsContext - handle to OS context
+ * Return Value:  -
+ * -----------------------------------------------------------------------------*/
+ void os_disable_wake_locks(TI_HANDLE OsContext)
+ {
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+    unsigned long flags;
+
+    spin_lock_irqsave(&drv->lock, flags);
+
+    drv->wake_locks_enabled = 0;
+
+    spin_unlock_irqrestore(&drv->lock, flags);
+
+    return;
+ }
+
+ /*-----------------------------------------------------------------------------
+ * Routine Name:  os_enable_wake_locks
+ * Routine Description: Called in order to enable use of the OS wake locks
+ * Arguments:     OsContext - handle to OS context
+ * Return Value:  -
+ * -----------------------------------------------------------------------------*/
+
+ void os_enable_wake_locks(TI_HANDLE OsContext)
+ {
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+    unsigned long flags;
+
+    spin_lock_irqsave(&drv->lock, flags);
+
+    drv->wake_locks_enabled = 1;
+
+    spin_unlock_irqrestore(&drv->lock, flags);
+
+    return;
+ }
+
+#endif
+
+
 
 /*-----------------------------------------------------------------------------
 Routine Name:  os_wake_lock
@@ -661,6 +734,17 @@ int os_wake_lock (TI_HANDLE OsContext)
 
 	if (drv) {
 		spin_lock_irqsave(&drv->lock, flags);
+
+#ifdef CONNECTION_SCAN_PM
+	if (!drv->wake_locks_enabled) {
+		/* release the spin lock */
+		spin_unlock_irqrestore(&drv->lock, flags);
+
+		/* return success */
+		return 0;
+	}
+#endif
+
 #ifdef CONFIG_HAS_WAKELOCK
 		if (!drv->wl_count)
 			wake_lock(&drv->wl_wifi);
@@ -690,6 +774,17 @@ int os_wake_unlock (TI_HANDLE OsContext)
 
 	if (drv) {
 		spin_lock_irqsave(&drv->lock, flags);
+
+#ifdef CONNECTION_SCAN_PM
+	if (!drv->wake_locks_enabled) {
+		/* release the spin lock */
+		spin_unlock_irqrestore(&drv->lock, flags);
+
+		/* return success */
+		return 0;
+	}
+#endif
+
 		if (drv->wl_count) {
 			drv->wl_count--;
 #ifdef CONFIG_HAS_WAKELOCK

@@ -203,7 +203,8 @@ extern void cmdBld_FinalizeDownload (TI_HANDLE hCmdBld, TBootAttr *pBootAttr, Fw
         case TXN_STATUS_PENDING:                                \
              return TXN_STATUS_PENDING;                         \
         default:                                                \
-             TWD_FinalizeOnFailure (phwinit->hTWD);             \
+            if(phwinit != NULL)                                 \
+                TWD_FinalizeOnFailure (phwinit->hTWD);          \
              return TXN_STATUS_ERROR;                           \
     }
 
@@ -603,8 +604,9 @@ TI_STATUS hwInit_Boot (TI_HANDLE hHwInit)
     TWlanParams  *pWlanParams = &DB_WLAN(pTWD->hCmdBld);
     TBootAttr     tBootAttr;
 
-    tBootAttr.MacClock = pWlanParams->MacClock;
-    tBootAttr.ArmClock = pWlanParams->ArmClock;
+    tBootAttr.MacClock      = pWlanParams->MacClock;
+    tBootAttr.ArmClock      = pWlanParams->ArmClock;
+    tBootAttr.FirmwareDebug = TI_FALSE;
 
     /*
      * Initialize the status of download to  pending 

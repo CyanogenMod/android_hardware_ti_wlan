@@ -1,7 +1,7 @@
 /*
  * SoftGemini.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -122,9 +122,9 @@ void SoftGemini_SetPSmode(TI_HANDLE hSoftGemini)
 		}
 	}
 	else 
-        {
-          TRACE0(pSoftGemini->hReport, REPORT_SEVERITY_ERROR, "  SoftGemini_SetPSmode() - Error hSoftGemini= NULL \n");
-        }
+    {
+        os_printf("  SoftGemini_SetPSmode() - Error hSoftGemini= NULL \n");
+    }
 }
 
 /************************************************************************
@@ -162,7 +162,7 @@ void SoftGemini_unSetPSmode(TI_HANDLE hSoftGemini)
 	}
     else
     {
-		TRACE0(pSoftGemini->hReport, REPORT_SEVERITY_ERROR, " SoftGemini_unSetPSmode() - Error hSoftGemini= NULL \n");
+		os_printf("SoftGemini_unSetPSmode() - Error hSoftGemini= NULL \n");
     }
 }
 

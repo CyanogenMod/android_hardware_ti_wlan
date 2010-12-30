@@ -1,7 +1,7 @@
 /*
  * MeasurementSrvSM.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file MeasurementSrv.h
  *  \brief This file include private definitions for the Measurement SRV state machine.
- *  \author Ronen Kalish
+ *  \
  *  \date 08-November-2005
  */
 
@@ -110,7 +110,7 @@ typedef enum
  */
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Initialize the measurement SRV SM.\n
  *
@@ -121,7 +121,7 @@ typedef enum
 TI_STATUS measurementSRVSM_init( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Processes an event.\n
  *
@@ -135,7 +135,7 @@ TI_STATUS measurementSRVSM_SMEvent( TI_HANDLE hMeasurementSrv, measurements_SRVS
                                     measurement_SRVSMEvents_e event );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a MEASURE_START_REQUEST event by requesting driver mode.\n
  *
@@ -146,7 +146,7 @@ TI_STATUS measurementSRVSM_SMEvent( TI_HANDLE hMeasurementSrv, measurements_SRVS
 TI_STATUS measurementSRVSM_requestDriverMode( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a DRIVER_MODE_SUCCESS event by sending start measure command to the FW.\n
  *
@@ -157,7 +157,7 @@ TI_STATUS measurementSRVSM_requestDriverMode( TI_HANDLE hMeasurementSRV );
 TI_STATUS measurementSRVSM_requestMeasureStart( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a START_SUCCESS event by starting different measure types and setting timers.\n
  *
@@ -168,7 +168,7 @@ TI_STATUS measurementSRVSM_requestMeasureStart( TI_HANDLE hMeasurementSRV );
 TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle an ALL_TYPE_COMPLETE event by sending a stop measure command to the FW.\n
  *
@@ -179,7 +179,7 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV );
 TI_STATUS measurementSRVSM_requestMeasureStop( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a STOP_COMPLETE event by exiting driver mode and calling the complete CB.\n
  *
@@ -190,7 +190,7 @@ TI_STATUS measurementSRVSM_requestMeasureStop( TI_HANDLE hMeasurementSRV );
 TI_STATUS measurementSRVSM_completeMeasure( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a STOP_REQUEST event when in WAIT_FOR_DRIVER_MODE state by exiting driver mode.
  *
@@ -201,7 +201,7 @@ TI_STATUS measurementSRVSM_completeMeasure( TI_HANDLE hMeasurementSRV );
 TI_STATUS measurementSRVSM_stopFromWaitForDriverMode( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 27-November-2005\n
  * \brief handle a STOP_REQUEST event when in WAIT_FOR_DRIVER_MODE by marking negative result status
  * \brief and callin the ordinary stop function
@@ -213,7 +213,7 @@ TI_STATUS measurementSRVSM_stopFromWaitForDriverMode( TI_HANDLE hMeasurementSRV 
 TI_STATUS measurementSRVSM_stopFromWaitForMeasureStart( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief handle a STOP_REQUEST event when in MEASURE_IN_PROGRESS by stopping all measure types and
  * \brief requesting measure stop from the FW.\n
@@ -225,7 +225,7 @@ TI_STATUS measurementSRVSM_stopFromWaitForMeasureStart( TI_HANDLE hMeasurementSR
 TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief handle a DRIVER_MODE_FAILURE event by calling the response CB.\n
  *
@@ -236,7 +236,7 @@ TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV 
 TI_STATUS measurementSRVSM_DriverModeFailure( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief handle a START_FAILURE event by exiting driver mode and calling the complete CB.\n
  *
@@ -247,7 +247,7 @@ TI_STATUS measurementSRVSM_DriverModeFailure( TI_HANDLE hMeasurementSRV );
 TI_STATUS measurementSRVSM_measureStartFailure( TI_HANDLE hMeasurementSRV );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 23-December-2005\n
  * \brief Handles a stop request when no stop is needed (SM is either idle or already send stop command to FW.\n
  *

@@ -1,7 +1,7 @@
 /*
  * txCtrl_Api.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -81,7 +81,7 @@ TI_HANDLE txCtrl_Create (TI_HANDLE hOs);
 void      txCtrl_Init (TStadHandlesList *pStadHandles);
 TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, txDataInitParams_t *txDataInitParams);
 TI_STATUS txCtrl_Unload (TI_HANDLE hTxCtrl);
-TI_STATUS txCtrl_XmitData (TI_HANDLE hTxCtrl, TTxCtrlBlk *pPktCtrlBlk);
+EStatusXmit txCtrl_XmitData (TI_HANDLE hTxCtrl, TTxCtrlBlk *pPktCtrlBlk);
 TI_STATUS txCtrl_XmitMgmt (TI_HANDLE hTxCtrl, TTxCtrlBlk *pPktCtrlBlk);
 void      txCtrl_UpdateQueuesMapping (TI_HANDLE hTxCtrl);
 void *    txCtrl_AllocPacketBuffer (TI_HANDLE hTxCtrl, TTxCtrlBlk *pPktCtrlBlk, TI_UINT32 uPacketLen);

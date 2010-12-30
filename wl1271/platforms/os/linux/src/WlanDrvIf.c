@@ -1,7 +1,7 @@
 /*
  * WlanDrvIf.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -67,15 +67,19 @@
 #include "txMgmtQueue_Api.h"
 #include "TWDriver.h"
 #include "Ethernet.h"
+#include "SdioDrv.h"
+
+
+#ifdef CONNECTION_SCAN_PM
+	/* prototypes for the suspend/resume functions */
+	static int wlanDrvIf_Suspend(void);
+	static int wlanDrvIf_Resume(void);
+#endif
+
 #ifdef TI_DBG
 #include "tracebuf_api.h"
 #endif
-/* PM hooks */
-#ifdef TI_CONFIG_PM_HOOKS
-#include "SdioDrv.h"
-static int wlanDrvIf_pm_resume(void);
-static int wlanDrvIf_pm_suspend(void);
-#endif
+
 #include "bmtrace_api.h"
 #ifdef STACK_PROFILE
 #include "stack_profile.h"
@@ -88,7 +92,7 @@ static TWlanDrvIfObj *pDrvStaticHandle;
 
 
 MODULE_DESCRIPTION("TI WLAN Embedded Station Driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual BSD/GPL");
 
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 31))
@@ -632,7 +636,6 @@ void wlanDrvIf_SetMacAddress (TI_HANDLE hOs, TI_UINT8 *pMacAddr)
 int wlanDrvIf_Start (struct net_device *dev)
 {
 	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
-	int status;
 
 	ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Start()\n");
 	printk("%s\n", __func__);
@@ -653,8 +656,17 @@ int wlanDrvIf_Start (struct net_device *dev)
 	 *      and wait for action completion (all init process).
 	 */
 	os_wake_lock_timeout_enable(drv);
-	status = drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_START);
-	return (status) ? -1 : 0;
+    if (TI_OK != drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_START)) 
+    {
+        return -ENODEV;
+    }
+
+#ifdef CONNECTION_SCAN_PM
+    /* Register the PM callback handlers */
+    sdioDrv_register_pm(wlanDrvIf_Resume, wlanDrvIf_Suspend);
+#endif
+
+    return 0;
 }
 
 int wlanDrvIf_Open (struct net_device *dev)
@@ -685,12 +697,6 @@ int wlanDrvIf_Open (struct net_device *dev)
 	drv->netdev->addr_len = MAC_ADDR_LEN;
 	netif_start_queue (dev);
 
-	/* register 3430 PM hooks in our SDIO driver */
-#ifdef TI_CONFIG_PM_HOOKS
-#ifndef CONFIG_MMC_EMBEDDED_SDIO
-	sdioDrv_register_pm(wlanDrvIf_pm_resume, wlanDrvIf_pm_suspend);
-#endif
-#endif
 	return status;
 }
 
@@ -724,7 +730,11 @@ int wlanDrvIf_Stop (struct net_device *dev)
 	 *      and wait for Stop process completion.
 	 */
 	os_wake_lock_timeout_enable(drv);
-	drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_STOP);
+    if (TI_OK != drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_STOP)) 
+    {
+        return -ENODEV;
+    }
+
 	return 0;
 }
 
@@ -738,20 +748,6 @@ int wlanDrvIf_Release (struct net_device *dev)
 	netif_stop_queue (dev);
 	return 0;
 }
-
-/* 3430 PM hooks */
-#ifdef TI_CONFIG_PM_HOOKS
-static int wlanDrvIf_pm_resume(void)
-{
-    return(wlanDrvIf_Open(pDrvStaticHandle->netdev));
-}
-
-static int wlanDrvIf_pm_suspend(void)
-{
-    wlanDrvIf_Release(pDrvStaticHandle->netdev);
-    return(wlanDrvIf_Stop(pDrvStaticHandle->netdev));
-}
-#endif
 
 /** 
  * \fn     wlanDrvIf_SetupNetif
@@ -878,12 +874,23 @@ static int wlanDrvIf_Create (void)
 	/* Dm:    drv->irq = TNETW_IRQ; */
 	drv->tCommon.eDriverState = DRV_STATE_IDLE;
 
+#ifdef CONNECTION_SCAN_PM
+	/* We want the work queue to be non-freezable, so we will be able to easily support suspend-resume */
+	drv->tiwlan_wq = create_singlethread_workqueue(DRIVERWQ_NAME);
+#else
 	drv->tiwlan_wq = create_freezeable_workqueue(DRIVERWQ_NAME);
+#endif
+
 	if (!drv->tiwlan_wq) {
 		ti_dprintf (TIWLAN_LOG_ERROR, "wlanDrvIf_Create(): Failed to create workQ!\n");
 		rc = -EINVAL;
 		goto drv_create_end_1;
 	}
+
+#ifdef CONNECTION_SCAN_PM
+	drv->wake_locks_enabled = 1;
+#endif
+
 	drv->wl_packet = 0;
 	drv->wl_count = 0;
 #ifdef CONFIG_HAS_WAKELOCK
@@ -1085,33 +1092,17 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
  * \return Init: 0 - OK, else - failure.   Exit: void
  * \sa     wlanDrvIf_Create, wlanDrvIf_Destroy
  */ 
-#ifndef TI_SDIO_STANDALONE
-static int sdc_ctrl = 2;
-module_param(sdc_ctrl, int, S_IRUGO | S_IWUSR | S_IWGRP);
-
-extern int sdioDrv_init(int sdcnum);
-extern void sdioDrv_exit(void);
-#endif
-
 static int __init wlanDrvIf_ModuleInit (void)
 {
 	printk(KERN_INFO "TIWLAN: driver init\n");
-#ifndef TI_SDIO_STANDALONE
-#ifndef CONFIG_MMC_EMBEDDED_SDIO
-	sdioDrv_init(sdc_ctrl);
-#endif
-#endif
+	sdioDrv_init();
 	return wlanDrvIf_Create ();
 }
 
 static void __exit wlanDrvIf_ModuleExit (void)
 {
 	wlanDrvIf_Destroy (pDrvStaticHandle);
-#ifndef TI_SDIO_STANDALONE
-#ifndef CONFIG_MMC_EMBEDDED_SDIO
 	sdioDrv_exit();
-#endif
-#endif
 	printk (KERN_INFO "TI WLAN: driver unloaded\n");
 }
 
@@ -1151,6 +1142,60 @@ void wlanDrvIf_ResumeTx (TI_HANDLE hOs)
 
     netif_wake_queue (drv->netdev);
 }
+
+#ifdef CONNECTION_SCAN_PM
+int wlanDrvIf_Suspend()
+{
+    struct net_device *dev = pDrvStaticHandle->netdev;
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
+
+    ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Suspend()\n");
+    /* before inserting an action - check driver state */
+    if (DRV_STATE_FAILED == drv->tCommon.eDriverState)
+    {
+        return -ENODEV;
+    }
+
+    /* disable all wake locks */
+    os_disable_wake_locks(drv);
+
+    /*Insert Stop command in DrvMain action queue, request driver scheduling
+    and wait for Stop process completion.*/
+
+    // os_wake_lock_timeout_enable(drv);
+    drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_SUSPEND);
+
+    return 0;
+}
+
+int wlanDrvIf_Resume ()
+{
+    struct net_device *dev = pDrvStaticHandle->netdev;
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
+
+   // printk("**RESUME**");
+
+    ti_dprintf (TIWLAN_LOG_OTHER, "wlanDrvIf_Resume()\n");
+
+    /* before inserting an action - check driver state */
+    if (DRV_STATE_FAILED == drv->tCommon.eDriverState)
+    {
+        return -ENODEV;
+    }
+
+    /* enable all wake locks */
+    os_enable_wake_locks(drv);
+
+    // Insert Stop command in DrvMain action queue, request driver scheduling
+    // and wait for Stop process completion.
+
+    os_wake_lock_timeout_enable(drv);
+    drvMain_InsertAction (drv->tCommon.hDrvMain, ACTION_TYPE_RESUME);
+
+    return 0;
+}
+
+#endif
 
 module_init (wlanDrvIf_ModuleInit);
 module_exit (wlanDrvIf_ModuleExit);

@@ -71,6 +71,9 @@
 #define NVS_FILE_TX_PARAMETERS_UPDATE	0
 #define NVS_FILE_RX_PARAMETERS_UPDATE	1
 
+#define SDIO_VALIDATION_TXN_SIZE_DEFAULT	(8000)
+#define SDIO_VALIDATION_NUM_LOOPS_DEFAULT	(1)
+
 
 /* local types */
 /***************/
@@ -127,6 +130,7 @@ static named_value_t BeaconFilter_use[] =
     { 0,        (PS8)"INACTIVE" },
     { 1,        (PS8)"ACTIVE" },
 };
+
 
 static named_value_t event_type[] = {
     { IPC_EVENT_ASSOCIATED,             (PS8)"Associated" },
@@ -495,6 +499,40 @@ static void CuCmd_xtoa_string (U8* srcBuffer, U32 srcBufferLength, U8* dstString
     }
 }
 
+static VOID CuCmd_set_DefPeriodic_Scan_Params(CuCmd_t* pCuCmd)
+{
+    U8 i;
+    /* init periodic application scan params */
+    pCuCmd->tPeriodicAppScanParams.uSsidNum = 0;
+    pCuCmd->tPeriodicAppScanParams.uSsidListFilterEnabled = 1;
+    pCuCmd->tPeriodicAppScanParams.uCycleNum = 0; /* forever */
+    pCuCmd->tPeriodicAppScanParams.uCycleIntervalMsec[ 0 ] = 3;
+    for (i = 1; i < PERIODIC_SCAN_MAX_INTERVAL_NUM; i++)
+    {
+        pCuCmd->tPeriodicAppScanParams.uCycleIntervalMsec[ i ] = 30000;
+    }
+    pCuCmd->tPeriodicAppScanParams.iRssiThreshold = -80;
+    pCuCmd->tPeriodicAppScanParams.iSnrThreshold = 0;
+    pCuCmd->tPeriodicAppScanParams.uFrameCountReportThreshold = 1;
+    pCuCmd->tPeriodicAppScanParams.bTerminateOnReport = TRUE;
+    pCuCmd->tPeriodicAppScanParams.eBssType = BSS_ANY;
+    pCuCmd->tPeriodicAppScanParams.uProbeRequestNum = 3;
+    pCuCmd->tPeriodicAppScanParams.uChannelNum = 14;
+    for ( i = 0; i < 14; i++ )
+    {
+        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].eBand = RADIO_BAND_2_4_GHZ;
+        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uChannel = i + 1;
+        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].eScanType = SCAN_TYPE_NORMAL_ACTIVE;
+        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uMinDwellTimeMs = 5;
+        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uMaxDwellTimeMs = 20;
+        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uTxPowerLevelDbm = DEF_TX_POWER;
+    }
+
+   
+}
+
+
+
 static VOID CuCmd_Init_Scan_Params(CuCmd_t* pCuCmd)
 {
     U8 i,j;
@@ -521,30 +559,7 @@ static VOID CuCmd_Init_Scan_Params(CuCmd_t* pCuCmd)
     }
 
     /* init periodic application scan params */
-    pCuCmd->tPeriodicAppScanParams.uSsidNum = 0;
-    pCuCmd->tPeriodicAppScanParams.uSsidListFilterEnabled = 1;
-    pCuCmd->tPeriodicAppScanParams.uCycleNum = 0; /* forever */
-    pCuCmd->tPeriodicAppScanParams.uCycleIntervalMsec[ 0 ] = 3;
-    for (i = 1; i < PERIODIC_SCAN_MAX_INTERVAL_NUM; i++)
-    {
-        pCuCmd->tPeriodicAppScanParams.uCycleIntervalMsec[ i ] = 30000;
-    }
-    pCuCmd->tPeriodicAppScanParams.iRssiThreshold = -80;
-    pCuCmd->tPeriodicAppScanParams.iSnrThreshold = 0;
-    pCuCmd->tPeriodicAppScanParams.uFrameCountReportThreshold = 1;
-    pCuCmd->tPeriodicAppScanParams.bTerminateOnReport = TRUE;
-    pCuCmd->tPeriodicAppScanParams.eBssType = BSS_ANY;
-    pCuCmd->tPeriodicAppScanParams.uProbeRequestNum = 3;
-    pCuCmd->tPeriodicAppScanParams.uChannelNum = 14;
-    for ( i = 0; i < 14; i++ )
-    {
-        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].eBand = RADIO_BAND_2_4_GHZ;
-        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uChannel = i + 1;
-        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].eScanType = SCAN_TYPE_NORMAL_ACTIVE;
-        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uMinDwellTimeMs = 5;
-        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uMaxDwellTimeMs = 20;
-        pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uTxPowerLevelDbm = DEF_TX_POWER;
-    }
+     CuCmd_set_DefPeriodic_Scan_Params(pCuCmd);
 
     /* init default scan policy */
     pCuCmd->scanPolicy.normalScanInterval = 10000;
@@ -1208,6 +1223,18 @@ VOID CuCmd_Connect(THandle hCuCmd, ConParm_t parm[], U16 nParms)
             /* 
              *  Both SSID & BSSID are set -
              *  Use CLI's SSID & BSSID.
+             */
+            if(!CuCmd_Str2MACAddr( (PS8)parm[1].value, bssid) )
+                return;
+            ssid.SsidLength = os_strlen((PS8) parm[0].value);
+            os_memcpy((PVOID)ssid.Ssid, (PVOID) parm[0].value, ssid.SsidLength);
+            ssid.Ssid[ssid.SsidLength] = '\0';
+            break;
+        default:
+            /* 
+             *  Both SSID & BSSID are set -
+             *  Use CLI's SSID & BSSID.
+             *  Ignore other parameters.
              */
             if(!CuCmd_Str2MACAddr( (PS8)parm[1].value, bssid) )
                 return;
@@ -2506,9 +2533,12 @@ VOID CuCmd_ConfigurePeriodicScanChannel (THandle hCuCmd, ConParm_t parm[], U16 n
 VOID CuCmd_ClearPeriodicScanConfiguration (THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
     CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
-
     os_memset (&(pCuCmd->tPeriodicAppScanParams), 0, sizeof (TPeriodicScanParams));
-    os_error_printf(CU_MSG_INFO2, (PS8)"Periodic application scan parameters cleared.\n");
+
+	/* Set scan default preiodic Scan commands */
+    CuCmd_set_DefPeriodic_Scan_Params(pCuCmd);
+
+    os_error_printf(CU_MSG_INFO2, (PS8)"Periodic application scan parameters restarted.\n");
 }
 
 VOID CuCmd_DisplayPeriodicScanConfiguration (THandle hCuCmd, ConParm_t parm[], U16 nParms)
@@ -3442,31 +3472,137 @@ VOID CuCmd_RemoveClsfrEntry(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 
 VOID CuCmd_SetPsRxDelivery(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
-    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
-    TPsRxStreaming tPsRxStreaming;
+	CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+	TPsRxStreaming tPsRxStreaming;
 
-    tPsRxStreaming.uTid          = parm[0].value;
-    tPsRxStreaming.uStreamPeriod = parm[1].value;
-    tPsRxStreaming.uTxTimeout    = parm[2].value;
-    tPsRxStreaming.bEnabled      = parm[3].value;
+	tPsRxStreaming.uTid          = parm[0].value;
+	tPsRxStreaming.uStreamPeriod = parm[1].value;
+	tPsRxStreaming.uTxTimeout    = parm[2].value;
+	tPsRxStreaming.bEnabled      = parm[3].value;
 
-    if (CuCommon_SetBuffer(pCuCmd->hCuCommon, QOS_MNGR_PS_RX_STREAMING,
-        &tPsRxStreaming, sizeof(TPsRxStreaming)) == OK)
-    {
-        os_error_printf(CU_MSG_INFO2, (PS8)"Sent PS Rx Delivery to driver...");
-    }
-    else
-    {
-        os_error_printf(CU_MSG_INFO2, (PS8)"Error: could not set PS Rx Delivery in driver...\n");
-    }
-    os_error_printf(CU_MSG_INFO2, 
-        (PS8)"TID = %d \n RxPeriod = %d \n TxTimeout = %d\n Enabled = %d\n", 
-        tPsRxStreaming.uTid,      
-        tPsRxStreaming.uStreamPeriod, 
-        tPsRxStreaming.uTxTimeout,
-        tPsRxStreaming.bEnabled);
+	if (CuCommon_SetBuffer(pCuCmd->hCuCommon, QOS_MNGR_PS_RX_STREAMING,
+		&tPsRxStreaming, sizeof(TPsRxStreaming)) == OK)
+	{
+		os_error_printf(CU_MSG_INFO2, (PS8)"Sent PS Rx Delivery to driver...");
+	}
+	else
+	{
+		os_error_printf(CU_MSG_INFO2, (PS8)"Error: could not set PS Rx Delivery in driver...\n");
+	}
+	os_error_printf(CU_MSG_INFO2, 
+		(PS8)"TID = %d \n RxPeriod = %d \n TxTimeout = %d\n Enabled = %d\n", 
+		tPsRxStreaming.uTid,      
+		tPsRxStreaming.uStreamPeriod, 
+		tPsRxStreaming.uTxTimeout,
+		tPsRxStreaming.bEnabled);
 }
 
+VOID CuCmd_SetBaPolicy(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+	TBaPolicy tBaPolicy;
+    S32 i = 0;
+
+
+	if (nParms == 0)
+	{
+	    os_error_printf(CU_MSG_INFO2, (PS8)"Block Ack Policy (0-None,1-Only RX,2-Only TX,3-Both:\n");
+    	os_error_printf(CU_MSG_INFO2, (PS8)"+-----+--------------+\n");
+	    os_error_printf(CU_MSG_INFO2, (PS8)"| TID | Policy       |\n");
+    	os_error_printf(CU_MSG_INFO2, (PS8)"+-----+--------------+\n");
+	
+	    for (i=0; i<8; i++)
+	    {
+	        tBaPolicy.uTid = i;
+	        if(OK != CuCommon_GetSetBuffer(pCuCmd->hCuCommon, TIWLN_802_11_MNGR_BA_POLICY,
+	            &tBaPolicy, sizeof(TBaPolicy))) return;      
+
+	        os_error_printf(CU_MSG_INFO2, (PS8)"| %3d | %12d |\n",
+	            tBaPolicy.uTid,         
+	            tBaPolicy.uBaPlociy);
+	    }
+	    os_error_printf(CU_MSG_INFO2, (PS8)"+-----+--------------+\n");
+	}
+
+	else if (nParms != 2)
+		os_error_printf(CU_MSG_INFO2, (PS8)"Error: could not set Ba Policy in driver...\n");
+
+	else
+	{
+				
+		tBaPolicy.uTid          = parm[0].value;
+		tBaPolicy.uBaPlociy 	= parm[1].value;
+
+		if (CuCommon_SetBuffer(pCuCmd->hCuCommon, TIWLN_802_11_MNGR_BA_POLICY,
+			&tBaPolicy, sizeof(TBaPolicy)) == OK)
+		{
+			os_error_printf(CU_MSG_INFO2, (PS8)"Sent Ba Policy to driver...");
+		}
+		else
+		{
+			os_error_printf(CU_MSG_INFO2, (PS8)"Error: could not set Ba Policy in driver...\n");
+		}
+		os_error_printf(CU_MSG_INFO2, 
+			(PS8)"TID = %d \n Policy = %d\n", 
+			tBaPolicy.uTid,      
+			tBaPolicy.uBaPlociy);
+	}
+}
+
+VOID CuCmd_ClearBaPolicy(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+	int i;
+	TBaPolicy tBaPolicy;
+
+	tBaPolicy.uBaPlociy = 0;
+	
+	for (i=0;i<MAX_NUM_OF_802_1d_TAGS;i++)
+	{
+		tBaPolicy.uTid = i;
+		
+		if (CuCommon_SetBuffer(pCuCmd->hCuCommon, TIWLN_802_11_MNGR_BA_POLICY,
+			&tBaPolicy, sizeof(TBaPolicy)) != OK)
+		{
+			os_error_printf(CU_MSG_INFO2, (PS8)"Error: could not set Ba Policy in driver...\n");
+		}
+	}
+}
+
+VOID CuCmd_PsTrafficPeriod(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+	TPsRxStreaming tPsRxStreaming;
+
+	if (nParms == 0)
+	{
+	    if(OK != CuCommon_GetSetBuffer(pCuCmd->hCuCommon, TIWLN_802_11_MNGR_PS_TRAFFIC_PERIOD,
+	            &tPsRxStreaming, sizeof(TPsRxStreaming))) return;
+
+		os_error_printf(CU_MSG_INFO2, (PS8)"Ps Traffic Period: %d \n",tPsRxStreaming.uStreamPeriod);
+	}
+	else
+	{
+				
+		tPsRxStreaming.uTid 		 = 0; /* ps traffic in auto rx streaming is on TID 0*/
+		tPsRxStreaming.uStreamPeriod = parm[0].value;
+		tPsRxStreaming.uTxTimeout	 = 0;
+		if (parm[0].value)
+			tPsRxStreaming.bEnabled 	 = TI_TRUE;
+		else
+			tPsRxStreaming.bEnabled 	 = TI_FALSE;
+
+		if (CuCommon_SetBuffer(pCuCmd->hCuCommon, TIWLN_802_11_MNGR_PS_TRAFFIC_PERIOD,
+			&tPsRxStreaming, sizeof(tPsRxStreaming)) == OK)
+		{
+			os_error_printf(CU_MSG_INFO2, (PS8)"Set ps traffic period...\n");
+		}
+		else
+		{
+			os_error_printf(CU_MSG_INFO2, (PS8)"Error: could not set ps traffic period in driver...\n");
+		}
+	}
+}
 
 VOID CuCmd_SetQosParams(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
@@ -5311,7 +5447,7 @@ VOID nvsUpdateFile(THandle hCuCmd, TNvsStruct nvsStruct, TI_UINT8 version,  S8 u
 #ifdef _WINDOWS
     PS8 nvsFilePath = (PS8)"/windows/nvs_map.bin";
 #else
-    PS8 nvsFilePath = (PS8)"./nvs_map.bin";
+    PS8 nvsFilePath = (PS8)"/data/misc/wifi/nvs_map.bin";
 #endif /*_WINDOWS*/
 	TI_UINT8		currentNVSbuffer[1500];
 	TI_UINT16		lengthOfCurrentNVSBufer;
@@ -6351,6 +6487,40 @@ VOID CuCmd_SetArpIPFilter (THandle hCuCmd, ConParm_t parm[], U16 nParms)
         os_error_printf (CU_MSG_ERROR, (PS8)"Unable to configure ARP IP filter \n");
     }
 
+}
+
+VOID CuCmd_SdioValidation(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    SdioValidationTestParams_t      sdioTestParams;
+    CuCmd_t                         *pCuCmd         = (CuCmd_t*)hCuCmd;
+    TI_UINT32                       uTxnSizeInBytes = 1;
+    TI_UINT32                       uNumOfLoops     = 1;
+
+    
+    /* Set SdioValidationTestParams fileds */
+
+    if(nParms > 0)
+    {
+        uNumOfLoops = parm[0].value;
+    }
+
+    if(nParms > 1)
+    {
+        uTxnSizeInBytes = parm[1].value;
+
+        /* Align to 4 bytes - rounded up */
+        uTxnSizeInBytes += 3;
+        uTxnSizeInBytes &= 0xFFFFFFFC;
+    }
+
+    sdioTestParams.uNumOfLoops  = uNumOfLoops;
+    sdioTestParams.uTxnSize     = uTxnSizeInBytes;
+
+
+    if (OK != CuCommon_SetBuffer(pCuCmd->hCuCommon, FW_DEBUG_SDIO_VALIDATION, &sdioTestParams, sizeof(sdioTestParams)))
+    {
+        os_error_printf(CU_MSG_ERROR, (PS8)"SDIO validation mechanism has failed. \n");
+    }
 }
 
 VOID CuCmd_ShowAbout(THandle hCuCmd, ConParm_t parm[], U16 nParms)

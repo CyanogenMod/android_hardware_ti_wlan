@@ -1,7 +1,7 @@
 /*
  * fwDebug_api.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -89,7 +89,8 @@ void      fwDbg_Destroy     (TI_HANDLE hFwDebug);
 
 void      fwDbg_Init	    (TI_HANDLE hFwDebug,
                              TI_HANDLE hReport,
-                             TI_HANDLE hTwif);
+                             TI_HANDLE hTwif,
+                             TI_HANDLE hFwEvent);
 
 TI_STATUS fwDbg_WriteAddr   (TI_HANDLE hFwDebug,
                              TI_UINT32 Address,
@@ -112,6 +113,9 @@ TI_BOOL fwDbg_isValidMemoryAddr    (TI_HANDLE hFwDebug,
 TI_BOOL fwDbg_isValidRegAddr    (TI_HANDLE hFwDebug,
                              TI_UINT32 Address,
                              TI_UINT32 Length);
+
+
+TI_STATUS fwDbg_ValidateSdio(TI_HANDLE hFwDebug, TI_UINT32 uNumOfLoops, TI_UINT32 uTxnSize);
 
 
 #endif /* _FW_DEBUG_API_H */

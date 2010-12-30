@@ -1,7 +1,7 @@
 /*
  * CmdHndlr.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -126,7 +126,6 @@ TI_STATUS cmdHndlr_Destroy (TI_HANDLE hCmdHndlr, TI_HANDLE hEvHandler)
 		cmdInterpret_Destroy (pCmdHndlr->hCmdInterpret, hEvHandler);
 	}
 
-    cmdHndlr_ClearQueue (hCmdHndlr);
 
 	if (pCmdHndlr->hCmdQueue)
 	{

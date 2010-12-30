@@ -78,6 +78,9 @@
 
 #define PADDING_ETH_PACKET_SIZE                 2
 
+#define MSDU_DATA_LEN_LIMIT                     5000  /* some arbitrary big number to protect from buffer overflow */
+  
+
 /* CallBack for recieving packet from rxXfer */
 static void rxData_ReceivePacket (TI_HANDLE   hRxData,  void  *pBuffer);
 
@@ -984,6 +987,12 @@ void rxData_receivePacketFromWlan (TI_HANDLE hRxData, void *pBuffer, TRxAttr* pR
             break;
         }
 
+		/* in case of BA event no need to pass it to the network stack - we just free the buffer */
+	case TAG_CLASS_BA_EVENT:
+        TRACE0(pRxData->hReport, REPORT_SEVERITY_INFORMATION, " rxData_receivePacketFromWlan(): Received BA event packet type - free the buffer \n");
+        RxBufFree(pRxData->hOs, pBuffer); 
+        break;
+
     default:
         TRACE0(pRxData->hReport, REPORT_SEVERITY_ERROR, " rxData_receivePacketFromWlan(): Received unspecified packet type !!! \n");
         RxBufFree(pRxData->hOs, pBuffer); 
@@ -1514,6 +1523,13 @@ static TI_STATUS rxData_ConvertAmsduToEthPackets (TI_HANDLE hRxData, void *pBuff
     /* if we have another packet at the AMSDU */
     while((uDataLen < uAmsduDataLen) && (uAmsduDataLen > ETHERNET_HDR_LEN + FCS_SIZE))  
     {
+        if ((uDataLen < WLAN_SNAP_HDR_LEN) || (uDataLen > MSDU_DATA_LEN_LIMIT))
+        {
+            TRACE1(pRxData->hReport, REPORT_SEVERITY_ERROR, "rxData_ConvertAmsduToEthPackets(): MSDU Length out of bounds = %d\n",uDataLen);
+            rxData_discardPacket (hRxData, pBuffer, pRxAttr);
+            return TI_NOK;
+        }
+
         /* allocate a new buffer */
         /* RxBufAlloc() add an extra word for alignment the MAC payload */
         rxData_RequestForBuffer (hRxData, &pDataBuf, sizeof(RxIfDescriptor_t) + WLAN_SNAP_HDR_LEN + ETHERNET_HDR_LEN + uDataLen, 0, TAG_CLASS_AMSDU);

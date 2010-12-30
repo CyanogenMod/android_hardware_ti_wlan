@@ -1,7 +1,7 @@
 /*
  * CmdQueue.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -776,7 +776,12 @@ TI_STATUS cmdQueue_Error (TI_HANDLE hCmdQueue, TI_UINT32 command, TI_UINT32 stat
     }
     else if (status == CMD_STATUS_UNKNOWN_IE)
     {
-        TRACE4(pCmdQueue->hReport, REPORT_SEVERITY_CONSOLE,"cmdQueue_Error: Unknown IE, cmdType : %d (%d) IE: %d (%d)\n", command, command, (param) ? *(TI_UINT16 *) param : 0, *((TI_UINT16 *) param));
+        TRACE4( pCmdQueue->hReport, REPORT_SEVERITY_CONSOLE, "cmdQueue_Error: Unknown IE, cmdType : %d (%d) IE: %d (%d)\n", 
+                command, 
+                command, 
+                (param) ? *((TI_UINT16 *) param) : 0, 
+                (param) ? *((TI_UINT16 *) param) : 0
+              );
 
         WLAN_OS_REPORT(("cmdQueue_Error: Unknown IE, cmdType : %s (%d) IE: %s (%d)\n",
                         cmdQueue_GetCmdString (command),

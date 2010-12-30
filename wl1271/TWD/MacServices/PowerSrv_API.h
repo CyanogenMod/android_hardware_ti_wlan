@@ -1,7 +1,7 @@
 /*
  * PowerSrv_API.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file powerSrv_API.h
  *  \brief This is the Power Manager module API.
- *  \author Yaron Menashe
+ *  \
  */
 
 /****************************************************************************
@@ -89,7 +89,7 @@ typedef TPowerSaveCompleteCb powerSaveCmpltCB_t;
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 20-Oct-2005\n
  * \brief Creates the object of the power Server.
  *
@@ -102,7 +102,7 @@ TI_HANDLE powerSrv_create(TI_HANDLE hOs);
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 27-Apr-2005\n
  * \brief Destroy the object of the power Server.
  *
@@ -115,7 +115,7 @@ TI_STATUS powerSrv_destroy(TI_HANDLE hPowerSrv);
 
 
 /**
-  * \author Assaf Azulay
+  * \
  * \date 24-Oct-2005\n
  * \brief Initialization of the powerSrv module.
  *
@@ -139,7 +139,7 @@ TI_STATUS powerSrv_config(TI_HANDLE 				hPowerSrv,
 				          TPowerSrvInitParams      *pPowerSrvInitParams);
 
 /**
-  * \author Assaf Azulay
+  * \
  * \date 24-Oct-2005\n
  * \brief request PS by User
  *
@@ -166,7 +166,7 @@ TI_STATUS powerSrv_SetPsMode (TI_HANDLE 					hPowerSrv,
 
 
 /**
-  * \author Assaf Azulay
+  * \
  * \date 24-Oct-2005\n
  * \brief SW configure, use to override the current PowerMode (what ever it will be) to
  *        active/PS combined with awake/power-down. use for temporary change the system policy.
@@ -198,7 +198,7 @@ TI_STATUS powerSrv_ReservePS (TI_HANDLE 				hPowerSrv,
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 24-Oct-2005\n
  * \brief end the temporary change of system policy, and returns to the user system policy.
  *
@@ -220,7 +220,7 @@ TI_STATUS powerSrv_ReleasePS( 	TI_HANDLE 					hPowerSrv,
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 24-Oct-2005\n
  * \brief reflects the actual state of the state machine
  *
@@ -234,7 +234,7 @@ TI_BOOL powerSrv_getPsStatus(TI_HANDLE hPowerSrv);
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 24-Oct-2005\n
  * \sets the rate as got from user else sets default value.\n
  *
@@ -250,7 +250,7 @@ void powerSrv_SetRateModulation(TI_HANDLE hPowerSrv, TI_UINT16  rate);
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 9-Mar-2006\n
  * \brief Registers a failure event callback for scan error notifications.
  *

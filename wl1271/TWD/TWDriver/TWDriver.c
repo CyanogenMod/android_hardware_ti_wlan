@@ -451,7 +451,7 @@ void TWD_Init (TI_HANDLE    hTWD,
     RxQueue_Init (pTWD->hRxQueue, pTWD->hReport, pTWD->hTimer);
 
 #ifdef TI_DBG
-    fwDbg_Init (pTWD->hFwDbg, pTWD->hReport, pTWD->hTwIf);
+    fwDbg_Init (pTWD->hFwDbg, pTWD->hReport, pTWD->hTwIf, pTWD->hFwEvent);
 #endif /* TI_DBG */
 
     /* Initialize the MAC Services */
@@ -600,6 +600,9 @@ static TI_STATUS TWD_ConfigFwCb (TI_HANDLE hTWD, TI_STATUS status)
 
     /* Provide number of HW Tx-blocks and descriptors to Tx-HW-Queue module */
     txHwQueue_SetHwInfo (pTWD->hTxHwQueue, pDmaParams);
+
+    /* call all the CB stored in the aRecoveryQueue */
+    cmdQueue_EndReconfig(pTWD->hCmdQueue);
 
     /* If the configure complete function was registered, we call it here - end of TWD_Configure stage */
     if (pTWD->fConfigFwCb) 
@@ -856,12 +859,15 @@ void TWD_FinalizeDownload (TI_HANDLE hTWD)
 {
     TTwd *pTWD = (TTwd *)hTWD;
 
-    TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_FinalizeDownload: called\n");
 
 	if ( pTWD == NULL )
 	{
 		return;
 	}
+
+    TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_FinalizeDownload: called\n");
+
+
     /* Here at the end call the Initialize Complete callback that will release the user Init semaphore */
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT, "Before sending the Init Complet callback !!!!!\n");
 
@@ -1195,9 +1201,10 @@ void TWD_EnableExternalEvents (TI_HANDLE hTWD)
      * Enable sleep after all firmware initializations completed 
      * The awake was in the TWD_initHw phase
      */
-    twIf_Sleep (pTWD->hTwIf);
 
     fwEvent_EnableExternalEvents (pTWD->hFwEvent);
+
+    twIf_Sleep (pTWD->hTwIf);
 }
 
 TI_BOOL TWD_RecoveryEnabled (TI_HANDLE hTWD)

@@ -512,9 +512,6 @@ static TI_STATUS idle_to_selfWait (void *pData)
        get a MS random time of ~8000 ms */
     randomTime = os_timeStampMs (pConn->hOs) & 0x1FFF;
 
-    /* Update current BSS connection type and mode */
-    currBSS_updateConnectedState (pConn->hCurrBss, TI_TRUE, BSS_INDEPENDENT);
-
     tmr_StartTimer (pConn->hConnTimer,
                     conn_timeout,
                     (TI_HANDLE)pConn,

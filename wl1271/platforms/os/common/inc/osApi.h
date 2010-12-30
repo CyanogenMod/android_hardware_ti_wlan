@@ -1,7 +1,7 @@
 /*
  * osApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -534,6 +534,11 @@ int os_wake_lock (TI_HANDLE OsContext);
 int os_wake_unlock (TI_HANDLE OsContext);
 int os_wake_lock_timeout (TI_HANDLE OsContext);
 int os_wake_lock_timeout_enable (TI_HANDLE OsContext);
+
+#ifdef CONNECTION_SCAN_PM
+void os_disable_wake_locks(TI_HANDLE OsContext);
+void os_enable_wake_locks(TI_HANDLE OsContext);
+#endif
 
 #define os_profile(hos,fn,par)
 

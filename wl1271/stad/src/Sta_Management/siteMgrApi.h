@@ -1,7 +1,7 @@
 /*
  * siteMgrApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -69,7 +69,8 @@ typedef enum
     TRIGGER_EVENT_BG_SCAN    = 4,
     TRIGGER_EVENT_USER_0     = 5,
     TRIGGER_EVENT_USER_1     = 6,
-    TRIGGER_EVENT_MAX        = 7
+	TRIGGER_EVENT_HIGH_BG_SCAN = 7,
+    TRIGGER_EVENT_MAX        = 8
 
 }ETriggerEventIndex;
 
@@ -109,6 +110,7 @@ TI_STATUS siteMgr_setParam(TI_HANDLE        hSiteMgr,
                         paramInfo_t     *pParam);
 
 TI_STATUS siteMgr_getParamWSC(TI_HANDLE hSiteMgr, TIWLN_SIMPLE_CONFIG_MODE *wscParam);
+
 TI_STATUS siteMgr_getParam(TI_HANDLE        hSiteMgr, 
                         paramInfo_t     *pParam);
 
@@ -178,6 +180,7 @@ TI_STATUS siteMgr_saveProbeRespBuffer(TI_HANDLE hSiteMgr, TMacAddr	*bssid, TI_UI
 TI_STATUS siteMgr_saveBeaconBuffer(TI_HANDLE hSiteMgr, TMacAddr *bssid, TI_UINT8 *pBeaconBuffer, TI_UINT32 length);
 
 void siteMgr_UpdatHtParams (TI_HANDLE hSiteMgr, siteEntry_t *pSite, mlmeFrameInfo_t *pFrameInfo);
+
 
 #ifdef REPORT_LOG
 void siteMgr_printPrimarySiteDesc(TI_HANDLE hSiteMgr );

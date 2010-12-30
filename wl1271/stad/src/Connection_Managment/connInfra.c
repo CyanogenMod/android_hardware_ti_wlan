@@ -728,8 +728,7 @@ static TI_STATUS connInfra_ScrWait(void *pData)
         pConn->scrRequested[ uResourceIndex ] = TI_TRUE;
 
         /* sanity check */
-        if ((scrReplyStatus[ uResourceIndex ] > SCR_CRS_PEND) ||
-            (scrReplyStatus[ uResourceIndex ] < SCR_CRS_RUN))
+        if (scrReplyStatus[ uResourceIndex ] > SCR_CRS_PEND)
         {
             TRACE2(pConn->hReport, REPORT_SEVERITY_ERROR , "Idle_to_ScrWait: SCR for resource %d returned status %d\n", uResourceIndex, scrReplyStatus[ uResourceIndex ]);
             return TI_NOK;
@@ -748,7 +747,7 @@ static TI_STATUS connInfra_ScrWait(void *pData)
     else
     {
         /* mark which resource is pending (or both) */
-        for (uResourceIndex = SCR_RESOURCE_PERIODIC_SCAN;
+        for (uResourceIndex = SCR_RESOURCE_SERVING_CHANNEL;
              uResourceIndex < SCR_RESOURCE_NUM_OF_RESOURCES;
              uResourceIndex++)
         {
@@ -792,8 +791,12 @@ void InfraConnSM_ScrCB( TI_HANDLE hConn, EScrClientRequestStatus requestStatus,
         }
         break;
 
-    case SCR_CRS_FW_RESET:
-        /* Ignore FW reset, the MLME SM will handle re-try of the conn */
+	case SCR_CRS_FW_RESET:
+        if (pConn->state == STATE_CONN_INFRA_WAIT_JOIN_CMPLT)
+		{
+			connInfra_JoinCmpltNotification((TI_HANDLE) pConn);
+		}
+
         TRACE0( pConn->hReport, REPORT_SEVERITY_INFORMATION, "Infra Conn: Recovery occured.\n");
         break;
 

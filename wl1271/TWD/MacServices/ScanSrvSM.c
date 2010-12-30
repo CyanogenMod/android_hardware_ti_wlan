@@ -1,7 +1,7 @@
 /*
  * ScanSrvSM.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file ScanSrvSM.c
  *  \brief This file include the scan SRV Sm implementation
- *  \author Ronen Kalish
+ *  \
  *  \date 10-Jan-2005 
  */
 
@@ -62,7 +62,7 @@ static TI_STATUS actionUnexpected( TI_HANDLE hScanSrv );
 
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Initialize the scan SRV SM.
  *
@@ -150,7 +150,7 @@ TI_STATUS scanSRVSM_init( TI_HANDLE hScanSrv )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Processes an event.
  *
@@ -182,7 +182,7 @@ TI_STATUS scanSRVSM_SMEvent( TI_HANDLE hScanSrv, scan_SRVSMStates_e* currentStat
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Request to enter driver mode from the power manager module.\n
  *
@@ -247,7 +247,7 @@ TI_STATUS scanSRVSM_requestPS( TI_HANDLE hScanSrv )
 }
 
 /**
- * \author Yuval Adler\n
+ * \\n
  * \date 6-Oct-2005\n
  * \brief Request to release PS mode from the PowerSRV , and wait for answer.\n\n
  *
@@ -315,7 +315,7 @@ TI_STATUS scanSRVSM_releasePS( TI_HANDLE hScanSrv )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Send the scan command to the firmware.\n
  *
@@ -365,7 +365,7 @@ TI_STATUS scanSRVSM_startActualScan( TI_HANDLE hScanSrv )
 
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Notifies scan complete to upper layer.\n
  *
@@ -419,7 +419,7 @@ TI_STATUS scanSRVSM_notifyScanComplete( TI_HANDLE hScanSrv )
 
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Handles a timer expiry event - starts a recovery process.
  *
@@ -432,12 +432,9 @@ TI_STATUS scanSRVSM_handleTimerExpiry( TI_HANDLE hScanSrv )
     scanSRV_t *pScanSRV = (scanSRV_t*)hScanSrv;
 
     /* 
-     * No scan complete bug workaround:
-     * Only after a consecutive configurable number of no scan complete events the recovery trigger
-     * will be issued. This is done as a workaround for a bug in the FW where if a channel is too
-     * loaded it wouldn't be able to send a probe request and will get stuck waiting for this channel
+     No scan complete event will trigger recovery only after a consecutive configurable number of 
+	 no scan complete events occurred.
      */
-
     pScanSRV->currentNumberOfConsecutiveNoScanCompleteEvents++;
 
     if ( pScanSRV->currentNumberOfConsecutiveNoScanCompleteEvents >= 
@@ -480,7 +477,7 @@ TI_STATUS scanSRVSM_handleTimerExpiry( TI_HANDLE hScanSrv )
 }
 
 /**
- * \author Shirit Brook\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Handles PS Fail event while in Scanning - Indicate not to Exit PS.
  * This event can be reached when Roaming is invoked while in Scanning state.
@@ -503,7 +500,7 @@ static TI_STATUS scanSRVSM_PsFailWhileScanning( TI_HANDLE hScanSrv )
 
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 17-Jan-2005\n
  * \brief Handles a FW reset event (one that was detected outside the scan SRV) by stopping the timer.
  *
@@ -536,7 +533,7 @@ TI_STATUS scanSRVSM_handleRecovery( TI_HANDLE hScanSrv )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 11-Jan-2005\n
  * \brief Handles an unexpected event.\n
  *
@@ -568,7 +565,7 @@ static TI_STATUS actionUnexpected( TI_HANDLE hScanSrv )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Handles an event that doesn't require any action.\n
  *

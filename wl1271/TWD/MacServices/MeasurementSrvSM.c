@@ -1,7 +1,7 @@
 /*
  * MeasurementSrvSM.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file measurementSrv.c
  *  \brief This file include the measurement SRV state machine implementation.
- *  \author Ronen Kalish
+ *  \
  *  \date 13-November-2005
  */
 
@@ -55,7 +55,7 @@ static void measurementSRVSM_requestMeasureStartResponseCB(TI_HANDLE hMeasuremen
 
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Initialize the measurement SRV SM.\n
  *
@@ -143,7 +143,7 @@ TI_STATUS measurementSRVSM_init( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Processes an event.\n
  *
@@ -176,7 +176,7 @@ TI_STATUS measurementSRVSM_SMEvent( TI_HANDLE hMeasurementSrv, measurements_SRVS
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a MEASURE_START_REQUEST event by requesting driver mode.\n
  *
@@ -237,7 +237,7 @@ TI_STATUS measurementSRVSM_requestDriverMode( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a DRIVER_MODE_SUCCESS event by sending start measure command to the FW.\n
  *
@@ -341,7 +341,7 @@ TI_STATUS measurementSRVSM_requestMeasureStart( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a START_SUCCESS event by starting different measure types and setting timers.\n
  *
@@ -468,7 +468,7 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
         
         case MSR_TYPE_BEACON_MEASUREMENT:
             /* set all parameters in the AP discovery command */
-            pApDiscoveryParams.scanDuration = pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].duration * 1000; /* TODO change this to an infinite value (was 0) */
+            pApDiscoveryParams.scanDuration = pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].duration * 1000;
             pApDiscoveryParams.numOfProbRqst = 1;
             pApDiscoveryParams.txdRateSet = HW_BIT_RATE_1MBPS;
             pApDiscoveryParams.ConfigOptions = RX_CONFIG_OPTION_FOR_MEASUREMENT;
@@ -527,7 +527,7 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle an ALL_TYPE_COMPLETE event by sending a stop measure command to the FW.\n
  *
@@ -579,7 +579,7 @@ TI_STATUS measurementSRVSM_requestMeasureStop( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a STOP_COMPLETE event by exiting driver mode and calling the complete CB.\n
  *
@@ -611,7 +611,7 @@ TI_STATUS measurementSRVSM_completeMeasure( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Handle a STOP_REQUEST event when in WAIT_FOR_DRIVER_MODE state by exiting driver mode.
  *
@@ -698,7 +698,7 @@ TI_STATUS measurementSRVSM_stopFromWaitForDriverMode( TI_HANDLE hMeasurementSRV 
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 27-November-2005\n
  * \brief handle a STOP_REQUEST event when in WAIT_FOR_DRIVER_MODE by marking negative result status
  * \brief and calling the ordinary stop function
@@ -725,7 +725,7 @@ TI_STATUS measurementSRVSM_stopFromWaitForMeasureStart( TI_HANDLE hMeasurementSR
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief handle a STOP_REQUEST event when in MEASURE_IN_PROGRESS by stopping all measure types and
  * \brief requesting measure stop from the FW.\n
@@ -824,7 +824,7 @@ TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV 
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief handle a DRIVER_MODE_FAILURE event by calling the response and complete CBs.\n
  *
@@ -877,7 +877,7 @@ TI_STATUS measurementSRVSM_DriverModeFailure( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief handle a START_FAILURE event by exiting driver mode and calling the complete CB.\n
  *
@@ -980,7 +980,7 @@ TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "***** STOP TIMER
 
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 23-December-2005\n
  * \brief Handles a stop request when no stop is needed (SM is either idle or already send stop command to FW.\n
  *
@@ -1006,7 +1006,7 @@ TI_STATUS measurementSRVSRVSM_dummyStop( TI_HANDLE hMeasurementSrv )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 17-November-2005\n
  * \brief Handles an unexpected event.\n
  *
@@ -1048,7 +1048,7 @@ TI_STATUS actionUnexpected( TI_HANDLE hMeasurementSrv )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Handles an event that doesn't require any action.\n
  *

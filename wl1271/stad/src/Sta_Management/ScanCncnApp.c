@@ -184,6 +184,9 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
 		pScanCncn->tOsScanParams.scanType = pParam->content.pScanParams->scanType;
 
+        /* Perform aging process before the scan */
+        scanResultTable_PerformAging(pScanCncn->hScanResultTable);
+
         /* and actually start the scan */
         genSM_Event (pScanCncn->hOSScanSm, SCAN_CNCN_OS_SM_EVENT_START_SCAN, hScanCncn);
 

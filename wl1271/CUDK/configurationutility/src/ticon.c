@@ -55,7 +55,7 @@
 
 #define TIWLAN_DRV_NAME "tiwlan0"
 #ifdef ANDROID
-#define SUPPL_IF_FILE "/data/misc/wifi/sockets/" TIWLAN_DRV_NAME
+#define SUPPL_IF_FILE TIWLAN_DRV_NAME
 #else
 #define SUPPL_IF_FILE "/var/run/" TIWLAN_DRV_NAME
 #endif
@@ -247,6 +247,8 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
         };
         Console_AddToken(pTiCon->hConsole, h2, (PS8)"Remove", (PS8)"Remove a keep-alive template", (FuncToken_t)CuCmd_RemoveKeepAliveMessage, aaa );
     }
+
+
     Console_AddToken(pTiCon->hConsole, h2, (PS8)"Show", (PS8)"Show all configured keep-alive templates", (FuncToken_t)CuCmd_ShowKeepAlive, NULL );
 
 	/* -------------------------------------------- Show -------------------------------------------- */	
@@ -408,7 +410,7 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 	}
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"cLear", (PS8)"Clear All Params", (FuncToken_t) CuCmd_ScanAppClear, NULL );
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"Display", (PS8)"Display Params", (FuncToken_t) CuCmd_ScanAppDisplay, NULL );
-	
+
     {
         ConParm_t aaa[]  = {
             {(PS8)"Aging threshold", CON_PARM_RANGE, 0, 1000, 60 } };
@@ -724,7 +726,26 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 			CON_LAST_PARM };
 			Console_AddToken(pTiCon->hConsole,h1, (PS8)"Medium usage", (PS8)"Medium usage threshold", (FuncToken_t) CuCmd_ModifyMediumUsageTh, MediumUsageParams );
 	}
-	
+
+    CHK_NULL(h2 = (THandle) Console_AddDirExt(pTiCon->hConsole,  (THandle) h, (PS8)"Ba policy", (PS8)"BA Policy Sub-menu" ) );
+	{
+		ConParm_t aaa[]  = {
+							{(PS8)"TID", CON_PARM_RANGE | CON_PARM_OPTIONAL, 0, 7, 0  },
+							{(PS8)"BA Policy (0-None, 1-Tx Only, 2-Rx Only, 3 -Both)", CON_PARM_RANGE | CON_PARM_OPTIONAL, 0, 3, 0  },
+							CON_LAST_PARM };
+		Console_AddToken(pTiCon->hConsole,h2, (PS8)"set Ba policy", (PS8)"Set BA policy", (FuncToken_t) CuCmd_SetBaPolicy, aaa );
+	}
+	{
+		Console_AddToken(pTiCon->hConsole,h2, (PS8)"Clear ba policy", (PS8)"Clear BA policy", (FuncToken_t) CuCmd_ClearBaPolicy, NULL );
+	}
+
+	{
+		
+        ConParm_t aaa[]  = {
+            {(PS8)"ps traffic period (0 - disable)", CON_PARM_RANGE | CON_PARM_OPTIONAL, 0, 50, 30 },
+            CON_LAST_PARM };
+            Console_AddToken(pTiCon->hConsole,h, (PS8)"ps traffix periOd", (PS8)"set ps traffic period", (FuncToken_t) CuCmd_PsTrafficPeriod, aaa );
+	}
     
 	/* -------------------------------------------- Power Management -------------------------------------------- */
 	
@@ -944,6 +965,16 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
                               CON_LAST_PARM };
 
           Console_AddToken(pTiCon->hConsole, h1, (PS8)"set Arp ip filter",  (PS8)"arp ip filter", (FuncToken_t) CuCmd_SetArpIPFilter, aaa );
+      }
+
+      /* SDIO Validation Test */
+      {
+          ConParm_t aaa[] = { {(PS8)"Number of loops", CON_PARM_OPTIONAL, 1, 100, 1},
+                              {(PS8)"Buffer Size", CON_PARM_OPTIONAL, 4, 8192, 8000},
+                              CON_LAST_PARM
+                            };
+          
+          Console_AddToken(pTiCon->hConsole, h1, (PS8)"sdIo validation test", (PS8)"Test SDIO", (FuncToken_t) CuCmd_SdioValidation, aaa );
       }
 
      }
@@ -1213,3 +1244,5 @@ void g_tester_send_event(U8 event_index)
 void ProcessLoggerMessage(PU8 data, U32 len)
 {
 }
+
+

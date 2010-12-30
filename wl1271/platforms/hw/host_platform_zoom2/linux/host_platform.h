@@ -44,40 +44,29 @@
 
 #include <mach/hardware.h>
 
+#define OMAP_HSMMC3_BASE			0x480AD000	//0x480b4000
 
-#define OMAP_HSMMC1_BASE		0x4809C000
-#define OMAP_HSMMC2_BASE		0x480B4000
-#define OMAP_HSMMC3_BASE		0x480AD000
+#define CONTROL_PADCONF_CAM_D1			0x48002118   /* WLAN_EN */
+#define CONTROL_PADCONF_MCBSP1_CLKX		0x48002198   /* WLAN_IRQ */
 
-#if 0
-#define CONTROL_PADCONF_CAM_D1		0x48002118	/* WLAN_EN */
-#define CONTROL_PADCONF_MCBSP1_CLKX	0x48002198	/* WLAN_IRQ */
+#define CONTROL_PADCONF_MMC3_CLK	   	0x480025D8  /* mmc3_cmd */
+#define CONTROL_PADCONF_MMC3_CMD	   	0x480021D0  /* mmc3_cmd */
 
-#define CONTROL_PADCONF_MMC3_CLK   	0x480025D8	/* mmc3_cmd */
-#define CONTROL_PADCONF_MMC3_CMD   	0x480021D0	/* mmc3_cmd */
 
-#define CONTROL_PADCONF_MMC3_DAT0	0x480025E4	/* mmc3_dat0, mmc3_dat1 */
-#define CONTROL_PADCONF_MMC3_DAT2	0x480025E8	/* mmc3_dat2 */
-#define CONTROL_PADCONF_MMC3_DAT3	0x480025E0	/* mmc3_dat3 */
-#endif
+#define CONTROL_PADCONF_MMC3_DAT0		0x480025E4    /* mmc3_dat0, mmc3_dat1 */
+#define CONTROL_PADCONF_MMC3_DAT2		0x480025E8    /* mmc3_dat2 */
+#define CONTROL_PADCONF_MMC3_DAT3		0x480025E0    /* mmc3_dat3 */
 
-#define INT_MMC2_IRQ			86
-#define INT_MMC3_IRQ			94
 
-/* Zoom2 */
+
 #define PMENA_GPIO                      101
 #define IRQ_GPIO                        162
 
-/* Sholes */
-/*
-#define PMENA_GPIO                      186
-#define IRQ_GPIO                        65
-*/
-
+#define MUXMODE_3                       3
 #define TNETW_IRQ                       (OMAP_GPIO_IRQ(IRQ_GPIO))
-#define TIWLAN_IRQ_POLL_INTERVAL	HZ/100
-#define HZ_IN_MSEC			HZ/1000
-#define TIWLAN_IRQ_POLL_INTERVAL_MS	TIWLAN_IRQ_POLL_INTERVAL/HZ_IN_MSEC
+#define TIWLAN_IRQ_POLL_INTERVAL        HZ/100
+#define HZ_IN_MSEC                      HZ/1000
+#define TIWLAN_IRQ_POLL_INTERVAL_MS     TIWLAN_IRQ_POLL_INTERVAL/HZ_IN_MSEC
 
 int 
 hPlatform_initInterrupt(
@@ -85,10 +74,6 @@ hPlatform_initInterrupt(
 	void* handle_add
 	);
 
-void*
-hPlatform_hwGetRegistersAddr(
-    TI_HANDLE OsContext
-    );
 
 void*
 hPlatform_hwGetMemoryAddr(

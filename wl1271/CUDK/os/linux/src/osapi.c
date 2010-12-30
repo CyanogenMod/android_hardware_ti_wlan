@@ -1,7 +1,7 @@
 /*
  * osapi.c
  *
- * Copyright 2001-2009 Texas Instruments, Inc. - http://www.ti.com/
+ * Copyright 2001-2010 Texas Instruments, Inc. - http://www.ti.com/
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ RETURN:         None
 *****************************************************************************************/
 VOID os_error_printf(S32 debug_level, const PS8 arg_list ,...)
 {
-    static int g_debug_level = CU_MSG_ERROR; /* TODO ronen: create debug logic for CLI */
+    static int g_debug_level = CU_MSG_ERROR;
     S8 msg[MAX_HOST_MESSAGE_SIZE];
     va_list ap;
 #ifdef OS_CLI_LOG_TO_FILE

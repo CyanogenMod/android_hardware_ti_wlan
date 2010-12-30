@@ -1,7 +1,7 @@
 /*
  * txCtrlServ.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -101,7 +101,8 @@ TI_STATUS txCtrlServ_buildNullFrame(TI_HANDLE hTxCtrl, TI_UINT8* pFrame, TI_UINT
     }
 
     /* copy source mac address */
-    status = ctrlData_getParamBssid(pTxCtrl->hCtrlData, CTRL_DATA_MAC_ADDRESS, pHeader->address2);
+    status = ctrlData_getParamMacAddr(pTxCtrl->hCtrlData, pHeader->address2);
+
     if (status != TI_OK)
     {
         return TI_NOK;
@@ -185,7 +186,7 @@ TI_STATUS txCtrlServ_buildWlanHeader(TI_HANDLE hTxCtrl, TI_UINT8* pFrame, TI_UIN
     }
 
     /* Get the Source MAC address */
-    status = ctrlData_getParamBssid (pTxCtrl->hCtrlData, CTRL_DATA_MAC_ADDRESS, saBssid);
+    status = ctrlData_getParamMacAddr (pTxCtrl->hCtrlData, saBssid);
     if (status != TI_OK)
     {
         return TI_NOK;

@@ -3,7 +3,7 @@ include $(CLEAR_VARS)
 
 STATIC_LIB ?= y
 DEBUG ?= y
-BUILD_SUPPL ?= n
+BUILD_SUPPL = y
 WPA_ENTERPRISE ?= y
 
 ifeq ($(DEBUG),y)
@@ -58,14 +58,6 @@ LOCAL_SRC_FILES:= \
 	ParsEvent.c \
 	osapi.c
 
-ifeq ($(BUILD_SUPPL), y)
-	ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_5_X)
-	LOCAL_SRC_FILES += $(WPA_SUPPL_DIR)/wpa_ctrl.c
-	else
-	LOCAL_SRC_FILES += $(WPA_SUPPL_DIR)/common/src/wpa_ctrl.c
-	endif
-endif
-
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/../inc \
 	$(LOCAL_PATH)/../../common/inc \
@@ -84,6 +76,7 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/$(CUDK_ROOT)/configurationutility/inc \
 	$(WPA_SUPPL_DIR_INCLUDE)
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libtiOsLib
 
 include $(BUILD_STATIC_LIBRARY)

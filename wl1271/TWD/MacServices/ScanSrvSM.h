@@ -1,7 +1,7 @@
 /*
  * ScanSrvSM.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file ScanSrvSM.h
  *  \brief This file include definitions for the scan SRV SM module.
- *  \author Ronen Kalish
+ *  \
  *  \date 10-Jan-2005
  */
 
@@ -108,7 +108,7 @@ typedef enum
  */
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Initialize the scan SRV SM.
  *
@@ -119,7 +119,7 @@ typedef enum
 TI_STATUS scanSRVSM_init( TI_HANDLE hScanSrv );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Processes an event.
  *
@@ -133,7 +133,7 @@ TI_STATUS scanSRVSM_SMEvent( TI_HANDLE hScanSrv, scan_SRVSMStates_e* currentStat
                              scan_SRVSMEvents_e event );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Request to enter driver mode from the power manager module.\n
  *
@@ -144,7 +144,7 @@ TI_STATUS scanSRVSM_SMEvent( TI_HANDLE hScanSrv, scan_SRVSMStates_e* currentStat
 TI_STATUS scanSRVSM_requestPS( TI_HANDLE hScanSrv );
 
 /**
- * \author Yuval Adler\n
+ * \\n
  * \date 6-Oct-2005\n
  * \brief Request to release PS mode from the PowerSRV , and wait for answer.\n
  *
@@ -155,7 +155,7 @@ TI_STATUS scanSRVSM_requestPS( TI_HANDLE hScanSrv );
 TI_STATUS scanSRVSM_releasePS( TI_HANDLE hScanSrv );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Send the scan command to the firmware.\n
  *
@@ -166,7 +166,7 @@ TI_STATUS scanSRVSM_releasePS( TI_HANDLE hScanSrv );
 TI_STATUS scanSRVSM_startActualScan( TI_HANDLE hScanSrv );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Send a stop scan command to the firmware.\n
  *
@@ -177,7 +177,7 @@ TI_STATUS scanSRVSM_startActualScan( TI_HANDLE hScanSrv );
 TI_STATUS scanSRVSM_stopActualScan( TI_HANDLE hScanSrv );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Notifies scan complete to upper layer.\n
  *
@@ -188,7 +188,7 @@ TI_STATUS scanSRVSM_stopActualScan( TI_HANDLE hScanSrv );
 TI_STATUS scanSRVSM_notifyScanComplete( TI_HANDLE hScanSrv );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 10-Jan-2005\n
  * \brief Handles a timer expiry event - starts a recovery process.
  *
@@ -199,7 +199,7 @@ TI_STATUS scanSRVSM_notifyScanComplete( TI_HANDLE hScanSrv );
 TI_STATUS scanSRVSM_handleTimerExpiry( TI_HANDLE hScanSrv );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 17-Jan-2005\n
  * \brief Handles a FW reset event (one that was detected outside the scan SRV) by stopping the timer.
  *

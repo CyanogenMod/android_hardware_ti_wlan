@@ -1,7 +1,7 @@
 /*
  * CmdBldCmd.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -133,7 +133,7 @@ TI_STATUS cmdBld_CmdStartScan (TI_HANDLE hCmdBld, TScanParams *pScanVals, EScanR
     }
     else
     {
-        tnetScanParams.basicScanParameters.band = RADIO_BAND_2_4_GHZ;
+        tnetScanParams.basicScanParameters.band = RADIO_BAND_2_4GHZ;
     }
 
     /* Add high priority bit */
@@ -147,7 +147,7 @@ TI_STATUS cmdBld_CmdStartScan (TI_HANDLE hCmdBld, TScanParams *pScanVals, EScanR
     /* important note: BSSID filter (0x0010) is DISABLED, because the FW sets it according
        to BSSID value (broadcast does not filter, any other value will */
     tnetScanParams.basicScanParameters.rxCfg.ConfigOptions = ENDIAN_HANDLE_LONG(RX_CONFIG_OPTION) ;
-    tnetScanParams.basicScanParameters.rxCfg.FilterOptions = ENDIAN_HANDLE_LONG( RX_FILTER_CFG_ );
+    tnetScanParams.basicScanParameters.rxCfg.FilterOptions = ENDIAN_HANDLE_LONG((TI_UINT32) RX_FILTER_CFG_ );
 
     /* If the SSID is not broadcast SSID, filter according to SSID and local MAC address */
     if (pScanVals->desiredSsid.len != 0)
@@ -236,7 +236,7 @@ TI_STATUS cmdBld_CmdStartSPSScan (TI_HANDLE hCmdBld, TScanParams *pScanVals, ESc
     }
     else
     {
-        tnetSPSScanParams.scheduledGeneralParameters.band = RADIO_BAND_2_4_GHZ;
+        tnetSPSScanParams.scheduledGeneralParameters.band = RADIO_BAND_2_4GHZ;
     }
 
 
@@ -246,7 +246,7 @@ TI_STATUS cmdBld_CmdStartSPSScan (TI_HANDLE hCmdBld, TScanParams *pScanVals, ESc
        to BSSID value (broadcast does not filter, any other value will */
     /* If the SSID is not broadcast SSID, also filter according to SSID */
     tnetSPSScanParams.scheduledGeneralParameters.rxCfg.ConfigOptions = ENDIAN_HANDLE_LONG(RX_CONFIG_OPTION);
-    tnetSPSScanParams.scheduledGeneralParameters.rxCfg.FilterOptions = ENDIAN_HANDLE_LONG( RX_FILTER_CFG_ );
+    tnetSPSScanParams.scheduledGeneralParameters.rxCfg.FilterOptions = ENDIAN_HANDLE_LONG( (TI_UINT32)RX_FILTER_CFG_ );
     tnetSPSScanParams.scheduledGeneralParameters.rxCfg.ConfigOptions = ENDIAN_HANDLE_LONG( tnetSPSScanParams.scheduledGeneralParameters.rxCfg.ConfigOptions );
 
     /* latest TSF value - used to discover TSF error (AP recovery) */
@@ -335,6 +335,8 @@ TI_STATUS cmdBld_CmdStopScan (TI_HANDLE hCmdBld, EScanResultTag eScanTag,
 
 TI_STATUS cmdBld_CmdSetSplitScanTimeOut (TI_HANDLE hCmdBld, TI_UINT32 uTimeOut)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_SPLIT_SCAN_TIMEOUT)
+
     DB_WLAN(hCmdBld).uSlicedScanTimeOut = uTimeOut;
 
 	return cmdBld_CmdIeSetSplitScanTimeOut (hCmdBld, uTimeOut, NULL, NULL);
@@ -560,7 +562,7 @@ TI_STATUS cmdBld_StartPeriodicScan (TI_HANDLE hCmdBld, TPeriodicScanParams *pPer
         for (uIndex = 0; uIndex < pPeriodicScanParams->uSsidNum; uIndex++)
         {
             pFWSsidList->SSIDList[ uIndex ].ssidType = 
-                (TI_UINT8)pPeriodicScanParams->tDesiredSsid[ uIndex ].eVisability;
+                (ScanSsidType_e)pPeriodicScanParams->tDesiredSsid[ uIndex ].eVisability;
             pFWSsidList->SSIDList[ uIndex ].ssidLength = 
                 (TI_UINT8)pPeriodicScanParams->tDesiredSsid[ uIndex ].tSsid.len;
             os_memoryCopy (pCmdBld->hOs, (void*)&(pFWSsidList->SSIDList[ uIndex ].ssid[ 0 ]),
@@ -705,13 +707,15 @@ TI_STATUS cmdBld_CmdStartJoin (TI_HANDLE hCmdBld, ScanBssType_e BssType, void *f
     TRACE0(pCmdBld->hReport, REPORT_SEVERITY_INIT, "------------------------------------------------------------\n");
 #endif /* TI_DBG */
 
-    /*
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_START_JOIN)
+
+	/*
      * set RxFilter (but don't write it to the FW, this is done in the join command),
      * Configure templates content, ...
      */
     cmdBld_CmdSetBssType (hCmdBld, BssType, &HwBssType);
 
-    return cmdBld_CmdIeStartBss (hCmdBld, HwBssType, fJoinCompleteCB, hCb);
+    return cmdBld_CmdIeStartBss (hCmdBld, (BSS_e)HwBssType, fJoinCompleteCB, hCb);
 }
 
 
@@ -759,7 +763,18 @@ TI_STATUS cmdBld_CmdJoinBss (TI_HANDLE hCmdBld, TJoinBss *pJoinBssParams, void *
 
     pWlanParams->bJoin = TI_TRUE;
     pWlanParams->bStaConnected = TI_FALSE;
-    /*
+
+	/*set all commands that depend of the loin complete event to invalid so in case FW reset occurred in the middle of join*/
+	/*those commands won't be sent to the FW by the recovery mechanism*/
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CFG_AID);
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CFG_BA_SET_SESSION);
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CFG_TX_POWER_JOIN);
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CFG_KEYS);
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CMD_KEEP_ALIVE_PARAMS );
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CFG_PS_RX_STREAMING);
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CMD_STA_STATE);
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_INVALID(hCmdBld, __CMD_ARP_RSP_JOIN);
+	/*
      * call the hardware to start/join the bss
      */
     return cmdBld_CmdStartJoin (hCmdBld, pJoinBssParams->bssType, fCb, hCb);
@@ -779,11 +794,13 @@ TI_STATUS cmdBld_CmdTemplate (TI_HANDLE hCmdBld, TSetTemplate *pTemplateParams, 
     switch (pTemplateParams->type)
     {
     case BEACON_TEMPLATE:
-        eType = TEMPLATE_BEACON;
+		CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_BEACON_JOIN)
+		eType = TEMPLATE_BEACON;
         pTemplate = &(DB_TEMP(hCmdBld).Beacon);
         break;
 
     case PROBE_RESPONSE_TEMPLATE:
+		CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_PROBE_RESP_JOIN)
         eType = TEMPLATE_PROBE_RESPONSE;
         pTemplate = &(DB_TEMP(hCmdBld).ProbeResp);
         break;
@@ -799,14 +816,17 @@ TI_STATUS cmdBld_CmdTemplate (TI_HANDLE hCmdBld, TSetTemplate *pTemplateParams, 
             eType = CFG_TEMPLATE_PROBE_REQ_5;
             pTemplate = &(DB_TEMP(hCmdBld).ProbeReq50);
         }
-        break;
+        CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_PROBE_REQ_JOIN)
+		break;
 
-    case NULL_DATA_TEMPLATE:
+	case NULL_DATA_TEMPLATE:
+        CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_NULL_DATA_JOIN)
         eType = TEMPLATE_NULL_DATA;
         pTemplate = &(DB_TEMP(hCmdBld).NullData);
         break;
 
-    case PS_POLL_TEMPLATE:
+	case PS_POLL_TEMPLATE:
+        CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_PS_POLL_JOIN)
         eType = TEMPLATE_PS_POLL;
         pTemplate = &(DB_TEMP(hCmdBld).PsPoll);
         break;
@@ -816,19 +836,22 @@ TI_STATUS cmdBld_CmdTemplate (TI_HANDLE hCmdBld, TSetTemplate *pTemplateParams, 
         pTemplate = &(DB_TEMP(hCmdBld).QosNullData);
         break;
 
-    case KEEP_ALIVE_TEMPLATE:
+	case KEEP_ALIVE_TEMPLATE:
+        CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_KEEP_ALIVE_TMPL_JOIN)
         eType = TEMPLATE_KLV;
         uIndex = pTemplateParams->index;
         pTemplate = &(DB_TEMP(hCmdBld).KeepAlive[uIndex]);
         break;
 
-    case DISCONN_TEMPLATE:
+	case DISCONN_TEMPLATE:
+        CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_DISCONN_JOIN)
         eType = TEMPLATE_DISCONNECT;
         pTemplate = &(DB_TEMP(hCmdBld).Disconn);
         break;
 
     case ARP_RSP_TEMPLATE:
-        eType = TEMPLATE_ARP_RSP;
+		CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_ARP_RSP_JOIN);
+		eType = TEMPLATE_ARP_RSP;
         pTemplate = &(DB_TEMP(hCmdBld).ArpRsp); 
         break;
 
@@ -845,17 +868,7 @@ TI_STATUS cmdBld_CmdTemplate (TI_HANDLE hCmdBld, TSetTemplate *pTemplateParams, 
                    (void *)(pTemplate->Buffer), 
                    (void *)(pTemplateParams->ptr), 
                    pTemplateParams->len);
-    /* if (eType == TEMPLATE_ARP_RSP)
-    {   
-       WLAN_OS_REPORT(("cmdBld_CmdTemplate: template (len=%d):\n>>>", pTemplate->Size));
-       for (i=0; i<sizeof(ArpRspTemplate_t); i++ )
-       {
-           WLAN_OS_REPORT((" %2x", *(pTemplate->Buffer+i))); 
-           if (i%8 == 7) WLAN_OS_REPORT(("\n>>>"));
-       }
-         WLAN_OS_REPORT(("\n"));
-    }
-	*/
+
     /* Configure template to FW */
     Stt = cmdBld_CmdIeConfigureTemplateFrame (hCmdBld, 
                                               pTemplate, 
@@ -1104,6 +1117,7 @@ TI_STATUS cmdBld_CmdAddKey (TI_HANDLE hCmdBld, TSecurityKeys* pKey, TI_BOOL reco
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
     TI_UINT8     keyIdx  = (TI_UINT8)pKey->keyIndex;
 
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_KEYS);
     /* store the security key for reconfigure phase (FW reload)*/
     if (reconfFlag != TI_TRUE)
     {
@@ -1120,11 +1134,41 @@ TI_STATUS cmdBld_CmdAddKey (TI_HANDLE hCmdBld, TSecurityKeys* pKey, TI_BOOL reco
             
             return TI_NOK;
         }
+#ifdef GEM_SUPPORTED
+        if (pCmdBld->tSecurity.eSecurityMode == TWD_CIPHER_GEM)
+		{
+			TI_UINT32 index;
 
+			for (index = 0; 
+				 index < pCmdBld->tSecurity.uNumOfStations * NO_OF_RECONF_SECUR_KEYS_PER_STATION + NO_OF_EXTRA_RECONF_SECUR_KEYS; 
+				 index++)
+			{
+
+				if ((DB_KEYS(pCmdBld).pReconfKeys + index)->keyType == KEY_NULL)
+				{
+					os_memoryCopy (pCmdBld->hOs, 
+					   (void *)(DB_KEYS(pCmdBld).pReconfKeys + index),
+					   (void *)pKey, 
+					   sizeof(TSecurityKeys));
+
+					break;
+				}
+			}
+		}
+		else
+		{
+			os_memoryCopy (pCmdBld->hOs, 
+                       (void *)(DB_KEYS(pCmdBld).pReconfKeys + keyIdx),
+                       (void *)pKey, 
+                       sizeof(TSecurityKeys));
+		}
+
+#else	
         os_memoryCopy (pCmdBld->hOs, 
                        (void *)(DB_KEYS(pCmdBld).pReconfKeys + keyIdx),
                        (void *)pKey, 
                        sizeof(TSecurityKeys));
+#endif
     }
     
     switch (pCmdBld->tSecurity.eSecurityMode)
@@ -1245,7 +1289,41 @@ TI_STATUS cmdBld_CmdRemoveKey (TI_HANDLE hCmdBld, TSecurityKeys* pKey, void *fCb
     TI_UINT8  keyIdx  = (TI_UINT8)pKey->keyIndex;
 
     /* Clear the remove key in the reconfigure data base */
+#ifdef GEM_SUPPORTED
+    if (pCmdBld->tSecurity.eSecurityMode == TWD_CIPHER_GEM)
+	{
+		/*In case of GEM search by MAC address and key index since key index may be the same for different keys*/
+		TI_UINT32 index;
+        for (index = 0; 
+             index < pCmdBld->tSecurity.uNumOfStations * NO_OF_RECONF_SECUR_KEYS_PER_STATION + NO_OF_EXTRA_RECONF_SECUR_KEYS; 
+             index++)
+        {
+
+            if ((DB_KEYS(pCmdBld).pReconfKeys + index)->keyType != KEY_NULL)
+			{
+				if ( ( !os_memoryCompare(pCmdBld->hOs, (DB_KEYS(pCmdBld).pReconfKeys + index)->macAddress, pKey->macAddress, MAC_ADDR_LEN) ) &&
+					 ( (DB_KEYS(pCmdBld).pReconfKeys + index)->keyIndex == pKey->keyIndex ))
+				{
+					(DB_KEYS(pCmdBld).pReconfKeys + index)->keyType = KEY_NULL;
+					break;
+				}
+			}
+		}
+		if (index == pCmdBld->tSecurity.uNumOfStations * NO_OF_RECONF_SECUR_KEYS_PER_STATION + NO_OF_EXTRA_RECONF_SECUR_KEYS)
+		{
+			TRACE1( pCmdBld->hReport, REPORT_SEVERITY_ERROR, "Failed to remove GEM key (index=%d) from reconfig DB!\n",
+					pKey->keyIndex);
+		}
+
+	}
+	else
+	{
+		(DB_KEYS(pCmdBld).pReconfKeys + keyIdx)->keyType = KEY_NULL;
+	}
+
+#else
     (DB_KEYS(pCmdBld).pReconfKeys + keyIdx)->keyType = KEY_NULL;
+#endif
 
     switch (pCmdBld->tSecurity.eSecurityMode)
     {
@@ -1317,7 +1395,9 @@ TI_STATUS cmdBld_CmdSetWepDefaultKeyId (TI_HANDLE hCmdBld, TI_UINT8 aKeyIdVal, v
     TCmdBld  *pCmdBld          = (TCmdBld *)hCmdBld;
     TI_UINT8 sMacAddrDummy[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-    /* Save the deafult key ID for reconfigure phase */
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_KEYS);
+
+	/* Save the deafult key ID for reconfigure phase */
     DB_KEYS(pCmdBld).bDefaultKeyIdValid  = TI_TRUE;
     DB_KEYS(pCmdBld).uReconfDefaultKeyId = aKeyIdVal;
 
@@ -1585,6 +1665,8 @@ TI_STATUS cmdBld_CmdSetStaState (TI_HANDLE hCmdBld, TI_UINT8 staState, void *fCb
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
     TWlanParams *pWlanParams = &DB_WLAN(hCmdBld);
+
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_STA_STATE);
 
     pWlanParams->bStaConnected = TI_TRUE;
     TRACE1(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "Sending StaState %d\n",staState);

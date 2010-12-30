@@ -97,7 +97,13 @@ typedef enum {
     CONNECTION_STATUS_NOT_CONNECTED
 } scanMngr_connStatus_e;
 
-
+/* Rssi quality for BG scan */
+typedef enum
+{
+/*	0	*/	ROAMING_QUALITY_LOW,
+/*	1	*/	ROAMING_QUALITY_NORMAL,
+/*	2	*/	ROAMING_QUALITY_HIGH
+} ERssiQuality;
 
 
 /*
@@ -236,6 +242,7 @@ void scanMngr_stopContScan( TI_HANDLE hScanMngr );
  * \sa
  */
 bssList_t *scanMngr_getBSSList( TI_HANDLE hScanMngr );
+
 /** 
  * \brief  Sets the neighbor APs
  * 
@@ -250,11 +257,11 @@ bssList_t *scanMngr_getBSSList( TI_HANDLE hScanMngr );
  * \sa
  */
 void scanMngr_setNeighborAPs( TI_HANDLE hScanMngr, neighborAPList_t* neighborAPList );
+
 /** 
  * \brief  Change quality level (normal / deteriorating)
  * 
  * \param hScanMngr 	- Handle to the scan manager object
- * \param bLowQuality 	- TI_TRUE if quality is deteriorating, TI_FALSE if quality is normal
  * \return  void
  * 
  * \par Description
@@ -263,7 +270,20 @@ void scanMngr_setNeighborAPs( TI_HANDLE hScanMngr, neighborAPList_t* neighborAPL
  * 
  * \sa
  */
-void scanMngr_qualityChangeTrigger( TI_HANDLE hScanMngr, TI_BOOL bLowQuality );
+void scanMngr_qualityChangeTrigger( TI_HANDLE hScanMngr );
+
+/**
+ * \brief Notify that a quality change trigger occured and set a flag a change is needed,
+ *        so that when the timer expires the change will take place
+ * 
+ * \param hScanMngr 	- Handle to the scan manager object 
+ * \param rssiQuality   - Quality of the new quality interval
+ * \par Description
+ * Notify that a quality change trigger occured and set a flag a change is needed,
+ * so that when the timer expires the change will take place
+ * */
+void scanMngr_notifyChangeTrigger(TI_HANDLE hScanMngr, ERssiQuality rssiQuality);
+
 /** 
  * \brief  Change quality level (normal / deteriorating)
  * 
@@ -390,6 +410,8 @@ void scanMngrDebugPrintNeighborAPList( TI_HANDLE hScanMngr );
  * \sa
  */
 void scanMngrDebugPrintObject( TI_HANDLE hScanMngr );
+
+
 
 #endif /* TI_DBG */
 

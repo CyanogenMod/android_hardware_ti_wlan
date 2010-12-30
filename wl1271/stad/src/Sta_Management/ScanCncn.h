@@ -186,6 +186,11 @@ void                    scanCncn_StopScan (TI_HANDLE hScanCncn, EScanCncnClient 
 EScanCncnResultStatus   scanCncn_StartPeriodicScan (TI_HANDLE hScanCncn, EScanCncnClient eClient,
                                                     TPeriodicScanParams *pScanParams);
 void                    scanCncn_StopPeriodicScan (TI_HANDLE hScanCncn, EScanCncnClient eClient);
+
+#ifdef CONNECTION_SCAN_PM
+void                    scanCncn_Suspend(TI_HANDLE hScanCncn);
+#endif
+
 /**
  * \brief Registers a scan complete object
  * 

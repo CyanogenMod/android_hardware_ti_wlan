@@ -237,9 +237,7 @@ TI_STATUS txDataQ_Destroy (TI_HANDLE hTxDataQ)
     TI_STATUS  status = TI_OK;
     TI_UINT32  uQueId;
 
-    /* Dequeue and free all queued packets */
-    txDataQ_ClearQueues (hTxDataQ);
-
+    
     /* Free Data queues */
     for (uQueId = 0 ; uQueId < pTxDataQ->uNumQueues ; uQueId++)
     {

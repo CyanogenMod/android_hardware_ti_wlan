@@ -1,7 +1,7 @@
 /*
  * FwEvent_api.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -146,6 +146,22 @@ TI_STATUS       fwEvent_Stop                (TI_HANDLE hFwEvent);
  * \sa
  */
 TI_UINT32       fwEvent_TranslateToFwTime (TI_HANDLE hFwEvent, TI_UINT32 uHostTime);
+
+
+
+/*
+ * \brief	Mask all interrupts
+ * 
+ * \param  hFwEvent  - FwEvent Driver handle
+ * \return void
+ * 
+ * \par Description
+ *
+ * Masks all interrupts from FW.
+ * 
+ * \sa
+ */
+void fwEvent_MaskAllFwInterrupts(TI_HANDLE hFwEvent);
 
 
 /*

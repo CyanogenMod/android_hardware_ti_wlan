@@ -1,7 +1,7 @@
 /*
  * mlmeBuilder.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -117,7 +117,7 @@ TI_STATUS mlmeBuilder_sendFrame(TI_HANDLE hMlme,
 	/* copy destination mac address */
 	MAC_COPY (pDot11Header->DA, daBssid);
 
-    status = ctrlData_getParamBssid(pHandle->hCtrlData, CTRL_DATA_MAC_ADDRESS, saBssid);
+    status = ctrlData_getParamMacAddr(pHandle->hCtrlData, saBssid);
 	if (status != TI_OK)
 	{
         txCtrl_FreePacket (pHandle->hTxCtrl, pPktCtrlBlk, TI_NOK);

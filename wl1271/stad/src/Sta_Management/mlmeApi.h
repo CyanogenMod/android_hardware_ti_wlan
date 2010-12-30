@@ -1,7 +1,7 @@
 /*
  * mlmeApi.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -90,9 +90,6 @@ typedef struct
 
 
 /* (Re)Association response frame structure */
-#define ASSOC_RESP_FIXED_DATA_LEN 6
-#define ASSOC_RESP_AID_MASK  0x3FFF  /* The AID is only in 14 LS bits. */
-
 typedef struct
 {
     TI_UINT16                   capabilities;      

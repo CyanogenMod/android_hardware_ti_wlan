@@ -67,6 +67,7 @@ INCLUDES = $(STAD)/Export_Inc \
 	$(DK_ROOT)/../lib
   
 L_CFLAGS = -DCONFIG_DRIVER_CUSTOM -DHOST_COMPILE -D__BYTE_ORDER_LITTLE_ENDIAN
+#L_CFLAGS += -DCONFIG_CONNECTION_SCAN
 L_CFLAGS += -DWPA_SUPPLICANT_$(WPA_SUPPLICANT_VERSION)
 OBJS = driver_ti.c $(LIB)/scanmerge.c $(LIB)/shlist.c
 
@@ -98,6 +99,7 @@ endif
 ########################
  
 include $(CLEAR_VARS)
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libCustomWifi
 LOCAL_SHARED_LIBRARIES := libc libcutils
 LOCAL_CFLAGS := $(L_CFLAGS)

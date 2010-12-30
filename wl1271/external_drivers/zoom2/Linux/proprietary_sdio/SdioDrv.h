@@ -1,7 +1,7 @@
 /*
  * SdioDrv.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,20 +50,20 @@
 #define CCCR_BUS_INTERFACE_CONTOROL         0x07
 #define CCCR_CARD_CAPABILITY	            0x08
 #define CCCR_COMMON_CIS_POINTER             0x09 /*0x09-0x0B*/
-#define CCCR_FNO_BLOCK_SIZE	                0x10 /*0x10-0x11*/
+#define CCCR_FNO_BLOCK_SIZE	            0x10 /*0x10-0x11*/
 #define FN0_CCCR_REG_32                     0x64
 
 /* Pprotocol defined constants */  
          
-#define SD_IO_GO_IDLE_STATE		  		    0  
-#define SD_IO_SEND_RELATIVE_ADDR	  	    3 
-#define SDIO_CMD5			  			    5
-#define SD_IO_SELECT_CARD		  		    7 
-#define SDIO_CMD52		 	 			    52		
-#define SDIO_CMD53		 	 			    53
-#define SD_IO_SEND_OP_COND		            SDIO_CMD5  
-#define SD_IO_RW_DIRECT			            SDIO_CMD52 
-#define SD_IO_RW_EXTENDED		            SDIO_CMD53 
+#define SD_IO_GO_IDLE_STATE                  0  
+#define SD_IO_SEND_RELATIVE_ADDR             3 
+#define SDIO_CMD5                            5
+#define SD_IO_SELECT_CARD                    7 
+#define SDIO_CMD52                          52		
+#define SDIO_CMD53                          53
+#define SD_IO_SEND_OP_COND                  SDIO_CMD5  
+#define SD_IO_RW_DIRECT	                    SDIO_CMD52 
+#define SD_IO_RW_EXTENDED                   SDIO_CMD53 
 #define SDIO_SHIFT(v,n)                     (v<<n)
 #define SDIO_RWFLAG(v)                      (SDIO_SHIFT(v,31))
 #define SDIO_FUNCN(v)                       (SDIO_SHIFT(v,28))
@@ -80,7 +80,7 @@
 #define MMC_RSP_SHORT	                    (1 << 0)
 #define MMC_RSP_LONG	                    (2 << 0)
 #define MMC_RSP_MASK	                    (3 << 0)
-#define MMC_RSP_CRC	                        (1 << 3)
+#define MMC_RSP_CRC	                    (1 << 3)
 #define MMC_RSP_BUSY	                    (1 << 4)
 
 #define MMC_RSP_R1	                        (MMC_RSP_SHORT|MMC_RSP_CRC)
@@ -90,16 +90,16 @@
 
 /* HSMMC controller bit definitions
  * */
-#define OMAP_HSMMC_CMD_NO_RESPONSE          0 << 0
-#define OMAP_HSMMC_CMD_LONG_RESPONSE        1 << 0
-#define OMAP_HSMMC_CMD_SHORT_RESPONSE       2 << 0
+#define OMAP_HSMMC_CMD_NO_RESPONSE          (0 << 0)
+#define OMAP_HSMMC_CMD_LONG_RESPONSE        (1 << 0)
+#define OMAP_HSMMC_CMD_SHORT_RESPONSE       (2 << 0)
 
-#define MMC_ERR_NONE	                    0
-#define MMC_ERR_TIMEOUT	                    1
-#define MMC_ERR_BADCRC	                    2
-#define MMC_ERR_FIFO	                    3
-#define MMC_ERR_FAILED	                    4
-#define MMC_ERR_INVALID	                    5
+#define MMC_ERR_NONE                        0
+#define MMC_ERR_TIMEOUT                     1
+#define MMC_ERR_BADCRC                      2
+#define MMC_ERR_FIFO                        3
+#define MMC_ERR_FAILED                      4
+#define MMC_ERR_INVALID                     5
 
 #undef  MMC_RSP_R4
 #define MMC_RSP_R4 OMAP_HSMMC_CMD_SHORT_RESPONSE
@@ -166,10 +166,11 @@ int sdioDrv_WriteSyncBytes (unsigned int  uFunc,
                             unsigned int  uLen, 
                             unsigned int  bMore);
 
-void sdioDrv_register_pm(int (*wlanDrvIf_Start)(void),
-						int (*wlanDrvIf_Stop)(void));
-
-int sdioDrv_clk_enable(void);
+int  sdioDrv_init(void);
+void sdioDrv_exit(void);
+int  sdioDrv_clk_enable(void);
 void sdioDrv_clk_disable(void);
+void sdioDrv_start_inact_timer(void);
+void sdioDrv_cancel_inact_timer(void);
 
 #endif/* _OMAP3430_SDIODRV_H */

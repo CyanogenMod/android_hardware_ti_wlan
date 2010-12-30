@@ -449,6 +449,7 @@ NDIS_STRING STRBaInactivityTimeoutTid_5         = NDIS_STRING_CONST("BaInactivit
 NDIS_STRING STRBaInactivityTimeoutTid_6         = NDIS_STRING_CONST("BaInactivityTimeoutTid_6");
 NDIS_STRING STRBaInactivityTimeoutTid_7         = NDIS_STRING_CONST("BaInactivityTimeoutTid_7");
 
+NDIS_STRING STRPsTrafficPeriod                  = NDIS_STRING_CONST("PsTrafficPeriod");
 
 /* HW Tx queues mem-blocks allocation thresholds */
 NDIS_STRING STRQOStxBlksThresholdBE             = NDIS_STRING_CONST("QOS_txBlksThresholdBE");
@@ -696,7 +697,7 @@ NDIS_STRING STRTxBiPReferencePower_2_4G =           NDIS_STRING_CONST("TxBiPRefe
 NDIS_STRING STRTxBiPOffsetdB_2_4G =                 NDIS_STRING_CONST("TxBiPOffsetdB_2_4G");  
 NDIS_STRING STRTxPerRatePowerLimits_2_4G_Normal =  	NDIS_STRING_CONST("TxPerRatePowerLimits_2_4G_Normal");
 NDIS_STRING STRTxPerRatePowerLimits_2_4G_Degraded = NDIS_STRING_CONST("TxPerRatePowerLimits_2_4G_Degraded");
-NDIS_STRING STRTxPerRatePowerLimits_2_4G_Extreme =  NDIS_STRING_CONST("STRTxPerRatePowerLimits_2_4G_Extreme");
+NDIS_STRING STRTxPerRatePowerLimits_2_4G_Extreme =  NDIS_STRING_CONST("TxPerRatePowerLimits_2_4G_Extreme");
 NDIS_STRING STRTxPerChannelPowerLimits_2_4G_11b =   NDIS_STRING_CONST("TxPerChannelPowerLimits_2_4G_11b");
 NDIS_STRING STRTxPerChannelPowerLimits_2_4G_OFDM =  NDIS_STRING_CONST("TxPerChannelPowerLimits_2_4G_OFDM");
 NDIS_STRING STRTxPDVsRateOffsets_2_4G =             NDIS_STRING_CONST("TxPDVsRateOffsets_2_4G");
@@ -1788,6 +1789,13 @@ regFillInitTable(
                     sizeof p->qosMngrInitParams.uDesireCwMax,
                     (TI_UINT8*)&p->qosMngrInitParams.uDesireCwMax);
 
+    regReadIntegerParameter(pAdapter, &STRPsTrafficPeriod,
+                    QOS_PS_TRAFFIC_RATE_DEF, QOS_PS_TRAFFIC_RATE_MIN,
+                    QOS_PS_TRAFFIC_RATE_MAX,
+                    sizeof p->qosMngrInitParams.uPsTrafficPeriod,
+                    (TI_UINT8*)&p->qosMngrInitParams.uPsTrafficPeriod);
+
+
 /*                              SME Initialization Parameters                           */
 /*                          ====================================                        */
 
@@ -1873,36 +1881,66 @@ regFillInitTable(
     }
     {
         TI_UINT8  *uSmeTempList;
-        TI_UINT32  uSmeGChannelsCount;
+        TI_UINT32  uSmeGChannelsCount = 0;
 
         uSmeTempList = os_memoryAlloc(pAdapter, SME_SCAN_CHANNELS_LIST_G_STRING_MAX_SIZE);
         if (!uSmeTempList) {
             return;
         }
-        regReadIntegerTable(pAdapter, &STRSmeScanGChannels, SME_SCAN_CHANNELS_LIST_G_VAL_DEF,
-                            SME_SCAN_CHANNELS_LIST_G_STRING_MAX_SIZE,
-                            (TI_UINT8 *)uSmeTempList, NULL, &uTempEntriesCount,
-                            sizeof (TI_UINT8),TI_FALSE);
+
+        /* 
+         * Add BG_MODE channels to scan list in case of BG or DUAL mode
+         */
+        if ((p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_B_MODE) ||
+            (p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_G_MODE) ||
+            (p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_DUAL_MODE))
+	{
+
+            regReadIntegerTable(pAdapter, &STRSmeScanGChannels, SME_SCAN_CHANNELS_LIST_G_VAL_DEF,
+                                SME_SCAN_CHANNELS_LIST_G_STRING_MAX_SIZE,
+                                (TI_UINT8 *)uSmeTempList, NULL, &uTempEntriesCount,
+                                sizeof (TI_UINT8),TI_FALSE);
 
 
-        /* convert to channel list */
-        for (uIndex = 0; uIndex < uTempEntriesCount; uIndex++)
-        {
-            p->tSmeInitParams.tChannelList[ uIndex ].eBand = RADIO_BAND_2_4_GHZ;
-            p->tSmeInitParams.tChannelList[ uIndex ].uChannel = uSmeTempList[ uIndex ];
+            /* convert to channel list */
+            for (uIndex = 0; uIndex < uTempEntriesCount; uIndex++)
+            {
+                p->tSmeInitParams.tChannelList[ uIndex ].eBand = RADIO_BAND_2_4_GHZ;
+                p->tSmeInitParams.tChannelList[ uIndex ].uChannel = uSmeTempList[ uIndex ];
+            }
+            uSmeGChannelsCount = uTempEntriesCount;
         }
-        uSmeGChannelsCount = uTempEntriesCount;
 
         /*
-         * Add A_MODE channels to scan list only if it enabled
-         * NOTE: Don't use empty channel list string
+         * Add A_MODE channels to scan list in case of A mode only 
          */
-        if ((p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_A_MODE) ||
-            (p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_DUAL_MODE))
+        if (p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_A_MODE)
         {
             regReadIntegerTable(pAdapter, &STRSmeScanAChannels, SME_SCAN_CHANNELS_LIST_A_VAL_DEF,
                                 SME_SCAN_CHANNELS_LIST_A_STRING_MAX_SIZE,
-                                (TI_UINT8*)&uSmeTempList, NULL, &uTempEntriesCount,
+                                (TI_UINT8*)uSmeTempList, NULL, &uTempEntriesCount,
+                                sizeof (TI_UINT8),TI_FALSE);
+
+            /* convert to channel list */
+            for (uIndex = 0; uIndex < uTempEntriesCount; uIndex++)
+            {
+                p->tSmeInitParams.tChannelList[ uIndex ].eBand = RADIO_BAND_5_0_GHZ;
+                p->tSmeInitParams.tChannelList[ uIndex ].uChannel = uSmeTempList[ uIndex ];
+            }
+
+            uSmeGChannelsCount = uTempEntriesCount;
+        }
+
+
+        /* 
+         * Add A_MODE channels to scan list only if DUAL mode is enabled 
+         * NOTE: Don't use empty channel list string 
+         */
+        if (p->siteMgrInitParams.siteMgrDesiredDot11Mode  == DOT11_DUAL_MODE)
+        {
+            regReadIntegerTable(pAdapter, &STRSmeScanAChannels, SME_SCAN_CHANNELS_LIST_A_VAL_DEF,
+                                SME_SCAN_CHANNELS_LIST_A_STRING_MAX_SIZE,
+                                (TI_UINT8*)uSmeTempList, NULL, &uTempEntriesCount,
                                 sizeof (TI_UINT8),TI_FALSE);
 
             /* convert to channel list */
@@ -1912,12 +1950,11 @@ regFillInitTable(
                 p->tSmeInitParams.tChannelList[ uSmeGChannelsCount + uIndex ].uChannel = uSmeTempList[ uIndex ];
             }
 
-            p->tSmeInitParams.uChannelNum = uSmeGChannelsCount + uIndex;
+            uSmeGChannelsCount = uSmeGChannelsCount + uIndex;
         }
-        else
-        {
-            p->tSmeInitParams.uChannelNum = uSmeGChannelsCount;
-        }
+
+        p->tSmeInitParams.uChannelNum = uSmeGChannelsCount;
+
         os_memoryFree(pAdapter, uSmeTempList, SME_SCAN_CHANNELS_LIST_G_STRING_MAX_SIZE);
     }
 
@@ -3487,6 +3524,8 @@ regReadIntegerParameter(pAdapter, &STRSettings,
 
         /* remove the flags of DRPw mode when WiFi active */
         p->twdInitParams.tPlatformGenParams.GeneralSettings &= ~DRPw_MASK_CHECK;
+        /* multicast filter is disable in WiFiMode*/
+        p->twdInitParams.tMacAddrFilter.isFilterEnabled = DEF_FILTER_ENABLE_VALUE;
     }
 
     /* If NOT in WiFi mode and IN performance-boost mode, optimize some traffic params for speed (on expense of QoS)  */
@@ -3499,6 +3538,7 @@ regReadIntegerParameter(pAdapter, &STRSettings,
 
         p->twdInitParams.tGeneral.uRxMemBlksNum = RX_MEM_BLKS_NUM_DEF_BOOST_MODE;
     }
+
 
     regReadIntegerParameter(pAdapter, &STRQOSShortRetryLimitBE,
                             QOS_SHORT_RETRY_LIMIT_BE_DEF, QOS_SHORT_RETRY_LIMIT_BE_MIN,
@@ -5042,7 +5082,7 @@ regReadIntegerTable(
     regReadStringParameter(pAdapter,
                            pParameterName,
                            pDefaultValue,
-                           defaultLen,
+                           strlen(pDefaultValue),
                            (TI_UINT8*)pBuffer,
                            &bufferSize);
 

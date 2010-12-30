@@ -518,6 +518,29 @@ EScanCncnResultStatus scanCncn_StartPeriodicScan (TI_HANDLE hScanCncn,
     return SCAN_CRS_SCAN_RUNNING;
 }
 
+#ifdef CONNECTION_SCAN_PM
+/**
+ *  fn     scanCncn_Suspend
+ *  brief  Performs necessary prepartions for suspend (e.g. stops any running scans)
+ *
+ *  Performs necessary prepartions for suspend (e.g. stops any running scans)
+ *
+ *  param  hScanCncn - handle to the scan concentrator object
+ *  param  eClient - the client requesting to stop the scan operation
+ *  return None
+ *  */
+void scanCncn_Suspend(TI_HANDLE hScanCncn)
+{
+        /* stops any one-shot scan */
+        scanCncn_StopScan(hScanCncn, SCAN_SCC_APP_ONE_SHOT);
+
+        /* scan any periodic scans */
+        scanCncn_StopPeriodicScan(hScanCncn, SCAN_SCC_APP_PERIODIC);
+}
+
+#endif
+
+
 /** 
  * \fn     scanCncn_StopPeriodicScan 
  * \brief  Stop an on-going periodic scan operation

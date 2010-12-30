@@ -1,7 +1,7 @@
 /*
  * measurementSrvDbgPrint.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file measurementSrvDbgPrint.c
  *  \brief This file include variuos measurement SRV debug print facilities
- *  \author Ronen Kalish
+ *  \
  *  \date 23-December-2005
  */
 
@@ -46,7 +46,7 @@
 
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 23-December-2005\n
  * \brief Prints a measurement request.\n
  *
@@ -71,7 +71,7 @@ TRACE5( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "band: %d, channe
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 23-December-2005\n
  * \brief Prints a measurement type request.\n
  *

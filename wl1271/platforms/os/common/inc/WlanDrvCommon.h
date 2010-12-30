@@ -1,7 +1,7 @@
 /*
  * WlanDrvCommon.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -66,7 +66,11 @@ typedef enum
 {
     ACTION_TYPE_NONE, 
     ACTION_TYPE_START, 
-    ACTION_TYPE_STOP
+    ACTION_TYPE_STOP,
+#ifdef CONNECTION_SCAN_PM
+    ACTION_TYPE_SUSPEND,
+    ACTION_TYPE_RESUME
+#endif
 } EActionType;
 
 /* Initialization file info */

@@ -99,21 +99,22 @@ typedef enum
 /*	0	*/	ROAMING_TRIGGER_NONE,							/**< No roaming trigger	*/
 
 /*	1	*/	ROAMING_TRIGGER_LOW_QUALITY_FOR_BG_SCAN,		/**< Low quality trigger for background scan	*/
-/*	2	*/	ROAMING_TRIGGER_NORMAL_QUALITY_FOR_BG_SCAN,		/**< Normal quality trigger for background scan	*/
+/*  2   */  ROAMING_TRIGGER_HIGH_QUALITY_FOR_BG_SCAN,		/**< High quality trigger for background scan   */
+/*	3	*/	ROAMING_TRIGGER_NORMAL_QUALITY_FOR_BG_SCAN,		/**< Normal quality trigger for background scan	*/
 
-/*	3	*/	ROAMING_TRIGGER_LOW_TX_RATE,					/**< Low TX rate	*/
-/*	4	*/	ROAMING_TRIGGER_LOW_SNR,						/**< Low SNR rate 	*/
-/*	5	*/	ROAMING_TRIGGER_LOW_QUALITY,					/**< Low quality for roaming	*/
+/*	4	*/	ROAMING_TRIGGER_LOW_TX_RATE,					/**< Low TX rate	*/
+/*	5	*/	ROAMING_TRIGGER_LOW_SNR,						/**< Low SNR rate 	*/
+/*	6	*/	ROAMING_TRIGGER_LOW_QUALITY,					/**< Low quality for roaming	*/
+/*	7	*/	ROAMING_TRIGGER_TSPEC_REJECTED,	                /**< TSPEC Rejected	*/
+/*	8	*/	ROAMING_TRIGGER_MAX_TX_RETRIES,					/**< Maximum TX retries	*/
 
-/*	6	*/	ROAMING_TRIGGER_MAX_TX_RETRIES,					/**< Maximum TX retries	*/
-/*	7	*/	ROAMING_TRIGGER_BSS_LOSS,						/**< Missed beacon and no ACK on Unicast probe requests	*/
-/*	8	*/	ROAMING_TRIGGER_SWITCH_CHANNEL,					/**< Radar detection	*/
+/*	9	*/	ROAMING_TRIGGER_BSS_LOSS,						/**< Missed beacon and no ACK on Unicast probe requests	*/
+/*	10	*/	ROAMING_TRIGGER_SWITCH_CHANNEL,					/**< Radar detection	*/
 
-/*	9	*/	ROAMING_TRIGGER_AP_DISCONNECT, 					/**< AP disconnect (de-authenticate or disassociate)	*/
-/*	10	*/	ROAMING_TRIGGER_SECURITY_ATTACK,				/**< Security attack	*/
-/*	11	*/	ROAMING_TRIGGER_TSPEC_REJECTED,	                /**< TSPEC Rejected	*/
-    
-/*	12	*/	ROAMING_TRIGGER_LAST							/**< Maximum roaming trigger - must be last!!!	*/
+/*	11	*/	ROAMING_TRIGGER_AP_DISCONNECT, 					/**< AP disconnect (de-authenticate or disassociate)	*/
+/*	12	*/	ROAMING_TRIGGER_SECURITY_ATTACK,				/**< Security attack	*/
+  
+/*	13	*/	ROAMING_TRIGGER_LAST							/**< Maximum roaming trigger - must be last!!!	*/
 
 } apConn_roamingTrigger_e;
 
@@ -170,6 +171,8 @@ typedef enum
 typedef TI_STATUS (*apConn_roamMngrCallb_t) (TI_HANDLE hRoamingMngr, void *pData);
 
 typedef TI_STATUS (*apConn_roamMngrEventCallb_t) (TI_HANDLE hRoamingMngr, void *pData, TI_UINT16 reasonCode);
+
+
 
 /*------------*/
 /* Structures */
@@ -246,6 +249,7 @@ typedef struct _TargetAP_t
 	ETransitionMethod 	    transitionMethod;
 	bssEntry_t		        newAP;
 } TargetAp_t;
+
 
 /*---------------------------*/
 /* External data definitions */

@@ -53,6 +53,8 @@
 #include "trafficAdmControl.h"
 #include "qosMngr_API.h"
 #include "TWDriver.h"
+#include "EvHandler.h"
+#include "roamingMngrApi.h"
 #ifdef XCC_MODULE_INCLUDED
 #include "XCCMngr.h"
 #endif
@@ -208,6 +210,8 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
     						     TI_HANDLE hTimer,
     						     TI_HANDLE hTWD,
                                  TI_HANDLE hTxCtrl,
+                                 TI_HANDLE hRoamMng,
+                                 TI_HANDLE hEvHandler,
     						     trafficAdmCtrlInitParams_t *pTrafficAdmCtrlInitParams)
 {
 	trafficAdmCtrl_t	*pTrafficAdmCtrl;
@@ -243,6 +247,8 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
 	pTrafficAdmCtrl->hTimer	    = hTimer;
 	pTrafficAdmCtrl->hTWD	    = hTWD;
 	pTrafficAdmCtrl->hTxCtrl	= hTxCtrl;
+	pTrafficAdmCtrl->hRoamMng	= hRoamMng;
+	pTrafficAdmCtrl->hEvHandler	= hEvHandler;
 
 	for (uAcId = 0; uAcId < MAX_NUM_OF_AC; uAcId++)
     {
@@ -680,7 +686,9 @@ TI_STATUS trafficAdmCtrl_recv(TI_HANDLE hTrafficAdmCtrl, TI_UINT8* pData, TI_UIN
 
 	if (action == ADDTS_RESPONSE_ACTION) 
 	{
-TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "action = 1 - ADDTS RESPONSE ACTION........!! \n");
+        /* Note: The IE length was already verified by the caller. */
+
+        TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "action = 1 - ADDTS RESPONSE ACTION........!! \n");
 
 		/* parsing the dialog token */
 		dialogToken = *pData;
@@ -689,16 +697,15 @@ TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "action = 1 - ADDT
 		/* in WME status code is 1 byte, in WSM is 2 bytes */
 		statusCode = *pData;
 		pData++;
-
 		tspecInfo.statusCode = statusCode;
 
-TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "dialogToken = %d ,  statusCode = %d \n",dialogToken, statusCode);
+        TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "dialogToken = %d, statusCode = %d \n", dialogToken, statusCode);
 
 		trafficAdmCtrl_parseTspecIE(&tspecInfo, pData);
 
 		if (trafficAdmCtrl_tokenToAc (pTrafficAdmCtrl, dialogToken, &tacID) == TI_NOK)
 		{
-TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token Not found,  dialogToken = %d , \n",dialogToken);
+            TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token Not found,  dialogToken = %d , \n", dialogToken);
 			
 			qosMngr_sendUnexpectedTSPECResponseEvent(pTrafficAdmCtrl->hQosMngr, &tspecInfo);
 		
@@ -708,7 +715,7 @@ TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token Not foun
 		/* validate dialog token matching */
 		if(pTrafficAdmCtrl->dialogToken[tspecInfo.AC] != dialogToken)
 		{
-TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token mismatch,  dialogToken = %d ,  acID = %d \n",dialogToken, tspecInfo.AC);
+            TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token mismatch,  dialogToken = %d ,  acID = %d \n",dialogToken, tspecInfo.AC);
 			
 			qosMngr_sendUnexpectedTSPECResponseEvent(pTrafficAdmCtrl->hQosMngr, &tspecInfo);
 		
@@ -723,29 +730,53 @@ TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token mismatch
 
 		fsmTSpecInfo.acID = tspecInfo.AC;
 		
-		if(statusCode != ADDTS_STATUS_CODE_SUCCESS)
+		if (ADDTS_STATUS_CODE_SUCCESS != statusCode)
 		{
-			/* admission reject */
-			/********************/
-TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "***** admCtrlQos_recv: admission reject [ statusCode = %d ]\n",statusCode);
-			
-			
-TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "ADDTS Response (reject) userPriority = %d , \n", tspecInfo.userPriority);
+#ifdef XCC_MODULE_INCLUDED
+            paramInfo_t  param;
+            OS_802_11_QOS_TSPEC_PARAMS  addtsReasonCode;
+#endif  /* XCC_MODULE_INCLUDED */
+
+			/* admission rejected */
+			/**********************/
+
+            TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: admission reject [ statusCode = 0x%x ]\n",statusCode);
+            TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: ADDTS Response (reject) userPriority = %d , \n", tspecInfo.userPriority);
 			
 			trafficAdmCtrl_smEvent(pTrafficAdmCtrl, TRAFFIC_ADM_CTRL_SM_EVENT_REJECT, &fsmTSpecInfo);
-			
-		}
+
+#ifdef XCC_MODULE_INCLUDED
+
+            if (ADDTS_STATUS_CODE_REFUSED == statusCode)
+            {
+                TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: TSPEC rejected due to insufficient over-the-air bandwidth! \n");    
+                param.paramType = ROAMING_MNGR_TRIGGER_EVENT;
+                param.content.roamingTriggerType = ROAMING_TRIGGER_TSPEC_REJECTED;
+                roamingMngr_setParam(pTrafficAdmCtrl->hRoamMng, &param);
+
+                addtsReasonCode.uAPSDFlag = tspecInfo.UPSDFlag;
+                addtsReasonCode.uMinimumServiceInterval = tspecInfo.uMinimumServiceInterval;
+                addtsReasonCode.uMaximumServiceInterval = tspecInfo.uMaximumServiceInterval;
+                addtsReasonCode.uUserPriority = (TI_UINT32)tspecInfo.userPriority;
+                addtsReasonCode.uReasonCode = (TI_UINT32)ADDTS_RESPONSE_REJECT;
+                addtsReasonCode.uNominalMSDUsize = (TI_UINT32)tspecInfo.nominalMsduSize & ~FIXED_NOMINAL_MSDU_SIZE_MASK;
+                addtsReasonCode.uMeanDataRate = tspecInfo.meanDataRate;	
+                addtsReasonCode.uMinimumPHYRate = tspecInfo.minimumPHYRate;
+                addtsReasonCode.uSurplusBandwidthAllowance = (TI_UINT32)tspecInfo.surplausBwAllowance;
+                addtsReasonCode.uMediumTime = (TI_UINT32)tspecInfo.mediumTime;
+
+                EvHandlerSendEvent(pTrafficAdmCtrl->hEvHandler, IPC_EVENT_TSPEC_STATUS, (TI_UINT8*)(&addtsReasonCode), sizeof(OS_802_11_QOS_TSPEC_PARAMS));
+
+            }
+#endif  /* XCC_MODULE_INCLUDED */
+        }
 		else
 		{
-			/* admission accept */
-			/********************/
-			
-TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "***** admCtrlQos_recv: admission accept [ statusCode = %d ]\n",statusCode);
-			
-			
-TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "ADDTS Response (accepted) userPriority = %d ,  \n", tspecInfo.userPriority);
-	
-TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "mediumTime = %d ,  surplusBandwidthAllowance = %d \n", tspecInfo.mediumTime, tspecInfo.surplausBwAllowance);
+			/* admission accepted */
+			/**********************/
+            TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "***** admCtrlQos_recv: admission accept [ statusCode = %d ]\n",statusCode);
+            TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "ADDTS Response (accepted) userPriority = %d ,  \n", tspecInfo.userPriority);
+            TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "mediumTime = %d ,  surplusBandwidthAllowance = %d \n", tspecInfo.mediumTime, tspecInfo.surplausBwAllowance);
 			
 			trafficAdmCtrl_smEvent(pTrafficAdmCtrl, TRAFFIC_ADM_CTRL_SM_EVENT_ACCEPT, &fsmTSpecInfo);
 		}
@@ -753,8 +784,7 @@ TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "mediumTime = %d ,
 	else
 	{
 		status = TI_NOK;
-TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: unknown action code = %d ,  \n",action);
-
+        TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: unknown action code = %d ,  \n",action);
 	}
 	return status;
 }
@@ -1049,7 +1079,7 @@ TI_STATUS trafficAdmCtrl_buildFrameHeader(trafficAdmCtrl_t *pTrafficAdmCtrl, TTx
 	}
 
     /* Get the Source MAC address */
-	status = ctrlData_getParamBssid(pTrafficAdmCtrl->hCtrlData, CTRL_DATA_MAC_ADDRESS, saBssid);
+	status = ctrlData_getParamMacAddr(pTrafficAdmCtrl->hCtrlData, saBssid);
 	if (status != TI_OK)
 	{
 		return TI_NOK;

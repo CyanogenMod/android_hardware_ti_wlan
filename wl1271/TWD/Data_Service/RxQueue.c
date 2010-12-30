@@ -158,10 +158,12 @@ TI_STATUS RxQueue_Destroy (TI_HANDLE hRxQueue)
 {
     TRxQueue *pRxQueue;
     
-    if (hRxQueue) {
+    if (hRxQueue)
+    {
         pRxQueue = (TRxQueue *)hRxQueue;
         
-        if (pRxQueue->hTimer) {
+        if (pRxQueue->hTimer) 
+        {
             tmr_DestroyTimer (pRxQueue->hTimer);
             pRxQueue->hTimer = NULL;
         }
@@ -192,8 +194,8 @@ TI_STATUS RxQueue_Init (TI_HANDLE hRxQueue, TI_HANDLE hReport, TI_HANDLE hTimerM
 {
 	TRxQueue *pRxQueue = (TRxQueue *)hRxQueue;
     
-    pRxQueue->hReport   = hReport;
 
+    pRxQueue->hReport   = hReport;
 	pRxQueue->hTimer = tmr_CreateTimer (hTimerModule);
 
 	return TI_OK;
@@ -243,9 +245,11 @@ void RxQueue_Register_CB (TI_HANDLE hRxQueue, TI_UINT32 uCallBackID, void *CBFun
  */ 
 void RxQueue_CloseBaSession(TI_HANDLE hRxQueue, TI_UINT8 uFrameTid)
 {
-    TRxQueue            *pRxQueue     = (TRxQueue *)hRxQueue;
-    TI_UINT32            i;
-    /*set the SA Tid pointer */
+    TRxQueue   *pRxQueue = (TRxQueue *)hRxQueue;
+    TI_UINT32   i;
+
+
+    /* Set the SA Tid pointer */
     TRxQueueTidDataBase *pTidDataBase = &(pRxQueue->tRxQueueArraysMng.tSa1ArrayMng[uFrameTid]);
     
     /* TID illegal value ? */
@@ -258,10 +262,10 @@ void RxQueue_CloseBaSession(TI_HANDLE hRxQueue, TI_UINT8 uFrameTid)
 
     if(pTidDataBase->aTidBaEstablished == TI_TRUE)
     {
-        /* clean BA session */
+        /* Clean BA session */
         pTidDataBase->aTidBaEstablished = TI_FALSE;
 
-        /* pass all valid entries at the array */ 
+        /* Pass all valid entries at the array */ 
         for (i = 0; (i < RX_QUEUE_ARRAY_SIZE) && (i < RX_QUEUE_WIN_SIZE); i++)
         {
             if (pTidDataBase->aPaketsQueue[pTidDataBase->aWinStartArrayInex].pPacket != NULL)
@@ -281,6 +285,7 @@ void RxQueue_CloseBaSession(TI_HANDLE hRxQueue, TI_UINT8 uFrameTid)
             pTidDataBase->aWinStartArrayInex &= RX_QUEUE_ARRAY_SIZE_BIT_MASK;
         }
 
+        /* If timer is started - stop it */
         if (pRxQueue->tPacketTimeout.bPacketMiss) 
         {
                 tmr_StopTimer (pRxQueue->hTimer);
@@ -295,17 +300,17 @@ void RxQueue_CloseBaSession(TI_HANDLE hRxQueue, TI_UINT8 uFrameTid)
  * \brief  Responsible on decode packet parameters and pass it to upper layer.
  *
  * \note   
- * \param  hRxQueue - RxQueue handle.
- * \param  aStatus - RxXfer status that indicate if the upper layer should free the packet or use it.
- * \param  pFrame - paket address of the packet
+ * \param  hRxQueue  - RxQueue handle.
+ * \param  aStatus   - RxXfer status that indicate if the upper layer should free the packet or use it.
+ * \param  pFrame    - paket address of the packet
  * \param  pRxParams - address to structure of the Rx Descriptor received by FW.
  * \return TI_OK on success or TI_NOK on failure 
  * \sa     
  */ 
 static TI_STATUS RxQueue_PassPacket (TI_HANDLE hRxQueue, TI_STATUS tStatus, const void *pBuffer)
 {
+    TRxQueue *pRxQueue = (TRxQueue *)hRxQueue;
 
-    TRxQueue            *pRxQueue   = (TRxQueue *)hRxQueue;
 
     if (tStatus == TI_OK)
     {
@@ -313,13 +318,14 @@ static TI_STATUS RxQueue_PassPacket (TI_HANDLE hRxQueue, TI_STATUS tStatus, cons
         dot11_header_t *pMacHdr = (dot11_header_t *)(TI_UINT8*)RX_BUF_DATA(pBuffer);
 
         /* Handle endian for the frame control fields */
-        pMacHdr->fc  = ENDIAN_HANDLE_WORD(pMacHdr->fc);
+        pMacHdr->fc       = ENDIAN_HANDLE_WORD(pMacHdr->fc);
         pMacHdr->duration = ENDIAN_HANDLE_WORD(pMacHdr->duration);
-        pMacHdr->seqCtrl = ENDIAN_HANDLE_WORD(pMacHdr->seqCtrl);
+        pMacHdr->seqCtrl  = ENDIAN_HANDLE_WORD(pMacHdr->seqCtrl);
+
     }
     else
     {
-        RxIfDescriptor_t    *pRxParams  = (RxIfDescriptor_t*)pBuffer;
+        RxIfDescriptor_t *pRxParams = (RxIfDescriptor_t*)pBuffer;
 
         pRxParams->status &= ~RX_DESC_STATUS_MASK;
         pRxParams->status |= RX_DESC_STATUS_DRIVER_RX_Q_FAIL;
@@ -345,22 +351,28 @@ static TI_STATUS RxQueue_PassPacket (TI_HANDLE hRxQueue, TI_STATUS tStatus, cons
  * the winStart array index represent always the winStart packet and the lowest SN. 
  * Each increment index represent index at the BA window. Array index winEnd  always 
  * represent winEnd packet. The indexes of winStart and winEnd handled in cyclic manner.
+ *
+ * SN range      :  0 - 4095
+ * winStart range:  0 - 7       [0 - (RX_QUEUE_ARRAY_SIZE - 1)]
+ * winSize       :  Determined by the BA session. We limit it to maximum 8 [RX_QUEUE_ARRAY_SIZE]
+ * winEnd        :  = winStart + winSize - 1
+ *
  * The function functionality devided to parts:
  *   Part 1: 
- * in case the modulo receive packet with SN equal to winStart: 
+ * In case the module received a packet with SN equal to the expected SN: 
  * "	pass it to upper layers
  * "	increases winStart and array index winStart
  * "	validate that all sequential queue packet are pass to the upper layers.
  *   Part 2: 
- * in case the modulo receive packet that SN between winStart to winEnd: 
+ * In case the module received a packet with SN between winStart to winEnd: 
  * "	Save it sorted at the array at index: Save index = ((SN - winStart) + index array winStart) % arraySize.
  *   Part 3: 
- * in case the modulo receive packet that SN higher than winEnd: 
+ * In case the module received a packet with SN higher than winEnd: 
  * "	Update winStart and WinEnd. 
  * "	Save it sorted at the array in index winEnd index.
  * "	Pass to the upper layers all packets at the array indexes from old winStart index to the updated winStart index.
  *   Part 4 + 5: 
- * in case the modulo receive BA event packet: 
+ * In case the module received a BA event packet: [Remember: This is an Rx module - We expect BAR and not BA (as well as ADDBE / DELBA]
  * "	Update winStart and WinEnd 
  * "	Pass to the upper layers all packets at the array indexes from old winStart index to the updated winStart index.
  * "	Free BA event packet via pass it to upper layers with error status.
@@ -368,7 +380,7 @@ static TI_STATUS RxQueue_PassPacket (TI_HANDLE hRxQueue, TI_STATUS tStatus, cons
  * \note   
  * \param  hRxQueue - RxQueue handle.
  * \param  aStatus - RxXfer status that indicate if the upper layer should free the packet or use it.
- * \param  pBuffer - paket address of the packet
+ * \param  pBuffer - paket address of the packet [contains the RxIfDescriptor_t added by the FW].
  * \return None 
  * \sa     
  */ 
@@ -377,21 +389,26 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
     TRxQueue            *pRxQueue   = (TRxQueue *)hRxQueue;
     RxIfDescriptor_t    *pRxParams  = (RxIfDescriptor_t*)pBuffer;
     TI_UINT8            *pFrame     = RX_BUF_DATA((TI_UINT8 *)pBuffer);
-    TI_STATUS           tStatus     = TI_OK;
+    TI_STATUS            tStatus    = TI_OK;
     dot11_header_t      *pHdr       = (dot11_header_t *)pFrame;
-    TI_UINT16		    uQosControl;
+    TI_UINT16		     uQosControl;
+
 
     COPY_WLAN_WORD(&uQosControl, &pHdr->qosControl); /* copy with endianess handling. */
 
     TRACE2(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: packet_class_tag = 0x%x(%d)",pRxParams->packet_class_tag,pRxParams->packet_class_tag);
 
+
     /* 
-     * Retrieving the TAG from the packet itself and not from the Rx Descriptor since by now it is not correct
+     * Retrieving the TAG from the packet itself and not from the Rx Descriptor since by now it is not correct.
+     * If the packet is a QoS packet but the tag is not TAG_CLASS_QOS_DATA or TAG_CLASS_AMSDU - force TAG_CLASS_QOS_DATA or TAG_CLASS_AMSDU.
+     *
      * Note: in the DR TAG_CLASS_EAPOL packet handled as TAG_CLASS_QOS_DATA   
      */
     if (IS_QOS_FRAME(*(TI_UINT16*)pFrame) && (pRxParams->packet_class_tag != TAG_CLASS_QOS_DATA) && (pRxParams->packet_class_tag != TAG_CLASS_AMSDU))
 	{
         TRACE1(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: BAD CLASS TAG =0x%x from FW.\n", pRxParams->packet_class_tag);
+
 		
         /* Get AMSDU bit from frame */
         if( uQosControl & DOT11_QOS_CONTROL_FIELD_A_MSDU_BITS)
@@ -402,19 +419,23 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
         {
             pRxParams->packet_class_tag = TAG_CLASS_QOS_DATA;
         }
-    }
+	}
+
+
 
     /* 
      * packet doesn't need reorder ? 
      */
+
     if ((pRxParams->packet_class_tag != TAG_CLASS_QOS_DATA) && (pRxParams->packet_class_tag != TAG_CLASS_BA_EVENT) && (pRxParams->packet_class_tag != TAG_CLASS_AMSDU))
     {
-        TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: pass packet without reorder.\n");
+        TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION , "RxQueue_ReceivePacket: pass packet without reorder.\n");
         
-        RxQueue_PassPacket (pRxQueue, tStatus, pBuffer);
+        RxQueue_PassPacket (pRxQueue, TI_OK, pBuffer);
 
         return;
     }
+
 
 
     /* 
@@ -452,12 +473,14 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
         {
             TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: pass packet without reorder.\n");
 
-            RxQueue_PassPacket (pRxQueue, tStatus, pBuffer);
+            RxQueue_PassPacket (pRxQueue, TI_OK, pBuffer);
 
             return;
         }
 
-        /* packet TID BA established */
+
+        /* If we got here - Packet TID BA established */
+
         /* Get Sequence Number from frame */
         COPY_WLAN_WORD(&uSequenceControl, &pHdr->seqCtrl); /* copy with endianess handling. */
         uFrameSn = (uSequenceControl & DOT11_SC_SEQ_NUM_MASK) >> 4;
@@ -470,15 +493,17 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
          * The FW never sends packet, in establish TID BA, with SN less than ESN !!! 
          */
 
-        /* Part 1 - Frame Sequence Number is the expected one ? */
+
+        /* Part 1 - Received Frame Sequence Number is the expected one ? */
         if (uFrameSn == pTidDataBase->aTidExpectedSn)
         {
             TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: frame Sequence Number == expected one Sequence Number.\n");
 
-			/* Stop timer in case that the expected SN received and timer was running */
 
+            /* 
+               If the expected SN received and timer was running - Stop the timer.
 
-            /* If we wait for 2 consecutive packets we should not stop the timer - This is why we are checking after the while loop, if we have 
+               If we wait for more than one packet we should not stop the timer - This is why we are checking after the while loop, if we have 
                more packets stored, and if we have, we start the timer again.
             */
             if (pRxQueue->tPacketTimeout.bPacketMiss)
@@ -489,7 +514,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
 
 
             /* Pass the packet */
-            RxQueue_PassPacket (pRxQueue, tStatus, pBuffer);
+            RxQueue_PassPacket (pRxQueue, TI_OK, pBuffer);
 
             /* Increase expected SN to the next */
             pTidDataBase->aTidExpectedSn++;
@@ -501,7 +526,8 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
             /* aWinStartArrayInex % RX_QUEUE_ARRAY_SIZE */
             pTidDataBase->aWinStartArrayInex &= RX_QUEUE_ARRAY_SIZE_BIT_MASK;
 
-            /* Pass all saved queue packets with SN higher than the expected one */
+
+            /* Pass all saved queue consecutive packets with SN higher than the expected one */
             while (pTidDataBase->aPaketsQueue[pTidDataBase->aWinStartArrayInex].pPacket != NULL)
             {
                 TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: Pass all saved queue packets with SN higher than the expected one that was just received.");
@@ -542,16 +568,18 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
             return;
         }
 
+
         /* Frame Sequence Number is lower than Expected sequence number (ISN) ? */ 
         if (! BA_SESSION_IS_A_BIGGER_THAN_B (uFrameSn, pTidDataBase->aTidExpectedSn))			
         {
             /* WLAN_OS_REPORT(("%s: ERROR - SN=%u is less than ESN=%u\n", __FUNCTION__, uFrameSn, pTidDataBase->aTidExpectedSn)); */
-            TRACE0(pRxQueue->hReport, REPORT_SEVERITY_ERROR, "RxQueue_ReceivePacket: frame Sequence Number is lower than expected sequence number.\n");
+            TRACE2(pRxQueue->hReport, REPORT_SEVERITY_WARNING, "RxQueue_ReceivePacket: frame Sequence Number (%d) is lower than expected sequence number (%d).\n", uFrameSn, pTidDataBase->aTidExpectedSn);
 
             RxQueue_PassPacket (pRxQueue, tStatus, pBuffer);
 
             return;
         }
+
 
         /* Part 2 - Frame Sequence Number between winStart and winEnd ? */
         if ((BA_SESSION_IS_A_BIGGER_THAN_B (uFrameSn, pTidDataBase->aTidExpectedSn)) &&
@@ -594,6 +622,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
 				 RxQueue_PassPacket (pRxQueue, TI_NOK, pBuffer);
 				 return;
 			}
+
             return;
         }
 
@@ -672,7 +701,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
             else
             {
                 TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION, "RxQueue_ReceivePacket: Send all saved packets");
-                /* In case the uWinStartDelta lower than aTidWinSize check if ther are packets stored in Array */
+                /* In case the uWinStartDelta lower than aTidWinSize - check if there are packets stored in Array */
  
                 while (pTidDataBase->aPaketsQueue[pTidDataBase->aWinStartArrayInex].pPacket != NULL) 
                 {
@@ -725,7 +754,8 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
             }
 
 
-            /* aTidExpectedSn % 0xfff in order to tack care of wrap around */
+
+            /* aTidExpectedSn % 0xfff in order to take care of wrap around */
             pTidDataBase->aTidExpectedSn &= 0xfff; 
 
             /* If there are still packets stored in the queue - start timer */
@@ -741,11 +771,13 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
     }
 
 
+
     /* 
      * BA event ? 
      */
     if (pRxParams->packet_class_tag == TAG_CLASS_BA_EVENT)
     {
+
         TRxQueueTidDataBase *pTidDataBase;
         TI_UINT8            *pDataFrameBody;
         TI_UINT16           ufc;
@@ -757,13 +789,15 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
         TI_UINT16           uBAParameterField;         
         TI_UINT32           i;
 
-        /* Get sub type from frame */
+        
+        /* Get the frame's sub type from its header */
         COPY_WLAN_WORD(&ufc, &pHdr->fc); /* copy with endianess handling. */
 
-        /* get the type to BA event */
+        /* Get the type to BA event */
         switch ((dot11_Fc_Sub_Type_e)(ufc & DOT11_FC_SUB_MASK))
         {
         case DOT11_FC_SUB_BAR:
+
             TRACE0(pRxQueue->hReport, REPORT_SEVERITY_INFORMATION , "RxQueue_ReceivePacket: BA event - BAR frame.\n");
 
             /* get pointer to the frame body */
@@ -783,7 +817,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
                 return;
             }
 
-            /* set the SA Tid pointer */
+            /* Set the SA Tid pointer */
             pTidDataBase = &(pRxQueue->tRxQueueArraysMng.tSa1ArrayMng[uFrameTid]);
 
             /* TID legal value */
@@ -802,17 +836,20 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
             COPY_WLAN_WORD (&uBaStartingSequenceControlField, (TI_UINT16 *)pDataFrameBody); /* copy with endianess handling. */
             uStartingSequenceNumber = (uBaStartingSequenceControlField & DOT11_SC_SEQ_NUM_MASK) >> 4;
 
-            /* Starting Sequence Number is higher than winStart ? */
+            
+            /* Starting Sequence Number is higher than Expcted SN ? */
             if ( BA_SESSION_IS_A_BIGGER_THAN_B (uStartingSequenceNumber, pTidDataBase->aTidExpectedSn) )
             {
                 uWinStartDelta = uStartingSequenceNumber - pTidDataBase->aTidExpectedSn;
+                
+                /* If timer is on - stop it. Later on we may start it again [in case we still have packets stored] */
                 if (pRxQueue->tPacketTimeout.bPacketMiss) 
                 {
                     tmr_StopTimer (pRxQueue->hTimer);
                     pRxQueue->tPacketTimeout.bPacketMiss = TI_FALSE;
                 }
 
-                /* pass all saved queue packets with SN lower than the new win start */
+                /* Pass all saved queue packets with SN lower than the new win start */
                 for (i = 0;
                      ((i < uWinStartDelta) || (pTidDataBase->aPaketsQueue[pTidDataBase->aWinStartArrayInex].pPacket != NULL)) &&
                       (i < RX_QUEUE_ARRAY_SIZE) && 
@@ -835,6 +872,7 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
                     pTidDataBase->aWinStartArrayInex &= RX_QUEUE_ARRAY_SIZE_BIT_MASK;
                 }
 
+                /* If there are still packets stored - start the timer */
                 if (pRxQueue->tPacketTimeout.aPacketsStored) 
                 {
                     tmr_StartTimer (pRxQueue->hTimer, RxQueue_PacketTimeOut, pRxQueue, BA_SESSION_TIME_TO_SLEEP, TI_FALSE);
@@ -963,8 +1001,6 @@ void RxQueue_ReceivePacket (TI_HANDLE hRxQueue, const void * pBuffer)
           }
 
     }
-
-    TRACE1(pRxQueue->hReport, REPORT_SEVERITY_ERROR, "RxQueue_ReceivePacket: unknow type tag. tag = %d\n", pRxParams->packet_class_tag);
 
     RxQueue_PassPacket (pRxQueue, tStatus, pBuffer);
 

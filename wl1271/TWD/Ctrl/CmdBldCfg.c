@@ -1,7 +1,7 @@
 /*
  * CmdBldCfg.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -119,7 +119,7 @@ TI_STATUS cmdBld_CfgArpIpFilter (TI_HANDLE hCmdBld, TIpAddr tIpAddr, void *fCb, 
     /* no support for IPV6 */
     IP_COPY (DB_WLAN(hCmdBld).arp_IP_addr, tIpAddr);
 
-    return cmdBld_CfgIeArpIpFilter (hCmdBld, 
+    return cmdBld_CfgIeArpIpFilter (hCmdBld,
                                     tIpAddr,
                                     DB_WLAN(hCmdBld).arpFilterType,
                                     fCb,
@@ -232,6 +232,8 @@ TI_STATUS cmdBld_CfgFragmentThreshold (TI_HANDLE hCmdBld, TI_UINT16 uFragmentThr
  ****************************************************************************/
 TI_STATUS cmdBld_CfgPreamble (TI_HANDLE hCmdBld, Preamble_e ePreamble, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_PREAMBLE_JOIN)
+
     DB_WLAN(hCmdBld).preamble = ePreamble;      
 
     return cmdBld_CfgIePreamble (hCmdBld, (TI_UINT8)ePreamble, fCb, hCb);
@@ -285,6 +287,8 @@ TI_STATUS cmdBld_CfgWakeUpCondition (TI_HANDLE hCmdBld, TPowerMgmtConfig *pPMCon
  ****************************************************************************/
 TI_STATUS cmdBld_CfgSleepAuth (TI_HANDLE hCmdBld, EPowerPolicy eMinPowerLevel, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_POWER_AUTH)
+
     /* Save th parameter in database */
     DB_WLAN(hCmdBld).minPowerLevel = eMinPowerLevel;
 
@@ -379,6 +383,8 @@ TI_STATUS cmdBld_CfgMacClock (TI_HANDLE hCmdBld, TI_UINT32 uMacClock, void *fCb,
  ****************************************************************************/
 TI_STATUS cmdBld_CfgAid (TI_HANDLE hCmdBld, TI_UINT16 uAidVal, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_AID);
+
     return cmdBld_CfgIeAid (hCmdBld, uAidVal, fCb, hCb);
 }
 
@@ -444,6 +450,8 @@ TI_STATUS cmdBld_CfgRxMsduFormat (TI_HANDLE hCmdBld, TI_BOOL bRxMsduForamtEnable
  ****************************************************************************/
 TI_STATUS cmdBld_CfgTid (TI_HANDLE hCmdBld, TQueueTrafficParams *pQtrafficParams, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, (__CFG_TID_0 + 2*pQtrafficParams->queueID))
+
     DB_QUEUES(hCmdBld).isQueueConfigured[pQtrafficParams->queueID] = TI_TRUE;
     DB_QUEUES(hCmdBld).queues[pQtrafficParams->queueID] = *pQtrafficParams;
 
@@ -464,6 +472,8 @@ TI_STATUS cmdBld_CfgTid (TI_HANDLE hCmdBld, TQueueTrafficParams *pQtrafficParams
  ****************************************************************************/
 TI_STATUS cmdBld_CfgAcParams (TI_HANDLE hCmdBld, TAcQosParams *pAcQosParams, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, (__CFG_AC_PARAMS_0 + 2*pAcQosParams->ac))
+
     DB_AC(hCmdBld).isAcConfigured[pAcQosParams->ac] = TI_TRUE;
     DB_AC(hCmdBld).ac[pAcQosParams->ac] = *pAcQosParams;
 
@@ -484,7 +494,9 @@ TI_STATUS cmdBld_CfgAcParams (TI_HANDLE hCmdBld, TAcQosParams *pAcQosParams, voi
  ****************************************************************************/
 TI_STATUS cmdBld_CfgPsRxStreaming (TI_HANDLE hCmdBld, TPsRxStreaming *pPsRxStreaming, void *fCb, TI_HANDLE hCb)
 {
-    DB_PS_STREAM(hCmdBld).tid[pPsRxStreaming->uTid] = *pPsRxStreaming;
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_PS_RX_STREAMING);
+
+	DB_PS_STREAM(hCmdBld).tid[pPsRxStreaming->uTid] = *pPsRxStreaming;
 
     return cmdBld_CfgIePsRxStreaming (hCmdBld, pPsRxStreaming, fCb, hCb);  
 }
@@ -678,6 +690,8 @@ TI_STATUS cmdBld_CfgBeaconFilterTable (TI_HANDLE    hCmdBld,
  ****************************************************************************/
 TI_STATUS cmdBld_CfgRssiSnrTrigger (TI_HANDLE hCmdBld, RssiSnrTriggerCfg_t *pTriggerParam, void *fCb, TI_HANDLE hCb) 
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, (__CFG_RSSI_SNR_TRIGGER_0 + pTriggerParam->index))
+
     DB_WLAN(hCmdBld).tRssiSnrTrigger[pTriggerParam->index].index     = pTriggerParam->index;
     DB_WLAN(hCmdBld).tRssiSnrTrigger[pTriggerParam->index].threshold = pTriggerParam->threshold;
     DB_WLAN(hCmdBld).tRssiSnrTrigger[pTriggerParam->index].pacing    = pTriggerParam->pacing;
@@ -731,6 +745,8 @@ TI_STATUS cmdBld_CfgRssiSnrWeights (TI_HANDLE hCmdBld, RssiSnrAverageWeights_t *
  ****************************************************************************/
 TI_STATUS cmdBld_CfgMaxTxRetry (TI_HANDLE hCmdBld, TRroamingTriggerParams *pRoamingTriggerCmd, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_MAX_TX_RETRY)
+
     DB_WLAN(hCmdBld).roamTriggers.maxTxRetry = pRoamingTriggerCmd->maxTxRetry;
 
     return cmdBld_CfgIeMaxTxRetry (hCmdBld, pRoamingTriggerCmd, fCb, hCb);
@@ -750,6 +766,8 @@ TI_STATUS cmdBld_CfgMaxTxRetry (TI_HANDLE hCmdBld, TRroamingTriggerParams *pRoam
  ****************************************************************************/
 TI_STATUS cmdBld_CfgSgEnable (TI_HANDLE hCmdBld, ESoftGeminiEnableModes eSgEnable, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_SG_ENABLE)
+
     DB_WLAN(hCmdBld).SoftGeminiEnable = eSgEnable;
                     
     return cmdBld_CfgIeSgEnable (hCmdBld, eSgEnable, fCb, hCb);
@@ -771,6 +789,7 @@ TI_STATUS cmdBld_CfgSg (TI_HANDLE hCmdBld, TSoftGeminiParams *pSgParam, void *fC
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_SG)
     /* Copy params for recovery */
     os_memoryCopy (pCmdBld->hOs,
                    (void*)&DB_WLAN(hCmdBld).SoftGeminiParams,
@@ -865,6 +884,8 @@ TI_STATUS cmdBld_CfgTxRatePolicy (TI_HANDLE hCmdBld, TTxRatePolicy *pTxRatePolic
     TTxRateClass  *pTxRateClass = pTxRatePolicy->rateClass;
     TI_UINT8       index;
 
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_TX_RATE_POLICY)
+
     TRACE1(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION, "_1, Num of classes = 0x%x\n", pTxRatePolicy->numOfRateClasses);
 
     DB_BSS(hCmdBld).TxRateClassParams.numOfRateClasses = pTxRatePolicy->numOfRateClasses;
@@ -883,6 +904,9 @@ TI_STATUS cmdBld_CfgTxRatePolicy (TI_HANDLE hCmdBld, TTxRatePolicy *pTxRatePolic
 TI_STATUS cmdBld_CfgSlotTime (TI_HANDLE hCmdBld, ESlotTime eSlotTime, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
+
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_SLOT_TIME)
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_SLOT_TIME_JOIN)
 
     DB_WLAN(hCmdBld).SlotTime = eSlotTime;      
 
@@ -949,6 +973,7 @@ TI_STATUS cmdBld_CfgHwEncEnable (TI_HANDLE hCmdBld, TI_BOOL bHwEncEnable, TI_BOO
 
 TI_STATUS cmdBld_CfgHwEncDecEnable (TI_HANDLE hCmdBld, TI_BOOL bHwEncEnable, void *fCb, TI_HANDLE hCb)
 {
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_KEYS);
     return cmdBld_CfgHwEncEnable (hCmdBld, bHwEncEnable, bHwEncEnable, fCb, hCb);
 }
 
@@ -1011,6 +1036,8 @@ TI_STATUS cmdBld_CfgConnMonitParams (TI_HANDLE  hCmdBld,
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_CONN_MONIT_PARAMS)
+
     TRACE2(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "SetBssLossTsfThresholdParamsCmd :\n                             BssLossTimeout = %d\n                             TsfMissThreshold = %d \n ", pRoamingTriggerCmd->BssLossTimeout, pRoamingTriggerCmd->TsfMissThreshold);
 
     DB_WLAN(hCmdBld).roamTriggers.BssLossTimeout = pRoamingTriggerCmd->BssLossTimeout;
@@ -1038,6 +1065,8 @@ TI_STATUS cmdBld_CfgEnableRxDataFilter (TI_HANDLE   hCmdBld,
                                         void        *fCb, 
                                         TI_HANDLE   hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_RX_DATA_FILTER)
+
     /* Save parameters for reconfig phase */
     DB_RX_DATA_FLTR(hCmdBld).bEnabled       = bEnabled;
     DB_RX_DATA_FLTR(hCmdBld).eDefaultAction = eDefaultAction;
@@ -1096,8 +1125,10 @@ TI_STATUS cmdBld_CfgRxDataFilter (TI_HANDLE hCmdBld,
 
 
 TI_STATUS cmdBld_CfgCtsProtection (TI_HANDLE hCmdBld, TI_UINT8 uCtsProtection, void *fCb, TI_HANDLE hCb)
-    {
-        DB_WLAN(hCmdBld).CtsToSelf = uCtsProtection;
+{
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_CTS_PROTECTION)
+
+    DB_WLAN(hCmdBld).CtsToSelf = uCtsProtection;
 
     return cmdBld_CfgIeCtsProtection (hCmdBld, uCtsProtection, fCb, hCb);
 }
@@ -1125,6 +1156,7 @@ TI_STATUS cmdBld_CfgStatisitics (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 
 TI_STATUS cmdBld_CfgTxPowerDbm (TI_HANDLE hCmdBld, TI_UINT8 uTxPowerDbm, void *fCb, TI_HANDLE hCb)
 {
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_TX_POWER_JOIN);
     return cmdBld_CfgIeTxPowerDbm (hCmdBld, uTxPowerDbm, fCb, hCb);
 }
 
@@ -1142,7 +1174,10 @@ TI_STATUS cmdBld_CfgTxPowerDbm (TI_HANDLE hCmdBld, TI_UINT8 uTxPowerDbm, void *f
  */
 TI_STATUS cmdBld_CfgBet (TI_HANDLE hCmdBld, TI_UINT8 Enable, TI_UINT8 MaximumConsecutiveET, void *fCb, TI_HANDLE hCb)
 {
-    DB_WLAN(hCmdBld).BetEnable              = Enable;
+
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_BET)
+
+	DB_WLAN(hCmdBld).BetEnable              = Enable;
     DB_WLAN(hCmdBld).MaximumConsecutiveET   = MaximumConsecutiveET;
 
     return cmdBld_CfgIeBet (hCmdBld, Enable, MaximumConsecutiveET, fCb, hCb);
@@ -1194,6 +1229,8 @@ TI_STATUS cmdBld_CfgKeepAliveEnaDis(TI_HANDLE hCmdBld, TI_UINT8 enaDisFlag, void
 {
     TCmdBld   *pCmdBld = (TCmdBld *)hCmdBld;
 
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_KEEP_ALIVE_PARAMS )
+
     TRACE1(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "CmdBld: Seeting keep-alive Global ena / dis flag to %d\n", (TI_UINT32)enaDisFlag);
 
     DB_KLV(hCmdBld).enaDisFlag = enaDisFlag;
@@ -1217,6 +1254,8 @@ TI_STATUS cmdBld_CfgSetFwHtCapabilities (TI_HANDLE hCmdBld,
                                          void      *fCb, 
                                          TI_HANDLE hCb)
 {
+
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_HT_CAPABILITIES)
 
     DB_BSS(hCmdBld).bHtCap = TI_TRUE;
     DB_BSS(hCmdBld).uHtCapabilites = uHtCapabilites;
@@ -1250,6 +1289,8 @@ TI_STATUS cmdBld_CfgSetFwHtInformation (TI_HANDLE hCmdBld,
                                         void      *fCb, 
                                         TI_HANDLE hCb)
 {
+
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CFG_HT_INFORMATION)
 
     DB_BSS(hCmdBld).bHtInf = TI_TRUE;
     DB_BSS(hCmdBld).uRifsMode = uRifsMode;
@@ -1305,6 +1346,8 @@ TI_STATUS cmdBld_CfgSetBaSession (TI_HANDLE hCmdBld,
         DB_BSS(hCmdBld).tBaSessionResponderPolicy[uTid].uInactivityTimeout = uInactivityTimeout;
     }
 
+	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld,__CFG_BA_SET_SESSION);
+
     return cmdBld_CfgIeSetBaSession (hCmdBld, 
                                      eBaType,
                                      uTid,               
@@ -1319,6 +1362,8 @@ TI_STATUS cmdBld_CfgSetBaSession (TI_HANDLE hCmdBld,
 
 TI_STATUS cmdBld_CfgBurstMode (TI_HANDLE hCmdBld, TI_BOOL bEnabled, void *fCb, TI_HANDLE hCb)
 {
+    CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, __CMD_BURST_MODE_ENABLE)
+
 	DB_AC(hCmdBld).isBurstModeEnabled = bEnabled;
 	return cmdBld_CfgIeBurstMode (hCmdBld, bEnabled, fCb, hCb); 
 }

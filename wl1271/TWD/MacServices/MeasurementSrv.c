@@ -1,7 +1,7 @@
 /*
  * MeasurementSrv.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file measurementSrv.c
  *  \brief This file include the measurement SRV interface functions implementation.
- *  \author Ronen Kalish
+ *  \
  *  \date 09-November-2005
  */
 
@@ -50,7 +50,7 @@
 #include "CmdBld.h"
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Creates the measurement SRV object
  *
@@ -89,7 +89,7 @@ TI_HANDLE MacServices_measurementSRV_create( TI_HANDLE hOS )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Initializes the measurement SRV object
  *
@@ -212,7 +212,7 @@ void measurementSRV_restart( TI_HANDLE hMeasurementSRV)
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Destroys the measurement SRV object
  *
@@ -254,7 +254,7 @@ void MacServices_measurementSRV_destroy( TI_HANDLE hMeasurementSRV )
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 09-November-2005\n
  * \brief Starts a measurement operation.\n
  *
@@ -334,7 +334,7 @@ TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "cmd complete CB:
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 09-November-2005\n
  * \brief Stops a measurement operation in progress.\n
  *
@@ -379,7 +379,7 @@ TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "Send null data:,
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 09-November-2005\n
  * \brief Notifies the measurement SRV of a FW reset (recovery).\n
  *
@@ -413,7 +413,7 @@ TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": Received FW re
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 09-November-2005\n
  * \brief callback function used by the power manager to notify driver mode result
  *
@@ -452,7 +452,7 @@ TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": Power save SRV
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 14-November-2005\n
  * \brief callback function used by the HAL for measure start event (sent when the FW 
  * has started measurement operation, i.e. switched channel and changed RX filters).\n
@@ -479,7 +479,7 @@ void MacServices_measurementSRV_measureStartCB( TI_HANDLE hMeasurementSRV )
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 14-November-2005\n
  * \brief callback function used by the HAL for measure stop event (sent when the FW 
  * has finished measurement operation, i.e. switched channel to serving channel and changed back RX filters).\n
@@ -502,7 +502,7 @@ void MacServices_measurementSRV_measureCompleteCB( TI_HANDLE hMeasurementSRV )
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 14-November-2005\n
  * \brief callback function used by the HAL for AP discovery stop event (sent when the FW 
  * has finished AP discovery operation).\n
@@ -520,7 +520,7 @@ void MacServices_measurementSRV_apDiscoveryCompleteCB( TI_HANDLE hMeasurementSRV
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 14-November-2005\n
  * \brief called when a measurement FW guard timer expires.
  *
@@ -556,7 +556,7 @@ void MacServices_measurementSRV_startStopTimerExpired (TI_HANDLE hMeasurementSRV
 }
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief called when a measurement type timer expires.\n
  *
@@ -617,7 +617,7 @@ TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": measure type %d not 
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 13-November-2005\n
  * \brief Checks whether a beacon measurement is part of current measurement request
  *
@@ -641,7 +641,7 @@ TI_BOOL measurementSRVIsBeaconMeasureIncluded( TI_HANDLE hMeasurementSRV )
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Finds the index for the measurement request with the shortest period 
  * (the one that has now completed).\n
@@ -685,7 +685,7 @@ TI_INT32 measurementSRVFindMinDuration( TI_HANDLE hMeasurementSRV )
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Handles an AP discovery timer expiry, by setting necessary values in the
  * reply struct.\n
@@ -711,7 +711,7 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": status %d received f
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Handles a channel load timer expiry, by requesting channel load 
  * results from the FW.\n
@@ -750,7 +750,7 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": whalCtrl_GetParam re
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Handles a noise histogram timer expiry, by requesting noise histogram
  * reaults from the FW.\n
@@ -810,7 +810,7 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": whalCtrl_GetParam re
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 16-November-2005\n
  * \brief Callback for channel load get param call.\n
  *
@@ -908,7 +908,7 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": Dummy Channel 
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 16-November-2005\n
  * \brief Callback for noise histogram get param call.\n
  *
@@ -994,7 +994,7 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_WARNING, ": noise histogram CB
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 16-November-2005\n
  * \brief Checks whether all measuremtn types had completed and all param CBs had been called.\n
  *
@@ -1028,7 +1028,7 @@ TI_BOOL measurementSRVIsMeasurementComplete( TI_HANDLE hMeasurementSRV )
 }
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 17-November-2005\n
  * \brief Finds a measure type index in the measure request array.\n
  *

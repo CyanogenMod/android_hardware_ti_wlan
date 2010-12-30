@@ -58,6 +58,8 @@
  *  Internal functions
  ***********************************************************************
  */
+
+void scanMngr_startScanTimer(scanMngr_t* pScanMngr); 
 /***************************************************************************
 *                           reminder64                                     *
 ****************************************************************************
@@ -616,17 +618,7 @@ void scanMngr_setScanPolicy( TI_HANDLE hScanMngr, TScanPolicy* scanPolicy )
     /* if continuous scan was started, start the timer using the new intervals */
     if (pScanMngr->bContinuousScanStarted)
     {
-        TI_UINT32 uTimeout = pScanMngr->bLowQuality ?
-                             pScanMngr->scanPolicy.deterioratingScanInterval :
-                             pScanMngr->scanPolicy.normalScanInterval;
-
-        pScanMngr->bTimerRunning = TI_TRUE;
-
-        tmr_StartTimer (pScanMngr->hContinuousScanTimer,
-                        scanMngr_GetUpdatedTsfDtimMibForScan,
-                        (TI_HANDLE)pScanMngr,
-                        uTimeout,
-                        TI_TRUE);
+        scanMngr_startScanTimer(pScanMngr);
     }
 
     /* reset discovery counters */
@@ -691,7 +683,12 @@ void scanMngr_GetUpdatedTsfDtimMibForScan (TI_HANDLE hScanMngr, TI_BOOL bTwdInit
     TI_STATUS reqStatus = TI_OK;
     
     TRACE0( pScanMngr->hReport , REPORT_SEVERITY_INFORMATION, "\nscanMngr_GetUpdatedTsfDtimMibForScan called\n");
-    
+
+	if (pScanMngr->bQualityChangeNeeded == TI_TRUE)
+	{
+		scanMngr_qualityChangeTrigger(hScanMngr);
+	}
+
     /* Getting the current TSF and DTIM values */
     param.paramType = TWD_TSF_DTIM_MIB_PARAM_ID;
     param.content.interogateCmdCBParams.fCb = (void *)scanMngrGetCurrentTsfDtimMibCB;
@@ -2875,6 +2872,13 @@ static char booleanDesc[ 2 ][ MAX_DESC_LENGTH ] =
     "Yes"
 };
 
+static char qualityDesc[ 3 ][ MAX_DESC_LENGTH ] =
+{
+	"Low",
+	"Normal",
+	"High"
+};
+
 static char contScanStatesDesc[ SCAN_CSS_NUM_OF_STATES ][ MAX_DESC_LENGTH ] =
 {
     "IDLE",
@@ -3347,7 +3351,8 @@ void scanMngr_init (TStadHandlesList *pStadHandles)
     pScanMngr->currentDiscoveryPart = SCAN_SDP_NO_DISCOVERY;
 
     /* initialize the low quality indication to indicate that normal quality interval should be used */
-    pScanMngr->bLowQuality = TI_FALSE;
+    pScanMngr->eQuality = ROAMING_QUALITY_NORMAL;
+	pScanMngr->bQualityChangeNeeded = TI_FALSE;
 
     /* clear current BSS field (put broadcast MAC) */
     for (i = 0; i < MAC_ADDR_LEN; i++)
@@ -3596,20 +3601,10 @@ void scanMngr_startContScan( TI_HANDLE hScanMngr, TMacAddr* currentBSS, ERadioBa
     pScanMngr->BSSList.numOfEntries = 0;
 
     /* start timer (if timeout is configured) */
-    if ( ((TI_TRUE == pScanMngr->bLowQuality) && (0 < pScanMngr->scanPolicy.normalScanInterval)) ||
-         ((TI_FALSE == pScanMngr->bLowQuality) && (0 < pScanMngr->scanPolicy.deterioratingScanInterval)))
+    if ( ((ROAMING_QUALITY_NORMAL == pScanMngr->eQuality) && (0 < pScanMngr->scanPolicy.normalScanInterval)) ||
+         ((ROAMING_QUALITY_LOW == pScanMngr->eQuality) && (0 < pScanMngr->scanPolicy.deterioratingScanInterval)))
     {
-        TI_UINT32 uTimeout = pScanMngr->bLowQuality ?
-                             pScanMngr->scanPolicy.deterioratingScanInterval :
-                             pScanMngr->scanPolicy.normalScanInterval;
-
-        pScanMngr->bTimerRunning = TI_TRUE;
-
-        tmr_StartTimer (pScanMngr->hContinuousScanTimer,
-                        scanMngr_GetUpdatedTsfDtimMibForScan,
-                        (TI_HANDLE)pScanMngr,
-                        uTimeout,
-                        TI_TRUE);
+        scanMngr_startScanTimer(pScanMngr);
     }
 }
 
@@ -3827,14 +3822,33 @@ void scanMngr_setNeighborAPs( TI_HANDLE hScanMngr, neighborAPList_t* neighborAPL
     scanMngrSetNextDiscoveryPart( hScanMngr );
 }
 
-void scanMngr_qualityChangeTrigger( TI_HANDLE hScanMngr, TI_BOOL bLowQuality )
+void scanMngr_notifyChangeTrigger(TI_HANDLE hScanMngr, ERssiQuality eQuality)
 {
     scanMngr_t* pScanMngr = (scanMngr_t*)hScanMngr;
 
-    TRACE1( pScanMngr->hReport, REPORT_SEVERITY_INFORMATION, "scanMngr_qualityChangeTrigger called, hScanMngr=0x%x, bLowQuality=.\n", hScanMngr);
+    TRACE2( pScanMngr->hReport, REPORT_SEVERITY_INFORMATION, "scanMngr_qualityChangeTrigger called, hScanMngr=0x%x, eQuality=%d.\n", hScanMngr, eQuality);
+
+	/* remember the low quality trigger (in case policy changes, to know which timer interval to use) */
+	pScanMngr->eQuality = eQuality;
+	pScanMngr->bQualityChangeNeeded = TI_TRUE;
+
+	/* if the timmer is not running change the quality interval,
+	   if it is running the change will be callled when the timer expires */
+	if (pScanMngr->bTimerRunning == TI_FALSE)
+	{
+		scanMngr_qualityChangeTrigger(hScanMngr);
+	}
+
+}
+
+void scanMngr_qualityChangeTrigger( TI_HANDLE hScanMngr )
+{
+    scanMngr_t* pScanMngr = (scanMngr_t*)hScanMngr;
+
+    TRACE2( pScanMngr->hReport, REPORT_SEVERITY_INFORMATION, "scanMngr_qualityChangeTrigger called, hScanMngr=0x%x, eQuality=%d.\n", hScanMngr, pScanMngr->eQuality);
 
     /* remember the low quality trigger (in case policy changes, to know which timer interval to use) */
-    pScanMngr->bLowQuality = bLowQuality;
+/*    pScanMngr->eQuality = eQuality;*/
 
     /* This function shouldn't be called when continuous scan is not running */
     if ( TI_FALSE == pScanMngr->bContinuousScanStarted )
@@ -3845,18 +3859,16 @@ void scanMngr_qualityChangeTrigger( TI_HANDLE hScanMngr, TI_BOOL bLowQuality )
     /* If the timer is running, stop it and start it again with the new interval */
     if (pScanMngr->bTimerRunning)
     {
-        TI_UINT32 uTimeout = pScanMngr->bLowQuality ?
-                             pScanMngr->scanPolicy.deterioratingScanInterval :
-                             pScanMngr->scanPolicy.normalScanInterval;
+		tmr_StopTimer (pScanMngr->hContinuousScanTimer);
+		pScanMngr->bTimerRunning = TI_FALSE;
+	}
 
-        tmr_StopTimer (pScanMngr->hContinuousScanTimer);
-
-        tmr_StartTimer (pScanMngr->hContinuousScanTimer,
-                        scanMngr_GetUpdatedTsfDtimMibForScan,
-                        (TI_HANDLE)pScanMngr,
-                        uTimeout,
-                        TI_TRUE);
+	if (pScanMngr->bContinuousScanStarted == TI_TRUE)
+	{
+        scanMngr_startScanTimer(pScanMngr);
     }
+
+	pScanMngr->bQualityChangeNeeded = TI_FALSE;
 }
 
 void scanMngr_handoverDone( TI_HANDLE hScanMngr, TMacAddr* macAddress, ERadioBand band )
@@ -4325,8 +4337,36 @@ TI_STATUS scanMngr_stopContinuousScanByApp (TI_HANDLE hScanMngr)
     return TI_OK;
 }
 
+/**
+*
+* scanMngr_startScanTimer
+*
+* Description: 
+*
+* start the scan periodic timer according to the rssi quality
+* 
+* ARGS:
+*  pScanMngr - Scan manager handle \n
+*  
+*/
 
+void scanMngr_startScanTimer(scanMngr_t* pScanMngr)
+{
+    /* In high quality there is no periodic Background scan */
+    if (pScanMngr->eQuality != ROAMING_QUALITY_HIGH)
+    {
+        TI_UINT32 uTimeout = pScanMngr->eQuality == ROAMING_QUALITY_LOW ?
+            pScanMngr->scanPolicy.deterioratingScanInterval :
+            pScanMngr->scanPolicy.normalScanInterval;
 
+        pScanMngr->bTimerRunning = TI_TRUE;
+        tmr_StartTimer (pScanMngr->hContinuousScanTimer,
+                        scanMngr_GetUpdatedTsfDtimMibForScan,
+                        (TI_HANDLE)pScanMngr,
+                        uTimeout,
+                        TI_TRUE);
+    }
+}
 
 
 #ifdef TI_DBG
@@ -4632,8 +4672,8 @@ void scanMngrDebugPrintObject( TI_HANDLE hScanMngr )
     WLAN_OS_REPORT(("-------------- Scan Manager Object Dump ---------------\n"));
     WLAN_OS_REPORT(("Continuous scan timer running: %s, Continuous scan started:%s\n",
                     booleanDesc[ pScanMngr->bTimerRunning ], booleanDesc[ pScanMngr->bContinuousScanStarted ]));
-    WLAN_OS_REPORT(("Current BSS in low quality: %s, AP TSF synchronized: %s\n",
-                    booleanDesc[ pScanMngr->bLowQuality ], booleanDesc[ pScanMngr->bSynchronized ]));
+    WLAN_OS_REPORT(("Current BSS in quality: %s, AP TSF synchronized: %s\n",
+                    qualityDesc[ pScanMngr->eQuality ], booleanDesc[ pScanMngr->bSynchronized ]));
     WLAN_OS_REPORT(("Continuous scan state: %s, Immediate scan state: %s\n",
                     contScanStatesDesc[ pScanMngr->contScanState ], immedScanStatesDesc[ pScanMngr->immedScanState ]));
     WLAN_OS_REPORT(("Discovery part: %s, G channels discovery Index: %d, A channels discovery index: %d\n",

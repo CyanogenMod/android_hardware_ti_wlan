@@ -223,7 +223,7 @@
 
 #define SMART_REFLEX_STATE_MIN        TI_FALSE
 #define SMART_REFLEX_STATE_MAX        TI_TRUE
-#define SMART_REFLEX_STATE_DEF        TI_TRUE
+#define SMART_REFLEX_STATE_DEF        TI_FALSE
 
 #define SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE  "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
 #define SMART_REFLEX_CONFIG_PARAMS_DEF_TABLE_SRF1  "07,03,18,10,05,fb,f0,e8, 0,0,0,0,0,0,0f,3f"
@@ -392,6 +392,7 @@
 
 #define RSSI_DEFAULT_THRESHOLD          -80 
 #define SNR_DEFAULT_THRESHOLD           0 
+#define RSSI_BG_SCAN_HIGH_THRESHOLD     -45
 
 /* 
  * 'No beacon' roaming trigger configuration
@@ -515,6 +516,7 @@ typedef enum
  * \sa TKeepAliveParams
  * 
  */
+
 typedef enum
 {
     KEEP_ALIVE_TRIG_TYPE_NO_TX = 0,		/**< */
@@ -627,9 +629,10 @@ typedef enum
 /*	0x26	*/	TWD_COEX_ACTIVITY_PARAM_ID,	    				/**< */
 /*	0x27	*/	TWD_FM_COEX_PARAM_ID,	    				    /**< */
 /*	0x28	*/	TWD_DCO_ITRIM_PARAMS_ID,    				    /**< */
+/*	0x29	*/	TWD_SDIO_VALIDATION_PARAMS_ID,    				/**< */
 
 				/* must be last!!! */
-/*	0x29    */	TWD_LAST_PARAM_ID								/**< */
+/*	0x30    */	TWD_LAST_PARAM_ID								/**< */
 } ETwdParam;
 
 /** \enum ETwdCallbackOwner
@@ -1551,6 +1554,13 @@ typedef struct
 
 } TPsRxStreaming;
 
+typedef struct
+{
+    TI_UINT32               uTid;           /**< The configured TID (0-7) */
+    TI_UINT32               uBaPlociy;  	/**< Ba policy */
+
+} TBaPolicy;
+
 /** \struct TDmaParams
  * \brief DMA Parameters
  * 
@@ -2367,6 +2377,22 @@ typedef struct
     uint32 moderationTimeoutUsec;
 }DcoItrimParams_t;
 
+
+/** \struct SdioValidationTestParams_t
+ * \brief SDIO Validation Test params structure
+ * 
+ * \par Description
+ * 
+ * \sa
+ */ 
+typedef struct
+{
+    TI_UINT32 uTxnSize;     /* In Bytes */
+    TI_UINT32 uNumOfLoops;
+
+} SdioValidationTestParams_t;
+
+
 /** \union TMibData
  * \brief MIB Data
  * 
@@ -2484,6 +2510,9 @@ typedef union
 
     /* DCO Itrim */
     DcoItrimParams_t                    tDcoItrimParams;                /**< */
+
+    /* SDIO Validation Test */
+    SdioValidationTestParams_t          tSdioValidationTestParams;      /**< */
 
 } TTwdParamContents;
 
@@ -2649,6 +2678,9 @@ typedef struct
     TI_UINT32                      		uTriggeredScanTimeOut; 				/**< i.e. split scan. Time out for starting triggered scan between 2 channels 				*/
 
 } TScanSrvInitParams;
+
+
+
 
 /** \struct TArpIpFilterInitParams
  * \brief ARP IP Filter Init Parameters
@@ -4463,6 +4495,7 @@ TI_STATUS TWD_CfgSetFwHtInformation (TI_HANDLE hTWD, Tdot11HtInformationUnparse 
  * \sa
  */
 TI_STATUS TWD_CfgBurstMode (TI_HANDLE hTWD, TI_BOOL bEnabled);
+
 
 /*-------------*/
 /* Interrogate */

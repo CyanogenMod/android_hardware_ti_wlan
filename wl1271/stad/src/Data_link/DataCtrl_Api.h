@@ -1,7 +1,7 @@
 /*
  * DataCtrl_Api.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -101,6 +101,8 @@ TI_STATUS ctrlData_getParamProtType(TI_HANDLE hCtrlData, erpProtectionType_e *pr
 TI_STATUS ctrlData_getParamPreamble(TI_HANDLE hCtrlData, EPreamble *preamble);
 
 TI_STATUS ctrlData_getParamBssid(TI_HANDLE hCtrlData, EInternalParam paramVal, TMacAddr bssid);
+
+TI_STATUS ctrlData_getParamMacAddr(TI_HANDLE hCtrlData, TMacAddr bssid);
 
 TI_STATUS rxData_getParam(TI_HANDLE hRxData, paramInfo_t *pParamInfo);  
 

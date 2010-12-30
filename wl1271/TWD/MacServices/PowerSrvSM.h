@@ -1,7 +1,7 @@
 /*
  * PowerSrvSM.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file PowerSrvSM.h
  *  \brief This is the PowerSrv module API.
- *  \author Assaf Azulay
+ *  \
  *  \date 6-Oct-2005
  */
 
@@ -143,7 +143,7 @@ typedef struct
  *****************************************************************************/
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 6-Oct-2005\n
  * \brief Creates the object of the PowerSrv.
  *
@@ -155,7 +155,7 @@ typedef struct
 TI_HANDLE powerSrvSM_create(TI_HANDLE hOsHandle);
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 6-Oct-2005\n
  * \brief Destroy the object of the PowerSrvSM.
  *
@@ -167,7 +167,7 @@ TI_HANDLE powerSrvSM_create(TI_HANDLE hOsHandle);
 TI_STATUS powerSrvSM_destroy(TI_HANDLE thePowerSrvSMHandle);
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 6-Oct-2005\n
  * \brief Initialize the PowerSrvSM module.
  *
@@ -187,7 +187,7 @@ TI_STATUS powerSrvSM_init (TI_HANDLE hPowerSrvSM,
 TI_STATUS powerSrvSM_config(TI_HANDLE hPowerSrvSM,
                             TPowerSrvInitParams *pPowerSrvInitParams);
 /**
- * \author Assaf Azulay
+ * \
  * \date 6-Oct-2005\n
  * \brief return the component version.
  *
@@ -202,7 +202,7 @@ TI_STATUS powerSrvSM_SMApi(TI_HANDLE hPowerSrvSM,
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 020-Oct-2005\n
  * \brief This function sets the current SM working request.\n
  *
@@ -217,7 +217,7 @@ TI_STATUS powerSrvSm_setSmRequest(TI_HANDLE hPowerSrvSM,powerSrvRequest_t* pSmRe
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 09-Jun-2004\n
  * \brief get the current state of the state machine.
  *
@@ -230,7 +230,7 @@ PowerSrvSMStates_e powerSrvSM_getCurrentState(TI_HANDLE hPowerSrvSM);
 
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 20-July-2004\n
  * \brief sets rate modulation
  *
@@ -253,7 +253,7 @@ void powerSrvSM_setRateModulation(TI_HANDLE hPowerSrvSM, TI_UINT16 rateModulatio
 TI_UINT32 powerSrvSM_getRateModulation(TI_HANDLE hPowerSrvSM);
 
 /**
- * \author Assaf Azulay
+ * \
  * \date 20-July-2004\n
  * \brief print configuration of the PowerSrvSM object - use for debug!
  *
@@ -265,7 +265,7 @@ TI_UINT32 powerSrvSM_getRateModulation(TI_HANDLE hPowerSrvSM);
 void powerSrvSM_printObject(TI_HANDLE hPowerSrvSM);
 
 /**
- * \author Ronen Kalish
+ * \
  * \date 21-August-2006\n
  * \brief Registers a failure event callback for power save error notifications (timer expiry).\n
  *

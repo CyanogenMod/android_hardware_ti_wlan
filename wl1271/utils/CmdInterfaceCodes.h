@@ -1251,6 +1251,29 @@ typedef enum
 																									* SET Bit: ON	\n
 																									*/
 
+	QOS_MNGR_BA_POLICY							=	SET_BIT | GET_BIT | QOS_MANAGER_PARAM | 0x1a,	/**< QoS Manager Set BA policy Parameter (QoS Module Set/Get Command): \n  
+																									* Used for getting BA policy or setting BA policy to FW and in QoS Module\n
+																									* Done Sync with no memory allocation\n 
+																									* Parameter Number:	0x1a	\n
+																									* Module Number: QoS Module Number \n
+																									* Async Bit: OFF	\n
+																									* Allocate Bit: OFF	\n
+																									* GET Bit: ON	\n
+																									* SET Bit: ON	\n
+																									*/
+
+	QOS_MNGR_PS_TRAFFIC_PERIOID					= SET_BIT | GET_BIT | QOS_MANAGER_PARAM | 0x1b,	    /**< QoS Manager ps traffic Parameter (QoS Module Set/Get Command): \n  
+																									* Used for set ps traffic period for the auto rx streaming option in QoS Module\n
+																									* Done Sync with no memory allocation\n 
+																									* Parameter Number:	0x1b	\n
+																									* Module Number: QoS Module Number \n
+																									* Async Bit: OFF	\n
+																									* Allocate Bit: OFF	\n
+																									* GET Bit: ON	\n
+																									* SET Bit: ON	\n
+																									*/
+
+
     /* Soft Gemini params */
 	SOFT_GEMINI_SET_ENABLE						=	SET_BIT |           SOFT_GEMINI_PARAM	| 0x01,	/**< Soft Gimini Parameters Set Enable Parameter (Soft Gimini Parameters Module Set Command): \n  
 																									* Used for configuring Soft Gimini enable Mode (Enable|Disable|Auto) in FW\n
@@ -1525,6 +1548,18 @@ typedef enum
                                                                                                     * SET Bit: ON	\n
                                                                                                     */
 
+
+    FW_DEBUG_SDIO_VALIDATION                    = SET_BIT | TWD_MODULE_PARAM | TWD_SDIO_VALIDATION_PARAMS_ID,	 /**< SDIO validation mechanism: \n  
+                                                                                                                 * Used for testing SDIO lines\n
+                                                                                                                 * Done Sync with no memory allocation\n
+                                                                                                                 * Parameter Number:	TWD_SDIO_VALIDATION_PARAMS_ID   \n
+                                                                                                                 * Module Number: TWD Control Module Number \n
+                                                                                                                 * Async Bit: OFF	\n
+                                                                                                                 * Allocate Bit: OFF	\n
+                                                                                                                 * GET Bit: OFF	\n
+                                                                                                                 * SET Bit: ON	\n
+                                                                                                                 */
+    
 	LAST_CMD									=	0x00	/**< Last External Parameter - Dummy, Should always stay Last	*/													
 
 }   EExternalParam;

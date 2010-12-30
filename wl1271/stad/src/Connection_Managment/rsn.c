@@ -629,9 +629,7 @@ TI_STATUS rsn_stop (TI_HANDLE hRsn, TI_BOOL removeKeys)
     if (removeKeys)
     {   /* reset PMKID list if exist */
         pRsn->pAdmCtrl->resetPmkidList (pRsn->pAdmCtrl);
-        /* reset unicast and broadcast ciphers after disconnect */
-        pRsn->pAdmCtrl->unicastSuite = TWD_CIPHER_NONE;
-        pRsn->pAdmCtrl->broadcastSuite = TWD_CIPHER_NONE;
+        rsn_clearGenInfoElement(pRsn);
     }
 
     return status;
@@ -1103,11 +1101,12 @@ TRACE0(pRsn->hReport, REPORT_SEVERITY_INFORMATION, "RSN: remove all Keys\n");
 		   {
            status = rsn_setKey (pRsn, pSecurityKey);  /* send key to FW*/
 
-           if (status == TI_OK)
-           {
-               //os_memoryCopy(pKeyDerive->hOs,&pRsn->pKeyParser->pUcastKey/pBcastKey, pEncodedKey, sizeof(encodedKeyMaterial_t));	
-           } /* check this copy */
-
+				/* check this copy 
+			    if (status == TI_OK)
+				    {
+					   os_memoryCopy(pKeyDerive->hOs,&pRsn->pKeyParser->pUcastKey/pBcastKey, pEncodedKey, sizeof(encodedKeyMaterial_t));	
+				    } 
+			    */
 
            /* If the Key is not BAD, it may be that WEP key is sent before WEP status is set,
            save the key, and set it later at rsn_start */
@@ -1143,7 +1142,6 @@ TRACE0(pRsn->hReport, REPORT_SEVERITY_INFORMATION, "RSN: remove all Keys\n");
                pRsn->wepStaticKey = TI_TRUE;
                status = TI_OK;
            }
-           break;
         }
        }
        break;
@@ -1476,25 +1474,27 @@ TI_STATUS rsn_getInfoElement(TI_HANDLE hRsn, TI_UINT8 *pRsnIe, TI_UINT32 *pRsnIe
     pRsn = (rsn_t*)hRsn;
 
     if (!pRsn->bRsnExternalMode) 
-		{
+    {
 
-    status = pRsn->pAdmCtrl->getInfoElement (pRsn->pAdmCtrl, pRsnIe, &ie_len);
-
-    TRACE1(pRsn->hReport, REPORT_SEVERITY_INFORMATION, "rsn_getInfoElement pRsnIeLen= %d\n",*pRsnIeLen);
-
-    if ( status != TI_OK ) {
-    return status;   
+        status = pRsn->pAdmCtrl->getInfoElement (pRsn->pAdmCtrl, pRsnIe, &ie_len);
+    
+        TRACE1(pRsn->hReport, REPORT_SEVERITY_INFORMATION, "rsn_getInfoElement pRsnIeLen= %d\n",*pRsnIeLen);
+    
+        if ( status != TI_OK ) 
+        {
+            TRACE0(pRsn->hReport, REPORT_SEVERITY_ERROR, "rsn_getInfoElement() - pAdmCtrl->getInfoElement() returned error. Returning. \n");
+            return status;   
+        }
     }
-
-    pRsnIe += ie_len;
-		}
-
-    status = rsn_getGenInfoElement(hRsn, pRsnIe, pRsnIeLen);
-
-    *pRsnIeLen += ie_len;
+    else
+    {    /* LiorC: We assume the generic IE should be set only in external mode */
+         status = rsn_getGenInfoElement(hRsn, pRsnIe, &ie_len);
+    }
+    
+       
+    *pRsnIeLen = ie_len;
 
     return status;
-
 }
 
 
@@ -2037,13 +2037,12 @@ TI_STATUS rsn_resetPMKIDList(TI_HANDLE hRsn)
 
 void rsn_debugFunc(TI_HANDLE hRsn)
 {
-    rsn_t *pRsn;
+    rsn_t *pRsn = (rsn_t*)hRsn;
 
-    if (hRsn == NULL)
+    if (pRsn == NULL)
     {
         return;
     }
-    pRsn = (rsn_t*)hRsn;
 
     WLAN_OS_REPORT(("rsnStartedTs, ts = %d\n", pRsn->rsnStartedTs));
     WLAN_OS_REPORT(("rsnCompletedTs, ts = %d\n", pRsn->rsnCompletedTs));  
@@ -2350,12 +2349,15 @@ TI_BOOL rsn_getPortStatus(rsn_t *pRsn)
  */
 TI_STATUS rsn_getGenInfoElement(rsn_t *pRsn, TI_UINT8 *out_buff, TI_UINT32 *out_buf_length)
 {
-	if ( !(pRsn && out_buff && out_buf_length) ) {
+	if ( !(pRsn && out_buff && out_buf_length) ) 
+    {
 			return TI_NOK;
 	}
 
 	*out_buf_length = pRsn->genericIE.length;
-	if (pRsn->genericIE.length > 0) {
+
+	if (pRsn->genericIE.length > 0) 
+    {
 			os_memoryCopy(pRsn->hOs, out_buff, pRsn->genericIE.data, pRsn->genericIE.length);
 	}
 
@@ -2377,6 +2379,7 @@ TI_STATUS rsn_getGenInfoElement(rsn_t *pRsn, TI_UINT8 *out_buff, TI_UINT32 *out_
  */
 void rsn_clearGenInfoElement(rsn_t *pRsn )
 {
+    TRACE0(pRsn->hReport, REPORT_SEVERITY_INFORMATION, "rsn_clearGenInfoElement: clearing Generic IE \n");
     os_memoryZero(pRsn->hOs, &pRsn->genericIE, sizeof(pRsn->genericIE));
 }
 

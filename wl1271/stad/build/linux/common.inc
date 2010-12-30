@@ -36,7 +36,7 @@ XCC ?= n
 #
 # Compile with GEM support or not
 #
-GEM ?= n
+GEM ?= y
 
 #
 # Choose the bus type (n for SDIO, y for WSPI)
@@ -69,6 +69,11 @@ FPGA1273 ?= n
 # Enable trace buffer
 #
 TI_TRACE_BUFFER ?= n
+
+#
+# Support For Connection Scan Power Management
+#
+CONNECTION_SCAN_PM ?= n
 
 ##
 ##
@@ -104,7 +109,6 @@ ifeq ($(DEBUG),y)
     DK_DEFINES += -D TI_DBG
     DK_DEFINES += -D REPORT_LOG
     DK_DEFINES += -O2
-    DK_DEFINES += -D PRINTF_ROLLBACK
 else
     DK_DEFINES += -D TI_DBG
     DK_DEFINES += -U REPORT_LOG
@@ -124,6 +128,13 @@ endif
 
 ifeq ($(BMTRACE),y)
    DK_DEFINES += -D TIWLAN_BMTRACE
+endif
+
+# WPS Support
+DK_DEFINES += -D SUPPL_WPS_SUPPORT
+
+ifeq ($(CONNECTION_SCAN_PM),y)
+   DK_DEFINES += -D CONNECTION_SCAN_PM
 endif
 
 ##
@@ -175,7 +186,7 @@ endif
 ##
 ##
 
-EXTRA_CFLAGS += -fsigned-char
+EXTRA_CFLAGS += -fsigned-char -Werror
 EXTRA_CFLAGS += -D __LINUX__ -DTI_RANDOM_DEFAULT_MAC
 EXTRA_CFLAGS += $(DK_DEFINES)
 EXTRA_CFLAGS += $(PFORM_DEFINES)

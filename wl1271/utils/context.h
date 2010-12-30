@@ -1,7 +1,7 @@
 /*
  * context.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -77,8 +77,6 @@ void      context_DisableClient   (TI_HANDLE hContext, TI_UINT32 uClientId);
 
 void      context_EnterCriticalSection (TI_HANDLE hContext);
 void      context_LeaveCriticalSection (TI_HANDLE hContext);
-void      context_DisableClient   (TI_HANDLE hContext, TI_UINT32 uClientId);
-void      context_EnableClient    (TI_HANDLE hContext, TI_UINT32 uClientId);
 #ifdef TI_DBG
 void      context_Print           (TI_HANDLE hContext);
 #endif /* TI_DBG */

@@ -1,7 +1,7 @@
 /*
  * convert.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -116,12 +116,16 @@
 #define TIWLN_GET_RX_DATA_FILTERS_STATISTICS            RX_DATA_GET_RX_DATA_FILTERS_STATISTICS /* not implemented in CUDK */
 #define TIWLN_802_11_START_APP_SCAN_SET                 SCAN_CNCN_START_APP_SCAN           
 #define TIWLN_802_11_STOP_APP_SCAN_SET                  SCAN_CNCN_STOP_APP_SCAN
+#define TIWLN_802_11_START_PERIODIC_SCAN_SET            SCAN_CNCN_START_PERIODIC_SCAN
+#define TIWLN_802_11_STOP_PERIODIC_SCAN_SET             SCAN_CNCN_STOP_PERIODIC_SCAN
 #define TIWLN_802_11_SCAN_POLICY_PARAM_SET              SCAN_MNGR_SET_CONFIGURATION
 #define TIWLN_802_11_SCAN_BSS_LIST_GET                  SCAN_MNGR_BSS_LIST_GET
 #define TIWLN_802_11_SET_QOS_PARAMS                     QOS_MNGR_SET_OS_PARAMS
 #define TIWLN_802_11_CONFIG_TX_CLASS                    CTRL_DATA_CLSFR_CONFIG
 #define TIWLN_802_11_REMOVE_CLSFR_ENTRY                 CTRL_DATA_CLSFR_REMOVE_ENTRY
 #define TIWLN_DCO_ITRIM_PARAMS                          TWD_DCO_ITRIM_PARAMS
+#define TIWLN_802_11_MNGR_BA_POLICY						QOS_MNGR_BA_POLICY
+#define TIWLN_802_11_MNGR_PS_TRAFFIC_PERIOD				QOS_MNGR_PS_TRAFFIC_PERIOID
 
 
 /********************/

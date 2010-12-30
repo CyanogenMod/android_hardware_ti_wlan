@@ -1,7 +1,7 @@
 /*
  * txMgmtQueue_Api.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -57,6 +57,7 @@ typedef enum
 } ETxConnState;
 
 
+
 /* 
  *  The module public functions:
  */
@@ -71,6 +72,8 @@ void		txMgmtQ_UpdateBusyMap (TI_HANDLE hTxMgmtQ, TI_UINT32 tidBitMap);
 void		txMgmtQ_StopAll (TI_HANDLE hTxMgmtQ);
 void		txMgmtQ_WakeAll (TI_HANDLE hTxMgmtQ);
 void		txMgmtQ_SetConnState (TI_HANDLE hTxMgmtQ, ETxConnState txConnState);
+
+ETxConnState  txMgmtQ_GetConnState (TI_HANDLE hTxMgmtQ);
 
 #ifdef TI_DBG
 void        txMgmtQ_PrintModuleParams (TI_HANDLE hTxMgmtQ);

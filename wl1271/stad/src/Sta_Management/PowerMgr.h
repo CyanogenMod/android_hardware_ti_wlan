@@ -1,7 +1,7 @@
 /*
  * PowerMgr.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -92,6 +92,7 @@ typedef struct
     TI_HANDLE                   hRetryPsTimer;                  /**< Handle to the retry timer */
     TI_HANDLE                   hPsPollFailureTimer;            /**< Handle to ps-poll failure timer */
     TI_HANDLE                   hPowerMgrKeepAlive;             /**< Handle to the keep-alive sub module */
+	TI_HANDLE					hQosMngr;						/**< Handle to the qos manager moudle*/
     PowerMgr_PowerMode_e        desiredPowerModeProfile;        /**< 
                                                                  * The configure power mode to the system in the
                                                                  * initialization function. This parameters is Saved

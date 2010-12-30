@@ -1,7 +1,7 @@
 /*
  * cu_cmd.h
  *
- * Copyright 2001-2009 Texas Instruments, Inc. - http://www.ti.com/
+ * Copyright 2001-2010 Texas Instruments, Inc. - http://www.ti.com/
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,9 @@ VOID CuCmd_DisableRxDataFilters(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_AddRxDataFilter(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_RemoveRxDataFilter(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_GetRxDataFiltersStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SetBaPolicy(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_ClearBaPolicy(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_PsTrafficPeriod(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 VOID CuCmd_ShowStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ShowTxStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms);
@@ -191,7 +194,9 @@ VOID CuCmd_SetRateMngDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_GetRateMngDebug(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 
+
 VOID CuCmd_SetArpIPFilter (THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SdioValidation(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ShowAbout(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_Quit(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 

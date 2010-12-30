@@ -1,7 +1,7 @@
 /*
  * qosMngr_API.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -53,6 +53,9 @@
 #define USER_PRIORITY_4 (WMEQosTagToACTable[4])
 #define USER_PRIORITY_6 (WMEQosTagToACTable[6])
 
+/* Used for TSPEC nominal fixed size */
+#define FIXED_NOMINAL_MSDU_SIZE_MASK 0x8000
+
 /* User priority is in second byte of tsInfoField (that follows 8 bytes from beginning of the TSPEC IE) */ 
 #define GET_USER_PRIORITY_FROM_WME_TSPEC_IE(pTspecIe)   \
     (( *(((TI_UINT8 *)pData) + 9) & TS_INFO_1_USER_PRIORITY_MASK) >> USER_PRIORITY_SHIFT)
@@ -102,6 +105,7 @@ void qosMngr_SetBaPolicies(TI_HANDLE hQosMngr);
 TI_STATUS qosMngr_setParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo);
 
 TI_STATUS qosMngr_getParamsActiveProtocol(TI_HANDLE hQosMngr, EQosProtocol *actProt);
+
 TI_STATUS qosMngr_getParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo);
 
 TI_STATUS qosMngr_assocReqBuild(TI_HANDLE  hQosMngr, TI_UINT8 *pQosIe, TI_UINT32 *pLen);
@@ -140,6 +144,8 @@ void qosMngr_checkTspecRenegResults(TI_HANDLE hQosMngr, assocRsp_t *assocRsp);
 TI_UINT32 qosMngr_buildTSPec(TI_HANDLE hQosMngr, TI_UINT32 user_priority, TI_UINT8 *pQosIe);
 
 TI_STATUS qosMngr_GetWmeEnableFlag(TI_HANDLE hQosMngr, TI_BOOL *bWmeEnable);
+void qosMngr_UpdatePsTraffic   (TI_HANDLE hQosMngr,TI_BOOL bPsTrafficOn );
+
 
 #endif /* __QOS_MNGR_API_H__ */
 

@@ -1,7 +1,7 @@
 /*
  * txMgmtQueue.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -92,12 +92,14 @@ typedef enum
 /* State-Machine States */
 typedef enum
 {
-	SM_STATE_CLOSE,			/* All Tx path is closed. */
-	SM_STATE_MGMT,			/* Only mgmt Tx is permitted. */
-	SM_STATE_EAPOL,			/* Only mgmt and EAPOL Tx is permitted. */
-	SM_STATE_OPEN_MGMT,		/* All Tx permitted and Mgmt aQueues are currently active (date disabled). */
-	SM_STATE_OPEN_DATA		/* All Tx permitted and Data aQueues are currently active (mgmt disabled). */
+    SM_STATE_CLOSE,			/* All Tx path is closed. */
+    SM_STATE_MGMT,			/* Only mgmt Tx is permitted. */
+    SM_STATE_EAPOL,			/* Only mgmt and EAPOL Tx is permitted. */
+    SM_STATE_OPEN_MGMT,		/* All Tx permitted and Mgmt aQueues are currently active (date disabled). */
+    SM_STATE_OPEN_DATA		/* All Tx permitted and Data aQueues are currently active (mgmt disabled). */
 } ESmState;
+
+
 
 /* State-Machine Actions */
 typedef enum
@@ -156,6 +158,26 @@ static void updateQueuesBusyMap (TTxMgmtQ *pTxMgmtQ, TI_UINT32 tidBitMap);
 /*******************************************************************************
 *                       PUBLIC  FUNCTIONS  IMPLEMENTATION					   *
 ********************************************************************************/
+
+
+
+/** 
+ * \fn     txMgmtQ_GetConnState 
+ * \brief  Get the Conection SM current state
+ * 
+ * Get the Connection SM current state.
+ * 
+ * \note   
+ * \param  hTxMgmtQ - Handle of the Tx Mgmt Queue module 
+ * \return Connection SM current state
+ * \sa     
+ */ 
+ETxConnState  txMgmtQ_GetConnState (TI_HANDLE hTxMgmtQ)
+{
+    TTxMgmtQ *pTxMgmtQ = (TTxMgmtQ *)hTxMgmtQ;
+    
+    return pTxMgmtQ->eTxConnState;
+}
 
 
 /** 
@@ -270,8 +292,6 @@ TI_STATUS txMgmtQ_Destroy (TI_HANDLE hTxMgmtQ)
     TI_STATUS  eStatus = TI_OK;
     int        uQueId;
 
-    /* Dequeue and free all queued packets */
-    txMgmtQ_ClearQueues (hTxMgmtQ);
 
     /* free Mgmt queues */
     for (uQueId = 0 ; uQueId < NUM_OF_MGMT_QUEUES ; uQueId++)

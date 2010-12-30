@@ -1,7 +1,7 @@
 /*
  * FwEvent.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -676,7 +676,7 @@ void fwEvent_SetInitMask (TI_HANDLE hFwEvent)
     TfwEvent *pFwEvent = (TfwEvent *)hFwEvent;
 
     /* Unmask only the interrupts needed for the FW configuration process. */
-    pFwEvent->uEventMask = ACX_INTR_CMD_COMPLETE | ACX_INTR_EVENT_A | ACX_INTR_EVENT_B;
+    pFwEvent->uEventMask = ACX_INTR_CMD_COMPLETE | ACX_INTR_EVENT_A | ACX_INTR_EVENT_B | ACX_INTR_HW_AVAILABLE;
     pFwEvent->tMaskTxn.uData = ~pFwEvent->uEventMask;
     TXN_FW_EVENT_SET_MASK_ADDR(pFwEvent)
     twIf_Transact(pFwEvent->hTwIf, &(pFwEvent->tMaskTxn.tTxnStruct));
@@ -705,6 +705,36 @@ TI_STATUS fwEvent_Stop (TI_HANDLE hFwEvent)
     
     return TI_OK;
 }
+
+
+
+/*
+ * \brief	Mask all interrupts
+ * 
+ * \param  hFwEvent  - FwEvent Driver handle
+ * \return void
+ * 
+ * \par Description
+ *
+ * Masks all interrupts from FW.
+ * 
+ * \sa
+ */
+void fwEvent_MaskAllFwInterrupts(TI_HANDLE hFwEvent)
+{
+    TfwEvent *pFwEvent = (TfwEvent *)hFwEvent;
+
+
+    /* Mask all FW interrupts */
+    
+    pFwEvent->uEventMask     = 0;
+    pFwEvent->tMaskTxn.uData = ~pFwEvent->uEventMask;
+    
+    TXN_FW_EVENT_SET_MASK_ADDR(pFwEvent)
+        
+    twIf_Transact(pFwEvent->hTwIf, &(pFwEvent->tMaskTxn.tTxnStruct));
+}
+
 
 
 /*

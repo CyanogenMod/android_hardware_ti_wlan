@@ -397,6 +397,8 @@ typedef struct{
     /* 802.11n BA session */
     TI_UINT8               aBaPolicy[MAX_NUM_OF_802_1d_TAGS];
     TI_UINT16              aBaInactivityTimeout[MAX_NUM_OF_802_1d_TAGS];
+	/*Parameter for Auto Rx streaming */
+	TI_UINT8	uPsTrafficPeriod;
 	
 }QosMngrInitParams_t;
 
@@ -772,6 +774,7 @@ typedef struct{
 		OS_802_11_QOS_RX_TIMEOUT_PARAMS		rxTimeOut;
         OS_802_11_QOS_PARAMS        		qosOsParams;
 		OS_802_11_AC_QOS_PARAMS				qosApQosParams;
+		TBaPolicy							tBaPolicy;
 		
         /* AP Qos Capabilities */
         OS_802_11_AP_QOS_CAPABILITIES_PARAMS qosApCapabilities;
@@ -808,6 +811,9 @@ typedef struct{
 
         /* Current BSS params - RSSI/SNR User Trigger */
 		TUserDefinedQualityTrigger 			rssiSnrTrigger;
+
+        /* SDIO Validation Test */
+        SdioValidationTestParams_t          tSdioValidationTestParams;
 
 		/* debug */
 		TDebugRegisterReq					HwRegister;

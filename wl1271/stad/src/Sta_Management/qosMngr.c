@@ -74,8 +74,6 @@ const TI_UINT32 WMEQosMateTid[MAX_NUM_OF_802_1d_TAGS] = { 3, 2, 1, 0, 5, 4, 7, 6
 /* Used to indicate no user priority is assigned for AC */
 #define INACTIVE_USER_PRIORITY 0xFF
 
-/* Used for TSPEC nominal fixed size */
-#define FIXED_NOMINAL_MSDU_SIZE_MASK 0x8000
 
 
 /********************************************************************************/
@@ -94,6 +92,8 @@ static void deleteTspecConfiguration(qosMngr_t *pQosMngr, TI_UINT8 acID);
 static void setNonQosAdmissionState(qosMngr_t *pQosMngr, TI_UINT8 acID);
 static void qosMngr_storeTspecCandidateParams (tspecInfo_t *pCandidateParams, OS_802_11_QOS_TSPEC_PARAMS *pTSPECParams, TI_UINT8 ac);
 static TI_STATUS qosMngr_SetPsRxStreaming (qosMngr_t *pQosMngr, TPsRxStreaming *pNewParams);
+static TI_STATUS qosMngr_SetAutoRxStreaming (qosMngr_t *pQosMngr, TPsRxStreaming *pNewParams);
+
 
 /********************************************************************************
  *							qosMngr_create										*
@@ -249,11 +249,12 @@ TI_STATUS qosMngr_SetDefaults (TI_HANDLE hQosMngr, QosMngrInitParams_t *pQosMngr
     pQosMngr->tagZeroConverHeader = pQosMngrInitParams->qosTagZeroConverHeader;
 	pQosMngr->qosPacketBurstEnable = pQosMngrInitParams->PacketBurstEnable;
 	pQosMngr->qosPacketBurstTxOpLimit = pQosMngrInitParams->PacketBurstTxOpLimit;
-	pQosMngr->desiredPsMode = pQosMngrInitParams->desiredPsMode;
+	pQosMngr->desiredPsMode = (PSScheme_e)pQosMngrInitParams->desiredPsMode;
     pQosMngr->bCwFromUserEnable = pQosMngrInitParams->bCwFromUserEnable;
     pQosMngr->uDesireCwMin = pQosMngrInitParams->uDesireCwMin;
     pQosMngr->uDesireCwMax = pQosMngrInitParams->uDesireCwMax;
 	pQosMngr->bEnableBurstMode = pQosMngrInitParams->bEnableBurstMode;
+	pQosMngr->AutoRxStreaming.uStreamPeriod = pQosMngrInitParams->uPsTrafficPeriod;
 
 
     pQosMngr->activeProtocol    = QOS_NONE;
@@ -285,6 +286,8 @@ TI_STATUS qosMngr_SetDefaults (TI_HANDLE hQosMngr, QosMngrInitParams_t *pQosMngr
                                     pQosMngr->hTimer,
                                     pQosMngr->hTWD,
                                     pQosMngr->hTxCtrl,
+                                    pQosMngr->hRoamMng,
+                                    pQosMngr->hEvHandler,
                                     &pQosMngrInitParams->trafficAdmCtrlInitParams);
 	if(status != TI_OK)
 		return TI_NOK;
@@ -388,7 +391,7 @@ TI_STATUS qosMngr_SetDefaults (TI_HANDLE hQosMngr, QosMngrInitParams_t *pQosMngr
 		txCtrlParams_setAcAckPolicy(pQosMngr->hTxCtrl, acID, ACK_POLICY_LEGACY);
 
 		/* setting wme Ack Policy */
-		pQosMngr->acParams[acID].wmeAcAckPolicy = pQosMngrInitParams->acAckPolicy[acID];
+		pQosMngr->acParams[acID].wmeAcAckPolicy = (AckPolicy_e)pQosMngrInitParams->acAckPolicy[acID];
 
 		/* Set admission state per AC for non-QoS and update the Tx module. */
 		setNonQosAdmissionState(pQosMngr, acID);
@@ -401,6 +404,12 @@ TI_STATUS qosMngr_SetDefaults (TI_HANDLE hQosMngr, QosMngrInitParams_t *pQosMngr
         pQosMngr->aTidPsRxStreaming[uTid].bEnabled = TI_FALSE;
     }
     pQosMngr->uNumEnabledPsRxStreams = 0;
+
+	/*Reset Auto Rx streaming configuration*/
+
+	pQosMngr->AutoRxStreaming.bEnabled = TI_FALSE;
+	pQosMngr->AutoRxStreaming.uTid = 0;
+	pQosMngr->AutoRxStreaming.uTxTimeout = 0;
 
 	/* update Tx header convert mode */
 	txCtrlParams_setQosHeaderConverMode(pQosMngr->hTxCtrl, HDR_CONVERT_LEGACY);
@@ -976,7 +985,14 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_getTspecParams: user p
         }
 		break;
 
-
+	case QOS_MNGR_BA_POLICY:
+		{
+			pParamInfo->content.tBaPolicy.uBaPlociy = pQosMngr->aBaPolicy[pParamInfo->content.tBaPolicy.uTid];
+		}
+		break;
+	case QOS_MNGR_PS_TRAFFIC_PERIOID:
+			pParamInfo->content.tPsRxStreaming.uStreamPeriod = pQosMngr->AutoRxStreaming.uStreamPeriod;
+		break;
 	default:
            TRACE1(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_getParams Error: unknown paramType 0x%x!\n",pParamInfo->paramType);
 			return (PARAM_NOT_SUPPORTED);
@@ -1221,7 +1237,13 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, " :Error trying to set invalid 
 
 TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_setParams: QOS_MNGR_VOICE_RE_NEGOTIATE_TSPEC=%d\n", pQosMngr->performTSPECRenegotiation);
 	   break;
+	case QOS_MNGR_BA_POLICY:
+		pQosMngr->aBaPolicy[pParamInfo->content.tBaPolicy.uTid] = pParamInfo->content.tBaPolicy.uBaPlociy;
+		TRACE0(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, " Changes will take place only in the next join \n");
+		break;
 
+	case QOS_MNGR_PS_TRAFFIC_PERIOID:
+		return qosMngr_SetAutoRxStreaming(pQosMngr,&pParamInfo->content.tPsRxStreaming);
 	default:
          TRACE1(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_getParams Error: unknown paramType 0x%x!\n",pParamInfo->paramType);
 			return (PARAM_NOT_SUPPORTED);
@@ -1690,19 +1712,20 @@ TRACE2(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_checkTspecRenegR
 		return;
 	}
 
-
+    /* 
+     * The re-negotiation was performed (either voice or signal) - update QoS Manager database 
+     *
+     * Note that the IE length was already verified (in mlmeParser_readWMEParams)
+     */
 	if (assocRsp->tspecVoiceParameters != NULL)
 	{
-	/* The renogitaion was performed - update QoS Manager database */
 	pQosMngr->voiceTspecConfigured = TI_TRUE;
 	trafficAdmCtrl_parseTspecIE(&tspecInfo, assocRsp->tspecVoiceParameters);
 
 	qosMngr_setAdmissionInfo(pQosMngr, tspecInfo.AC, &tspecInfo, STATUS_TRAFFIC_ADM_REQUEST_ACCEPT);
 	}
-
 	if (assocRsp->tspecSignalParameters != NULL)
 	{
-		/* Signal TSPEC was re-negotiated as well */
 		pQosMngr->videoTspecConfigured = TI_TRUE;
 		trafficAdmCtrl_parseTspecIE(&tspecInfo, assocRsp->tspecSignalParameters);
 		qosMngr_setAdmissionInfo(pQosMngr, tspecInfo.AC, &tspecInfo, STATUS_TRAFFIC_ADM_REQUEST_ACCEPT);
@@ -2182,8 +2205,101 @@ TRACE1(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_SetPsRxStreaming: Can'
         pQosMngr->uNumEnabledPsRxStreams--;
     }
 
+	if (pCurrTidParams->bEnabled && !bTidPrevEnabled && pQosMngr->uNumEnabledPsRxStreams == 1)
+	{
+		/*cancel auto rx streaming*/
+		qosMngr_UpdatePsTraffic((TI_HANDLE) pQosMngr,TI_FALSE); /*cancel auto rx streaming*/
+	}
+	if ((!pQosMngr->uNumEnabledPsRxStreams) && (pQosMngr->AutoRxStreaming.bEnabled))
+	{
+		/*activate auto rx streaming*/
+		qosMngr_UpdatePsTraffic((TI_HANDLE) pQosMngr,TI_TRUE); 
+		/*corner case - auto rx streaming is being activate with TID = 0. In case the last PS RX streamign configured by the user was also on TID 0 we should return 
+		here and not continue to disable PS RX streaming on TID 0.*/
+		if (uCurrTid == 0)
+		{
+			return TI_OK;
+		}
+	}
     /* Send configuration update to the FW */
     return TWD_CfgPsRxStreaming (pQosMngr->hTWD, pCurrTidParams, NULL, NULL);
+}
+
+/************************************************************************
+ *                        qosMngr_UpdatePsTraffic                      *
+ ************************************************************************
+DESCRIPTION: Update the FW with the Auto Rx steaming configuration if needed
+                                                                                                   
+INPUT:      pQosMngr	- Qos Manager handle.
+            bPsTrafficOn - enable or disable the rx streaming in the FW
+
+OUTPUT:		
+
+RETURN:     TI_OK on success, relevant failures otherwise
+
+************************************************************************/
+
+void qosMngr_UpdatePsTraffic   (TI_HANDLE hQosMngr,TI_BOOL bPsTrafficOn )
+{
+    qosMngr_t *pQosMngr = (qosMngr_t *)hQosMngr;
+    TPsRxStreaming  *pCurrTidParams     = &pQosMngr->AutoRxStreaming;
+	TRACE0( pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_UpdatePsTraffic in\n");			
+
+	pCurrTidParams->bEnabled = bPsTrafficOn;
+	/* Update Auto Rx streaming only if it is defined and if no other TID Rx Streaming is defined by the user*/
+	if (pQosMngr->uNumEnabledPsRxStreams == 0 && pQosMngr->AutoRxStreaming.uStreamPeriod != 0)
+	{
+		TWD_CfgPsRxStreaming (pQosMngr->hTWD, pCurrTidParams, NULL, NULL);
+	}
+}
+
+/************************************************************************
+ *                        qosMngr_SetAutoRxStreaming                      *
+ ************************************************************************
+DESCRIPTION: Verify and configure Auto -Rx-Streaming setting
+                                                                                                   
+INPUT:      pQosMngr	- Qos Manager handle.
+            pNewParams  - The new auto ps streaming parameters to configure
+
+OUTPUT:		
+
+RETURN:     TI_OK on success, relevant failures otherwise
+
+************************************************************************/
+static TI_STATUS qosMngr_SetAutoRxStreaming (qosMngr_t *pQosMngr, TPsRxStreaming *pNewParams)
+{
+    TPsRxStreaming *pCurrAutoPsStreaming = &pQosMngr->AutoRxStreaming;
+	TPsRxStreaming	DisableAutoRxStreaming;
+
+	/* Check traffic rate validity */
+	if ((pNewParams->uStreamPeriod > PS_TRAFFIC_RATE_DISABLE && pNewParams->uStreamPeriod < PS_TRAFFIC_RATE_MIN) ||
+		(pNewParams->uStreamPeriod > PS_TRAFFIC_RATE_MAX))
+	{
+		TRACE1(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "Ps traffic rate not in range 10<ps>50 or disable \n", pNewParams->uStreamPeriod);
+		return PARAM_VALUE_NOT_VALID;
+	}
+
+	if (pCurrAutoPsStreaming->uStreamPeriod != pNewParams->uStreamPeriod)
+	{
+		pCurrAutoPsStreaming->uStreamPeriod = pNewParams->uStreamPeriod;
+
+		/* check if we sould activate the auto rx streaming right after the configuration*/
+		if (pCurrAutoPsStreaming->bEnabled)
+		{
+			if (pCurrAutoPsStreaming->uStreamPeriod)
+			{
+			    return TWD_CfgPsRxStreaming (pQosMngr->hTWD, pCurrAutoPsStreaming, NULL, NULL);
+			}
+			else
+			{
+				os_memoryCopy (pQosMngr->hOs, (void *)&DisableAutoRxStreaming, (void *)pCurrAutoPsStreaming, sizeof(TPsRxStreaming));
+				DisableAutoRxStreaming.bEnabled = TI_FALSE;
+				return TWD_CfgPsRxStreaming (pQosMngr->hTWD, &DisableAutoRxStreaming, NULL, NULL);
+			}
+				
+		}
+	}
+	return TI_OK;	
 }
 
 
@@ -2767,10 +2883,6 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 	tsInfo_t				        tsInfo;
 	TI_UINT8					    userPriority;
     OS_802_11_QOS_TSPEC_PARAMS      addtsReasonCode;
-    TI_UINT8                        statusCode = 0;
-#ifdef XCC_MODULE_INCLUDED
-	paramInfo_t                     param;
-#endif
     qosMngr_t *pQosMngr = (qosMngr_t *)hQosMngr;
 
 	/* check if STA is already connected to AP */
@@ -2785,6 +2897,13 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 	/* check DELTS action code */
 	if (action == DELTS_ACTION) 
 	{
+    	/* Verify that we have at least the length of dot11_WME_TSPEC_IE_hdr_t plus token (1 byte) and status (1 byte)*/
+    	if (bodyLen < WME_TSPEC_IE_TSINFO_LEN + 4)
+    	{
+            TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  Ignore DELTS - bodyLen too short!!!");
+    		return TI_NOK;
+    	}
+
 		/* 
 		 *  parse the frame 
 		 */
@@ -2803,9 +2922,7 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 		
 		acID = WMEQosTagToACTable[userPriority];
 		
-
         TRACE1(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "QosMngr_receiveActionFrames: DELTS [ acID = %d ] \n", acID);
-
 
 		/* check if this AC is admitted with the correct userPriority */
 		if( (pQosMngr->resourceMgmtTable.currentTspecInfo[acID].trafficAdmState == AC_ADMITTED) &&
@@ -2836,35 +2953,13 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 	/* if action code is ADDTS call trafficAdmCtrl object API function */
 	else if (action == ADDTS_RESPONSE_ACTION) 
 	{
-        statusCode = *(pData+1);
+    	/* Verify that we have at least the length of dot11_WME_TSPEC_IE_t plus token (1 byte) and status (1 byte)*/
+        if ((bodyLen < WME_TSPEC_IE_LEN + 4) || (*(pData + 3) != WME_TSPEC_IE_LEN))
+    	{
+            TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  Ignore ADDTS_RESPONSE - wrong length!!!");
+    		return TI_NOK;
+    	}
 
-#ifdef XCC_MODULE_INCLUDED
-
-        if (ADDTS_STATUS_CODE_SUCCESS != statusCode)
-        {
-            tspecInfo_t tspecInfo;
-            param.paramType = ROAMING_MNGR_TRIGGER_EVENT;
-            param.content.roamingTriggerType =  ROAMING_TRIGGER_TSPEC_REJECTED;
-            roamingMngr_setParam(pQosMngr->hRoamMng, &param);
-
-                       
-            trafficAdmCtrl_parseTspecIE(&tspecInfo, pData+2);
-            
-            addtsReasonCode.uAPSDFlag = tspecInfo.UPSDFlag;
-            addtsReasonCode.uMinimumServiceInterval = tspecInfo.uMinimumServiceInterval;
-            addtsReasonCode.uMaximumServiceInterval = tspecInfo.uMaximumServiceInterval;
-            addtsReasonCode.uUserPriority = (TI_UINT32)tspecInfo.userPriority;
-            addtsReasonCode.uReasonCode = ADDTS_RESPONSE_REJECT;
-            addtsReasonCode.uNominalMSDUsize = (TI_UINT32)tspecInfo.nominalMsduSize & ~FIXED_NOMINAL_MSDU_SIZE_MASK;
-            addtsReasonCode.uMeanDataRate = tspecInfo.meanDataRate;	
-            addtsReasonCode.uMinimumPHYRate = tspecInfo.minimumPHYRate;
-            addtsReasonCode.uSurplusBandwidthAllowance = (TI_UINT32)tspecInfo.surplausBwAllowance;
-            addtsReasonCode.uMediumTime = (TI_UINT32)tspecInfo.mediumTime;
-            
-            EvHandlerSendEvent(pQosMngr->hEvHandler, IPC_EVENT_TSPEC_STATUS, (TI_UINT8*)(&addtsReasonCode), sizeof(OS_802_11_QOS_TSPEC_PARAMS));
-        }
-#endif
-        
 		if (trafficAdmCtrl_recv(pQosMngr->pTrafficAdmCtrl, pData, action) == TI_OK)
 		{
 #ifdef XCC_MODULE_INCLUDED
@@ -2896,7 +2991,7 @@ TI_STATUS QosMngr_receiveActionFrames(TI_HANDLE hQosMngr, TI_UINT8* pData, TI_UI
 			}
 
 			XCCMngr_setXCCQoSParams(pQosMngr->hXCCMgr, &XCCIE, acID);
-#endif
+#endif  /* XCC_MODULE_INCLUDED */
 		}
 	}
 	else
@@ -3001,4 +3096,3 @@ static void qosMngr_storeTspecCandidateParams (tspecInfo_t *pCandidateParams, OS
 	pCandidateParams->streamDirection = BI_DIRECTIONAL;
 	pCandidateParams->mediumTime = 0;
 }
-

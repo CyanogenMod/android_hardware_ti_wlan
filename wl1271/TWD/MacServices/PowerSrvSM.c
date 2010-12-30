@@ -1,7 +1,7 @@
 /*
  * PowerSrvSM.c
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file PowerSrvSM.c
  *  \brief This is the PowerSrvSM module implementation.
- *  \author Assaf Azulay
+ *  \
  *  \date 19-OCT-2005
  */
 

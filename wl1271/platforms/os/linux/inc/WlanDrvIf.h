@@ -1,7 +1,7 @@
 /*
  * WlanDrvIf.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -122,6 +122,10 @@ typedef struct
     struct wake_lock         wl_rxwake; /* Wifi rx wakelock */
 #endif
     NDIS_HANDLE              ConfigHandle;/* Temp - For Windows compatibility */
+
+#ifdef CONNECTION_SCAN_PM
+    int                      wake_locks_enabled;
+#endif
 
 } TWlanDrvIfObj, *TWlanDrvIfObjPtr;
 

@@ -1,7 +1,7 @@
 /*
  * MeasurementSrv.h
  *
- * Copyright(c) 1998 - 2009 Texas Instruments. All rights reserved.      
+ * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
  *                                                                       
  * Redistribution and use in source and binary forms, with or without    
@@ -33,7 +33,7 @@
 
 /** \file MeasurementSrv.h
  *  \brief This file include private definitions for the Measurement SRV module.
- *  \author Ronen Kalish
+ *  \
  *  \date 08-November-2005
  */
 
@@ -181,7 +181,7 @@ typedef struct
  */
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Creates the measurement SRV object
  *
@@ -192,7 +192,7 @@ typedef struct
 TI_HANDLE MacServices_measurementSRV_create( TI_HANDLE hOS );
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Initializes the measurement SRV object
  *
@@ -212,7 +212,7 @@ TI_STATUS MacServices_measurementSRV_init (TI_HANDLE hMeasurementSRV,
                                            TI_HANDLE hTimer);
 
 /**
- * \author Ronen Kalish\n
+ * \\n
  * \date 08-November-2005\n
  * \brief Destroys the measurement SRV object
  *
@@ -222,7 +222,7 @@ TI_STATUS MacServices_measurementSRV_init (TI_HANDLE hMeasurementSRV,
 void MacServices_measurementSRV_destroy( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 13-November-2005\n
  * \brief Checks whether a beacon measurement is part of current measurement request
  *
@@ -233,7 +233,7 @@ void MacServices_measurementSRV_destroy( TI_HANDLE hMeasurementSRV );
 TI_BOOL measurementSRVIsBeaconMeasureIncluded( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Finds the index for the measurement request with the shortest period 
  * (the one that has now completed).\n
@@ -245,7 +245,7 @@ TI_BOOL measurementSRVIsBeaconMeasureIncluded( TI_HANDLE hMeasurementSRV );
 TI_INT32 measurementSRVFindMinDuration( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Handles an AP discovery timer expiry, by setting necessary values in the
  * reply struct.\n
@@ -257,7 +257,7 @@ TI_INT32 measurementSRVFindMinDuration( TI_HANDLE hMeasurementSRV );
 void measurementSRVHandleBeaconMsrComplete( TI_HANDLE hMeasurementSRV, TI_INT32 requestIndex );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Handles a channel load timer expiry, by requesting channel load 
  * results from the FW.\n
@@ -269,7 +269,7 @@ void measurementSRVHandleBeaconMsrComplete( TI_HANDLE hMeasurementSRV, TI_INT32 
 void measurementSRVHandleChannelLoadComplete( TI_HANDLE hMeasurementSRV, TI_INT32 requestIndex );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 15-November-2005\n
  * \brief Handles a nois histogram timer expiry, by requesting noise histogram
  * reaults from the FW.\n
@@ -281,7 +281,7 @@ void measurementSRVHandleChannelLoadComplete( TI_HANDLE hMeasurementSRV, TI_INT3
 void measurementSRVHandleNoiseHistogramComplete( TI_HANDLE hMeasurementSRV, TI_INT32 requestIndex );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 16-November-2005\n
  * \brief Checks whether all measuremtn types had completed and all param CBs had been called.\n
  *
@@ -293,7 +293,7 @@ void measurementSRVHandleNoiseHistogramComplete( TI_HANDLE hMeasurementSRV, TI_I
 TI_BOOL measurementSRVIsMeasurementComplete( TI_HANDLE hMeasurementSRV );
 
 /** 
- * \author Ronen Kalish\n
+ * \\n
  * \date 17-November-2005\n
  * \brief Finds a measure type index in the measure request array.\n
  *
