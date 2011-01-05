@@ -1,0 +1,3 @@
+ctrl_interface=/var/run
+update_config=1
+ap_scan=1
