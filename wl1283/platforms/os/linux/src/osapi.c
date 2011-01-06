@@ -492,7 +492,7 @@ TI_BOOL os_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacket, TI_U
     */
    {
        CL_TRACE_START_L1();
-
+       /* Prevent system suspend one more second after WLAN task completion (in case of more Rx packets) */
        os_wake_lock_timeout_enable(drv);
 
 	   if (pRxInfo->driverFlags & DRV_RX_FLAG_END_OF_BURST) 
@@ -610,11 +610,12 @@ void os_InterruptServiced (TI_HANDLE OsContext)
 /*-----------------------------------------------------------------------------
 Routine Name:  os_wake_lock_timeout
 
-Routine Description: Called to prevent system from suspend for 1 sec
+Routine Description: Prevents system suspend for 1 sec if previously enabled
+                       by call to os_wake_lock_timeout.
 
 Arguments:     OsContext - handle to OS context
 
-Return Value:  packet counter
+Return Value:  1 if lock was enabled, 0 if not
 -----------------------------------------------------------------------------*/
 int os_wake_lock_timeout (TI_HANDLE OsContext)
 {
@@ -640,11 +641,11 @@ int os_wake_lock_timeout (TI_HANDLE OsContext)
 /*-----------------------------------------------------------------------------
 Routine Name:  os_wake_lock_timeout_enable
 
-Routine Description: Called to set flag for suspend prevention for some time
+Routine Description: Enables prevention of system suspend for 1 sec in next call to os_wake_lock_timeout_enable
 
 Arguments:     OsContext - handle to OS context
 
-Return Value:  packet counter
+Return Value:  1 if lock was enabled, 0 if not
 -----------------------------------------------------------------------------*/
 int os_wake_lock_timeout_enable (TI_HANDLE OsContext)
 {

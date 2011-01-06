@@ -1,5 +1,5 @@
 /*
- * WlanDrvCommon.h
+ * pwrState.h
  *
  * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
@@ -32,89 +32,46 @@
  */
 
 
-
-/** \file   WlanDrvCommon.h 
- *  \brief  Defines WlanDrvIf objects common to all OS types.                                  
+/** \file pwrState.h
  *
- *  \see    WlanDrvIf.h
+ *  \brief This is the Power State module declarations.
+
+ *  \date 02-Nov-2010
  */
 
-#ifndef __WLAN_DRV_COMMON_H__
-#define __WLAN_DRV_COMMON_H__
-
+#ifndef PWRSTATE_H_
+#define PWRSTATE_H_
 
 #include "tidef.h"
-#include "TWDriver.h"
+#include "paramOut.h"
+#include "pwrState_Types.h"
 
-#define DRV_ADDRESS_SIZE					(sizeof(TI_INT32))
-#define MAX_CHUNKS_IN_FILE					(1000)
-#define OS_SPECIFIC_RAM_ALLOC_LIMIT			(0xFFFFFFFF)	/* assume OS never reach that limit */
+/*****************************************************************************
+ **         Functions                                                       **
+ *****************************************************************************/
 
-/* Driver steady states - for driver external users */
-typedef enum 
-{
-    DRV_STATE_IDLE,
-    DRV_STATE_RUNNING,
-    DRV_STATE_STOPING,
-    DRV_STATE_STOPPED,
-    DRV_STATE_FAILED
-} EDriverSteadyState;
+TI_HANDLE	pwrState_Create		(TI_HANDLE hOs);
+void		pwrState_Init		(TStadHandlesList *pStadHandles);
+TI_STATUS	pwrState_SetDefaults(TI_HANDLE hPwrState, TPwrStateInitParams *pInitParams);
+TI_STATUS	pwrState_Destroy	(TI_HANDLE hPwrState);
 
+TI_STATUS	pwrState_SetParam	(TI_HANDLE hPwrState, paramInfo_t *pParam);
+TI_STATUS	pwrState_GetParam	(TI_HANDLE hPwrState, paramInfo_t *pParam);
 
-/* The driver Start/Stop actions */
-typedef enum
-{
-    ACTION_TYPE_NONE, 
-    ACTION_TYPE_START, 
-    ACTION_TYPE_STOP
-} EActionType;
-
-/* Initialization file info */
-typedef struct 
-{
-    void            *pImage;
-    unsigned long    uSize;
-} TInitImageInfo;
-
-/* WlanDrvIf object common part (included by TWlanDrvIfObj from each OS abstraction layer) */
-typedef struct 
-{
-    /* Other modules handles */
-    void               *hDrvMain;
-    void               *hCmdHndlr;
-    void               *hContext;
-    void               *hTxDataQ;
-    void               *hTxMgmtQ;
-    void               *hTxCtrl;
-    void               *hTWD;
-    void               *hEvHandler;
-    void               *hReport;
-    void               *hCmdDispatch;
-    void               *hPwrState;
-
-    /* Initialization files info */
-    TInitImageInfo      tIniFile;
-    TInitImageInfo      tNvsImage;
-    TInitImageInfo      tFwImage;
-
-    EDriverSteadyState  eDriverState;   /* The driver state as presented to the OS */
-    TI_UINT32           uLinkSpeed;
-
-} TWlanDrvIfCommon;
+void	pwrState_FwInitDone			(TI_HANDLE hPwrState);
+void	pwrState_DrvMainStarted		(TI_HANDLE hPwrState);
+void	pwrState_DrvMainStopped		(TI_HANDLE hPwrState);
+void	pwrState_DozeDone			(TI_HANDLE hPwrState);
+void	pwrState_DozeTimeout		(TI_HANDLE hPwrState, TI_BOOL bTWDInitOccured);
+void	pwrState_SmeStopped			(TI_HANDLE hPwrState);
+void	pwrState_SmeConnected		(TI_HANDLE hPwrState);
+void	pwrState_SmeDisconnected	(TI_HANDLE hPwrState);
+void	pwrState_ScanCncnStopped	(TI_HANDLE hPwrState);
+void	pwrState_MeasurementStopped	(TI_HANDLE hPwrState);
 
 
-/* The loader files interface */
-typedef struct
-{
-  TI_UINT32 uNvsFileLength;
-  TI_UINT32 uFwFileLength;
-  TI_UINT32 uIniFileLength;
-  char data[1];
-  /* eeprom image follows   */
-  /* firmware image follows */
-  /* init file follows      */
-} TLoaderFilesData;
+#endif /* PWRSTATE_H_ */
 
 
 
-#endif /* __WLAN_DRV_COMMON_H__ */
+

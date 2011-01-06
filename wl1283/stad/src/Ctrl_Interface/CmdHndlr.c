@@ -61,10 +61,10 @@ typedef struct
    TI_HANDLE       hContext;       
    TI_HANDLE       hCmdInterpret;
 
+   TI_BOOL         bEnabled;        /* Whether the CmdHndlr is allowed to dequeue (and handle) commands */
    TI_HANDLE       hCmdQueue;       /* Handle to the commands queue */
-   TI_BOOL         bProcessingCmds; /* Indicates if currently processing commands */
    TI_UINT32       uContextId;      /* ID allocated to this module on registration to context module */
-   TConfigCommand *pCurrCmd;        /* Pointer to the command currently being processed */
+   TConfigCommand *pCurrCmd;        /* Pointer to the command currently being processed (if any) */
 } TCmdHndlrObj;
 
 /* External functions prototypes */
@@ -195,11 +195,13 @@ void cmdHndlr_Init (TStadHandlesList *pStadHandles)
     /* Create and initialize the commands queue */
     pCmdHndlr->hCmdQueue = que_Create (pCmdHndlr->hOs, pCmdHndlr->hReport, COMMANDS_QUE_SIZE, uNodeHeaderOffset);
 
+    pCmdHndlr->bEnabled = TI_TRUE;
+
     /* Register to the context engine and get the client ID */
     pCmdHndlr->uContextId = context_RegisterClient (pCmdHndlr->hContext,
                                                     cmdHndlr_HandleCommands,
                                                     (TI_HANDLE)pCmdHndlr,
-                                                    TI_FALSE,
+                                                    TI_TRUE,
                                                     "COMMAND",
                                                     sizeof("COMMAND"));
 
@@ -286,31 +288,11 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
         return TI_NOK;
     }
 
-    /* 
-     * Note: The bProcessingCmds flag is used for indicating if we are already processing
-     *           the queued commands, so the context-engine shouldn't invoke cmdHndlr_HandleCommands.
-     *       This is important because if we make this decision according to the queue being empty,
-     *           there may be a command under processing (already dequeued) while the queue is empty.
-     *       Note that although we are blocking the current command's originator, there may be another
-     *           application that will issue a command.
-     */
-
-    if (pCmdHndlr->bProcessingCmds)
-    {
-        /* No need to schedule the driver (already handling commands) so just leave critical section */
-        context_LeaveCriticalSection (pCmdHndlr->hContext);
-    }
-    else
-    {
-        /* Indicate that we are handling queued commands (before leaving critical section!) */
-        pCmdHndlr->bProcessingCmds = TI_TRUE;
-
-        /* Leave critical section */
-        context_LeaveCriticalSection (pCmdHndlr->hContext);
+	/* Leave critical section */
+	context_LeaveCriticalSection (pCmdHndlr->hContext);
 
         /* Request driver task schedule for command handling (after we left critical section!) */
         context_RequestSchedule (pCmdHndlr->hContext, pCmdHndlr->uContextId);
-    }
 
 	/* Wait until the command is executed */
 	os_SignalObjectWait (pCmdHndlr->hOs, pNewCmd->pSignalObject);
@@ -359,6 +341,20 @@ void cmdHndlr_HandleCommands (TI_HANDLE hCmdHndlr)
 
     while (1)
     {
+    	/* abort if disabled */
+    	if (! pCmdHndlr->bEnabled)
+    	{
+    		return;
+    	}
+
+    	/* if currently handling another command, abort (will be re-invoked when
+    	 * the command completes)
+    	 */
+    	if (pCmdHndlr->pCurrCmd)
+    	{
+    		return;
+    	}
+
         /* Enter critical section to protect queue access */
         context_EnterCriticalSection (pCmdHndlr->hContext);
 
@@ -393,9 +389,6 @@ void cmdHndlr_HandleCommands (TI_HANDLE hCmdHndlr)
         /* Else, we don't have commands to handle */
         else
         {
-            /* Indicate that we are not handling commands (before leaving critical section!) */
-            pCmdHndlr->bProcessingCmds = TI_FALSE;
-
             /* Leave critical section */
             context_LeaveCriticalSection (pCmdHndlr->hContext);
 
@@ -471,10 +464,9 @@ void * cmdHndlr_GetStat (TI_HANDLE hCmdHndlr)
 
 /** 
  * \fn     cmdHndlr_Enable & cmdHndlr_Disable
- * \brief  Enable/Disable invoking CmdHndlr module from driver-task
+ * \brief  Enable/Disable dequeuing (and handling) of commands
  * 
  * Called by the Driver-Main Init SM to enable/disable external inputs processing.
- * Calls the context-engine enable/disable function accordingly.
  *
  * \note   
  * \param  hCmdHndlr - The object                                          
@@ -485,13 +477,16 @@ void cmdHndlr_Enable (TI_HANDLE hCmdHndlr)
 {
     TCmdHndlrObj *pCmdHndlr = (TCmdHndlrObj *)hCmdHndlr;
 
-    context_EnableClient (pCmdHndlr->hContext, pCmdHndlr->uContextId);
+    pCmdHndlr->bEnabled = TI_TRUE;
+
+    /* handle any queued commands */
+    context_RequestSchedule(pCmdHndlr->hContext, pCmdHndlr->uContextId);
 }
 
 void cmdHndlr_Disable (TI_HANDLE hCmdHndlr)
 {
     TCmdHndlrObj *pCmdHndlr = (TCmdHndlrObj *)hCmdHndlr;
 
-    context_DisableClient (pCmdHndlr->hContext, pCmdHndlr->uContextId);
+    pCmdHndlr->bEnabled = TI_FALSE;
 }
 

@@ -268,22 +268,31 @@ void txCtrlBlk_PrintTable (TI_HANDLE hTxCtrlBlk)
 	TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
 	TI_UINT8 entry;
 
-	WLAN_OS_REPORT((" Tx-Control-Block Information,  UsedEntries=%d\n", pTxCtrlBlk->uNumUsedEntries));
-	WLAN_OS_REPORT(("==============================================\n"));
-	
-	for(entry = 0; entry < CTRL_BLK_ENTRIES_NUM; entry++)
-	{
-		WLAN_OS_REPORT(("Entry %d: DescID=%d, Next=0x%x, Len=%d, StartTime=%d, TID=%d, ExtraBlks=%d, TotalBlks=%d, Flags=0x%x\n", 
-			entry, 
-			pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.descID,
-			pTxCtrlBlk->aTxCtrlBlkTbl[entry].pNextFreeEntry,
-			ENDIAN_HANDLE_WORD(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.length),
-			ENDIAN_HANDLE_LONG(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.startTime),
-            pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.tid,
-			pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.extraMemBlks,
-            pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.totalMemBlks,
-            pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxPktParams.uFlags));
-	}
+    WLAN_OS_REPORT((" Tx-Control-Block Information,  UsedEntries=%d\n", pTxCtrlBlk->uNumUsedEntries));
+    WLAN_OS_REPORT(("==============================================\n"));
+
+    for(entry = 0; entry < CTRL_BLK_ENTRIES_NUM; entry++)
+    {
+#ifdef TNETW1283
+        WLAN_OS_REPORT(("Entry %d: DescID=%d, Next=0x%x, Len=%d, StartTime=%d, TID=%d, extraBytes=%d, TotalBlks=%d, Flags=0x%x\n",
+#else
+
+        WLAN_OS_REPORT(("Entry %d: DescID=%d, Next=0x%x, Len=%d, StartTime=%d, TID=%d, ExtraBlks=%d, TotalBlks=%d, Flags=0x%x\n",
+#endif
+                        entry,
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.descID,
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].pNextFreeEntry,
+                        ENDIAN_HANDLE_WORD(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.length),
+                        ENDIAN_HANDLE_LONG(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.startTime),
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.tid,
+#ifdef TNETW1283
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.extraBytes,
+#else
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.extraMemBlks,
+#endif
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.totalMemBlks,
+                        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxPktParams.uFlags));
+    }
 #endif
 }
 #endif /* TI_DBG */

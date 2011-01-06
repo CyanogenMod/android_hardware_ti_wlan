@@ -56,6 +56,14 @@ static DECLARE_COMPLETION(wifi_ready);
 static struct wifi_platform_data *wifi_control_data = NULL;
 static struct resource *wifi_irqres = NULL;
 
+/*
+ * Driver callback (and context) to invoke when kernel
+ * requests to suspend/resume the device
+ */
+static int (*wifi_suspend_cb)(TI_HANDLE) = NULL;
+static int (*wifi_resume_cb)(TI_HANDLE) = NULL;
+static TI_HANDLE wifi_susres_ctx;
+
 static int wifi_probe(struct platform_device *pdev)
 {
 	struct wifi_platform_data *wifi_ctrl = (struct wifi_platform_data *)(pdev->dev.platform_data);
@@ -79,11 +87,34 @@ static int wifi_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int wifi_suspend(struct platform_device *dev, pm_message_t state)
+{
+    if (!wifi_suspend_cb)
+    {
+        printk("%s: cannot suspend - no callback registered\n", __func__);
+        return -1;
+    }
+
+    return wifi_suspend_cb(wifi_susres_ctx);
+}
+
+static int wifi_resume(struct platform_device *dev)
+{
+    if (!wifi_resume_cb)
+    {
+        printk("%s: cannot resume - no callback registered\n", __func__);
+        return -1;
+    }
+
+    return wifi_resume_cb(wifi_susres_ctx);
+}
+
+
 static struct platform_driver wifi_driver = {
 	.probe          = wifi_probe,
 	.remove         = wifi_remove,
-	.suspend        = NULL,
-	.resume         = NULL,
+	.suspend        = wifi_suspend,
+	.resume         = wifi_resume,
 	.driver         = {
 		.name   = "device_wifi",
 	},
@@ -163,6 +194,22 @@ static void hPlatform_sdio_ready(void)
 {
 	complete(&sdio_ready);
 }
+
+/*
+ * \fn      hPlatform_SetupPm
+ *
+ * \param   suspend_cb  callback to invoke upon suspend
+ * \param   resume_cb   callback to invoke upon resume
+ * \param   susres_ctx  context for the suspend/resume callbacks
+ */
+void hPlatform_SetupPm(int (*suspend_cb)(void*), int (*resume_cb)(void*) , void* susres_ctx)
+{
+    /* setup the suspend/resume callbacks */
+    wifi_suspend_cb = suspend_cb;
+    wifi_resume_cb  = resume_cb;
+    wifi_susres_ctx = susres_ctx;
+}
+
 
 int hPlatform_Wlan_Hardware_Init(void *tnet_drv)
 {

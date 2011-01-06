@@ -75,6 +75,9 @@
 #define SDIO_VALIDATION_NUM_LOOPS_DEFAULT	(1)
 
 
+#define MAX_NUM_OF_CHANNELS_2_4GHZ          (14)
+
+
 /* local types */
 /***************/
 /* Module control block */
@@ -307,7 +310,8 @@ static named_value_t report_module[] =
 	{ FILE_ID_136 ,  (PS8)"roamingMngr_manualSM    " },
 	{ FILE_ID_137 ,  (PS8)"cmdinterpretoid         " },
 	{ FILE_ID_138 ,  (PS8)"WlanDrvIf               " },
-    { FILE_ID_139 ,  (PS8)"rrmMgr                  " }
+    { FILE_ID_139 ,  (PS8)"rrmMgr                  " },
+    { FILE_ID_140 ,  (PS8)"pwrState                " }
 };
 
 static named_value_t report_severity[] = {
@@ -400,6 +404,11 @@ static named_value_t tKeepAliveTriggerTypes[] = {
         { KEEP_ALIVE_TRIG_TYPE_PERIOD_ONLY,     (PS8)"Always" }
 };
 
+static named_value_t nvs_version_val[] = {
+        { eCHANGE_TO_NVS_VERSION_2,          (PS8)"version 2" },
+        { eCHANGE_TO_NVS_VERSION_2_1,        (PS8)"Version 2.1" },
+};
+
 #if 0 /* need to create debug logic for CLI */
 static named_value_t cli_level_type[] = {
         { CU_MSG_DEBUG,                         (PS8)"CU_MSG_DEBUG" },
@@ -426,6 +435,10 @@ static char ssidBuf[MAX_SSID_LEN +1];
 
 /* local fucntions */
 /*******************/
+
+static VOID CuCmd_ParseMaskString(PS8 pString, PU8 pBuffer, PU8 pLength);
+static VOID CuCmd_ParsePatternString(PS8 pString, PU8 pBuffer, PU8 pLength);
+
 static S32 CuCmd_Str2MACAddr(PS8 str, PU8 mac)
 {
     S32 i;   
@@ -508,6 +521,8 @@ static VOID CuCmd_set_DefPeriodic_Scan_Params(CuCmd_t* pCuCmd)
 //    					   153, 157, 161, 165};
     U8 channListBand5[] = {36,40,44,48,52,56,60,64};
 
+    pCuCmd->tPeriodicAppScanParams.eScanClient = SCAN_CLIENT_CLI;
+
     /* init periodic application scan params */
     pCuCmd->tPeriodicAppScanParams.uSsidNum = 0;
     pCuCmd->tPeriodicAppScanParams.uSsidListFilterEnabled = 1;
@@ -525,7 +540,7 @@ static VOID CuCmd_set_DefPeriodic_Scan_Params(CuCmd_t* pCuCmd)
     pCuCmd->tPeriodicAppScanParams.uProbeRequestNum = 3;
     pCuCmd->tPeriodicAppScanParams.uChannelNum = sizeof(channListBand5)+14 /*PERIODIC_SCAN_MAX_CHANNEL_NUM*/;
 
-    for ( i = 0; i < 14; i++ )
+    for ( i = 0; i < MAX_NUM_OF_CHANNELS_2_4GHZ; i++ )
     {
         pCuCmd->tPeriodicAppScanParams.tChannels[ i ].eBand = RADIO_BAND_2_4_GHZ;
         pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uChannel = i + 1;
@@ -535,7 +550,7 @@ static VOID CuCmd_set_DefPeriodic_Scan_Params(CuCmd_t* pCuCmd)
         pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uTxPowerLevelDbm = DEF_TX_POWER;
     }
 
-    for ( i = 14; i < sizeof(channListBand5)+14/*PERIODIC_SCAN_MAX_CHANNEL_NUM*/; i++ )
+    for ( i = MAX_NUM_OF_CHANNELS_2_4GHZ; i < sizeof(channListBand5)+14/*PERIODIC_SCAN_MAX_CHANNEL_NUM*/; i++ )
 	{
 		pCuCmd->tPeriodicAppScanParams.tChannels[ i ].eBand = RADIO_BAND_5_0_GHZ;
 		pCuCmd->tPeriodicAppScanParams.tChannels[ i ].uChannel = channListBand5[i-14] ;
@@ -552,6 +567,8 @@ static VOID CuCmd_set_DefPeriodic_Scan_Params(CuCmd_t* pCuCmd)
 static VOID CuCmd_Init_Scan_Params(CuCmd_t* pCuCmd)
 {
     U8 i,j;
+
+    pCuCmd->appScanParams.eScanClient = SCAN_CLIENT_CLI;
 
     /* init application scan default params */
     pCuCmd->appScanParams.desiredSsid.len = 0;
@@ -633,6 +650,16 @@ char* PrintSSID(OS_802_11_SSID* ssid)
 	os_memcpy((PVOID)ssidBuf, (PVOID) ssid->Ssid, ssid->SsidLength); 
 	ssidBuf[ssid->SsidLength] = '\0';
 	return ssidBuf;
+}
+
+void parseRxDataFilterRequest( ConParm_t parm[], U16 nParms, TRxDataFilterRequest *request )
+{
+	PS8 mask = (PS8) parm[1].value;
+	PS8 pattern = (PS8) parm[2].value;
+	request->offset = (U8)parm[0].value;
+
+	CuCmd_ParseMaskString(mask, request->mask, &request->maskLength);
+	CuCmd_ParsePatternString(pattern, request->pattern, &request->patternLength);
 }
 
 static VOID CuCmd_PrintBssidList(OS_802_11_BSSID_LIST_EX* bssidList, S32 IsFullPrint, TMacAddr CurrentBssid)
@@ -5488,7 +5515,7 @@ VOID nvsWriteEndNVS(FILE *nvsBinFile)
 	os_fwrite(&lengthToSet, sizeof(TI_UINT16), 1, nvsBinFile);
 }
 
-VOID nvsUpdateFile(THandle hCuCmd, TNvsStruct nvsStruct, TI_UINT8 version,  S8 updatedProtocol)
+VOID nvsUpdateFile(THandle hCuCmd, TNvsStruct nvsStruct, TI_UINT32 version,  S8 updatedProtocol)
 {
 #ifdef _WINDOWS
     PS8 nvsFilePath = (PS8)"/windows/nvs_map.bin";
@@ -5706,7 +5733,7 @@ VOID CuCmd_BIP_StartBIP(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 		return;
 	}
 
-	nvsUpdateFile(hCuCmd,data.testCmd_u.P2GCal.oNvsStruct , (TI_UINT8)data.testCmd_u.P2GCal.oNVSVersion, NVS_FILE_TX_PARAMETERS_UPDATE);
+	nvsUpdateFile(hCuCmd,data.testCmd_u.P2GCal.oNvsStruct , (TI_UINT32)data.testCmd_u.P2GCal.oNVSVersion, NVS_FILE_TX_PARAMETERS_UPDATE);
 
 }
 
@@ -5778,6 +5805,45 @@ VOID CuCmd_BIP_ExitRxBIP(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 		os_error_printf(CU_MSG_INFO2, (PS8)"Exit Rx calibration returned status: %d\n", data.testCmd_u.RxPlt.oRadioStatus);        
 		return;
 	}
+
+}
+
+VOID CuCmd_BIP_SetNVSVersion(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+    TTestCmd data;
+    S32 i;
+
+    if( nParms )
+    {
+        CU_CMD_FIND_NAME_ARRAY(i, nvs_version_val, parm[0].value);
+        if(i == SIZE_ARR(nvs_version_val))
+        {
+            os_error_printf(CU_MSG_INFO2, (PS8)"CuCmd_BIP_SetNVSVersion, value %d is not defined!\n", parm[0].value);
+            return;
+        }
+        os_memset(&data, 0, sizeof(TTestCmd));
+
+        data.testCmdId = TEST_CMD_SET_NVS_VERSION;
+        data.testCmd_u.changeNVSVersion.nvsVersionChange =  parm[0].value;
+
+        if(OK != CuCommon_Radio_Test(pCuCmd->hCuCommon, &data))
+        {
+            os_error_printf(CU_MSG_INFO2, (PS8)"Set NVS version failed\n");
+            return;
+        }
+
+        if (TI_OK != data.testCmd_u.RxPlt.oRadioStatus)
+        {
+            os_error_printf(CU_MSG_INFO2, (PS8)"Set NVS version returned status: %d\n", data.testCmd_u.RxPlt.oRadioStatus);
+            return;
+        }
+
+    }
+    else
+    {
+        print_available_values(nvs_version_val);
+    }
 
 }
 
@@ -6622,4 +6688,49 @@ VOID CuCmd_Quit(THandle hCuCmd, ConParm_t parm[], U16 nParms)
     Console_Stop(pCuCmd->hConsole);
 }
 
+void CuCmd_PowerStateConfigSuspendType(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t*	pCuCmd = (CuCmd_t*)hCuCmd;
+	U32	uSuspendType;
 
+	uSuspendType = parm[0].value;
+	CuCommon_SetU32(pCuCmd->hCuCommon, PWR_STATE_SUSPEND_TYPE_PARAM, uSuspendType);
+}
+
+void CuCmd_PowerStateConfigSuspendNdtim(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t*	pCuCmd = (CuCmd_t*)hCuCmd;
+	U32	uSuspendNdtim;
+
+	uSuspendNdtim = parm[0].value;
+	CuCommon_SetU32(pCuCmd->hCuCommon, PWR_STATE_SUSPEND_NDTIM_PARAM, uSuspendNdtim);
+}
+
+void CuCmd_PowerStateConfigStndbyNextState(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t*	pCuCmd = (CuCmd_t*)hCuCmd;
+	U32	uStndbyDozeActn;
+
+	uStndbyDozeActn = parm[0].value;
+	CuCommon_SetU32(pCuCmd->hCuCommon, PWR_STATE_STNDBY_DOZE_ACTN_PARAM, uStndbyDozeActn);
+}
+
+void CuCmd_PowerStateConfigFilterUsage(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+	CuCmd_t*	pCuCmd = (CuCmd_t*)hCuCmd;
+	U32	uFilterUsage;
+
+	uFilterUsage = parm[0].value;
+	CuCommon_SetU32(pCuCmd->hCuCommon, PWR_STATE_FILTER_USAGE_PARAM, uFilterUsage);
+}
+
+void CuCmd_PowerStateConfigRxDataFilter(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+    TRxDataFilterRequest request;
+
+    parseRxDataFilterRequest( parm, nParms, &request );
+
+    CuCommon_SetBuffer(pCuCmd->hCuCommon, PWR_STATE_RX_FILTER_PARAM,
+            &request, sizeof(TRxDataFilterRequest));
+}

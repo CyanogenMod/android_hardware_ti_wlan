@@ -710,19 +710,20 @@ static TI_STATUS scanCncnSm_Scan (TI_HANDLE hScanCncnClient, TScanParams *pScanP
 	pScanCncn->eLatestScanType = pScanParams->scanType;
 	pScanCncn->bScanCompleteFlag = TI_TRUE;
 
-    tmr_StartTimer (pScanCncn->hScanGuardTimer,
-					scanCncn_TimerExpired,
+     tmr_StartTimer (pScanCncnClient->hScanClientGuardTimer,
+                    scanCncn_TimerExpired,
                     (TI_HANDLE)pScanCncn,
                     SCAN_GUARD_TIME_MS, 
                     TI_FALSE);
     
+
     /* call the TWD start scan */
     tStatus = TWD_Scan (pScanCncnClient->hTWD, pScanParams, eScanTag, bHighPriority,
 						bForceScan, fResponseCb, hResponseC);
 
 	if (TI_OK != tStatus)
 	{
-        tmr_StopTimer(pScanCncn->hScanGuardTimer);
+        tmr_StopTimer(pScanCncnClient->hScanClientGuardTimer);
 	}
 
 	return tStatus;

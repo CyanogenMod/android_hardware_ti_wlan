@@ -53,10 +53,11 @@ TI_STATUS drvMain_Create 			(TI_HANDLE  hOs,
 									 TI_HANDLE *pTwd,
 									 TI_HANDLE *pEvHandler,
                                      TI_HANDLE *pCmdDispatch,
-                                     TI_HANDLE *pReport);
+                                     TI_HANDLE *pReport,
+                                     TI_HANDLE *pPwrState);
 TI_STATUS drvMain_Destroy           (TI_HANDLE  hDrvMain);
-TI_STATUS drvMain_InsertAction      (TI_HANDLE  hDrvMain, EActionType eAction);
 TI_STATUS drvMain_Recovery          (TI_HANDLE  hDrvMain);
-void      drvMain_SmeStop           (TI_HANDLE hDrvMain);
+TI_STATUS drvMain_Start(TI_HANDLE hDrvMain, void * fFwInitDoneCb, TI_HANDLE hFwInitDoneCb, void * fDrvMainStartedCb, TI_HANDLE hDrvMainStartedCb);
+TI_STATUS drvMain_Stop(TI_HANDLE hDrvMain, void * fCb, TI_HANDLE hCb);
 
 #endif

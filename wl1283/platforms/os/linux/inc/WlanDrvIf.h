@@ -134,9 +134,16 @@ typedef struct
 #endif
     NDIS_HANDLE		         ConfigHandle;/* Temp - For Windows compatibility */
 
+    EExternalParam           eSuspendCmd; /* command to issue upon suspend request */
+    EExternalParam           eResumeCmd;  /* command to issue upon resume request */
+    TI_BOOL                  bSuspendInProgress; /* true if driver currently suspending/suspended; false if suspend not started or already resumed */
 } TWlanDrvIfObj, *TWlanDrvIfObjPtr;
 
 
 #define NETDEV(drv) (((TWlanDrvIfObj*)(drv))->netdev)
+
+void wlanDrvIf_UpdateDriverState (TI_HANDLE hOs, EDriverSteadyState eDriverState);
+TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl);
+TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd);
 
 #endif /* WLAN_DRV_IF_H*/

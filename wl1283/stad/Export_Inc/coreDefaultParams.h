@@ -888,7 +888,7 @@ IP&Port classification table  */
 #define SME_SCAN_CHANNELS_LIST_G_VAL_DEF        "1,2,3,4,5,6,7,8,9,10,11,12,13,14"
 #define SME_SCAN_CHANNELS_LIST_G_STRING_MAX_SIZE 255
 
-#define SME_SCAN_CHANNELS_LIST_A_VAL_DEF        "36,40,44,48,52,56,60,64"
+#define SME_SCAN_CHANNELS_LIST_A_VAL_DEF        "36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,149,153,157,161"
 #define SME_SCAN_CHANNELS_LIST_A_STRING_MAX_SIZE 255
 
 
@@ -1556,7 +1556,7 @@ TxPDVsTemperature_5G
 /* In SDIO block-mode:  BlkSize = 1 << BlkSizeShift    (current block size is: 1<<9 = 512 bytes) */
 #define SDIO_BLK_SIZE_SHIFT_MIN                             0
 #define SDIO_BLK_SIZE_SHIFT_MAX                             16
-#define SDIO_BLK_SIZE_SHIFT_DEF                             9
+#define SDIO_BLK_SIZE_SHIFT_DEF                             8
 
 
 /*****************************************************************************
@@ -1604,6 +1604,7 @@ typedef enum
     POWER_MANAGER_REAUTH_PRIORITY,         /**< Indicate 802.1x reauthentication priority */
 	POWER_MANAGER_WPS_PRIORITY=2,         /**< Indicate WPS priority */
     POWER_MANAGER_PS_POLL_FAILURE_PRIORITY,/**< After receiving the PsPoll failure event */
+    POWER_MANAGER_PWR_STATE_PRIORITY,      /**< Power State (module) priority */
     POWER_MANAGER_MAX_PRIORITY                                                      
 }PowerMgr_Priority_e;
 

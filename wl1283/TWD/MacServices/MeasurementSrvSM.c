@@ -493,25 +493,12 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
 
             if ( TI_OK == status )
             {
-                TRACE7( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": AP discovery command sent. "
-                                                                               "Params:\n scanDuration=%d, "
-                                                                               "scanOptions=%d, numOfProbRqst=%d, "
-                                                                               "txdRateSetBG=%d, txdRateSetA=%d,"
-                                                                               "configOptions=%d, "
-                                                                               "filterOptions=%d\n Starting timer...\n", 
-                                                                    pApDiscoveryParams.scanDuration, 
-                                                                    pApDiscoveryParams.scanOptions, 
-                                                                    pApDiscoveryParams.numOfProbRqst, 
-                                                                    pApDiscoveryParams.txdRateSetBandBG, 
-                                                                    pApDiscoveryParams.txdRateSetBandA,
-                                                                    pApDiscoveryParams.ConfigOptions, 
-                                                                    pApDiscoveryParams.FilterOptions);
-        
+                TRACE7( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": AP discovery command sent. Params:\n scanDuration=%d, scanOptions=%d, numOfProbRqst=%d, txdRateSetBG=%d, txdRateSetA=%d, configOptions=%d, filterOptions=%d\n Starting timer...\n", pApDiscoveryParams.scanDuration, pApDiscoveryParams.scanOptions, pApDiscoveryParams.numOfProbRqst, pApDiscoveryParams.txdRateSetBandBG, pApDiscoveryParams.txdRateSetBandA,pApDiscoveryParams.ConfigOptions, pApDiscoveryParams.FilterOptions);
                 /* Start Timer */
                 tmr_StartTimer (pMeasurementSRV->hRequestTimer[requestIndex],
                                 MacServices_measurementSRV_requestTimerExpired,
                                 (TI_HANDLE)pMeasurementSRV,
-                                (pMeasurementSRV->msrRequest.msrTypes[requestIndex].duration * 1024)/10, 
+                                (pMeasurementSRV->msrRequest.msrTypes[requestIndex].duration * 1024)/1000,
                                 TI_FALSE);
                 pMeasurementSRV->bRequestTimerRunning[ requestIndex ] = TI_TRUE;
             }
@@ -808,11 +795,11 @@ static void measurementSRVSM_requestMeasureStartResponseCB(TI_HANDLE hMeasuremen
 	measurementSRV_t* pMeasurementSRV = (measurementSRV_t*)hMeasurementSRV;
 	TI_INT32 i;
 
-TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS = %d\n", uMboxStatus);
+    TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS = %d\n", uMboxStatus);
 
 	if (uMboxStatus == TI_OK) 
 	{
-TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS_SUCCESS!\n");
+        TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS_SUCCESS!\n");
 
 		if ( NULL != pMeasurementSRV->commandResponseCBFunc )
         {
@@ -823,16 +810,16 @@ TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has respond
 	{
 		if (uMboxStatus == SG_REJECT_MEAS_SG_ACTIVE) 
 		{
-TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS_REJECT_MEAS_SG_ACTIVE!\n");
+            TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS_REJECT_MEAS_SG_ACTIVE!\n");
 		}
 
-TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS NOK!!!\n");
+        TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": FW has responded with CMD_STATUS NOK!!!\n");
 
 
 		/* if a timer is running, stop it */
 		if ( TI_TRUE == pMeasurementSRV->bStartStopTimerRunning )
 		{
-TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "***** STOP TIMER 8 *****\n");
+            TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "***** STOP TIMER 8 *****\n");
 			tmr_StopTimer( pMeasurementSRV->hStartStopTimer );
 			pMeasurementSRV->bStartStopTimerRunning = TI_FALSE;
 		}

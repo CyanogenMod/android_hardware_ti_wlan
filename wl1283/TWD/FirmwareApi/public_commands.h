@@ -1151,6 +1151,7 @@ typedef struct
                                          /* When set, Power save protocol is enabled. */
                                          /* When cleared, Power save protocol is */
                                          /* disabled (refer to StationPSMode_enum).*/
+    uint8 padding[3];                    /* for alignment to 32 bits boundry */
 } PSModeParameters_t;
 
 /******************************************************************************

@@ -167,9 +167,13 @@ void measurementMgr_init (TStadHandlesList *pStadHandles)
     
     /* initialize variables to default values */
     pMeasurementMgr->Enabled = TI_TRUE;
+    pMeasurementMgr->bSuspended = TI_FALSE;
     pMeasurementMgr->Connected = TI_FALSE;
     pMeasurementMgr->Capabilities = MEASUREMENT_CAPABILITIES_NONE;
     pMeasurementMgr->Mode = MSR_MODE_NONE;
+
+    pMeasurementMgr->fDisabledCb = NULL;
+	pMeasurementMgr->hDisabledCb = NULL;
 
     /* Getting management capability status */
     param.paramType = REGULATORY_DOMAIN_MANAGEMENT_CAPABILITY_ENABLED_PARAM;
@@ -1230,4 +1234,50 @@ static TI_BOOL measurementMgrSM_measureInProgress(TI_HANDLE hMeasurementMgr)
 		return TI_FALSE;
 }
 
+/*
+ * \brief	Reverts measurementMgr_Suspend()'s actions
+ *
+ * 			Enables the module if it was disabled
+ *
+ * \param	hMeasurementMgr	this module
+ *
+ * \return	TI_OK on success; TI_NOK on failure
+ */
+TI_STATUS measurementMgr_Resume(TI_HANDLE hMeasurementMgr)
+{
+	measurementMgr_t * pMeasurementMgr = (measurementMgr_t *)hMeasurementMgr;
+	TI_STATUS rc = TI_OK;
+
+	if (pMeasurementMgr->bSuspended)
+	{
+		pMeasurementMgr->bSuspended = TI_FALSE;
+		rc = measurementMgr_enable(pMeasurementMgr);
+	}
+
+	return rc;
+}
+
+/*
+ * \param	fCb		call-back to invoke when measurementMgr is stopped (enters idle state)
+ * \param	hCb		context for fCb
+ *
+ * \return	TI_OK if measurementMgr is already stopped.
+ * 			TI_PENDING if stop event was issued (fCb will be invoked when measurementMgr is stopped).
+ * 			TI_NOK if failed to issue event.
+ */
+TI_STATUS measurementMgr_Suspend(TI_HANDLE hMeasurementMgr, void (*fCb)(TI_HANDLE), TI_HANDLE hCb)
+{
+	measurementMgr_t * pMeasurementMgr = (measurementMgr_t *)hMeasurementMgr;
+	TI_STATUS rc = TI_OK;
+
+	if (pMeasurementMgr->Enabled)
+	{
+		pMeasurementMgr->bSuspended = TI_TRUE;
+		pMeasurementMgr->fDisabledCb = fCb;
+		pMeasurementMgr->hDisabledCb = hCb;
+		rc = measurementMgr_disable(pMeasurementMgr);
+	}
+
+	return rc;
+}
 

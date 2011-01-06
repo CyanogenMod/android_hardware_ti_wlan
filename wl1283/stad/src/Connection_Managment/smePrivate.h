@@ -71,6 +71,7 @@ typedef struct
     TI_HANDLE       hSmeSm;
     TI_HANDLE       hDrvMain;
     TI_HANDLE       hTwd;
+    TI_HANDLE       hPwrState;
 
     /* parameters */
     TI_BOOL         bRadioOn;

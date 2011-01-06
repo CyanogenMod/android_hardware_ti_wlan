@@ -218,6 +218,7 @@ VOID CuCmd_BIP_StartBIP(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_BIP_EnterRxBIP(THandle hCuCmd, ConParm_t parm[], U16 nParms); 
 VOID CuCmd_BIP_StartRxBIP(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_BIP_ExitRxBIP(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_BIP_SetNVSVersion(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_BIP_BufferCalReferencePoint(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 VOID CuCmd_SetPrivacyAuth(THandle hCuCmd, ConParm_t parm[], U16 nParms);
@@ -240,6 +241,15 @@ VOID CuCmd_AddKeepAliveMessage (THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_RemoveKeepAliveMessage (THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ShowKeepAlive (THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID Cucmd_ShowPowerConsumptionStats(THandle hCuCmd,ConParm_t parm[],U16 nParms);
+
+/* Power State */
+
+void	CuCmd_PowerStateDbgSuspend				(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+void	CuCmd_PowerStateConfigSuspendType		(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+void	CuCmd_PowerStateConfigSuspendNdtim		(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+void	CuCmd_PowerStateConfigStndbyNextState	(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+void	CuCmd_PowerStateConfigFilterUsage		(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+void	CuCmd_PowerStateConfigRxDataFilter		(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 #endif  /* _CU_CMD_H_ */
 

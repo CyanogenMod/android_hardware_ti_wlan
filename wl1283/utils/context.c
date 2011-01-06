@@ -374,7 +374,7 @@ void context_EnableClient (TI_HANDLE hContext, TI_UINT32 uClientId)
 #ifdef TI_DBG
     if (pContext->aClientEnabled[uClientId])
     {
-        TRACE0(pContext->hReport, REPORT_SEVERITY_ERROR , "context_EnableClient() Client  already enabled!!\n");
+        TRACE1(pContext->hReport, REPORT_SEVERITY_ERROR , "context_EnableClient() Client %d already enabled!!\n", uClientId);
         return;
     }
     TRACE3(pContext->hReport, REPORT_SEVERITY_INFORMATION , "context_EnableClient(): Client=, ID=%d, enabled=%d, pending=%d\n", uClientId, pContext->aClientEnabled[uClientId], pContext->aClientPending[uClientId]);

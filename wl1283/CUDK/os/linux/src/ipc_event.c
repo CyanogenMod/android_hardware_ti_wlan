@@ -596,9 +596,9 @@ THandle IpcEvent_Create(VOID)
     if ( pIpcEvent->p_shared_memory == ((PVOID)-1)) 
     {
 
-	os_error_printf(CU_MSG_ERROR, (PS8)"ERROR - IpcEvent_Create - cant allocate shared memory\n");
-	IpcEvent_Destroy(pIpcEvent);
-	return NULL;
+        os_error_printf(CU_MSG_ERROR, (PS8)"ERROR - IpcEvent_Create - cant allocate shared memory\n");
+        IpcEvent_Destroy(pIpcEvent);
+        return NULL;
     }
 
     /* create a pipe */

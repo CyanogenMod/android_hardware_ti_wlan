@@ -211,6 +211,7 @@ typedef enum
 	FILE_ID_137	   ,    /*   cmdinterpretoid          */
     FILE_ID_138	   ,    /*   wlandrvif                */
     FILE_ID_139	   ,    /*   rrmMgr                   */
+    FILE_ID_140	   ,    /*   pwrState                 */
     
 	REPORT_FILES_NUM	/*   Number of files with trace reports   */
 

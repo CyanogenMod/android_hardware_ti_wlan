@@ -56,18 +56,37 @@ This file is included by the TWDriver.h , it should not be included apart. !!!!!
  *  Constant definitions.
  ***********************************************************************
  */
-#define MAX_NUMBER_OF_CHANNELS_PER_SCAN                     16
+
+#define MAX_NUMBER_OF_CHANNELS_PER_SCAN                     24
+#define MAX_NUM_OF_CHANNELS_2_4GHZ                          14
+#define MAX_NUM_OF_CHANNELS_5GHZ                            23
+
+
 #define SCAN_MAX_NUM_OF_NORMAL_CHANNELS_PER_COMMAND         MAX_NUMBER_OF_CHANNELS_PER_SCAN
 #define SCAN_MAX_NUM_OF_SPS_CHANNELS_PER_COMMAND            16
 #define SCAN_DEFAULT_MIN_CHANNEL_DWELL_TIME                 30000
 #define SCAN_DEFAULT_MAX_CHANNEL_DWELL_TIME                 60000
 #define SCAN_DEFAULT_EARLY_TERMINATION_EVENT                SCAN_ET_COND_DISABLE
 #define SCAN_DEFAULT_EARLY_TERMINATION_NUM_OF_FRAMES        0
+#define SCAN_DEFAULT_PROBE_REQUEST_NUM                      3
+#define SCAN_DEFAULT_TIMEOUT                                30
 
-#define PERIODIC_SCAN_MAX_SSID_NUM      					8
+#define SCAN_INITIATOR_GUI                                  2
+
+/* The following parameters are used in driver_ti for periodic scan*/
+#define PERIODIC_SCAN_MAX_SSID_NUM      					5
 #define PERIODIC_SCAN_MAX_INTERVAL_NUM  					16
 #define PERIODIC_SCAN_MAX_CHANNEL_NUM   					37 /* G-14 + A-23 */
-
+#define PERIODIC_SCAN_RSSI_THRESHOLD                        SME_SCAN_RSSI_THRESHOLD_DEF_NUM
+#define PERIODIC_SCAN_PROBE_REQUEST_NUM                     SME_SCAN_PROBE_REQ_DEF
+#define PERIODIC_SCAN_FRAME_NUM_REPORT_THRESHODL            1
+#define PERIODIC_SCAN_SNR_THRESHOLD                         SME_SCAN_SNR_THRESHOLD_DEF_NUM
+#define PERIODIC_SCAN_MIN_2_4_CHANNEL_DWELL_TIME_MS         20
+#define PERIODIC_SCAN_MAX_2_4_CHANNEL_DWELL_TIME_MS         SME_SCAN_MIN_DWELL_DEF
+#define PERIODIC_SCAN_MIN_5_CHANNEL_DWELL_TIME_MS           SME_SCAN_MIN_DWELL_MIN
+#define PERIODIC_SCAN_MAX_5_CHANNEL_DWELL_TIME_MS           20
+#define PERIODIC_SCAN_BASE_INTERVAL_MS                      500
+#define PERIODIC_SCAN_CHANNELS_ARRAY_A_BAND                 {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,149,153,157,161}
 
  /*
  ***********************************************************************
@@ -145,6 +164,22 @@ typedef enum
 /*	0	*/	SCAN_SSID_VISABILITY_PUBLIC = 0,		/**< Visible	*/
 /*	1	*/	SCAN_SSID_VISABILITY_HIDDEN				/**< Hidden		*/
 } ESsidVisability;
+
+
+/** \enum EScanClients
+ * \brief Scan initiator
+ *
+ * \par Description
+ *
+ * \sa
+ */
+typedef enum
+{
+    SCAN_CLIENT_NONE = 0, 	         /* 0 */
+    SCAN_CLIENT_SUPPLICANT,    	     /* 1 */
+    SCAN_CLIENT_GUI, 	             /* 2 */
+    SCAN_CLIENT_CLI                  /* 3 */
+} EScanClient;
 
 /***********************************************************************
  *  Structure definitions.
@@ -249,6 +284,7 @@ typedef struct
 												*/
     TI_UINT8               numOfChannels;       /**< Number of channels to scan 														*/
     TScanChannelEntry      channelEntry[ MAX_NUMBER_OF_CHANNELS_PER_SCAN ];	/**< Channel data array, actual size according to the above field. */
+    EScanClient            eScanClient;         /**< Defines the scan initiator                                                         */
 
 } TScanParams;
 
@@ -314,6 +350,7 @@ typedef struct
     TPeriodicChannelEntry   tChannels[ PERIODIC_SCAN_MAX_CHANNEL_NUM ];				/**< Buffer of size of maximum possible Periodic Scanned Channels. 
 																					* This buffer holds the Parameters of each Scanned Channel	
 																					*/
+    EScanClient             eScanClient;     										/**< Defines scan initiator 									*/
 } TPeriodicScanParams;
 
 #endif /* TWDRIVERSCAN_H */

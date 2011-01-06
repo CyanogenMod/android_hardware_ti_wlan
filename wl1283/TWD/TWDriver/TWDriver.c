@@ -734,7 +734,7 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     for (uIndex=0; uIndex<GEN_FW_CMD_SIZE; uIndex++)
         pWlanParams->GenFwCmd[uIndex]      = pInitParams->tGeneral.GenFwCmd[uIndex];     
     /* HostIfCfgBitmap */
-    pWlanParams->HostIfCfgBitmap        = pInitParams->tGeneral.HostIfCfgBitmap;      
+    pWlanParams->HostIfCfgBitmap        = pInitParams->tGeneral.uHostIfCfgBitmap;
 
     /* Configure ARP IP */
     pWlanParams->arpFilterType    = pInitParams->tArpIpFilter.filterType;
@@ -1793,4 +1793,35 @@ void TWD_FinalizePolarityRead(TI_HANDLE hTWD)
   (*pTWD->fInitHwCb) (pTWD->hUser, TI_OK);
 }
 
+/*
+ * \brief	Prepares TWD for suspend (called when the driver starts
+ * 			the suspend process)
+ *
+ * \param	tConfig	TWD specific suspend-configuration
+ *
+ * \return	TI_OK
+ */
+TI_STATUS TWD_PrepareSuspend(TI_HANDLE hTWD, TTwdSuspendConfig *tConfig)
+{
+	TTwd *pTwd = (TTwd*)hTWD;
+
+	cmdMbox_PrepareSuspend(pTwd->hCmdMbox, tConfig);
+
+	return TI_OK;
+}
+
+/*
+ * \brief	Wraps up the suspend process (from the TWD side). Called
+ * 			when the driver finishes the suspend process.
+ *
+ * \return	TI_OK
+ */
+TI_STATUS TWD_CompleteSuspend(TI_HANDLE hTWD)
+{
+	TTwd *pTwd = (TTwd*)hTWD;
+
+	cmdMbox_CompleteSuspend(pTwd->hCmdMbox);
+
+	return TI_OK;
+}
 

@@ -893,7 +893,7 @@ TI_STATUS qosMngr_getParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo)
 		
     case QOS_MNGR_AC_STATUS:
         {
-		return qosMngr_getCurrAcStatus (hQosMngr,&pParamInfo->content.qosCurrentAcStatus);
+        	return qosMngr_getCurrAcStatus (hQosMngr,&pParamInfo->content.qosCurrentAcStatus);
         }
 		
 	case QOS_MNGR_OS_TSPEC_PARAMS: 
@@ -1173,7 +1173,7 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_setParams: QOS_M
       			break;
             default:
                 if (TI_NOK == status)
-                {
+                {    
                     TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "Invalid parameter...\n");
                 }
                 else

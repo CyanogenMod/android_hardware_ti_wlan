@@ -67,6 +67,7 @@
 #include "MibDbg.h"
 #include "TwIfDebug.h"
 #include "tracebuf_api.h"
+#include "pwrState_Dbg.h"
 
 /* Following are the modules numbers */
 typedef enum
@@ -93,6 +94,7 @@ typedef enum
     TEST_MIB_DEBUG_PARAM	            = 21,
     TEST_FW_DEBUG_PARAM	                = 22,
     TEST_TWIF_DEBUG_PARAM	            = 23,
+    TEST_PWR_STATE_DEBUG_PARAM			= 24,
 	/*
     last module - DO NOT TOUCH!
     */
@@ -251,6 +253,10 @@ TI_STATUS debugFunction(TStadHandlesList *pStadHandles, TI_UINT32 functionNumber
          twifDebugFunction (pStadHandles->hTWD, functionNumber % 100, pParam);
         break;
 
+    case TEST_PWR_STATE_DEBUG_PARAM:
+	pwrState_DebugFunction(pStadHandles->hPwrState, functionNumber % 100, pParam);
+	break;
+
     default:
         WLAN_OS_REPORT(("Invalid debug function module number: %d\n\n", moduleNumber)); 
         break;
@@ -286,6 +292,7 @@ static void printMenue(void)
     WLAN_OS_REPORT(("MIB                    2100\n"));
     WLAN_OS_REPORT(("FW Debug               2200\n"));
     WLAN_OS_REPORT(("TwIf                   2300\n"));
+    WLAN_OS_REPORT(("Power State            2400\n"));
 }
 
 

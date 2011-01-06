@@ -211,6 +211,7 @@ TI_HANDLE report_Create (TI_HANDLE hOs)
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_137]),  "cmdinterpretoid         "  ,  sizeof("cmdinterpretoid         "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_138]),  "WlanDrvIf               "  ,  sizeof("WlanDrvIf               "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_139]),  "rrmMgr                  "  ,  sizeof("rrmMgr                  "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_140]),  "pwrState                "  ,  sizeof("pwrState                "));
 #endif  /* PRINTF_ROLLBACK */
 
 	/* Severity table description */

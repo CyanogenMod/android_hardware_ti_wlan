@@ -231,6 +231,22 @@ TI_UINT32 cmdMbox_GetMboxAddress    (TI_HANDLE hCmdMbox);
  */
 void      cmdMbox_GetCmdParams           (TI_HANDLE hCmdMbox, TI_UINT8* pParamBuf);
 
+/*
+ * \brief	Prepare to suspend the driver (called just before starting to suspend)
+ *
+ * \param	tConfig	suspend parameters
+ *
+ * \return	TI_OK upon success
+ */
+TI_STATUS cmdMbox_PrepareSuspend(TI_HANDLE hCmdMbox, TTwdSuspendConfig *tConfig);
+
+/*
+ * \brief	Complete the suspension process (called after the suspend
+ * 			process is complete)
+ *
+ * \return	TI_OK upon success
+ */
+TI_STATUS cmdMbox_CompleteSuspend(TI_HANDLE hCmdMbox);
 
 #ifdef TI_DBG
 void      cmdMbox_PrintInfo              (TI_HANDLE hCmdMbox);

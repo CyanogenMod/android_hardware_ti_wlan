@@ -101,8 +101,8 @@ S32 CuCommon_SetU32(THandle hCuCommon, U32 PrivateIoctlId, U32 Data)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U32), 
-                                                NULL, 0);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U32),
+		NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;

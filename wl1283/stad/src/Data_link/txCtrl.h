@@ -192,8 +192,9 @@ typedef struct
     TSMTimerData_t      tTSMTimers[TSM_REPORT_NUM_OF_MEASUREMENT_IN_PARALLEL_MAX];                  
     tTriggerTSMReport   fTriggerReportCB;
 
-    
-    
+    TI_UINT32           uSdioBlkSizeShift;       /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
+    TI_UINT32           uHostIfCfgBitmap;        /* Host interface configuration bitmap */
+
 #ifdef TI_DBG
     txDataDbgCounters_t dbgCounters;    /* debug counters */
 #endif

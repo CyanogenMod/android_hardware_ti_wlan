@@ -24,9 +24,6 @@ SUPPL ?= ANDROID
 # XCC
 # 
 XCC ?= n
-#ifeq ($(XCC),y)
-#	SUPPL = DEVICESCAPE
-#endif
 
 #
 # FW
@@ -211,9 +208,6 @@ ifeq "$(HOST_PLATFORM)" "zoom2"
 TARGET = apps.tar
 endif
 ifeq "$(HOST_PLATFORM)" "zoom1"
-TARGET = apps.tar
-endif
-ifeq "$(HOST_PLATFORM)" "sholes"
 TARGET = apps.tar
 endif
 #

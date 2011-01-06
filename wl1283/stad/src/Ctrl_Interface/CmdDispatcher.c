@@ -50,6 +50,7 @@
 #include "roamingMngrApi.h"
 #include "qosMngr_API.h"
 #include "PowerMgr_API.h"
+#include "pwrState.h"
 #include "ScanCncn.h"
 #include "scanMngrApi.h"
 #include "regulatoryDomainApi.h"
@@ -103,6 +104,7 @@ typedef struct
     TI_HANDLE    hHealthMonitor;
     TI_HANDLE    hTWD;
     TI_HANDLE    hCurrBss;
+    TI_HANDLE    hPwrState;
 #ifdef XCC_MODULE_INCLUDED
     TI_HANDLE    hXCCMngr;
 #endif
@@ -199,6 +201,7 @@ void cmdDispatch_Init (TStadHandlesList *pStadHandles)
     pCmdDispatch->hHealthMonitor    = pStadHandles->hHealthMonitor;
     pCmdDispatch->hTWD              = pStadHandles->hTWD;
     pCmdDispatch->hCurrBss          = pStadHandles->hCurrBss;
+    pCmdDispatch->hPwrState         = pStadHandles->hPwrState;
 #ifdef XCC_MODULE_INCLUDED
     pCmdDispatch->hXCCMngr          = pStadHandles->hXCCMngr;
 #endif
@@ -344,6 +347,10 @@ static void cmdDispatch_ConfigParamsAccessTable (TCmdDispatchObj *pCmdDispatch)
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(CURR_BSS_MODULE_PARAM) - 1].set = currBSS_setParam;
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(CURR_BSS_MODULE_PARAM) - 1].get = currBSS_getParam;
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(CURR_BSS_MODULE_PARAM) - 1].handle = pCmdDispatch->hCurrBss;
+
+    pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(PWR_STATE_MODULE_PARAM) - 1].set = pwrState_SetParam;
+    pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(PWR_STATE_MODULE_PARAM) - 1].get = pwrState_GetParam;
+    pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(PWR_STATE_MODULE_PARAM) - 1].handle = pCmdDispatch->hPwrState;
 }
 
 

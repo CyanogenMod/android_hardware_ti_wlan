@@ -158,6 +158,7 @@ typedef enum
     MISC_MODULE_PARAM					= 0x1700,	/**< Misc. Module Number							*/
     HEALTH_MONITOR_MODULE_PARAM         = 0x1800,	/**< Health Monitor Module Number					*/
     CURR_BSS_MODULE_PARAM               = 0x1900,   /**< Current Bss Module Number	     		        */
+    PWR_STATE_MODULE_PARAM              = 0x1A00,   /**< Power State Module Number	     		        */
     /*
     Last module - DO NOT TOUCH!
     */
@@ -640,7 +641,7 @@ typedef enum
 																														* GET Bit: OFF	\n
 																														* SET Bit: ON	\n
 																														*/
-    SCAN_CNCN_BSSID_LIST_SCAN_PARAM             =   SET_BIT |           SCAN_CNCN_PARAM | 0x05,							/**< Scan Concentrator BSSID List Scon Parameter (Scan Concentrator Module Set Command): \n  
+    SCAN_CNCN_BSSID_LIST_SCAN_PARAM             =   SET_BIT |           SCAN_CNCN_PARAM | 0x05 | ALLOC_NEEDED_PARAM,						/**< Scan Concentrator BSSID List Scon Parameter (Scan Concentrator Module Set Command): \n  
 																														* Used for start one-shot scan as running application scan client\n
 																														* Done Sync with no memory allocation\n 
 																														* Parameter Number:	0x05	\n
@@ -1571,6 +1572,59 @@ typedef enum
                                                                                                                  * GET Bit: OFF	\n
                                                                                                                  * SET Bit: ON	\n
                                                                                                                  */
+
+    /*
+     * The action to take upon a suspend request
+     */
+    PWR_STATE_SUSPEND_TYPE_PARAM      =           SET_BIT | PWR_STATE_MODULE_PARAM | 0x10,
+
+    /*
+     * The number of DTIMs to use in Low On PS mode
+     */
+    PWR_STATE_SUSPEND_NDTIM_PARAM     =           SET_BIT | PWR_STATE_MODULE_PARAM | 0x11,
+
+    /*
+     * The action to take upon a Doze event in Standby state
+     */
+    PWR_STATE_STNDBY_DOZE_ACTN_PARAM  =           SET_BIT | PWR_STATE_MODULE_PARAM | 0x12,
+
+    /*
+     * Whether to use filters when suspended
+     */
+    PWR_STATE_FILTER_USAGE_PARAM      =           SET_BIT | PWR_STATE_MODULE_PARAM | 0x13,
+
+    /*
+     * The RX Data Filter to use when suspended
+     */
+    PWR_STATE_RX_FILTER_PARAM         =           SET_BIT | PWR_STATE_MODULE_PARAM | 0x14,
+
+    /*
+     * GET in order to send the PwrOn event to the Power State module
+     *
+     * Can be used only by kernel (not by user-space applications)
+     */
+    PWR_STATE_PWR_ON_PARAM     =  GET_BIT |          PWR_STATE_MODULE_PARAM | ASYNC_PARAM | 0x20,
+
+    /*
+     * GET in order to send the Doze event to the Power State module
+     *
+     * Can be used only by kernel (not by user-space applications)
+     */
+    PWR_STATE_DOZE_PARAM       =  GET_BIT |          PWR_STATE_MODULE_PARAM | ASYNC_PARAM | 0x21,
+
+    /*
+     * GET in order to send the Sleep event to the Power State module
+     *
+     * Can be used only by kernel (not by user-space applications)
+     */
+    PWR_STATE_SLEEP_PARAM      =  GET_BIT |          PWR_STATE_MODULE_PARAM | ASYNC_PARAM | 0x22,
+
+    /*
+     * GET in order to send the PwrOff event to the Power State module
+     *
+     * Can be used only by kernel (not by user-space applications)
+     */
+    PWR_STATE_PWR_OFF_PARAM    =  GET_BIT |          PWR_STATE_MODULE_PARAM | ASYNC_PARAM | 0x23,
     
 	LAST_CMD									=	0x00	/**< Last External Parameter - Dummy, Should always stay Last	*/													
 

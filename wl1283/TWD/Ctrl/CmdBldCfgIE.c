@@ -2065,7 +2065,7 @@ TI_STATUS cmdBld_CfgPlatformGenParams (TI_HANDLE hCmdBld, IniFileGeneralParam *p
     if (pGenParams->TXBiPFEMAutoDetect == 0) /* Manual detection */
     {
         TRACE1(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION, ": Manual FEM detection. FEM type = %d\n", pGenParams->TXBiPFEMManufacturer);
-	status = cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+        status = cmdQueue_SendCommand (pCmdBld->hCmdQueue,
                           CMD_TEST,
                           (void *)pTestCmd,
                           sizeof(IniFileGeneralParam) + 4,

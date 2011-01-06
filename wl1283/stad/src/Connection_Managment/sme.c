@@ -123,6 +123,7 @@ void sme_Init (TStadHandlesList *pStadHandles)
     pSme->hRsn          = pStadHandles->hRsn;
     pSme->hDrvMain      = pStadHandles->hDrvMain;
     pSme->hTwd          = pStadHandles->hTWD;
+    pSme->hPwrState     = pStadHandles->hPwrState;
 
 
     /* Initialize the scan result table object */
@@ -466,10 +467,10 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             {
                 pSme->hScanResultTable = pSme->hSmeScanResultTable;
             }
-	    else if (CONNECT_MODE_MANUAL == pSme->eConnectMode
+            else if (CONNECT_MODE_MANUAL == pSme->eConnectMode
 			&& BSS_INDEPENDENT != pSme->eBssType)
             {
-		pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
+                pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
             }
         /* now send a disconnect event */
         sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
@@ -493,15 +494,15 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
 		}
 		else /* In BSS infrastructure set the scanResultTable according to the eConnectMode */
 		{
-			if (CONNECT_MODE_AUTO == pSme->eConnectMode)
-			{
-				pSme->hScanResultTable = pSme->hSmeScanResultTable;
-			}
-			else if (CONNECT_MODE_MANUAL == pSme->eConnectMode)
-			{
-				pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
-			}
-		}
+		if (CONNECT_MODE_AUTO == pSme->eConnectMode)
+            	{
+			pSme->hScanResultTable = pSme->hSmeScanResultTable;
+                }
+                else if (CONNECT_MODE_MANUAL == pSme->eConnectMode)
+                {
+                	pSme->hScanResultTable = pSme->hScanCncnScanResulTable;
+            	}
+            }
         }
         break;
 
@@ -635,9 +636,9 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
          * table, the app is responsible to decide which SSIDs to use for scan)
          */
         if (CONNECT_MODE_AUTO == pSme->eConnectMode ||
-		BSS_INDEPENDENT == pSme->eBssType)
+        		BSS_INDEPENDENT == pSme->eBssType)
         {
-	    if (SSID_TYPE_SPECIFIC == pSme->eSsidType)
+            if (SSID_TYPE_SPECIFIC == pSme->eSsidType)
             {
 #ifndef XCC_MODULE_INCLUDED
                 if ((pSme->tSsid.len == pFrameInfo->parsedIEs->content.iePacket.pSsid->hdr[ 1 ]) &&
@@ -685,7 +686,7 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
         scanResultTable_SetStableState (pSme->hScanResultTable);
 
         if (CONNECT_MODE_AUTO == pSme->eConnectMode
-			|| BSS_INDEPENDENT == pSme->eBssType)
+        		|| BSS_INDEPENDENT == pSme->eBssType)
         {
  
            /* try to select a site */

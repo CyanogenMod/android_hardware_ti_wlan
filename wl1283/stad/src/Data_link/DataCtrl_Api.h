@@ -122,6 +122,11 @@ void rxData_SetReAuthInProgress(TI_HANDLE hRxData, TI_BOOL	value);
 
 TI_BOOL rxData_IsReAuthInProgress(TI_HANDLE hRxData);
 
+TI_STATUS rxData_enableDisableRxDataFilters(TI_HANDLE hRxData, TI_BOOL enabled);
+void      rxData_GetRxDataFilters(TI_HANDLE hRxData, TRxDataFilterRequest pBuf[], TI_UINT32 *pLen);
+TI_STATUS rxData_SetRxDataFilters(TI_HANDLE hRxData, TRxDataFilterRequest pFilters[], TI_UINT32 uCount);
+TI_BOOL   rxData_IsRxDataFiltersEnabled(TI_HANDLE hRxData);
+
 void rxData_StopReAuthActiveTimer(TI_HANDLE hRxData);		
 void rxData_ReauthDisablePriority(TI_HANDLE hRxData);
 

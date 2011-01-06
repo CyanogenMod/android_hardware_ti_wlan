@@ -173,20 +173,20 @@ TI_HANDLE scanCncnSm_Create (TI_HANDLE hOS)
  * \return None
  * \sa     scanCncnSm_Cretae 
  */ 
-void scanCncnSm_Init (TI_HANDLE hScanCncnClient, TI_HANDLE hReport, TI_HANDLE hTWD, TI_HANDLE hSCR, 
-                      TI_HANDLE hApConn, TI_HANDLE hMlme, TI_HANDLE hScanCncn, TScanPrivateSMFunction fScrRequest, 
+void scanCncnSm_Init (TI_HANDLE hScanCncnClient, TStadHandlesList *pStadHandles,
+                      TScanPrivateSMFunction fScrRequest,
                       TScanPrivateSMFunction fScrRelease, TScanPrivateSMFunction fStartScan, 
                       TScanPrivateSMFunction fStopScan, TScanPrivateSMFunction fRecovery, TI_INT8* pScanSmName)
 {
     TScanCncnClient *pScanCncnClient = (TScanCncnClient*)hScanCncnClient;
 
     /* store handles */
-    pScanCncnClient->hReport = hReport;
-    pScanCncnClient->hTWD = hTWD;
-    pScanCncnClient->hSCR = hSCR;
-    pScanCncnClient->hApConn = hApConn;
-    pScanCncnClient->hMlme = hMlme;
-    pScanCncnClient->hScanCncn = hScanCncn;
+    pScanCncnClient->hReport = pStadHandles->hReport;
+    pScanCncnClient->hTWD = pStadHandles->hTWD;
+    pScanCncnClient->hSCR = pStadHandles->hSCR;
+    pScanCncnClient->hApConn = pStadHandles->hAPConnection;
+    pScanCncnClient->hMlme = pStadHandles->hMlme;
+    pScanCncnClient->hScanCncn = pStadHandles->hScanCncn;
 
     /* store private functions */
     pScanCncnClient->fScrRequest = fScrRequest;
@@ -198,8 +198,13 @@ void scanCncnSm_Init (TI_HANDLE hScanCncnClient, TI_HANDLE hReport, TI_HANDLE hT
     /* store SM name */
     pScanCncnClient->pScanSmName = pScanSmName;
 
+    pScanCncnClient->bCurrentlyRunning = TI_FALSE;
+    pScanCncnClient->bSuspended = TI_FALSE;
+
+    pScanCncnClient->hScanClientGuardTimer = NULL;
+
     /* initialize the state-machine */
-    genSM_Init (pScanCncnClient->hGenSM, hReport);
+    genSM_Init (pScanCncnClient->hGenSM, pScanCncnClient->hReport);
     genSM_SetDefaults (pScanCncnClient->hGenSM, SCAN_CNCN_SM_NUMBER_OF_STATES, SCAN_CNCN_SM_NUMBER_OF_EVENTS,
                        (TGenSM_matrix)tSmMatrix, SCAN_CNCN_SM_STATE_IDLE, pScanCncnClient->pScanSmName, uStateDescription, 
                        uEventDescription, __FILE_ID__);
@@ -220,7 +225,13 @@ void scanCncnSm_Destroy (TI_HANDLE hScanCncnClient)
 {
     TScanCncnClient *pScanCncnClient = (TScanCncnClient*)hScanCncnClient;
 
-    /* free the state-machine */
+    /* Destroy the scan guard timer */
+	if (pScanCncnClient->hScanClientGuardTimer)
+    {
+		tmr_DestroyTimer (pScanCncnClient->hScanClientGuardTimer);
+    }
+
+    /* Free the state-machine */
     genSM_Unload (pScanCncnClient->hGenSM);
 
     /* Free object storage space */
@@ -314,6 +325,7 @@ void scanCncnSm_ScanComplete (TI_HANDLE hScanCncnClient)
     /* Call the client scan complete callback */
     if (TI_FALSE == pScanCncnClient->bInRequest)
     {
+        tmr_StopTimer(pScanCncnClient->hScanClientGuardTimer);
         pScanCncnClient->tScanResultCB (pScanCncnClient->hScanResultCBObj,
                                         pScanCncnClient->eScanResult, NULL, pScanCncnClient->uSPSScanResult);
     }
@@ -374,7 +386,7 @@ void scanCncnSm_RejectScan (TI_HANDLE hScanCncnClient)
     if (TI_FALSE == pScanCncnClient->bInRequest)
     {
         pScanCncnClient->tScanResultCB (pScanCncnClient->hScanResultCBObj, pScanCncnClient->eScanResult,
-                                        NULL, pScanCncnClient->uSPSScanResult); 
+                                        NULL, pScanCncnClient->uSPSScanResult);
     }   
 }
 
@@ -402,6 +414,7 @@ void scanCncnSm_Recovery (TI_HANDLE hScanCncnClient)
     {
         pScanCncnClient->tScanResultCB (pScanCncnClient->hScanResultCBObj,
                                         pScanCncnClient->eScanResult, NULL, pScanCncnClient->uSPSScanResult);
+
     }
 }
 

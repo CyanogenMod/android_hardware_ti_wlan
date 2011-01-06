@@ -159,6 +159,7 @@ TI_STATUS cmdMbox_Init (TI_HANDLE hCmdMbox,
     pCmdMbox->uWriteLen = 0;
     pCmdMbox->bCmdInProgress = TI_FALSE;
     pCmdMbox->fErrorCb = fErrorCb;
+    pCmdMbox->uWaitTimeout = CMDMBOX_WAIT_TIMEOUT_DEF;
 
 	/* allocate OS timer memory */
     pCmdMbox->hCmdMboxTimer = tmr_CreateTimer (hTimer);
@@ -241,7 +242,7 @@ TI_STATUS cmdMbox_SendCommand       (TI_HANDLE hCmdMbox, Command_e cmdType, TI_U
     BUILD_TTxnStruct(pRegTxn, ACX_REG_INTERRUPT_TRIG, &(pCmdMbox->aRegTxn[0].uRegister), REGISTER_SIZE, NULL, NULL)
 
     /* start the CmdMbox timer */
-    tmr_StartTimer (pCmdMbox->hCmdMboxTimer, cmdMbox_TimeOut, hCmdMbox, CMDMBOX_WAIT_TIMEOUT, TI_FALSE);
+    tmr_StartTimer (pCmdMbox->hCmdMboxTimer, cmdMbox_TimeOut, hCmdMbox, pCmdMbox->uWaitTimeout, TI_FALSE);
 
     /* Send the FW trigger */
     twIf_Transact(pCmdMbox->hTwIf, pRegTxn);
@@ -494,6 +495,39 @@ void cmdMbox_GetCmdParams (TI_HANDLE hCmdMbox, TI_UINT8* pParamBuf)
 
 }
 
+/*
+ * \brief	Prepares this module for suspend (called when the driver starts
+ * 			the suspend process)
+ *
+ * \param	tConfig	TWD specific suspend-configuration
+ *
+ * \return	TI_OK
+ */
+TI_STATUS cmdMbox_PrepareSuspend(TI_HANDLE hCmdMbox, TTwdSuspendConfig *tConfig)
+{
+	TCmdMbox *pCmdMbox = (TCmdMbox *) hCmdMbox;
+
+	TRACE1(pCmdMbox->hReport, REPORT_SEVERITY_INFORMATION, "cmdMbox_PrepareSuspend: setting mailbox timeout to %d ms\n", tConfig->uCmdMboxTimeout);
+	pCmdMbox->uWaitTimeout = tConfig->uCmdMboxTimeout;
+
+	return TI_OK;
+}
+
+/*
+ * \brief	Wraps up the suspend process (from this modules side). Called
+ * 			when the driver finishes the suspend process.
+ *
+ * \return	TI_OK
+ */
+TI_STATUS cmdMbox_CompleteSuspend(TI_HANDLE hCmdMbox)
+{
+	TCmdMbox *pCmdMbox = (TCmdMbox *) hCmdMbox;
+
+	TRACE1(pCmdMbox->hReport, REPORT_SEVERITY_INFORMATION, "cmdMbox_PrepareSuspend: setting mailbox timeout to %d ms\n", CMDMBOX_WAIT_TIMEOUT_DEF);
+	pCmdMbox->uWaitTimeout = CMDMBOX_WAIT_TIMEOUT_DEF;
+
+	return TI_OK;
+}
 
 #ifdef TI_DBG
 

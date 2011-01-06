@@ -74,10 +74,15 @@ typedef struct
     TI_HANDLE               hHealthMonitor;
     TI_HANDLE               hSme;
 	TI_HANDLE               hTimer;
+	TI_HANDLE               hPwrState;
 
 
     /* client specific information */
     TScanCncnClient         *pScanClients[ SCAN_SCC_NUM_OF_CLIENTS ];
+
+    /* Pending periodic scan params*/
+    paramInfo_t             tPendingPeriodicScanParams;
+    TI_BOOL                 bPendingPeriodicScan;
 
     /* SG Flags */
     TI_BOOL                 bUseSGParams;
@@ -92,13 +97,11 @@ typedef struct
     /* scan concentrator application sub-module data */
     TI_HANDLE               hScanResultTable; /* application scan result table */
     TI_HANDLE               hOSScanSm; /* OS scan state machine */
-    EScanCncnClient         eCurrentRunningAppScanClient; /* to disallow both one-shot and periodic app */
     TI_UINT32               uOSScanLastTimeStamp;
     TI_BOOL                 bOSScanRunning;
     TScanParams             tOsScanParams;
 
     /* scan guard timer params*/
-	TI_HANDLE               hScanGuardTimer;
 	TI_UINT32           	numOfConsTimerExpiry;
 	TI_BOOL             	bScanCompleteFlag;
     

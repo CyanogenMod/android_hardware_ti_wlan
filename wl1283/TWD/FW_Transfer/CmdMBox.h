@@ -46,8 +46,12 @@
 /*****************************************************************************
  **          Defines                                                        **
  *****************************************************************************/
- /* wait for a Mail box command to complete, ms */
-#define CMDMBOX_WAIT_TIMEOUT            15000
+
+/*
+ * Default time (in ms) to wait for a Mail box command to complete
+ */
+#define CMDMBOX_WAIT_TIMEOUT_DEF            15000
+
 #define CMDMBOX_HEADER_LEN              4
 #define MAX_CMD_MBOX_CONSECUTIVE_TXN    5
 
@@ -100,6 +104,8 @@ typedef struct
     TI_UINT32           uFwAddr;
     TI_UINT32           uWriteLen;
     TI_UINT32           uReadLen;
+
+    TI_UINT32			uWaitTimeout;	/* Time to wait (ms) before declaring a command has timed out */
 
 } TCmdMbox;
 

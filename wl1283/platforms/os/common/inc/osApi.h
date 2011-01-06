@@ -572,9 +572,6 @@ int os_wake_lock_timeout_enable (TI_HANDLE OsContext);
 #define os_profile(hos,fn,par)
 
 
-/****************************************************************************************
-						START OF GWSI DRIVER API				
-*****************************************************************************************/
 
 /** \brief  OS Signaling Object Create
  * 

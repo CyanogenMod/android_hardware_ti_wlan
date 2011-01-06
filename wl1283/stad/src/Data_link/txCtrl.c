@@ -123,14 +123,28 @@ static void   txCtrl_SetTxDelayCounters (txCtrl_t *pTxCtrl,
 		tid = WMEQosAcToTid[ac]
 
 /* Update packet length in the descriptor according to HW interface requirements */
-static inline TI_UINT16 txCtrl_TranslateLengthToFw (TTxCtrlBlk *pPktCtrlBlk)
+static inline TI_UINT16 txCtrl_TranslateLengthToFw (txCtrl_t *pTxCtrl, TTxCtrlBlk *pPktCtrlBlk)
 {
     TI_UINT16 uPktLen = pPktCtrlBlk->tTxDescriptor.length;
     TI_UINT16 uLastWordPad;
     TI_UINT32 uBufNum;
-
+#ifdef TNETW1283
+    if (pTxCtrl->uHostIfCfgBitmap & HOST_IF_CFG_BITMAP_TX_PAD_TO_SDIO_BLK)
+    {
+        TI_UINT16 uBlockMask = ((1 << pTxCtrl->uSdioBlkSizeShift) - 1);
+        uPktLen = (uPktLen + uBlockMask) & (~uBlockMask);
+        uLastWordPad = uPktLen - pPktCtrlBlk->tTxDescriptor.length;
+        pPktCtrlBlk->tTxDescriptor.extraBytes = uLastWordPad;
+    }
+    else
+    {
+        uPktLen = (uPktLen + 3) & 0xFFFC;                               /* Add alignment bytes if needed */
+        uLastWordPad = uPktLen - pPktCtrlBlk->tTxDescriptor.length;     /* Find number of alignment bytes added */
+    }
+#else
     uPktLen = (uPktLen + 3) & 0xFFFC;                               /* Add alignment bytes if needed */
     uLastWordPad = uPktLen - pPktCtrlBlk->tTxDescriptor.length;     /* Find number of alignment bytes added */
+#endif
     uPktLen = uPktLen >> 2;                                         /* Convert length to words */
 	pPktCtrlBlk->tTxDescriptor.length = ENDIAN_HANDLE_WORD(uPktLen);/* Save FW format length in descriptor */
 
@@ -313,13 +327,13 @@ void txCtrl_Init (TStadHandlesList *pStadHandles)
 *
 * RETURN:       
 *************************************************************************/
-TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, txDataInitParams_t *txDataInitParams)
+TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, TInitTable *pInitTable)
 {
     txCtrl_t *pTxCtrl = (txCtrl_t *)hTxCtrl;
 
 
-    pTxCtrl->creditCalculationTimeout = txDataInitParams->creditCalculationTimeout;
-	pTxCtrl->bCreditCalcTimerEnabled  = txDataInitParams->bCreditCalcTimerEnabled;
+    pTxCtrl->creditCalculationTimeout = pInitTable->txDataInitParams.creditCalculationTimeout;
+    pTxCtrl->bCreditCalcTimerEnabled  = pInitTable->txDataInitParams.bCreditCalcTimerEnabled;
 
     /* Update queues mapping (AC/TID/Backpressure) after module init. */
 	txCtrl_UpdateQueuesMapping (hTxCtrl); 
@@ -333,6 +347,8 @@ TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, txDataInitParams_t *txDataInitP
 	}
 
     pTxCtrl->TSMInProgressBitmap = 0;
+    pTxCtrl->uSdioBlkSizeShift = pInitTable->twdInitParams.tGeneral.uSdioBlkSizeShift;
+    pTxCtrl->uHostIfCfgBitmap = pInitTable->twdInitParams.tGeneral.uHostIfCfgBitmap;
     return TI_OK;
 }
 
@@ -360,13 +376,14 @@ TI_STATUS txCtrl_Unload (TI_HANDLE hTxCtrl)
 	tmr_DestroyTimer (pTxCtrl->hCreditTimer);
 	}
 
-	/* Destroy the TSM timers */
-	for (i = 0; i < TSM_REPORT_NUM_OF_MEASUREMENT_IN_PARALLEL_MAX; i++)
-	{
-		if (pTxCtrl->tTSMTimers[i].hRequestTimer) {
-			tmr_DestroyTimer( pTxCtrl->tTSMTimers[i].hRequestTimer );
-		}
-	}
+    /* Destroy the TSM timers */
+    for (i = 0; i < TSM_REPORT_NUM_OF_MEASUREMENT_IN_PARALLEL_MAX; i++)
+    {
+        if (pTxCtrl->tTSMTimers[i].hRequestTimer)
+        {
+            tmr_DestroyTimer( pTxCtrl->tTSMTimers[i].hRequestTimer );
+        }
+    }
 
     /* free Tx Data control block */
     os_memoryFree (pTxCtrl->hOs, pTxCtrl, sizeof(txCtrl_t));
@@ -950,11 +967,11 @@ static void txCtrl_BuildDataPkt (txCtrl_t *pTxCtrl, TTxCtrlBlk *pPktCtrlBlk,
     uHdrAlignPad = txCtrl_BuildDataPktHdr ((TI_HANDLE)pTxCtrl, pPktCtrlBlk, eAckPolicy);
 
 	/* Update packet length in the descriptor according to HW interface requirements */
-    uLastWordPad = txCtrl_TranslateLengthToFw (pPktCtrlBlk);
+    uLastWordPad = txCtrl_TranslateLengthToFw (pTxCtrl, pPktCtrlBlk);
 
     /* Set the descriptor attributes */
 	uTxDescAttr  = pTxCtrl->dataPktDescAttrib;
-    uTxDescAttr |= uLastWordPad << TX_ATTR_OFST_LAST_WORD_PAD;
+    uTxDescAttr |= (uLastWordPad << TX_ATTR_OFST_LAST_WORD_PAD) & TX_ATTR_LAST_WORD_PAD;
 	uTxDescAttr |= pTxCtrl->dataRatePolicy[uAc] << TX_ATTR_OFST_RATE_POLICY;
 	if (uHdrAlignPad)
 	{
@@ -1033,17 +1050,18 @@ static void txCtrl_BuildMgmtPkt (txCtrl_t *pTxCtrl, TTxCtrlBlk *pPktCtrlBlk, TI_
 				TI_UINT16 tidWord = (TI_UINT16)pPktCtrlBlk->tTxDescriptor.tid;
 				pDot11Header = (dot11_header_t *)&(pPktCtrlBlk->aPktHdr[uHdrAlignPad]);
 				COPY_WLAN_WORD(&pDot11Header->qosControl, &tidWord); /* copy with endianess handling. */
+                uRatePolicy = pTxCtrl->dataRatePolicy[uAc];
 			}
 		}
 	}
 
 	/* Update packet length in the descriptor according to HW interface requirements */
-    uLastWordPad = txCtrl_TranslateLengthToFw (pPktCtrlBlk);
+    uLastWordPad = txCtrl_TranslateLengthToFw (pTxCtrl, pPktCtrlBlk);
 
 	/* Set fields in the descriptor attributes bitmap. */
 	uTxDescAttr  = uRatePolicy << TX_ATTR_OFST_RATE_POLICY;
 	uTxDescAttr |= pTxCtrl->txSessionCount << TX_ATTR_OFST_SESSION_COUNTER;
-    uTxDescAttr |= uLastWordPad << TX_ATTR_OFST_LAST_WORD_PAD;
+    uTxDescAttr |= (uLastWordPad << TX_ATTR_OFST_LAST_WORD_PAD) & TX_ATTR_LAST_WORD_PAD;
 	uTxDescAttr |= TX_ATTR_TX_CMPLT_REQ;
 
 	if (uHdrAlignPad)

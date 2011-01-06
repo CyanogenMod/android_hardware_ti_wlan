@@ -1,5 +1,5 @@
 /*
- * WlanDrvCommon.h
+ * pwrState_Dbg.h
  *
  * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
@@ -32,89 +32,17 @@
  */
 
 
-
-/** \file   WlanDrvCommon.h 
- *  \brief  Defines WlanDrvIf objects common to all OS types.                                  
+/** \file pwrState_Dbg.h
  *
- *  \see    WlanDrvIf.h
+ *  \date 03-Nov-2010
  */
 
-#ifndef __WLAN_DRV_COMMON_H__
-#define __WLAN_DRV_COMMON_H__
-
+#ifndef PWRSTATE_DBG_H_
+#define PWRSTATE_DBG_H_
 
 #include "tidef.h"
-#include "TWDriver.h"
+#include "pwrState_Types.h"
 
-#define DRV_ADDRESS_SIZE					(sizeof(TI_INT32))
-#define MAX_CHUNKS_IN_FILE					(1000)
-#define OS_SPECIFIC_RAM_ALLOC_LIMIT			(0xFFFFFFFF)	/* assume OS never reach that limit */
+void pwrState_DebugFunction(TI_HANDLE hPwrState, TI_UINT32 uFuncType, void *pParam);
 
-/* Driver steady states - for driver external users */
-typedef enum 
-{
-    DRV_STATE_IDLE,
-    DRV_STATE_RUNNING,
-    DRV_STATE_STOPING,
-    DRV_STATE_STOPPED,
-    DRV_STATE_FAILED
-} EDriverSteadyState;
-
-
-/* The driver Start/Stop actions */
-typedef enum
-{
-    ACTION_TYPE_NONE, 
-    ACTION_TYPE_START, 
-    ACTION_TYPE_STOP
-} EActionType;
-
-/* Initialization file info */
-typedef struct 
-{
-    void            *pImage;
-    unsigned long    uSize;
-} TInitImageInfo;
-
-/* WlanDrvIf object common part (included by TWlanDrvIfObj from each OS abstraction layer) */
-typedef struct 
-{
-    /* Other modules handles */
-    void               *hDrvMain;
-    void               *hCmdHndlr;
-    void               *hContext;
-    void               *hTxDataQ;
-    void               *hTxMgmtQ;
-    void               *hTxCtrl;
-    void               *hTWD;
-    void               *hEvHandler;
-    void               *hReport;
-    void               *hCmdDispatch;
-    void               *hPwrState;
-
-    /* Initialization files info */
-    TInitImageInfo      tIniFile;
-    TInitImageInfo      tNvsImage;
-    TInitImageInfo      tFwImage;
-
-    EDriverSteadyState  eDriverState;   /* The driver state as presented to the OS */
-    TI_UINT32           uLinkSpeed;
-
-} TWlanDrvIfCommon;
-
-
-/* The loader files interface */
-typedef struct
-{
-  TI_UINT32 uNvsFileLength;
-  TI_UINT32 uFwFileLength;
-  TI_UINT32 uIniFileLength;
-  char data[1];
-  /* eeprom image follows   */
-  /* firmware image follows */
-  /* init file follows      */
-} TLoaderFilesData;
-
-
-
-#endif /* __WLAN_DRV_COMMON_H__ */
+#endif /* PWRSTATE_DBG_H_ */

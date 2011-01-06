@@ -533,26 +533,6 @@ S32 WpaCore_GetBssType(THandle hWpaCore, PU32 pBssType)
 	return OK;
 }
 
-S32 WpaCore_SetApScanMode(THandle hWpaCore, U8 apScanMode)
-{
-	TWpaCore* pWpaCore = (TWpaCore*)hWpaCore;
-	S8 cmd[10] = "AP_SCAN 1";
-
-	if (apScanMode > 2)
-	{
-	    return ECUERR_CU_ERROR;
-	}
-
-	cmd[8] = '0' + apScanMode;
-
-	if (IpcWpa_Command(pWpaCore->hIpcWpa, (PS8)cmd, FALSE))
-	{
-	    return ECUERR_CU_ERROR;
-	}
-
-	return OK;
-}
-
 S32 WpaCore_SetSsid(THandle hWpaCore, OS_802_11_SSID* ssid, TMacAddr bssid)
 {
 	TWpaCore* pWpaCore = (TWpaCore*)hWpaCore;
@@ -575,17 +555,6 @@ S32 WpaCore_SetSsid(THandle hWpaCore, OS_802_11_SSID* ssid, TMacAddr bssid)
 		WPACORE_SETSSID_FAIL;
 	}
 	NetworkID = os_strtoul(Resp, &pRespTemp, 0);
-
-	/* Set the parameters in the new new network block*/
-
-	if (pWpaCore->WpaSupplParams.mode == IEEE80211_MODE_IBSS)
-	{
-	    WpaCore_SetApScanMode(pWpaCore, 2);
-	}
-	else
-	{
-	    WpaCore_SetApScanMode(pWpaCore, 1);
-	}
 
 	/* Set the BSSID */
 	if(!((bssid[0] == 0xFF) && 
@@ -613,6 +582,13 @@ S32 WpaCore_SetSsid(THandle hWpaCore, OS_802_11_SSID* ssid, TMacAddr bssid)
 
    /* Set the SSID */
 	os_sprintf(cmd, (PS8)"SET_NETWORK %d ssid \"%s\"", NetworkID, ssid->Ssid);
+	if (IpcWpa_Command(pWpaCore->hIpcWpa, cmd, 0))
+	{
+		WPACORE_SETSSID_FAIL;
+	}
+
+    /* set Scan this SSID with Probe Requests */
+    os_sprintf(cmd, (PS8)"SET_NETWORK %d scan_ssid %d", NetworkID, 1);
 	if (IpcWpa_Command(pWpaCore->hIpcWpa, cmd, 0))
 	{
 		WPACORE_SETSSID_FAIL;

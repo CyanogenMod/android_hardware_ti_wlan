@@ -2413,10 +2413,13 @@ TI_STATUS cmdBld_GetParam (TI_HANDLE hCmdBld, TTwdParamInfo *pParamInfo)
     case TWD_RSSI_LEVEL_PARAM_ID:
     case TWD_SNR_RATIO_PARAM_ID:
         /* Retrive the Callback function and read buffer pointer that are in fact stored in the TIWLAN_ADAPTER and then send it to the Command Mailbox */
-        cmdBld_ItrRSSI (hCmdBld, 
+        if (cmdBld_ItrRSSI (hCmdBld,
                         pParamInfo->content.interogateCmdCBParams.fCb, 
                         pParamInfo->content.interogateCmdCBParams.hCb, 
-                        pParamInfo->content.interogateCmdCBParams.pCb);
+                        pParamInfo->content.interogateCmdCBParams.pCb) != TI_OK)
+        {
+            return TI_NOK;
+        }
         break;
 
     case TWD_BCN_BRC_OPTIONS_PARAM_ID:

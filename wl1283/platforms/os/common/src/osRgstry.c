@@ -48,7 +48,7 @@
 #include "rate.h"
 #include "802_11Defs.h"
 #include "TWDriver.h"
-
+#include "pwrState_Types.h"
 
 #define MAX_KEY_BUFFER_LEN      256
 #define BIT_TO_BYTE_FACTOR      8
@@ -60,6 +60,8 @@
 
 #define N_STR(str)              NDIS_STRING_CONST(str)
 #define INIT_TBL_OFF(field)     FIELD_OFFSET(TInitTable, field)
+
+NDIS_STRING STRVersion                  = NDIS_STRING_CONST( "IniVersion" );
 
 /* Reports */
 NDIS_STRING STR_ReportSeverityTable          = NDIS_STRING_CONST( "ReportSeverityTable" );
@@ -874,6 +876,17 @@ NDIS_STRING STRRateMngRateRetryPolicy        	    = NDIS_STRING_CONST("RateMngRa
 NDIS_STRING STRincludeWSCinProbeReq                 = NDIS_STRING_CONST("IncludeWSCinProbeReq");
 NDIS_STRING STRRRMEnabled                           = NDIS_STRING_CONST("RRMEnabled");
 
+NDIS_STRING STRPwrStateDozeTimeout                  = NDIS_STRING_CONST("PwrStateDozeTimeout");
+NDIS_STRING STRPwrStateCmdTimeout                   = NDIS_STRING_CONST("PwrStateCmdTimeout");
+NDIS_STRING STRPwrStateSuspendType                  = NDIS_STRING_CONST("PwrStateSuspendType");
+NDIS_STRING STRPwrStateStandbyNextState             = NDIS_STRING_CONST("PwrStateStandbyNextState");
+NDIS_STRING STRPwrStateSuspendNDTIM                 = NDIS_STRING_CONST("PwrStateSuspendNDTIM");
+NDIS_STRING STRPwrStateSuspendFilterUsage           = NDIS_STRING_CONST("PwrStateSuspendFilterUsage");
+NDIS_STRING STRPwrStateSuspendRxFilterOffset        = NDIS_STRING_CONST("PwrStateSuspendRxFilterOffset");
+NDIS_STRING STRPwrStateSuspendRxFilterMask          = NDIS_STRING_CONST("PwrStateSuspendRxFilterMask");
+NDIS_STRING STRPwrStateSuspendRxFilterPattern       = NDIS_STRING_CONST("PwrStateSuspendRxFilterPattern");
+
+static TI_STATUS readPwrStateParams(TWlanDrvIfObjPtr pAdapter, TInitTable *pInitTable);
 
 static void parseTwoDigitsSequenceHex (TI_UINT8 *sInString, TI_UINT8 *uOutArray, TI_UINT8 uSize);
 
@@ -1104,11 +1117,20 @@ regFillInitTable(
     /* Reset structure */
     NdisZeroMemory(p, sizeof(TInitTable));
     
+    regReadIntegerParameter(pAdapter, &STRVersion,
+                                INI_FILE_VERSION_DEF, INI_FILE_VERSION_MIN,
+                                INI_FILE_VERSION_MAX,
+                                sizeof (p->uIniFileVersion),
+                                (TI_UINT8*)&(p->uIniFileVersion));
+
+
     regReadIntegerParameter(pAdapter, &STRincludeWSCinProbeReq,
                             WSC_INCLUDE_IN_BEACON_DEF,WSC_INCLUDE_IN_BEACON_MIN,WSC_INCLUDE_IN_BEACON_MAX,
                             sizeof p->siteMgrInitParams.includeWSCinProbeReq, 
                             (TI_UINT8*)&p->siteMgrInitParams.includeWSCinProbeReq);
      
+
+    readPwrStateParams(pAdapter, p);
 
     /* Beacon filter*/
     /*is the desired state ENABLED ?*/
@@ -1627,8 +1649,8 @@ regFillInitTable(
     regReadIntegerParameter(pAdapter, &STRHostIfCfgBitmap,
                             TWD_HOST_IF_CFG_BITMAP_DEF, TWD_HOST_IF_CFG_BITMAP_MIN,
                             TWD_HOST_IF_CFG_BITMAP_MAX,
-                            sizeof p->twdInitParams.tGeneral.HostIfCfgBitmap, 
-                            (TI_UINT8*)&(p->twdInitParams.tGeneral.HostIfCfgBitmap));
+                            sizeof p->twdInitParams.tGeneral.uHostIfCfgBitmap,
+                            (TI_UINT8*)&(p->twdInitParams.tGeneral.uHostIfCfgBitmap));
 
     regReadIntegerParameter(pAdapter, &STRRxAggregationPktsLimit,
                             TWD_RX_AGGREG_PKTS_LIMIT_DEF, TWD_RX_AGGREG_PKTS_LIMIT_MIN,
@@ -4753,8 +4775,8 @@ regReadIntegerParameter(pAdapter, &STRSingle_Dual_Band_Solution,
 
     regReadIntegerParameter( pAdapter, &STRSdioBlkSizeShift,
                              SDIO_BLK_SIZE_SHIFT_DEF, SDIO_BLK_SIZE_SHIFT_MIN, SDIO_BLK_SIZE_SHIFT_MAX,
-                             sizeof p->tDrvMainParams.uSdioBlkSizeShift,
-                             (TI_UINT8*)&p->tDrvMainParams.uSdioBlkSizeShift);
+                             sizeof p->twdInitParams.tGeneral.uSdioBlkSizeShift,
+                             (TI_UINT8*)&p->twdInitParams.tGeneral.uSdioBlkSizeShift);
 
 
 
@@ -5548,7 +5570,7 @@ static void readRates(TWlanDrvIfObjPtr pAdapter, TInitTable *pInitTable)
                             (TI_UINT8*)&pInitTable->siteMgrInitParams.siteMgrRegstryBasicRate[DOT11_B_MODE]);
 
     regReadIntegerParameter(pAdapter, &STRdot11SupportedRateMask_B,
-                          SUPPORTED_RATE_SET_1_2_5_5_11_22, SUPPORTED_RATE_SET_1_2, SUPPORTED_RATE_SET_1_2_5_5_11_22,
+                          SUPPORTED_RATE_SET_1_2_5_5_11, SUPPORTED_RATE_SET_1_2, SUPPORTED_RATE_SET_1_2_5_5_11,
                             sizeof pInitTable->siteMgrInitParams.siteMgrRegstrySuppRate[DOT11_B_MODE], 
                             (TI_UINT8*)&pInitTable->siteMgrInitParams.siteMgrRegstrySuppRate[DOT11_B_MODE]);
     /*
@@ -6082,3 +6104,93 @@ static void parse_filter_request(TRxDataFilterRequest* request, TI_UINT8 offset,
     }
 }
 
+static TI_STATUS readPwrStateParams(TWlanDrvIfObjPtr pAdapter, TInitTable *pInitTable)
+{
+	regReadIntegerParameter(pAdapter,
+			&STRPwrStateDozeTimeout,
+			PWRSTATE_DOZE_TIMEOUT_DEF,
+			PWRSTATE_DOZE_TIMEOUT_MIN,
+			PWRSTATE_DOZE_TIMEOUT_MAX,
+			sizeof pInitTable->tPwrStateInitParams.uDozeTimeout,
+			(TI_UINT8*)&pInitTable->tPwrStateInitParams.uDozeTimeout);
+
+	regReadIntegerParameter(pAdapter,
+			&STRPwrStateCmdTimeout,
+			PWRSTATE_CMD_TIMEOUT_DEF,
+			PWRSTATE_CMD_TIMEOUT_MIN,
+			PWRSTATE_CMD_TIMEOUT_MAX,
+			sizeof pInitTable->tPwrStateInitParams.uCmdTimeout,
+			(TI_UINT8*)&pInitTable->tPwrStateInitParams.uCmdTimeout);
+
+	regReadIntegerParameter(pAdapter,
+			&STRPwrStateSuspendType,
+			PWRSTATE_SUSPEND_NONE,
+			0,
+			PWRSTATE_SUSPEND_LAST-1,
+			sizeof pInitTable->tPwrStateInitParams.eSuspendType,
+			(TI_UINT8*)&pInitTable->tPwrStateInitParams.eSuspendType);
+
+	regReadIntegerParameter(pAdapter,
+				&STRPwrStateSuspendNDTIM,
+				PWRSTATE_SUSPEND_NDTIM_DEF,
+				PWRSTATE_SUSPEND_NDTIM_MIN,
+				PWRSTATE_SUSPEND_NDTIM_MAX,
+				sizeof pInitTable->tPwrStateInitParams.uSuspendNDTIM,
+				(TI_UINT8*)&pInitTable->tPwrStateInitParams.uSuspendNDTIM);
+
+	regReadIntegerParameter(pAdapter,
+			&STRPwrStateStandbyNextState,
+			PWRSTATE_STNDBY_NEXT_STATE_OFF,
+			0,
+			PWRSTATE_STNDBY_NEXT_STATE_LAST-1,
+			sizeof pInitTable->tPwrStateInitParams.eStandbyNextState,
+			(TI_UINT8*)&pInitTable->tPwrStateInitParams.eStandbyNextState);
+
+	regReadIntegerParameter(pAdapter,
+			&STRPwrStateSuspendFilterUsage,
+			PWRSTATE_FILTER_USAGE_NONE,
+			0,
+			PWRSTATE_FILTER_USAGE_LAST-1,
+			sizeof pInitTable->tPwrStateInitParams.eSuspendFilterUsage,
+			(TI_UINT8*)&pInitTable->tPwrStateInitParams.eSuspendFilterUsage);
+
+	{
+		TI_UINT32 filterOffset = 0;
+		char filterMask[16];
+		TI_UINT8 filterMaskLength;
+		char filterPattern[16];
+		TI_UINT8 filterPatternLength;
+
+		regReadIntegerParameter(pAdapter,
+				&STRPwrStateSuspendRxFilterOffset,
+				RX_DATA_FILTERS_FILTER_OFFSET_DEF,
+				RX_DATA_FILTERS_FILTER_OFFSET_MIN,
+				RX_DATA_FILTERS_FILTER_OFFSET_MAX,
+				sizeof filterOffset,
+				(TI_UINT8*) &filterOffset);
+
+		regReadStringParameter(pAdapter,
+				&STRPwrStateSuspendRxFilterMask,
+				RX_DATA_FILTERS_FILTER_MASK_DEF,
+				RX_DATA_FILTERS_FILTER_MASK_LEN_DEF,
+				(TI_UINT8*) filterMask,
+				(TI_UINT8*) &filterMaskLength);
+
+		regReadStringParameter(pAdapter,
+				&STRPwrStateSuspendRxFilterPattern,
+				RX_DATA_FILTERS_FILTER_PATTERN_DEF,
+				RX_DATA_FILTERS_FILTER_PATTERN_LEN_DEF,
+				(TI_UINT8*) filterPattern,
+				(TI_UINT8*) &filterPatternLength);
+
+		parse_filter_request(
+				&pInitTable->tPwrStateInitParams.tSuspendRxFilterValue,
+				filterOffset,
+				filterMask,
+				filterMaskLength,
+				filterPattern,
+				filterPatternLength);
+	}
+
+	return TI_OK;
+}

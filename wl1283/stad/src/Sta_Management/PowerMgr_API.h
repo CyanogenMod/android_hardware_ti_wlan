@@ -49,6 +49,7 @@
 #include "tidef.h"
 #include "paramOut.h"
 #include "DrvMainModules.h"
+#include "pwrState_Types.h"
 
 /*****************************************************************************
  **         Constants                                                       **
@@ -223,5 +224,8 @@ void PowerMgr_printObject(TI_HANDLE thePowerMgrHandle);
 TI_STATUS PowerMgr_notifyFWReset(TI_HANDLE hPowerMgr);
 
 TI_BOOL PowerMgr_getReAuthActivePriority(TI_HANDLE thePowerMgrHandle);
+
+TI_STATUS powerMgr_Suspend(TI_HANDLE hPowerMgr, TPwrStateCfg *tConfig, void (*fCb)(TI_HANDLE), TI_HANDLE hCb);
+TI_STATUS powerMgr_Resume(TI_HANDLE hPowerMgr);
 
 #endif /*_POWER_MGR_API_H_*/

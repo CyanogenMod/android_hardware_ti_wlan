@@ -95,6 +95,8 @@ typedef struct
 	TI_HANDLE                   hEnterPsGuardTimer;             /**< Handle to enter ps no event timer */
     TI_HANDLE                   hPowerMgrKeepAlive;             /**< Handle to the keep-alive sub module */
 	TI_HANDLE					hQosMngr;						/**< Handle to the qos manager moudle*/
+	TI_HANDLE					hRxData;
+
     PowerMgr_PowerMode_e        desiredPowerModeProfile;        /**< 
                                                                  * The configure power mode to the system in the
                                                                  * initialization function. This parameters is Saved
@@ -169,6 +171,25 @@ typedef struct
     TI_UINT32                   PsPollDeliveryFailureRecoveryPeriod; /* Time to exit PS after receiving PsPoll failure event */
 
 	TI_BOOL						reAuthActivePriority;
+
+	void (*fEnteredPsCb)(TI_HANDLE);		/* callback to invoke when successfully entered PS mode */
+	TI_HANDLE hEnteredPsCb;					/* context for fEnteredPsCb */
+
+	/* Power Manager configuration prior to suspending the
+	 * driver (used when resuming the driver)
+	 */
+	struct {
+		TI_UINT8					dtimListenInterval;			/* NDTIM value prior to suspend */
+
+		/* RX Data Filters configuration prior to suspend */
+		struct {
+			TI_BOOL					bChanged;					/* whether RX Data Filters were changed while suspending (and should be restored upon resume) */
+			TI_BOOL					bEnabled;					/* whether RX Data Filters were enabled prior suspend */
+			TRxDataFilterRequest	aValues[MAX_DATA_FILTERS];	/* the installed filters (prior to suspend) */
+			TI_UINT32				uCount;						/* the number of installed filters (prior to suspend) */
+		} tRxDataFilters;
+	} tPreSuspendConfig;
+
 } PowerMgr_t;
 
 

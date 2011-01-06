@@ -101,7 +101,6 @@ static void rxData_rcvPacketInOpenNotify (TI_HANDLE hRxData, void *pBuffer, TRxA
 static void rxData_rcvPacketEapol (TI_HANDLE hRxData, void *pBuffer, TRxAttr* pRxAttr);
 static void rxData_rcvPacketData (TI_HANDLE hRxData, void *pBuffer, TRxAttr* pRxAttr);
 
-static TI_STATUS rxData_enableDisableRxDataFilters(TI_HANDLE hRxData, TI_BOOL enabled);
 static TI_STATUS rxData_addRxDataFilter(TI_HANDLE hRxData, TRxDataFilterRequest* request);
 static TI_STATUS rxData_removeRxDataFilter(TI_HANDLE hRxData, TRxDataFilterRequest* request);
 
@@ -531,7 +530,7 @@ TI_STATUS rxData_setParam(TI_HANDLE hRxData, paramInfo_t *pParamInfo)
 * RETURNS:      
 *               
 ***************************************************************************/
-static TI_STATUS rxData_enableDisableRxDataFilters(TI_HANDLE hRxData, TI_BOOL enabled)
+TI_STATUS rxData_enableDisableRxDataFilters(TI_HANDLE hRxData, TI_BOOL enabled)
 {
     rxData_t * pRxData = (rxData_t *) hRxData;
 
@@ -545,6 +544,77 @@ static TI_STATUS rxData_enableDisableRxDataFilters(TI_HANDLE hRxData, TI_BOOL en
     pRxData->filteringEnabled = enabled;
 
     return TWD_CfgEnableRxDataFilter (pRxData->hTWD, pRxData->filteringEnabled, pRxData->filteringDefaultAction);
+}
+
+/*
+ * \return	TI_TRUE if RX Data Filters are enabled
+ */
+TI_BOOL rxData_IsRxDataFiltersEnabled(TI_HANDLE hRxData)
+{
+	rxData_t * this = (rxData_t*)hRxData;
+
+	return this->filteringEnabled;
+}
+
+/*
+ * \brief	read the currently configured RX Data Filters
+ *
+ * \param	pBuf	buffer to put the filters in
+ * \param	pLen	address to write the number of filters to
+ */
+void rxData_GetRxDataFilters(TI_HANDLE hRxData, TRxDataFilterRequest pBuf[], TI_UINT32 *pLen)
+{
+	rxData_t * this = (rxData_t*)hRxData;
+	TI_UINT32 uFilterIdx;
+
+	*pLen = 0;
+
+	for (uFilterIdx = 0; uFilterIdx < MAX_DATA_FILTERS; uFilterIdx++)
+	{
+		if (this->isFilterSet[uFilterIdx])
+		{
+			os_memoryCopy(this->hOs, &pBuf[uFilterIdx], &this->filterRequests[uFilterIdx], sizeof(TRxDataFilterRequest));
+			*pLen += 1;
+		}
+	}
+}
+
+/*
+ * \brief	Sets (replaces) the RX Data Filters
+ *
+ * \param	pFilters	buffer of new filters to install
+ * \param	uCount		number of filters in pFilters
+ */
+TI_STATUS rxData_SetRxDataFilters(TI_HANDLE hRxData, TRxDataFilterRequest pFilters[], TI_UINT32 uCount)
+{
+	rxData_t * this = (rxData_t*)hRxData;
+	TI_UINT32 uFilterIdx;
+	TI_STATUS rc;
+
+	/*
+	 * remove any existing filters
+	 */
+	for (uFilterIdx = 0; uFilterIdx < MAX_DATA_FILTERS; uFilterIdx++)
+	{
+		if (this->isFilterSet[uFilterIdx])
+		{
+			rxData_removeRxDataFilter(this, &this->filterRequests[uFilterIdx]);
+		}
+	}
+
+	/*
+	 * install new filters
+	 */
+	for (uFilterIdx = 0; uFilterIdx < uCount; uFilterIdx++)
+	{
+		rc = rxData_addRxDataFilter(this, &pFilters[uFilterIdx]);
+
+		if (rc != TI_OK){
+			return TI_NOK;
+		}
+	}
+
+	return TI_OK;
 }
 
 /***************************************************************************

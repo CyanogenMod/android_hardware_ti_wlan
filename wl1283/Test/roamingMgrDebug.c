@@ -60,7 +60,10 @@ void roamingMgrDebugFunction(TI_HANDLE hRoamingMngr,
 					   TI_UINT32	funcType, 
 					   void		*pParam)
 {
-	paramInfo_t	*param = (paramInfo_t*)os_memoryAlloc(NULL, sizeof(paramInfo_t));
+
+    roamingMngr_t *pRoamingMngr = (roamingMngr_t*)hRoamingMngr;
+
+    paramInfo_t	*param = (paramInfo_t*)os_memoryAlloc(NULL, sizeof(paramInfo_t));
 	if (NULL == param)
      {
 		WLAN_OS_REPORT(("ERROR. roamingMgrDebugFunction(): Cannot allocate memory!! length = %d\n", sizeof(paramInfo_t)));
@@ -148,33 +151,35 @@ void roamingMgrDebugFunction(TI_HANDLE hRoamingMngr,
     case ROAMING_START_IMMEDIATE_SCAN: /* 1614 */
         {
             int i=0,j =0;
-            channelList_t *pchannels;
+            channelList_t *pChannels = os_memoryAlloc(pRoamingMngr->hOs, sizeof(channelList_t));
 
-	    pchannels = (channelList_t *)os_memoryAlloc(((roamingMngr_t*)hRoamingMngr)->hOs, sizeof(channelList_t));
-            if (!pchannels) {
-                return;
+            if (NULL == pChannels)
+            {
+		WLAN_OS_REPORT(("ERROR. roamingMgrDebugFunction(): Cannot allocate memory!! length = %d\n", sizeof(channelList_t)));
+		break;
             }
-            pchannels->numOfChannels = 14;
+
+            pChannels->numOfChannels = 14;
 
 
-            for ( i = 0; i < pchannels->numOfChannels; i++ )
+            for ( i = 0; i < pChannels->numOfChannels; i++ )
             {
                 for ( j = 0; j < 6; j++ )
                 {
-                    pchannels->channelEntry[i].normalChannelEntry.bssId[j] = 0xff;
+                    pChannels->channelEntry[i].normalChannelEntry.bssId[j] = 0xff;
                 }
 
-                pchannels->channelEntry[i].normalChannelEntry.earlyTerminationEvent = SCAN_ET_COND_DISABLE;
-                pchannels->channelEntry[i].normalChannelEntry.ETMaxNumOfAPframes = 0;
-                pchannels->channelEntry[i].normalChannelEntry.maxChannelDwellTime = 60000;
-                pchannels->channelEntry[i].normalChannelEntry.minChannelDwellTime = 30000;
-                pchannels->channelEntry[i].normalChannelEntry.txPowerDbm = DEF_TX_POWER;
-                pchannels->channelEntry[i].normalChannelEntry.channel = i + 1;
+                pChannels->channelEntry[i].normalChannelEntry.earlyTerminationEvent = SCAN_ET_COND_DISABLE;
+                pChannels->channelEntry[i].normalChannelEntry.ETMaxNumOfAPframes = 0;
+                pChannels->channelEntry[i].normalChannelEntry.maxChannelDwellTime = 60000;
+                pChannels->channelEntry[i].normalChannelEntry.minChannelDwellTime = 30000;
+                pChannels->channelEntry[i].normalChannelEntry.txPowerDbm = DEF_TX_POWER;
+                pChannels->channelEntry[i].normalChannelEntry.channel = i + 1;
             }
 
             /* upon this call the scanMngr_reportImmediateScanResults() should be invoked and the BssList should be printed */
-            roamingMngr_startImmediateScan(hRoamingMngr, pchannels);
-	    os_memoryFree(((roamingMngr_t*)hRoamingMngr)->hOs, pchannels, sizeof(channelList_t));
+            roamingMngr_startImmediateScan(hRoamingMngr, pChannels);
+            os_memoryFree(pRoamingMngr->hOs, pChannels, sizeof(channelList_t));
         }
        
         break;
@@ -220,25 +225,33 @@ void roamingMgrDebugFunction(TI_HANDLE hRoamingMngr,
         {
             roamingMngr_t *pRoamingMngr = (roamingMngr_t*)hRoamingMngr;
             int i=0,j =0;
-            channelList_t channels;
-            channels.numOfChannels = 14;
+            channelList_t *pChannels = os_memoryAlloc(pRoamingMngr->hOs, sizeof(channelList_t));
 
-            for ( i = 0; i < channels.numOfChannels; i++ )
+            if (NULL == pChannels)
+            {
+		WLAN_OS_REPORT(("ERROR. roamingMgrDebugFunction(): Cannot allocate memory!! length = %d\n", sizeof(channelList_t)));
+		break;
+            }
+
+            pChannels->numOfChannels = 14;
+
+            for ( i = 0; i < pChannels->numOfChannels; i++ )
             {
                 for ( j = 0; j < 6; j++ )
                 {
-                    channels.channelEntry[i].normalChannelEntry.bssId[j] = 0xff;
+                    pChannels->channelEntry[i].normalChannelEntry.bssId[j] = 0xff;
                 }
 
-                channels.channelEntry[i].normalChannelEntry.earlyTerminationEvent = SCAN_ET_COND_DISABLE;
-                channels.channelEntry[i].normalChannelEntry.ETMaxNumOfAPframes = 0;
-                channels.channelEntry[i].normalChannelEntry.maxChannelDwellTime = 60000;
-                channels.channelEntry[i].normalChannelEntry.minChannelDwellTime = 30000;
-                channels.channelEntry[i].normalChannelEntry.txPowerDbm = DEF_TX_POWER;
-                channels.channelEntry[i].normalChannelEntry.channel = i + 1;
+                pChannels->channelEntry[i].normalChannelEntry.earlyTerminationEvent = SCAN_ET_COND_DISABLE;
+                pChannels->channelEntry[i].normalChannelEntry.ETMaxNumOfAPframes = 0;
+                pChannels->channelEntry[i].normalChannelEntry.maxChannelDwellTime = 60000;
+                pChannels->channelEntry[i].normalChannelEntry.minChannelDwellTime = 30000;
+                pChannels->channelEntry[i].normalChannelEntry.txPowerDbm = DEF_TX_POWER;
+                pChannels->channelEntry[i].normalChannelEntry.channel = i + 1;
             }
 
-            scanMngr_startContinuousScanByApp(pRoamingMngr->hScanMngr, &channels);
+            scanMngr_startContinuousScanByApp(pRoamingMngr->hScanMngr, pChannels);
+            os_memoryFree(pRoamingMngr->hOs, pChannels, sizeof(channelList_t));
         }
         
         break;

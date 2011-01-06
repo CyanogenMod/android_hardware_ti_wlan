@@ -165,7 +165,7 @@ typedef struct
  */
 TI_HANDLE txCtrl_Create (TI_HANDLE hOs);
 void      txCtrl_Init (TStadHandlesList *pStadHandles);
-TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, txDataInitParams_t *txDataInitParams);
+TI_STATUS txCtrl_SetDefaults (TI_HANDLE hTxCtrl, TInitTable *pInitTable);
 TI_STATUS txCtrl_Unload (TI_HANDLE hTxCtrl);
 EStatusXmit txCtrl_XmitData (TI_HANDLE hTxCtrl, TTxCtrlBlk *pPktCtrlBlk);
 TI_STATUS txCtrl_XmitMgmt (TI_HANDLE hTxCtrl, TTxCtrlBlk *pPktCtrlBlk);

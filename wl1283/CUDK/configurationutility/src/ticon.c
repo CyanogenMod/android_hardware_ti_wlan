@@ -57,7 +57,16 @@
 #define SUPPL_IF_FILE "/var/run/wpa_supplicant/tiwlan0"
  
 extern int consoleRunScript( char *script_file, THandle hConsole);
-    
+
+/* Token Parameters for RX Data Filter */
+#define CON_PARAMS_RX_DATA_FILTER							\
+		{ 													\
+			{(PS8)"Offset" ,  CON_PARM_RANGE , 0, 255, 0 },	\
+			{(PS8)"Mask"   ,  CON_PARM_STRING, 0, 64 , 0 },	\
+			{(PS8)"Pattern",  CON_PARM_STRING, 0, 128, 0 },	\
+			CON_LAST_PARM									\
+		}
+
 /* local types */
 /***************/
 /* Module control block */
@@ -73,6 +82,9 @@ static TiCon_t g_TiCon;
 
 /* local fucntions */
 /*******************/
+
+static void addPowerStateDirectory(TiCon_t *pTiCon, THandle hParentDir);
+
 static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 {
     THandle h, h1;
@@ -802,6 +814,8 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
         Console_AddToken(pTiCon->hConsole,h, (PS8)"set_dcO_itrim", (PS8)"Set/Get DCO Itrim Parameters", (FuncToken_t) CuCmd_SetDcoItrimParams, dcoItrimParams );
 	}
 
+	addPowerStateDirectory(pTiCon, h);
+
 	/* -------------------------------------------- Events -------------------------------------------- */
 	
     CHK_NULL(h = (THandle) Console_AddDirExt(pTiCon->hConsole,  (THandle) NULL, (PS8)"eVents", (PS8)"Events" ) );
@@ -1033,6 +1047,12 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
           }
 
        }
+       {
+           ConParm_t aaa[]  = {{(PS8)"NVS Version" ,CON_PARM_OPTIONAL}, CON_LAST_PARM };
+		   Console_AddToken(pTiCon->hConsole,h1, (PS8)"set nvs Version", (PS8)"Change NVS version",
+                            (FuncToken_t) CuCmd_BIP_SetNVSVersion, aaa );
+	   }
+
        
      
 	}
@@ -1247,4 +1267,57 @@ void ProcessLoggerMessage(PU8 data, U32 len)
 {
 }
 
+static void addPowerStateDirectory(TiCon_t *pTiCon, THandle hParentDir)
+{
+	THandle hPwrStateDir;
 
+	CHK_NULL(hPwrStateDir = (THandle) Console_AddDirExt(pTiCon->hConsole,  hParentDir, (PS8)"power State", (PS8)"Power State" ) );
+
+	{
+		ConParm_t tArgs[] = {
+				{ (PS8) "type", CON_PARM_RANGE , 0, 255, 0 },
+				CON_LAST_PARM };
+
+		Console_AddToken(pTiCon->hConsole,hPwrStateDir, (PS8)"suspend Type", (PS8)"suspend action", (FuncToken_t) CuCmd_PowerStateConfigSuspendType, tArgs );
+	}
+
+	{
+		ConParm_t tArgs[] = {
+				{ (PS8) "number of DTIMs", CON_PARM_RANGE , 0, 255, 0 },
+				CON_LAST_PARM };
+
+		Console_AddToken(pTiCon->hConsole,hPwrStateDir, (PS8)"suspend Ndtim", (PS8)"number of DTIMs", (FuncToken_t) CuCmd_PowerStateConfigSuspendNdtim, tArgs );
+	}
+
+	{
+		ConParm_t tArgs[] = {
+				{ (PS8) "state", CON_PARM_RANGE , 0, 255, 0 },
+				CON_LAST_PARM };
+
+		Console_AddToken(pTiCon->hConsole, hPwrStateDir,
+				(PS8)"Standby next state",
+				(PS8)"state to move to upon Doze in state Standby (and upon PS enter failure)",
+				(FuncToken_t) CuCmd_PowerStateConfigStndbyNextState, tArgs );
+	}
+
+	{
+		ConParm_t tArgs[] = {
+				{ (PS8) "filter usage", CON_PARM_RANGE , 0, 255, 0 },
+				CON_LAST_PARM };
+
+		Console_AddToken(pTiCon->hConsole, hPwrStateDir,
+				(PS8)"Filter usage",
+				(PS8)"Whether or not to use filters during suspend",
+				(FuncToken_t) CuCmd_PowerStateConfigFilterUsage, tArgs );
+	}
+
+	{
+		ConParm_t tArgs[] = CON_PARAMS_RX_DATA_FILTER;
+
+		Console_AddToken(pTiCon->hConsole, hPwrStateDir,
+				(PS8)"Rx data filter",
+				(PS8)"Set the RX Data Filter to use",
+				(FuncToken_t) CuCmd_PowerStateConfigRxDataFilter, tArgs );
+
+	}
+}

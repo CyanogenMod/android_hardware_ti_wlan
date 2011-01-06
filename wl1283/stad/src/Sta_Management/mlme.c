@@ -847,7 +847,10 @@ TI_STATUS mlme_assocRequestMsgBuild(mlme_t *pCtx, TI_UINT8* reqBuf, TI_UINT32* r
 
 
     /* Disallow TKIP with HT Rates: If this is the case - discard HT rates from Association Request */
-    if((TI_TRUE == param.content.bPrimarySiteHtSupport) && (eCipherSuite != TWD_CIPHER_TKIP))
+    if((TI_TRUE == param.content.bPrimarySiteHtSupport) && 
+              (eCipherSuite != TWD_CIPHER_TKIP) && 
+              (eCipherSuite != TWD_CIPHER_WEP) && 
+           (eCipherSuite != TWD_CIPHER_WEP104)      )
     {
 
         status = StaCap_GetHtCapabilitiesIe (pCtx->hStaCap, pRequest, &len);

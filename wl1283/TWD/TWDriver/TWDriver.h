@@ -118,6 +118,11 @@
  * --------------------------------------------------------------
  */
 
+/* Ini File Version */
+#define INI_FILE_VERSION_DEF 0
+#define INI_FILE_VERSION_MIN 0
+#define INI_FILE_VERSION_MAX 999
+
 /* PALAU Group Address Default Values */
 #define NUM_GROUP_ADDRESS_VALUE_DEF     4   
 #define NUM_GROUP_ADDRESS_VALUE_MIN     0
@@ -267,7 +272,11 @@
 /*
  * Host I/f configuration
  */
+#ifdef TNETW1283
+#define TWD_HOST_IF_CFG_BITMAP_DEF      (HOST_IF_CFG_BITMAP_RX_FIFO_ENABLE | HOST_IF_CFG_BITMAP_TX_PAD_TO_SDIO_BLK)
+#else
 #define TWD_HOST_IF_CFG_BITMAP_DEF      1
+#endif
 #define TWD_HOST_IF_CFG_BITMAP_MIN      0
 #define TWD_HOST_IF_CFG_BITMAP_MAX      0xffffffff
 
@@ -434,20 +443,11 @@
 
 #define MAX_TEMPLATE_SIZE               256
 
-/* Scan constants */
-#define MAX_NUMBER_OF_CHANNELS_PER_SCAN                     16
-#define SCAN_MAX_NUM_OF_NORMAL_CHANNELS_PER_COMMAND         MAX_NUMBER_OF_CHANNELS_PER_SCAN
-#define SCAN_MAX_NUM_OF_SPS_CHANNELS_PER_COMMAND            16
-#define SCAN_DEFAULT_MIN_CHANNEL_DWELL_TIME                 30000
-#define SCAN_DEFAULT_MAX_CHANNEL_DWELL_TIME                 60000
-#define SCAN_DEFAULT_EARLY_TERMINATION_EVENT                SCAN_ET_COND_DISABLE
-#define SCAN_DEFAULT_EARLY_TERMINATION_NUM_OF_FRAMES        0
-
 #define NUM_OF_NOISE_HISTOGRAM_COUNTERS 8
 
 #define TX_DESCRIPTOR_SIZE             sizeof(TxIfDescriptor_t)
 
-#define CTRL_BLK_ENTRIES_NUM            160
+#define CTRL_BLK_ENTRIES_NUM            204
 
 #define HT_CAP_AMPDU_PARAMETERS_FIELD_OFFSET   2
 #define HT_CAP_HT_EXTENDED_FIELD_OFFSET        19
@@ -2344,8 +2344,9 @@ typedef struct
  * \par Description
  * 
  * \sa
- */ 
-typedef struct {
+ */
+typedef struct
+{
     uint8  coexIp;           /* 0-BT, 1-WLAN (according to CoexIp_e in FW) */
     uint8  activityId;       /* According to BT/WLAN activity numbering in FW */ 
     uint8  defaultPriority;  /* 0-255, activity default priority */
@@ -2645,7 +2646,7 @@ typedef struct
     TI_UINT16                           RxIntrPacingTimeout;			    /**< */
 
     TI_UINT8                            GenFwCmd[GEN_FW_CMD_SIZE];		    /**< */
-    TI_UINT32                           HostIfCfgBitmap;					/**< */
+    TI_UINT32                           uHostIfCfgBitmap;					/**< */
     
     TI_UINT32                           uRxAggregPktsLimit;					/**< */
     TI_UINT32                           uTxAggregPktsLimit;					/**< */
@@ -2690,6 +2691,7 @@ typedef struct
     THalCoexActivityTable               halCoexActivityTable;               /**< */
     TFmCoexParams                       tFmCoexParams;                      /**< */
     TI_UINT8                            uMaxAMPDU;                          /**< */
+    TI_UINT32                           uSdioBlkSizeShift;      /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
 
 	TI_UINT32       					uSplitScanTimeOut;					/**< */
 
@@ -2823,8 +2825,15 @@ typedef struct
     int32  goodAttemptTH;
     int32  curveCorrectionStep;
 
- }RateMangeReadParams_t;
+} RateMangeReadParams_t;
 
+ /**
+  * \brief	Suspend parameters regarding TWD
+  */
+typedef struct
+{
+	TI_UINT32	uCmdMboxTimeout;	/* time period before declaring a command timed-out */
+} TTwdSuspendConfig;
 
 /*
  * --------------------------------------------------------------
@@ -4505,7 +4514,8 @@ TI_STATUS TWD_ItrStatistics (TI_HANDLE hTWD, void *fCb, TI_HANDLE hCb, void *pCb
  * \par Description
  *
  * \sa
- */TI_STATUS TWD_ItrDataFilterStatistics (TI_HANDLE hTWD, void *fCb, TI_HANDLE hCb, void *pCb);
+ */
+TI_STATUS TWD_ItrDataFilterStatistics (TI_HANDLE hTWD, void *fCb, TI_HANDLE hCb, void *pCb);
 
 /*
  * --------------------------------------------------------------
@@ -4710,5 +4720,8 @@ void TWD_FinalizePolarityRead(TI_HANDLE hTWD);
 TI_STATUS TWD_CfgBurstMode (TI_HANDLE hTWD, TI_BOOL bEnabled);
 TI_STATUS TWD_SetRateMngDebug(TI_HANDLE hTWD, RateMangeParams_t *pRateMngParams);
 TI_STATUS TWD_GetRateMngDebug(TI_HANDLE hTWD, RateMangeReadParams_t  *pParamInfo);
+
+TI_STATUS TWD_PrepareSuspend(TI_HANDLE hTWD, TTwdSuspendConfig *tConfig);
+TI_STATUS TWD_CompleteSuspend(TI_HANDLE hTWD);
 
 #endif  /* TWDRIVER_H */

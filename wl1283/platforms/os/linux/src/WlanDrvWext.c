@@ -59,8 +59,10 @@ int wlanDrvWext_Handler (struct net_device *dev,
 static struct iw_statistics *wlanDrvWext_GetWirelessStats (struct net_device *dev);
 
 extern int wlanDrvIf_LoadFiles (TWlanDrvIfObj *drv, TLoaderFilesData *pInitInfo);
-extern int wlanDrvIf_Start (struct net_device *dev);
-extern int wlanDrvIf_Stop (struct net_device *dev);
+extern int wlanDrvIf_Open (struct net_device *dev);
+extern int wlanDrvIf_Release (struct net_device *dev);
+extern int wlanDrvIf_Suspend(TI_HANDLE hWlanDrvIf);
+extern int wlanDrvIf_Resume(TI_HANDLE hWlanDrvIf);
 
 /* callbacks for WEXT commands */
 static const iw_handler aWextHandlers[] = {
@@ -167,8 +169,13 @@ int wlanDrvWext_Handler (struct net_device *dev,
    ti_private_cmd_t my_command; 
    struct iw_mlme   mlme;
    struct iw_scan_req scanreq;
+   void             *copy_to_buf=NULL, *param3=NULL;
 
-   void             *copy_to_buf=NULL, *param3=NULL; 
+   /* abort if the IOCTL is disabled */
+   if (!wlanDrvIf_IsIoctlEnabled(drv, info->cmd))
+   {
+	   return TI_NOK;
+   }
 
    os_memoryZero(drv, &my_command, sizeof(ti_private_cmd_t));
    os_memoryZero(drv, &mlme,       sizeof(struct iw_mlme));
@@ -185,6 +192,13 @@ int wlanDrvWext_Handler (struct net_device *dev,
 		 os_printf ("wlanDrvWext_Handler() os_memoryCopyFromUser FAILED !!!\n");
 		 return TI_NOK;
 	   }
+
+	/* abort if the private-command is disabled */
+	if (!wlanDrvIf_IsCmdEnabled(drv, my_command.cmd))
+	{
+		return TI_NOK;
+	}
+
 	   if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
        {
 		   /* If it's a driver level command, handle it here and exit */
@@ -194,10 +208,10 @@ int wlanDrvWext_Handler (struct net_device *dev,
                return wlanDrvIf_LoadFiles (drv, my_command.in_buffer);
                 
            case DRIVER_START_PARAM:
-               return wlanDrvIf_Start (dev);
+               return wlanDrvIf_Open (dev);
 
            case DRIVER_STOP_PARAM:
-               return wlanDrvIf_Stop (dev);
+               return wlanDrvIf_Release(dev);
 
            case DRIVER_STATUS_PARAM:
                *(TI_UINT32 *)my_command.out_buffer = 

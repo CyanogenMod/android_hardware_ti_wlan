@@ -61,6 +61,7 @@
 #include "PowerMgrKeepAlive.h"
 #include "CmdBld.h"
 #include "healthMonitor.h"
+#include "DataCtrl_Api.h"
 
 
 /*****************************************************************************
@@ -72,6 +73,13 @@
 
 #define POWER_SAVE_GUARD_TIME_MS            5000       /* The gaurd time used to protect from FW stuck */
 
+#define invokeCallback(fCb, hCb)		\
+	do {								\
+		if (fCb) {						\
+			(fCb)(hCb);					\
+			(fCb) = NULL;				\
+		}								\
+	} while (0)
 
 /*****************************************************************************
  **         Private Function prototypes                                      **
@@ -83,7 +91,7 @@ static void         powerMgrDisableThresholdsIndications(TI_HANDLE hPowerMgr);
 static void         powerMgrEnableThresholdsIndications(TI_HANDLE hPowerMgr);
 static void         powerMgrStartAutoPowerMode(TI_HANDLE hPowerMgr);
 static void         powerMgrRetryPsTimeout(TI_HANDLE hPowerMgr, TI_BOOL bTwdInitOccured);
-static void         powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_PowerMode_e desiredPowerMode);
+static TI_STATUS	powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_PowerMode_e desiredPowerMode);
 static void         PowerMgr_setDozeModeInAuto(TI_HANDLE hPowerMgr,PowerMgr_PowerMode_e dozeMode);
 static void         PowerMgrConfigBetToFw( TI_HANDLE hPowerMgr, TI_UINT32 cookie );
 static void         PowerMgr_PsPollFailureCB( TI_HANDLE hPowerMgr );
@@ -91,7 +99,7 @@ static void 		powerMgr_PsPollFailureTimeout( TI_HANDLE hPowerMgr, TI_BOOL bTwdIn
 static void 		powerMgr_SGSetUserDesiredwakeUpCond( TI_HANDLE hPowerMgr );
 static TI_STATUS    powerMgrSendMBXWakeUpConditions(TI_HANDLE hPowerMgr,TI_UINT8 listenInterval, ETnetWakeOn tnetWakeupOn);
 static void 		powerMgrGuardTimerExpired (TI_HANDLE hPowerMgr, TI_BOOL bTwdInitOccured);
-static void 		powerMgrSetPsMode (TI_HANDLE hPowerMgr, E80211PsMode psMode, TI_HANDLE hPowerSaveCompleteCb,
+static TI_STATUS	powerMgrSetPsMode (TI_HANDLE hPowerMgr, E80211PsMode psMode, TI_HANDLE hPowerSaveCompleteCb,
 									   TPowerSaveResponseCb fCb);
 static PowerMgr_PowerMode_e powerMgrGetHighestPriority(TI_HANDLE hPowerMgr);
 static TI_STATUS	updatePowerAuthority(TI_HANDLE hPowerMgr);
@@ -196,7 +204,8 @@ void PowerMgr_init (TStadHandlesList *pStadHandles)
     pPowerMgr->hTWD             	= pStadHandles->hTWD;
     pPowerMgr->hSoftGemini      	= pStadHandles->hSoftGemini;
     pPowerMgr->hTimer           	= pStadHandles->hTimer;
-	pPowerMgr->hQosMngr			= pStadHandles->hQosMngr;
+	pPowerMgr->hQosMngr			    = pStadHandles->hQosMngr;
+	pPowerMgr->hRxData              = pStadHandles->hRxData;
     pPowerMgr->psEnable         	= TI_FALSE;
 	pPowerMgr->psCurrentMode		= POWER_SAVE_OFF;
 	pPowerMgr->psLastRequest		= POWER_SAVE_OFF;
@@ -572,6 +581,7 @@ TI_STATUS PowerMgr_setPowerMode(TI_HANDLE hPowerMgr)
 {
     PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
     PowerMgr_PowerMode_e powerMode;
+    TI_STATUS             rc = TI_OK;
 
     /*in this way we will run with the highest priority that is enabled*/
     powerMode = powerMgrGetHighestPriority(hPowerMgr);
@@ -622,7 +632,7 @@ TI_STATUS PowerMgr_setPowerMode(TI_HANDLE hPowerMgr)
         		/*active the performance monitor thresholds indication for auto rx streaming*/
         		powerMgrStartAutoPowerMode(hPowerMgr); 
         	}
-            powerMgrPowerProfileConfiguration(hPowerMgr, powerMode);
+            rc = powerMgrPowerProfileConfiguration(hPowerMgr, powerMode);
         }
 
         updatePowerAuthority(pPowerMgr);
@@ -635,7 +645,7 @@ TI_STATUS PowerMgr_setPowerMode(TI_HANDLE hPowerMgr)
         TRACE1(pPowerMgr->hReport, REPORT_SEVERITY_WARNING, "PowerMgr_setPowerMode - desiredPowerModeProfile == thePowerMode (=%d), ABORTING!\n", powerMode);
     }
 
-    return TI_OK;
+    return rc;
 }
 
 
@@ -864,6 +874,8 @@ static void powerSaveReportCB(TI_HANDLE hPowerMgr, char* str , TI_UINT32 strLen)
 		case ENTER_POWER_SAVE_SUCCESS:
             pPowerMgr->psCurrentMode = POWER_SAVE_ON;
             updatePowerAuthority(pPowerMgr);
+
+            invokeCallback(pPowerMgr->fEnteredPsCb, pPowerMgr->hEnteredPsCb);
             break;
 
 		default:
@@ -1063,9 +1075,10 @@ INPUT:          - hPowerMgr             - Handle to the Power Manager
 OUTPUT:     
 RETURN:    void.\n
 ****************************************************************************************/
-static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_PowerMode_e desiredPowerMode)
+static TI_STATUS powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_PowerMode_e desiredPowerMode)
 {
     PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
+    TI_STATUS   rc = TI_NOK;
 
     tmr_StopTimer (pPowerMgr->hRetryPsTimer);
 
@@ -1079,7 +1092,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
 
     case POWER_MODE_ACTIVE:
         /* set AWAKE through */
-        powerMgrSetPsMode (hPowerMgr, POWER_SAVE_OFF, NULL, NULL);
+        rc = powerMgrSetPsMode (hPowerMgr, POWER_SAVE_OFF, NULL, NULL);
 
         TRACE0(pPowerMgr->hReport, REPORT_SEVERITY_INFORMATION, "PowerMode==ACTIVE\n");
         break;
@@ -1094,7 +1107,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
             powerMgrSendMBXWakeUpConditions(hPowerMgr,pPowerMgr->beaconListenInterval,TNET_WAKE_ON_BEACON);     
         }
 
-        powerMgrSetPsMode (hPowerMgr, POWER_SAVE_ON, NULL, NULL);
+        rc = powerMgrSetPsMode (hPowerMgr, POWER_SAVE_ON, NULL, NULL);
 
         TRACE0(pPowerMgr->hReport, REPORT_SEVERITY_INFORMATION, "PowerMode==SHORT_DOZE\n");
         break;
@@ -1109,7 +1122,7 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
             powerMgrSendMBXWakeUpConditions(hPowerMgr,pPowerMgr->dtimListenInterval,TNET_WAKE_ON_DTIM);     
         }
 
-        powerMgrSetPsMode (hPowerMgr, POWER_SAVE_ON, NULL, NULL);
+        rc = powerMgrSetPsMode (hPowerMgr, POWER_SAVE_ON, NULL, NULL);
 
         TRACE0(pPowerMgr->hReport, REPORT_SEVERITY_INFORMATION, "PowerMode==LONG_DOZE\n");
         break;
@@ -1118,15 +1131,17 @@ static void powerMgrPowerProfileConfiguration(TI_HANDLE hPowerMgr, PowerMgr_Powe
 		/* When in SG PS mode, configure the user desired wake-up condition */
 		powerMgr_SGSetUserDesiredwakeUpCond(pPowerMgr);
 
-        powerMgrSetPsMode (hPowerMgr, POWER_SAVE_ON, NULL, NULL);
+        rc = powerMgrSetPsMode (hPowerMgr, POWER_SAVE_ON, NULL, NULL);
         
         TRACE0(pPowerMgr->hReport, REPORT_SEVERITY_INFORMATION, "PowerMode==PS_ONLY\n");
         break;
 
     default:
         TRACE1(pPowerMgr->hReport, REPORT_SEVERITY_ERROR, "PowerMgr_setWakeUpConfiguration - ERROR - PowerMode - unknown parameter: %d\n", desiredPowerMode);
-        return;
+        return TI_NOK;
     }
+
+    return rc;
 }
 
 
@@ -1450,18 +1465,21 @@ INPUT:      	- hPowerMgr - Handle to the Power Manager
 OUTPUT:		
 RETURN:    
 ****************************************************************************************/
-static void powerMgrSetPsMode (TI_HANDLE hPowerMgr, E80211PsMode psMode,
+static TI_STATUS powerMgrSetPsMode (TI_HANDLE hPowerMgr, E80211PsMode psMode,
                                TI_HANDLE hPowerSaveCompleteCb, TPowerSaveResponseCb fCb)
 {
 	PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
 
 
     
-    /* if already in rqeuired PS mode - don't send the request*/
+    /* if already in required PS mode - don't send the request*/
 	if (pPowerMgr->psCurrentMode == pPowerMgr->psLastRequest)
 	{
         if (pPowerMgr->psCurrentMode == psMode)
-			return;
+        {
+        	TRACE1(pPowerMgr->hReport, REPORT_SEVERITY_INFORMATION, "powerMgrSetPsMode: ignoring because psCurrentMode==psLastRequest==psMode==%d\n", psMode);
+			return TI_OK;
+        }
 	}
 
     /* timer might be running - stop it before sending the new request*/
@@ -1490,6 +1508,8 @@ static void powerMgrSetPsMode (TI_HANDLE hPowerMgr, E80211PsMode psMode,
 
     /* call the TWD API*/
     TWD_SetPsMode (pPowerMgr->hTWD, psMode, hPowerSaveCompleteCb, fCb);
+
+    return TI_PENDING;
 }
 
 /****************************************************************************************
@@ -1585,6 +1605,118 @@ static TI_STATUS updatePowerAuthority(TI_HANDLE hPowerMgr)
 	return status;
 }
 
+/*
+ * \brief	Attempts to put the Power Manager in long-doze mode
+ *
+ * 			Sets Long Doze PS mode, NDTIM, and RX Filter as specified in tConfig
+ *
+ * \param	hPowerMgr	handle to the Power Manager module
+ * \param	tConfig		settings for the long-doze mode
+ * \param	fCb			call-back to invoke upon successful entrance to Power Save mode
+ * \param	hCb			handle for fCb
+ *
+ * \return	TI_OK if the Power Manager is already suspended; TI_PENDING if suspend process was started (upon successful suspension, fCb will be invoked); TI_NOK if failed to start suspending
+ *
+ */
+TI_STATUS powerMgr_Suspend(TI_HANDLE hPowerMgr, TPwrStateCfg *pConfig, void (*fCb)(TI_HANDLE), TI_HANDLE hCb)
+{
+	PowerMgr_t*  pPowerMgr = (PowerMgr_t*)hPowerMgr;
+	TI_STATUS    rc;
+
+	if (pConfig == NULL)
+	{
+		TRACE0(pPowerMgr->hReport, REPORT_SEVERITY_ERROR,"powerMgr_Suspend: tConfig is NULL. aborting");
+		return TI_NOK;
+	}
+
+	/*
+	 * setup completion callback
+	 */
+
+	pPowerMgr->fEnteredPsCb = fCb;
+	pPowerMgr->hEnteredPsCb = hCb;
+
+	/*
+	 * setup RX Data filters
+	 */
+	if (pConfig->eSuspendFilterUsage == PWRSTATE_FILTER_USAGE_RXFILTER)
+	{
+		/* save current config */
+		rxData_GetRxDataFilters(pPowerMgr->hRxData,
+					pPowerMgr->tPreSuspendConfig.tRxDataFilters.aValues,
+					&pPowerMgr->tPreSuspendConfig.tRxDataFilters.uCount);
+		pPowerMgr->tPreSuspendConfig.tRxDataFilters.bEnabled = rxData_IsRxDataFiltersEnabled(pPowerMgr->hRxData);
+
+		/* set new config */
+		rxData_SetRxDataFilters(pPowerMgr->hRxData, &pConfig->tSuspendRxFilterValue, 1);
+		rxData_enableDisableRxDataFilters(pPowerMgr->hRxData, TI_TRUE);
+
+		pPowerMgr->tPreSuspendConfig.tRxDataFilters.bChanged = TI_TRUE;
+	}
+	else
+	{
+		pPowerMgr->tPreSuspendConfig.tRxDataFilters.bChanged = TI_FALSE;
+	}
+
+	/*
+	 * setup Long Doze mode
+	 */
+
+	/* save current config */
+	pPowerMgr->tPreSuspendConfig.dtimListenInterval = pPowerMgr->dtimListenInterval; /* save for resuming later */
+
+	/* set new config */
+	pPowerMgr->powerMngModePriority[POWER_MANAGER_PWR_STATE_PRIORITY].priorityEnable = TI_TRUE;
+	pPowerMgr->powerMngModePriority[POWER_MANAGER_PWR_STATE_PRIORITY].powerMode = POWER_MODE_LONG_DOZE;
+	pPowerMgr->dtimListenInterval = pConfig->uSuspendNDTIM;
+	pPowerMgr->desiredPowerModeProfile = POWER_MODE_SHORT_DOZE; /* anything other than POWER_MODE_LONG_DOZE to force PowerMgr_setPowerMode() not to ignore the request */
+	rc = PowerMgr_setPowerMode(pPowerMgr);
+
+	/* notify if completed successfully (skip if pending/failed) */
+	if (rc == TI_OK)
+	{
+		invokeCallback(pPowerMgr->fEnteredPsCb, pPowerMgr->hEnteredPsCb);
+	}
+
+	return rc;
+}
+
+/*
+ * \brief	Reverts powerMgr_Suspend() actions
+ *
+ * 			Restores RX Data Filters; restores Power-Save mode
+ *
+ * \param	hPowerMgr	this module
+ *
+ * \return	TI_OK
+ *
+ */
+TI_STATUS powerMgr_Resume(TI_HANDLE hPowerMgr)
+{
+	PowerMgr_t*  pPowerMgr = (PowerMgr_t*)hPowerMgr;
+
+	/*
+	 * restore RX Data filters
+	 */
+	if (pPowerMgr->tPreSuspendConfig.tRxDataFilters.bChanged)
+	{
+		rxData_SetRxDataFilters(pPowerMgr->hRxData,
+				pPowerMgr->tPreSuspendConfig.tRxDataFilters.aValues,
+				pPowerMgr->tPreSuspendConfig.tRxDataFilters.uCount);
+
+		rxData_enableDisableRxDataFilters(pPowerMgr->hRxData,
+				pPowerMgr->tPreSuspendConfig.tRxDataFilters.bEnabled);
+	}
+
+	/*
+	 * restore PS mode
+	 */
+	pPowerMgr->powerMngModePriority[POWER_MANAGER_PWR_STATE_PRIORITY].priorityEnable = TI_FALSE;
+	pPowerMgr->dtimListenInterval = pPowerMgr->tPreSuspendConfig.dtimListenInterval;
+	PowerMgr_setPowerMode(pPowerMgr);
+
+	return TI_OK;
+}
 
 
 

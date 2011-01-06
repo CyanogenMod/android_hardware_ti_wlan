@@ -666,7 +666,8 @@ typedef struct
 #define BEACON_FILTER_TABLE_MAX_SIZE    ((BEACON_FILTER_TABLE_MAX_IE_NUM * BEACON_FILTER_TABLE_IE_ENTRY_SIZE) + \
                                          (BEACON_FILTER_TABLE_MAX_VENDOR_SPECIFIC_IE_NUM * BEACON_FILTER_TABLE_EXTRA_VENDOR_SPECIFIC_IE_SIZE))
 
-typedef struct ACXBeaconFilterIETableStruct {
+typedef struct ACXBeaconFilterIETableStruct
+{
     INFO_ELE_HDR
     uint8 NumberOfIEs;                          /* The number of IE's in the table*/
                                                 /* 0 - clears the table.*/
@@ -695,7 +696,8 @@ typedef uint8 CoexIp_e;
 typedef CoexIp_enum CoexIp_e;
 #endif
 
-typedef struct ACXCoexActivityIEStruct {
+typedef struct ACXCoexActivityIEStruct
+{
     INFO_ELE_HDR
     CoexIp_e coexIp;         /* 0-BT, 1-WLAN (according to CoexIp_e in FW) */
     uint8  activityId;       /* According to BT/WLAN activity numbering in FW */ 
@@ -1405,6 +1407,7 @@ typedef struct
 #define HOST_IF_CFG_BITMAP_RX_FIFO_ENABLE     0x00000001
 #define HOST_IF_CFG_BITMAP_TX_EXTRA_BLKS_SWAP 0x00000002
 #define HOST_IF_CFG_BITMAP_RX_AGGR_WA_ENABLE  0x00000004
+#define HOST_IF_CFG_BITMAP_TX_PAD_TO_SDIO_BLK 0x00000008
 
 
 typedef struct 
@@ -1957,7 +1960,8 @@ typedef struct
 
 #else
 
-typedef enum {
+typedef enum
+{
     FILTER_DROP = 0,
     FILTER_SIGNAL  ,
     FILTER_FW_HANDLE, 

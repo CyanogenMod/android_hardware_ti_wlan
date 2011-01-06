@@ -144,6 +144,7 @@ void ctrlData_init (TStadHandlesList *pStadHandles,
     pCtrlData->hTrafficMonitor = pStadHandles->hTrafficMon;
     pCtrlData->hTxDataQ     = pStadHandles->hTxDataQ;
     pCtrlData->hStaCap      = pStadHandles->hStaCap;
+    pCtrlData->hRsn         = pStadHandles->hRsn;
 
 #ifdef XCC_MODULE_INCLUDED
 	/* Register the link test retries CB */
@@ -723,18 +724,39 @@ static void selectRateTable(TI_HANDLE hCtrlData, TI_UINT32 rateMask)
 
     /* add HT MCS rates */
     StaCap_IsHtEnable (pCtrlData->hStaCap, &b11nEnable);
+
     if (b11nEnable == TI_TRUE)
     {
-        if ((rate == DRV_RATE_MCS_0) |
-            (rate == DRV_RATE_MCS_1) |
-            (rate == DRV_RATE_MCS_2) |
-            (rate == DRV_RATE_MCS_3) |
-            (rate == DRV_RATE_MCS_4) |
-            (rate == DRV_RATE_MCS_5) |
-            (rate == DRV_RATE_MCS_6) |
-            (rate == DRV_RATE_MCS_7))
+        ECipherSuite             eCipherSuite = TWD_CIPHER_NONE;
+        TI_STATUS				status;
+	   
+         /* Privacy - Used later on HT */
+        param.paramType = RSN_ENCRYPTION_STATUS_PARAM;
+        status             = rsn_getParam(pCtrlData->hRsn, &param);
+        if(status == TI_OK)
         {
-            pCtrlData->uCurrPolicyEnabledRatesMask = pCtrlData->policyEnabledRatesMaskOfdmN;
+            eCipherSuite = param.content.rsnEncryptionStatus;
+           
+            if(eCipherSuite == TWD_CIPHER_WEP    || 
+               eCipherSuite == TWD_CIPHER_TKIP   || 
+               eCipherSuite == TWD_CIPHER_WEP104    )
+            {
+                b11nEnable = TI_FALSE;
+            }
+        }
+        if (b11nEnable == TI_TRUE)
+        {
+            if ((rate == DRV_RATE_MCS_0) |
+                (rate == DRV_RATE_MCS_1) |
+                (rate == DRV_RATE_MCS_2) |
+                (rate == DRV_RATE_MCS_3) |
+                (rate == DRV_RATE_MCS_4) |
+                (rate == DRV_RATE_MCS_5) |
+                (rate == DRV_RATE_MCS_6) |
+                (rate == DRV_RATE_MCS_7))
+            {
+                pCtrlData->uCurrPolicyEnabledRatesMask = pCtrlData->policyEnabledRatesMaskOfdmN;
+            }
         }
     }
 }

@@ -44,6 +44,8 @@
 #include "osTIType.h"
 #include "TWDriver.h"
 #include "ScanCncn.h"
+#include "DrvMainModules.h"
+#include "timer.h"
 
 typedef void (*TScanPrivateSMFunction)(TI_HANDLE hScanCncn);
 
@@ -63,9 +65,11 @@ typedef struct
     TI_HANDLE               hMlme;
     TI_HANDLE               hGenSM;
     TI_HANDLE               hScanCncn;
+    TI_HANDLE               hScanClientGuardTimer;
     TI_BOOL                 bScanCompletePending; /* TRUE if scan complete event is received
                                                     before all results, for periodic scan */
     TI_BOOL                 bInRequest;
+    TI_BOOL                 bSuspended;           /* whether this client was suspended and should be resumed */
     
     TScanPrivateSMFunction  fScrRequest;
     TScanPrivateSMFunction  fScrRelease;
@@ -84,6 +88,9 @@ typedef struct
     TI_UINT32               uResultCounter;
     TI_UINT32               uResultExpectedNumber;
 	TI_BOOL					bScanRejectedOn2_4;
+    TI_BOOL                 bCurrentlyRunning; /* Required since two scans can run at the same time,
+                                                * If one is periodic and one is one-shot */
+
 } TScanCncnClient;
 
 typedef enum
@@ -108,9 +115,8 @@ typedef enum
 } EScanCncnSmEvents;
 
 TI_HANDLE   scanCncnSm_Create               (TI_HANDLE hOS);
-void        scanCncnSm_Init                 (TI_HANDLE hScanCncnClient, TI_HANDLE hReport, TI_HANDLE hTWD, 
-                                             TI_HANDLE hSCR, TI_HANDLE hApConn, TI_HANDLE hMlme, 
-                                             TI_HANDLE hScanCncn, TScanPrivateSMFunction fScrRequest, 
+void        scanCncnSm_Init                 (TI_HANDLE hScanCncnClient, TStadHandlesList *pStadHandles,
+											 TScanPrivateSMFunction fScrRequest,
                                              TScanPrivateSMFunction fScrRelease, TScanPrivateSMFunction fStartScan, 
                                              TScanPrivateSMFunction fStopScan, TScanPrivateSMFunction fRecovery, 
                                              TI_INT8* pScanSmName);

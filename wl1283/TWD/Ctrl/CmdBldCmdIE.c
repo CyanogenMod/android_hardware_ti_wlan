@@ -1158,6 +1158,9 @@ TI_STATUS cmdBld_CmdIeTest (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb, TTestCm
 			paramLength = 0;
 			break;
 
+        case TEST_CMD_SET_NVS_VERSION:
+            paramLength = sizeof(TTestCmdChnageNVSVersion_t);
+
 		default:
 			paramLength = sizeof(pTestCmd->testCmd_u);
 	}

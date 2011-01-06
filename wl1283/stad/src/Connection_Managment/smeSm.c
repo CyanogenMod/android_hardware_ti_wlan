@@ -50,6 +50,7 @@
 #include "regulatoryDomainApi.h"
 #include "siteMgrApi.h"
 #include "DrvMain.h"
+#include "pwrState.h"
 
 
 static OS_802_11_DISASSOCIATE_REASON_E eDisassocConvertTable[ MGMT_STATUS_MAX_NUM +1] = 
@@ -183,7 +184,7 @@ void smeSm_Start (TI_HANDLE hSme)
 
     /* set SCR group according to connection mode */
     if (CONNECT_MODE_AUTO == pSme->eConnectMode  ||
-			BSS_INDEPENDENT == pSme->eBssType)
+    		BSS_INDEPENDENT == pSme->eBssType)
     {
         TRACE0(pSme->hReport, REPORT_SEVERITY_INFORMATION , "smeSm_Start: changing SCR group to DRV scan\n");
         scr_setGroup (pSme->hScr, SCR_GID_DRV_SCAN);
@@ -225,8 +226,8 @@ void smeSm_Stop (TI_HANDLE hSme)
 
     if (TI_FALSE == pSme->bRunning)
     {
-        /* call DrvMain */
-        drvMain_SmeStop (pSme->hDrvMain);
+        /* notify the pwrState module */
+        pwrState_SmeStopped(pSme->hPwrState);
     }
 }
 
@@ -261,7 +262,7 @@ void smeSm_PreConnect (TI_HANDLE hSme)
     else
     {
         if (CONNECT_MODE_AUTO == pSme->eConnectMode ||
-				BSS_INDEPENDENT == pSme->eBssType)
+        		BSS_INDEPENDENT == pSme->eBssType)
         {
             /* automatic mode - start scanning */
             if (TI_OK != sme_StartScan (hSme))
@@ -388,6 +389,9 @@ void smeSm_ConnectSuccess (TI_HANDLE hSme)
 
     /* Set SCR group to connected */
     scr_setGroup (pSme->hScr, SCR_GID_CONNECTED);
+
+    /* notify the pwrState module */
+    pwrState_SmeConnected(pSme->hPwrState);
 }
 
 /** 
@@ -458,6 +462,8 @@ void smeSm_DisconnectDone (TI_HANDLE hSme)
 
     siteMgr_disSelectSite (pSme->hSiteMgr);
 
+    /* notify the pwrState module */
+    pwrState_SmeDisconnected(pSme->hPwrState);
 
     /* try to reconnect */
     smeSm_Start (hSme);

@@ -742,7 +742,7 @@ typedef enum
 /*	0x1F	*/	TEST_CMD_SET_EFUSE,
 /*	0x20	*/	TEST_CMD_GET_EFUSE, 
 /* DORONS [4/27/2008] testing the 2nd auxiliary function */
-/*0x21 */   TEST_CMD_TEST_TONE,
+/*  0x21    */  TEST_CMD_TEST_TONE,
 /*	0x22	*/	TEST_CMD_POWER_MODE,
 /*	0x23	*/	TEST_CMD_SMART_REFLEX,
 /*	0x24	*/	TEST_CMD_CHANNEL_RESPONSE,
@@ -750,6 +750,7 @@ typedef enum
 #ifdef TNETW1273
 /*	0x26	*/	TEST_CMD_INI_FILE_RF_EXTENDED_PARAM,
 #endif
+/*  0x27    */  TEST_CMD_SET_NVS_VERSION,
 
     MAX_TEST_CMD_ID = 0xFF	/* Dummy - must be last!!! (make sure that Enum variables are type of int) */
         
@@ -1082,13 +1083,17 @@ typedef enum TXPWR_CFG0__VGA_STEP_ENMT
 
 /* TX BIP default parameters */
 #define CALIBRATION_STEP_SIZE			1000
-#define CALIBRATION_POWER_HIGHER_RANGE	22000
-#define CALIBRATION_POWER_HIGHER_RANGE_FOR_RFMD	19000
-#define CALIBRATION_POWER_LOWER_RANGE	(-3000)
+#define CALIBRATION_POWER_HIGHER_RANGE_V2_1				26000   // High power range increased to support 26dBm
+#define CALIBRATION_POWER_HIGHER_RANGE_FOR_RFMD_V2_1	26000 // High power range increased to support 26dBm
+#define CALIBRATION_POWER_LOWER_RANGE_V2_1				1000 // Low power range increased to 1dBm
+#define FIRST_PD_CURVE_TO_SET_2_OCTET_V2_1				(14 * CALIBRATION_STEP_SIZE)/* dBm     changed to 14 in order to support NVS parsing */
 
-#define FIRST_PD_CURVE_TO_SET_2_OCTET	(10 * CALIBRATION_STEP_SIZE)/* dBm */
+#define CALIBRATION_POWER_HIGHER_RANGE_V2				22000   // High power range increased to support 22dBm
+#define CALIBRATION_POWER_HIGHER_RANGE_FOR_RFMD_V2		19000 // High power range increased to support 19dBm
+#define CALIBRATION_POWER_LOWER_RANGE_V2				(-3000) // Low power range increased to -3dBm
+#define FIRST_PD_CURVE_TO_SET_2_OCTET_V2				(10 * CALIBRATION_STEP_SIZE) /* 10 dBm */
 
-#define SIZE_OF_POWER_DETECTOR_TABLE	((((CALIBRATION_POWER_HIGHER_RANGE) - (CALIBRATION_POWER_LOWER_RANGE))\
+#define SIZE_OF_POWER_DETECTOR_TABLE	((((CALIBRATION_POWER_HIGHER_RANGE_V2_1) - (CALIBRATION_POWER_LOWER_RANGE_V2_1))\
 	                                      / (CALIBRATION_STEP_SIZE)) + 1)
 
 /* default PPA steps value */
@@ -1116,8 +1121,10 @@ typedef enum TXPWR_CFG0__VGA_STEP_ENMT
 #define TLV_LENGTH_LENGTH		2
 #define START_PARAM_INDEX		(START_LENGTH_INDEX + TLV_LENGTH_LENGTH) /* 3 */
 
-#define	NVS_VERSION_1			1
-#define	NVS_VERSION_2			2
+#define NON_NVS_VERSION			0
+#define	NVS_VERSION_1			0x1
+#define	NVS_VERSION_2			0x2
+#define NVS_VERSION_2_1			0x102
 
 #define	NVS_MAC_FIRST_LENGTH_INDEX			0
 #define	NVS_MAC_FIRST_LENGHT_VALUE			1
@@ -1220,7 +1227,31 @@ typedef enum
 	LAST_RADIO_TYPE_PARAMETERS_INFO = (eNUMBER_RADIO_TYPE_PARAMETERS_INFO - 1)	/* 1 */
 }NVSTypeInfo;
 
-/* NVS definition end here */
+
+
+
+typedef enum
+{
+	eCHANGE_TO_NVS_VERSION_2   = 2,
+	eCHANGE_TO_NVS_VERSION_2_1 = 21,
+
+	eLAST_NVS_CHANGE = MAX_POSITIVE8
+}TTestCmdChnageNVSVersion_enum;
+
+#ifdef HOST_COMPILE
+typedef uint8 TTestCmdChnageNVSVersion_e;
+#else
+typedef TTestCmdChnageNVSVersion_enum TTestCmdChnageNVSVersion_e;
+#endif
+
+typedef struct
+{
+    int16                           oRadioStatus;
+	TTestCmdChnageNVSVersion_e		nvsVersionChange;
+	uint8		                    padding;
+}TTestCmdChnageNVSVersion_t;
+
+
 
 
 typedef enum
@@ -1708,7 +1739,8 @@ typedef struct
 		TTestCmdChannel 				Channel;
 		RadioRxPltCal 					RxPlt;          
 		TTestCmdPdBufferCal 			PdBufferCal;
-		TTestCmdP2GCal 					P2GCal;    
+		TTestCmdP2GCal 					P2GCal;
+		TTestCmdChnageNVSVersion_t		changeNVSVersion;
 		TTestCmdPdBufferErrors			PdBufferErrors;
 		TTestCmdUpdateReferncePoint		PdBufferCalReferencePoint;
 		TPacketParam 					TxPacketParams;

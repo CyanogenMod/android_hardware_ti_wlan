@@ -55,7 +55,7 @@
 
 #define RX_DRIVER_COUNTER_ADDRESS 0x300538
 #ifdef TNETW1283
-    /* Skip EOT and Rx counter workarounds */
+/* Skip EOT and Rx counter workarounds */
 #else
 #define RX_DRIVER_DUMMY_WRITE_ADDRESS 0x300534
 #endif
@@ -72,16 +72,16 @@
 #endif
 
 #ifdef PLATFORM_SYMBIAN	/* UMAC is using only one buffer and therefore we can't use consecutive reads */
-    #define MAX_CONSECUTIVE_READS   1
+#define MAX_CONSECUTIVE_READS   1
 #else
-    #define MAX_CONSECUTIVE_READS   8
+#define MAX_CONSECUTIVE_READS   8
 #endif
 
 #define SLV_MEM_CP_VALUE(desc, offset)  (((RX_DESC_GET_MEM_BLK(desc) << 8) + offset))
 #define ALIGNMENT_SIZE(desc)            ((RX_DESC_GET_UNALIGNED(desc) & UNALIGNED_PAYLOAD) ? 2 : 0)
 
 #if (NUM_RX_PKT_DESC & (NUM_RX_PKT_DESC - 1))
-    #error  NUM_RX_PKT_DESC is not a power of 2 which may degrade performance when we calculate modulo!!
+#error  NUM_RX_PKT_DESC is not a power of 2 which may degrade performance when we calculate modulo!!
 #endif
 
 
@@ -166,6 +166,7 @@ typedef struct
     TFailureEventCb     fErrCb;                                 /* The upper layer CB function for error handling */
     TI_HANDLE           hErrCb;                                 /* The CB function handle */
     TI_UINT32           uHostIfCfgBitmap;                       /* Host interface configuration bitmap */
+    TI_UINT32           uSdioBlkSizeShift;       /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
 
 #ifndef TNETW1283
     TI_UINT32				uFlags;                             /* See RXXFER_FLAG_* */
@@ -287,8 +288,9 @@ void rxXfer_Init(TI_HANDLE hRxXfer,
 TI_STATUS rxXfer_Config (TI_HANDLE hRxXfer, TTwdInitParams *pInitParams)
 {
     TRxXfer  *pRxXfer = (TRxXfer *)hRxXfer;
-    
-    pRxXfer->uHostIfCfgBitmap = pInitParams->tGeneral.HostIfCfgBitmap;
+
+    pRxXfer->uHostIfCfgBitmap = pInitParams->tGeneral.uHostIfCfgBitmap;
+    pRxXfer->uSdioBlkSizeShift = pInitParams->tGeneral.uSdioBlkSizeShift;
 
     return TI_OK;
 }
@@ -352,9 +354,10 @@ void rxXfer_SetHwInfo(TI_HANDLE hRxXfer, TFwInfo* pHwInfo)
 	TRxXfer *pRxXfer = (TRxXfer *)hRxXfer;
 	TI_BOOL bEnableEOTWorkaroud;
 
-	if (NULL==pHwInfo) {
-		return;
-	}
+    if (NULL==pHwInfo)
+    {
+        return;
+    }
 
 	bEnableEOTWorkaroud = (pHwInfo->uPGVersion < 3);
 	if (bEnableEOTWorkaroud)
@@ -564,6 +567,7 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
     TI_UINT32        uTotalAggregLen  = 0;
     TI_UINT32        uDrvIndex;
     TI_UINT32        uFwIndex;
+    TI_UINT32        uBlockMask;
     TI_UINT8 *       pHostBuf;
     TTxnStruct *     pTxn = NULL;
     ETxnStatus       eTxnStatus;
@@ -595,6 +599,7 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
         ADD_DBG_TRACE(20, uDrvIndex, uRxDesc);
             uBuffSize     = RX_DESC_GET_LENGTH(uRxDesc) << 2;
             eRxPacketType = (PacketClassTag_e)RX_DESC_GET_PACKET_CLASS_TAG (uRxDesc);
+            uBlockMask = ((1 << pRxXfer->uSdioBlkSizeShift) - 1);
 
             /* If new packet exceeds max aggregation length, set flag to send previous packets (postpone it to next loop) */
             if ((uTotalAggregLen + uBuffSize) > pRxXfer->uMaxAggregLen)
@@ -611,9 +616,9 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
              */
             #define BLOCK_MASK 0x1FF
             else if ((pRxXfer->uHostIfCfgBitmap & HOST_IF_CFG_BITMAP_RX_AGGR_WA_ENABLE) &&
-                     (uAggregPktsNum > 0) && ((uTotalAggregLen+uBuffSize) > BLOCK_MASK))
+                     (uAggregPktsNum > 0) && ((uTotalAggregLen+uBuffSize) > uBlockMask))
             {  
-                TI_UINT32 uRemainder = (uTotalAggregLen + uBuffSize) & BLOCK_MASK;
+                TI_UINT32 uRemainder = (uTotalAggregLen + uBuffSize) & uBlockMask;
                 TI_UINT32 uIncrementLen = 0;
                 TI_UINT32 uPktIndex;
 
@@ -624,7 +629,7 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
                     uIncrementLen += pTxn->aLen[uPktIndex];
 
                     
-                    if ((uIncrementLen > uRemainder) && (((uIncrementLen-uRemainder) & BLOCK_MASK) < 16))
+                    if ((uIncrementLen > uRemainder) && (((uIncrementLen-uRemainder) & uBlockMask) < 16))
                     {
                         ADD_DBG_TRACE(22, uIncrementLen, uRemainder);
                         pRxXfer->uRxFifoWa++;
@@ -644,11 +649,11 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
             {
                 /* Allocate host read buffer */
                 /* The RxBufAlloc() add an extra word for MAC header alignment in case of QoS MSDU */
-                eBufStatus = pRxXfer->RequestForBufferCB(pRxXfer->RequestForBufferCB_handle, 
-                                                         (void**)&pHostBuf,
-                                                         uBuffSize,
-                                                         (TI_UINT32)NULL,
-                                                         eRxPacketType);
+                eBufStatus = pRxXfer->RequestForBufferCB(pRxXfer->RequestForBufferCB_handle,
+                             (void**)&pHostBuf,
+                             uBuffSize,
+                             (TI_UINT32)NULL,
+                             eRxPacketType);
 
                 TRACE6(pRxXfer->hReport, REPORT_SEVERITY_INFORMATION , "rxXfer_Handle: Index=%d, RxDesc=0x%x, DrvCntr=%d, FwCntr=%d, BufStatus=%d, BuffSize=%d\n", uDrvIndex, uRxDesc, pRxXfer->uDrvRxCntr, pRxXfer->uFwRxCntr, eBufStatus, uBuffSize);
 
@@ -1096,10 +1101,10 @@ void rxXfer_PrintStats (TI_HANDLE hRxXfer)
         WLAN_OS_REPORT(("Indx: Event    Data1    Data2\n"));
         for (i = 0; i < DBG_TBL_SIZE; i++) 
         {
-            WLAN_OS_REPORT(("%04d: %05d %08x %08x\n", ((aDbgIndex + i) % DBG_TBL_SIZE), 
-                   aDbgTrace[(aDbgIndex + i) % DBG_TBL_SIZE].uEvent,
-                   aDbgTrace[(aDbgIndex + i) % DBG_TBL_SIZE].uData1,
-                   aDbgTrace[(aDbgIndex + i) % DBG_TBL_SIZE].uData2));
+            WLAN_OS_REPORT(("%04d: %05d %08x %08x\n", ((aDbgIndex + i) % DBG_TBL_SIZE),
+                            aDbgTrace[(aDbgIndex + i) % DBG_TBL_SIZE].uEvent,
+                            aDbgTrace[(aDbgIndex + i) % DBG_TBL_SIZE].uData1,
+                            aDbgTrace[(aDbgIndex + i) % DBG_TBL_SIZE].uData2));
         }
     }
 #endif

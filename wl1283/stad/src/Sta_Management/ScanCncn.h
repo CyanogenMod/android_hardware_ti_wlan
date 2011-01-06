@@ -151,6 +151,11 @@ void                    scanCncn_SwitchToConnected (TI_HANDLE hScanCncn);
 void                    scanCncn_SwitchToNotConnected (TI_HANDLE hScanCncn);
 void                    scanCncn_SwitchToIBSS (TI_HANDLE hScanCncn);
 void 					scanCncn_TimerExpired (TI_HANDLE hScanCncn, TI_BOOL bTwdInitOccured);
+
+TI_STATUS	scanCncn_Resume	(TI_HANDLE hScanCncn);
+TI_STATUS	scanCncn_Suspend(TI_HANDLE hScanCncn);
+void scanCncn_ClientStopped(TI_HANDLE hScanCncn, TI_HANDLE hScanCncnClient);
+
 /**
  * \brief Starts a one-shot scan operation
  * 
@@ -224,8 +229,13 @@ void                    scanCncn_SGconfigureScanParams (TI_HANDLE hScanCncn, TI_
 /* Scan concentrator application functions */
 TI_STATUS               scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam);
 TI_STATUS               scanCncnApp_GetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam);
-void                    scanCncn_AppScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status,
-                                                  TScanFrameInfo* frameInfo, TI_UINT16 SPSStatus);
+void                    scanCncnApp_ScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status,
+                                                  TScanFrameInfo* frameInfo, TI_UINT16 SPSStatus, EScanClient eExternalScanClient,
+                                                  EScanCncnClient eScanCncnClient);             
+void                    scanCncnApp_PeriodicScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status,
+                                                          TScanFrameInfo* frameInfo, TI_UINT16 SPSStatus);
+void                    scanCncnApp_ApplicationScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status,
+                                                             TScanFrameInfo* frameInfo, TI_UINT16 SPSStatus);
 void                    scanCncn_PeriodicScanCompleteCB (TI_HANDLE hScanCncn, char* str, TI_UINT32 strLen);
 void                    scanCncn_PeriodicScanReportCB (TI_HANDLE hScanCncn, char* str, TI_UINT32 strLen);
 void 					scanCncnSm_NoOp (TI_HANDLE hScanCncnClient);

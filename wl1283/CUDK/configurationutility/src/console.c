@@ -835,7 +835,7 @@ VOID Console_Start(THandle hConsole)
         }
         /* change to NULL terminated strings */
         if( inbuf[os_strlen(inbuf)-1] == '\n' )
-	{
+		{
             inbuf[os_strlen(inbuf)-1] = 0;
         }
         /* parse the string */

@@ -52,7 +52,7 @@
 #include "TWDriver.h"
 #include "txCtrlBlk_api.h"
 #include "txHwQueue_api.h"
-
+#include "Ethernet.h"
 
 /* Translate input TID to AC */            
 /* Note: This structure is shared with other modules */
@@ -89,9 +89,7 @@ typedef struct
     TI_UINT16  uPercentOfBlkLowThresh;  /* Configured percentage of blocks to use as the queue's low allocation threshold */
     TI_UINT16  uPercentOfBlkHighThresh; /* Configured percentage of blocks to use as the queue's high allocation threshold */
     TI_UINT32  uNumBlksQuota;
-    TI_UINT32  uPriorityBitMap;
-
-} TTxHwQueueInfo; 
+} TTxHwQueueInfo;
 
 typedef struct
 {
@@ -108,13 +106,17 @@ typedef struct
     TI_UINT32  uNumTotalBlksFree;       /* Total number of free HW blocks       */    
     TI_UINT32  uNumTotalBlksReserved;   /* Total number of free but reserved HW blocks */
     TI_UINT32  uNumUsedDescriptors;     /* Total number of packets in the FW. */
+    TI_UINT32  uSdioBlkSizeShift;       /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
+    TI_UINT32  uHostIfCfgBitmap;         /* Host interface configuration bitmap */
     TI_UINT8   uFwTxResultsCntr;        /* Accumulated freed descriptors in FW. */
     TI_UINT8   uDrvTxPacketsCntr;       /* Accumulated allocated descriptors in driver. */
     
     TTxHwQueueInfo  aTxHwQueueInfo[MAX_NUM_OF_AC]; /* The per queue variables */
     ECipherSuite    eSecurityMode;      /* Current security mode default TWD_CIPHER_NONE - 0*/
     TI_UINT32       uExtraHwBlocks;     /* Default value BLKS_HW_ALLOC_SPARE*/
-	TI_INT32    iTxTotaldiff;           /* Indicates How much Memory blocks should be moved to RX poll */
+    TI_INT32    iTxTotaldiff;           /* Indicates How much Memory blocks should be moved to RX poll */
+    TI_UINT32  uPriorityBitMap;
+
 } TTxHwQueue;
 
 
@@ -215,7 +217,9 @@ TI_STATUS txHwQueue_Config (TI_HANDLE hTxHwQueue, TTwdInitParams *pInitParams)
     {
         pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksThresh = pInitParams->tGeneral.TxBlocksThresholdPerAc[TxQid];
     }
-    
+    pTxHwQueue->uSdioBlkSizeShift = pInitParams->tGeneral.uSdioBlkSizeShift;
+    pTxHwQueue->uHostIfCfgBitmap = pInitParams->tGeneral.uHostIfCfgBitmap;
+
     return TI_OK;
 }
 
@@ -282,6 +286,7 @@ TI_STATUS txHwQueue_Restart (TI_HANDLE hTxHwQueue)
     pTxHwQueue->uNumUsedDescriptors = 0;
     pTxHwQueue->uFwTxResultsCntr = 0;
     pTxHwQueue->uDrvTxPacketsCntr = 0;
+    pTxHwQueue->uPriorityBitMap = 0;
 
     for (TxQid = 0; TxQid < MAX_NUM_OF_AC; TxQid++)
     {
@@ -293,7 +298,6 @@ TI_STATUS txHwQueue_Restart (TI_HANDLE hTxHwQueue)
         pQueueInfo->uNumBlksCausedBusy = 0;
         pQueueInfo->bQueueBusy = TI_FALSE;
         pQueueInfo->uNumBlksQuota = TXHWQUEUE_QUOTA;
-        pQueueInfo->uPriorityBitMap = 0;
 
         /* Since no blocks are used yet, reserved blocks number equals to the low threshold. */
         pQueueInfo->uNumBlksReserved = pQueueInfo->uNumBlksThresh;
@@ -321,6 +325,7 @@ TI_STATUS txHwQueue_Restart (TI_HANDLE hTxHwQueue)
 ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCtrlBlk)
 {
     TTxHwQueue *pTxHwQueue = (TTxHwQueue *)hTxHwQueue;
+    TI_UINT32 uTotalLength;    /* The current packet length plus overhead due to header translation */
     TI_UINT32 uNumBlksToAlloc; /* The number of blocks required for the current packet. */
     TI_UINT32 uExcludedLength; /* The data length not included in the rough blocks calculation */
     TI_UINT32 uAvailableBlks;  /* Max blocks that are currently available for this queue. */
@@ -333,15 +338,23 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
     /*  Calculate packet required HW blocks.                               */
     /***********************************************************************/
 
+    uTotalLength = pTxCtrlBlk->tTxDescriptor.length + 20 + MAX_HEADER_SIZE - ETHERNET_HDR_LEN;
+#ifdef TNETW1283
+    if (pTxHwQueue->uHostIfCfgBitmap & HOST_IF_CFG_BITMAP_TX_PAD_TO_SDIO_BLK)
+    {
+        TI_UINT32 uBlockMask = ((1 << pTxHwQueue->uSdioBlkSizeShift) - 1);
+        uTotalLength = (uTotalLength + uBlockMask) & (~uBlockMask);
+    }
+#endif
     /* Divide length by 256 instead of 252 (block size) to save CPU */
-    uNumBlksToAlloc = ( pTxCtrlBlk->tTxDescriptor.length + 20 ) >> 8;
+    uNumBlksToAlloc = uTotalLength >> 8;
 
     /* The length not yet included in the uNumBlksToAlloc is the sum of:
         1) 4 bytes per block as a result of using 256 instead of 252 block size.
         2) The remainder of the division by 256. 
         3) Overhead due to header translation, security and LLC header (subtracting ethernet header).
     */
-    uExcludedLength = (uNumBlksToAlloc << 2) + ((pTxCtrlBlk->tTxDescriptor.length + 20) & 0xFF) + MAX_HEADER_SIZE - 14;
+    uExcludedLength = (uNumBlksToAlloc << 2) + (uTotalLength & 0xFF);
 
     /* Add 1 or 2 blocks for the excluded length, according to its size */
     uNumBlksToAlloc += (uExcludedLength > 252) ? 2 : 1;
@@ -376,8 +389,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
     /* set total blocks in the extra blocks field, FW will deliver only total blocks */ 
 
     /* !!!!!!!!!!!!!just for test - swap fields - OK for HW, fw will have the value on other field */
-    pTxCtrlBlk->tTxDescriptor.extraMemBlks = uNumBlksToAlloc;
-    pTxCtrlBlk->tTxDescriptor.totalMemBlks = pTxHwQueue->uExtraHwBlocks;
+    pTxCtrlBlk->tTxDescriptor.totalMemBlks = uNumBlksToAlloc;
 #else
     pTxCtrlBlk->tTxDescriptor.extraMemBlks = pTxHwQueue->uExtraHwBlocks;
     pTxCtrlBlk->tTxDescriptor.totalMemBlks = uNumBlksToAlloc;
@@ -682,10 +694,10 @@ ETxnStatus txHwQueue_UpdateFreeResources (TI_HANDLE hTxHwQueue, FwStatus_t *pFwS
             SET_QUEUE_HIGH_PRIORITY(uPriorityQueueBitMap, uQueueId); 
         }
     }
-    if((pQueueInfo->uPriorityBitMap != uPriorityQueueBitMap) && (pTxHwQueue->fUpdatePriorityMapCb != NULL))
+    if((pTxHwQueue->uPriorityBitMap != uPriorityQueueBitMap) && (pTxHwQueue->fUpdatePriorityMapCb != NULL))
     { 
         pTxHwQueue->fUpdatePriorityMapCb(pTxHwQueue->hUpdatePriorityMapHndl, uPriorityQueueBitMap); 
-        pQueueInfo->uPriorityBitMap = uPriorityQueueBitMap;
+        pTxHwQueue->uPriorityBitMap = uPriorityQueueBitMap;
     }
 	if(pTxHwQueue->iTxTotaldiff > 0)
     {

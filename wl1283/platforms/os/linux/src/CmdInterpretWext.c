@@ -579,9 +579,15 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
     case SIOCSIWSCAN:
         {
 			struct iw_scan_req scanReq;
-            TScanParams scanParams;
-	    pParam->content.pScanParams = &scanParams;
+            TScanParams *pScanParams = os_memoryAlloc(pCmdInterpret->hOs, sizeof(TScanParams));
 
+            if (!pScanParams)
+            {
+                res = -ENOMEM;
+                goto cmd_end;
+            }
+
+            pParam->content.pScanParams = pScanParams;
 
 			/* Init the parameters in case the Supplicant doesn't support them*/
             pParam->content.pScanParams->desiredSsid.len = 0;
@@ -617,6 +623,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             pParam->paramLength = sizeof(TScanParams);
             res = cmdDispatch_SetParam (pCmdInterpret->hCmdDispatch, pParam );
             CHECK_PENDING_RESULT(res,pParam)
+
+            os_memoryFree(pCmdInterpret->hOs, pScanParams, sizeof(TScanParams));
         }
         break;
 
@@ -1428,8 +1436,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             }
 
             if (res == TI_OK)
-                {
-                 if(IS_PARAM_ASYNC(my_command->cmd))
+            {
+                if(IS_PARAM_ASYNC(my_command->cmd))
                 {
                     pCmdInterpret->pAsyncCmd = cmdObj; /* Save command handle for completion CB */
                     res = COMMAND_PENDING;
@@ -1703,26 +1711,24 @@ event_end:
 
     case IPC_EVENT_SCAN_COMPLETE:
         {
-			TI_UINT8 *buf;
+			TI_INT32 *pClient;
+            TI_UINT8 scanComplete[18];
+            TI_INT32 scanClient;
 			wrqu.data.length = 0;
 			wrqu.data.flags = 0;
-			buf = pData->uBuffer;
 
-			if (*(TI_UINT32*)buf == SCAN_STATUS_COMPLETE)
-				wireless_send_event(NETDEV(pCmdInterpret->hOs), SIOCGIWSCAN, &wrqu, NULL);
-			else			
-			{
-                if (*(TI_UINT32*)buf == SCAN_STATUS_STOPPED)          // scan is stopped successfully
-					pData->EvParams.uEventType = IPC_EVENT_SCAN_STOPPED;
-                else if (*(TI_UINT32*)buf == SCAN_STATUS_FAILED)          // scan is stopped successfully
-					pData->EvParams.uEventType = IPC_EVENT_SCAN_FAILED;
-				else
-					break;
+            os_memoryCopy(pCmdInterpret->hOs, &scanClient, pData->uBuffer, 4);
 
-				os_memorySet (pCmdInterpret->hOs,&wrqu, 0, sizeof(wrqu));
-				wrqu.data.length = sizeof(IPC_EV_DATA);
-				wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVCUSTOM, &wrqu, (u8 *)pData);
-			}
+			wireless_send_event(NETDEV(pCmdInterpret->hOs), SIOCGIWSCAN, &wrqu, NULL);
+
+            os_memorySet (pCmdInterpret->hOs, &wrqu, 0, sizeof(wrqu));
+
+            wrqu.data.length = sprintf(scanComplete, "SCAN_COMPLETE=");
+            pClient = (TI_INT32*)&scanComplete[wrqu.data.length];
+            *pClient = scanClient;
+            wrqu.data.length += sizeof(scanClient);
+
+            wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVCUSTOM, &wrqu, (TI_UINT8 *)scanComplete);
 		}
         break;
 

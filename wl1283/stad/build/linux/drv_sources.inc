@@ -79,7 +79,8 @@ UTIL_SRCS = \
     $(UTILS)/context.c \
     $(UTILS)/timer.c \
     $(UTILS)/rate.c \
-    $(UTILS)/freq.c
+    $(UTILS)/freq.c  \
+	$(UTILS)/version.c
 #end of UTIL_SRCS#      do not remove or change this comment
 
 
@@ -146,6 +147,8 @@ CORE_SRCS = \
     $(COMSRC)/Data_link/GeneralUtil.c \
     $(COMSRC)/Data_link/TrafficMonitor.c \
     $(COMSRC)/Data_link/rx.c \
+    $(COMSRC)/Sta_Management/pwrState.c \
+    $(COMSRC)/Sta_Management/pwrState_Dbg.c \
     $(COMSRC)/Sta_Management/PowerMgr.c \
     $(COMSRC)/Sta_Management/PowerMgrKeepAlive.c \
     $(COMSRC)/Sta_Management/PowerMgrDbgPrint.c \

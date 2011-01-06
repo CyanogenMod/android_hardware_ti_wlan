@@ -109,6 +109,10 @@ typedef struct
     TI_BOOL                     Enabled;
     TI_BOOL                     Connected;
 
+    TI_BOOL                     bSuspended;  /* whether this module was suspended (and should be resumed) */
+    void (*fDisabledCb)(TI_HANDLE);          /* callback to invoke when this module is disabled */
+    TI_HANDLE                   hDisabledCb; /* context for fDisabledCb */
+
     TI_UINT8                    servingChannelID;
     TI_UINT8                    measuredChannelID;
 
@@ -176,6 +180,8 @@ typedef struct
 
 TI_STATUS measurementMgr_activateNextRequest(TI_HANDLE pContext);
 
+TI_STATUS	measurementMgr_Resume	(TI_HANDLE hMeasurementMgr);
+TI_STATUS measurementMgr_Suspend(TI_HANDLE hMeasurementMgr, void (*fCb)(TI_HANDLE), TI_HANDLE hCb);
 
 
 

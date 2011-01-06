@@ -1550,7 +1550,6 @@ TI_UINT32 rate_SupportedToDrvBitmap (ESupportedRateSet eSupportedRateSet, TI_BOO
                        DRV_RATE_MASK_2_BARKER |
                        DRV_RATE_MASK_5_5_CCK |
                        DRV_RATE_MASK_11_CCK |
-                       DRV_RATE_MASK_22_PBCC |
                        DRV_RATE_MASK_6_OFDM |
                        DRV_RATE_MASK_9_OFDM |
                        DRV_RATE_MASK_12_OFDM |

@@ -732,11 +732,9 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
         }
         else
         {
-            WLAN_OS_REPORT (("Error!! Found unknown Chip Id = 0x%x\n", pHwInit->uChipId));
-            /*
-             * NOTE: no exception because of forward compatibility
-             */
-        EXCEPT (pHwInit, status)
+            WLAN_OS_REPORT (("Error!! Found unknown Chip Id = 0x%, HW Init Failed. \n", pHwInit->uChipId));
+            status = TI_NOK;
+            EXCEPT (pHwInit, status)
         }
 
 #ifdef _VLCT_

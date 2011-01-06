@@ -59,7 +59,6 @@
  * \brief True value
  */
 #define TI_TRUE                     1
-
 /**
  * \def TI_OK
  * \brief OK return value
@@ -71,8 +70,23 @@
  */
 #define TI_NOK                      1
 /**
+ * \def TI_PENDING
+ * \brief PENDING return value - will be completed in another task
+ */
+#define TI_PENDING                  2
+/**
+ * \def TI_ERROR
+ * \brief  ERROR return value
+ */
+#define TI_ERROR                      3
+/**
+ * \def TI_BUSY
+ * \brief A specific NOK, due to BUSY
+ */
+#define TI_BUSY                      4
+/**
  * \def MAC_ADDR_LEN
- * \brief Length of Standart MAC address
+ * \brief Length of Standard MAC address
  */
 #define MAC_ADDR_LEN                6
 /**

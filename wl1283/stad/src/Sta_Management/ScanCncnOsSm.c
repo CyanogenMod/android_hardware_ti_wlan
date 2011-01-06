@@ -89,13 +89,16 @@ static TGenSM_actionCell tSmMatrix[ SCAN_CNCN_OS_SM_NUMBER_OF_STATES ][ SCAN_CNC
         { /* SCAN_CNCN_OS_SM_STATE_IDLE */
             { SCAN_CNCN_OS_SM_STATE_SCAN_ON_G,  scanCncnOsSm_ActionStartGScan },    /* SCAN_CNCN_OS_SM_EVENT_START_SCAN */
             { SCAN_CNCN_OS_SM_STATE_IDLE,       scanCncnOsSm_ActionUnexpected },    /* SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE */
+			{ SCAN_CNCN_OS_SM_STATE_IDLE,		scanCncnOsSm_ActionUnexpected },
         },
         { /* SCAN_CNCN_OS_SM_STATE_SCAN_ON_G */
             { SCAN_CNCN_OS_SM_STATE_SCAN_ON_G,  scanCncnOsSm_ActionUnexpected },    /* SCAN_CNCN_OS_SM_EVENT_START_SCAN */
             { SCAN_CNCN_OS_SM_STATE_SCAN_ON_A,  scanCncnOsSm_ActionStartAScan },    /* SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE */
+			{ SCAN_CNCN_OS_SM_STATE_IDLE,		scanCncnOsSm_ActionCompleteScan },
         },
         { /* SCAN_CNCN_OS_SM_STATE_SCAN_ON_A */
             { SCAN_CNCN_OS_SM_STATE_SCAN_ON_A,  scanCncnOsSm_ActionUnexpected },    /* SCAN_CNCN_OS_SM_EVENT_START_SCAN */
+            { SCAN_CNCN_OS_SM_STATE_IDLE,       scanCncnOsSm_ActionCompleteScan },  /* SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE */
             { SCAN_CNCN_OS_SM_STATE_IDLE,       scanCncnOsSm_ActionCompleteScan },  /* SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE */
         }
     };
@@ -323,16 +326,16 @@ void scanCncnOsSm_ActionStartAScan (TI_HANDLE hScanCncn)
         pScanCncn->tOsScanParams.probeReqNumber = SCAN_OID_DEFAULT_PROBE_REQUEST_NUMBER_A;
         pScanCncn->tOsScanParams.probeRequestRate = (ERateMask)SCAN_OID_DEFAULT_PROBE_REQUEST_RATE_A;
     }
-    
-    /* add supported channels on G */
+
+    /* add supported channels on A */
     if (SCAN_TYPE_NORMAL_PASSIVE == pScanCncn->tOsScanParams.scanType )
     {
-        uValidChannelsCount = scanCncnOsSm_FillAllAvailableChannels (hScanCncn, RADIO_BAND_5_0_GHZ, 
-                                       SCAN_TYPE_NORMAL_PASSIVE, &(pScanCncn->tOsScanParams.channelEntry[0]),
-                                       SCAN_OID_DEFAULT_MAX_DWELL_TIME_PASSIVE_A,
-                                       SCAN_OID_DEFAULT_MIN_DWELL_TIME_PASSIVE_A,
-                                       SCAN_OID_DEFAULT_EARLY_TERMINATION_EVENT_PASSIVE_A,
-                                       SCAN_OID_DEFAULT_EARLY_TERMINATION_COUNT_PASSIVE_A );
+     	uValidChannelsCount = scanCncnOsSm_FillAllAvailableChannels (hScanCncn, RADIO_BAND_5_0_GHZ, 
+                                           SCAN_TYPE_NORMAL_PASSIVE, &(pScanCncn->tOsScanParams.channelEntry[0]),
+                                           SCAN_OID_DEFAULT_MAX_DWELL_TIME_PASSIVE_A,
+                                           SCAN_OID_DEFAULT_MIN_DWELL_TIME_PASSIVE_A,
+                                           SCAN_OID_DEFAULT_EARLY_TERMINATION_EVENT_PASSIVE_A,
+                                           SCAN_OID_DEFAULT_EARLY_TERMINATION_COUNT_PASSIVE_A );
     }
     else
     {
@@ -381,31 +384,34 @@ void scanCncnOsSm_ActionStartAScan (TI_HANDLE hScanCncn)
 void scanCncnOsSm_ActionCompleteScan (TI_HANDLE hScanCncn)
 {
     TScanCncn       *pScanCncn = (TScanCncn*)hScanCncn;
-    TI_UINT32	statusData;
 
-	 /*Update the table only if scan was not rejected*/
-	 if ( !pScanCncn->pScanClients[ pScanCncn->eCurrentRunningAppScanClient ]->bScanRejectedOn2_4)
-	 {
-		     /* 
-     * set the result table to stable state. Note: OID scans are always done for the application, so the
-     * results will always be sent to the scan concentartor app scan result table, regardless of the
-     * SME connection mode. However, it is expected that the SME will NOT attempt to connect when an OID
-     * scan request will be received
-     */
-		  scanResultTable_SetStableState (pScanCncn->hScanResultTable);
-	 }
-	 else
-	 {
-		  pScanCncn->pScanClients[ pScanCncn->eCurrentRunningAppScanClient ]->bScanRejectedOn2_4 = TI_FALSE;
-	 }
+    EScanClient scanClient  = pScanCncn->pScanClients[ SCAN_SCC_APP_ONE_SHOT ]->uScanParams.tOneShotScanParams.eScanClient;
+
+    /*Update the table only if scan was not rejected*/
+    if(pScanCncn->pScanClients[ SCAN_SCC_APP_ONE_SHOT ]->bCurrentlyRunning)
+    {
+         if ( !pScanCncn->pScanClients[ SCAN_SCC_APP_ONE_SHOT ]->bScanRejectedOn2_4)
+         {
+         /* 
+         * set the result table to stable state. Note: OID scans are always done for the application, so the
+         * results will always be sent to the scan concentartor app scan result table, regardless of the
+         * SME connection mode. However, it is expected that the SME will NOT attempt to connect when an OID
+         * scan request will be received
+         */
+              scanResultTable_SetStableState (pScanCncn->hScanResultTable);
+         }
+         else
+         {
+              pScanCncn->pScanClients[ SCAN_SCC_APP_ONE_SHOT ]->bScanRejectedOn2_4 = TI_FALSE;
+         }
+    }
 
     /* mark that OID scan process is no longer running */
     pScanCncn->bOSScanRunning = TI_FALSE;
     /* also mark that no app scan client is running */
-    pScanCncn->eCurrentRunningAppScanClient = SCAN_SCC_NO_CLIENT;
+    pScanCncn->pScanClients[SCAN_SCC_APP_ONE_SHOT]->bCurrentlyRunning = TI_FALSE;
  
-    statusData = SCAN_STATUS_COMPLETE;	/* Completed status */
-	EvHandlerSendEvent (pScanCncn->hEvHandler, IPC_EVENT_SCAN_COMPLETE, (TI_UINT8 *)&statusData, sizeof(TI_UINT32));
+	EvHandlerSendEvent (pScanCncn->hEvHandler, IPC_EVENT_SCAN_COMPLETE, (TI_UINT8 *)&scanClient, sizeof(TI_UINT32));
  
     /* no need to send scan complete event - WZC (or equivalent other OS apps) will query for the results */
 }

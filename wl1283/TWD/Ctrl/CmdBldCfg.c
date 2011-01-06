@@ -455,7 +455,7 @@ TI_STATUS cmdBld_CfgTid (TI_HANDLE hCmdBld, TQueueTrafficParams *pQtrafficParams
 	TRACE2(((TCmdBld*)hCmdBld)->hReport, REPORT_SEVERITY_WARNING,
 			"pQtrafficParams->queueID (%d) >= MAX_NUM_OF_AC (%d). returning\n",
 			pQtrafficParams->queueID, MAX_NUM_OF_AC);
-		return TI_NOK;
+	return TI_NOK;
     }
 
 	CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(hCmdBld, (__CFG_TID_0 + 2*pQtrafficParams->queueID))

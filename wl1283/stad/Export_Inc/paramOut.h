@@ -49,6 +49,7 @@
 #include "bssTypes.h"
 #include "roamingMngrTypes.h"
 #include "scanMngrTypes.h"
+#include "pwrState_Types.h"
 
 #ifdef XCC_MODULE_INCLUDED
 #include "paramOutXCC.h"
@@ -128,7 +129,7 @@ typedef enum
 {
     RADIO_IN_STAND_BY           = 0,
     RADIO_OUT_OF_STAND_BY       = 1
-}radioStandByState_t;
+} radioStandByState_t;
 
 /**** Regulatory Domain module types ****/
 
@@ -354,7 +355,8 @@ typedef struct
     TI_BOOL     priority;
 } siteMgr_prioritySite_t;
 
-typedef struct{
+typedef struct
+{
 	TI_UINT32 thresholdCross;                /* high or low */
 	TI_UINT32 thresholdCrossDirection;       /* direction of crossing */
 } trafficIntensityThresholdCross_t;
@@ -383,7 +385,8 @@ typedef struct{
 
 
 
-typedef enum{
+typedef enum
+{
     AC_ACTIVE = 0,
     AC_NOT_ACTIVE
 }acActive;
@@ -398,12 +401,14 @@ typedef struct
 
 
 
-typedef struct{
+typedef struct
+{
 	TI_UINT32		trafficAdmCtrlResponseTimeout;
     TI_BOOL        trafficAdmCtrlUseFixedMsduSize;
 }trafficAdmCtrlInitParams_t;
 
-typedef struct{
+typedef struct
+{
     TI_BOOL       wmeEnable;
     TI_BOOL       trafficAdmCtrlEnable;
     TI_BOOL       qosTagZeroConverHeader;
@@ -558,7 +563,8 @@ typedef struct
  * 
  * \sa
  */ 
-typedef struct{
+typedef struct
+{
     TI_UINT32              paramType;		/**< Parameter identification value */
     TI_UINT32              paramLength;		/**< Parameter actual length (or the length allocated in content for parameter value) */
 
@@ -860,9 +866,17 @@ typedef struct{
         /* StaCap params */
         TI_BOOL                             staCapRRMEnabled;
 
-        
-		/* debug */
-		TDebugRegisterReq					HwRegister;
+        /* pwrState parameters */
+        EPwrStateSuspendType                pwrStateSuspendType;
+        TI_UINT32                           pwrStateSuspendNDTIM;
+        EPwrStateStndbyNextState            pwrStateStandbyNextState;
+        EPwrStateFilterUsage                pwrStateSuspendFilterUsage;
+        TRxDataFilterRequest                pwrStateSuspendRxFilterValue;
+        EPwrStateSmEvent                    pwrStateDbgEvent;
+        TI_BOOL                             pwrStateDbgIsSuspend;
+
+        /* debug */
+        TDebugRegisterReq					HwRegister;
         RateMangeParams_t                   RateMng;
         RateMangeReadParams_t               RateMngParams; 
 
@@ -1207,9 +1221,21 @@ typedef struct
     TI_UINT32       uSdioBlkSizeShift;      /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
 }TDrvMainParams;
 
+typedef struct
+{
+	EPwrStateSuspendType     eSuspendType;
+	TI_UINT32                uSuspendNDTIM;
+	EPwrStateStndbyNextState eStandbyNextState;
+	EPwrStateFilterUsage     eSuspendFilterUsage;
+	TRxDataFilterRequest     tSuspendRxFilterValue;
+	TI_UINT32				 uDozeTimeout;
+	TI_UINT32				 uCmdTimeout;
+} TPwrStateInitParams;
+
 /* This table is forwarded to the driver upon creation by the OS abstraction layer. */
 typedef struct
 {
+    TI_UINT16                       uIniFileVersion;
 	TTwdInitParams        		    twdInitParams;
     siteMgrInitParams_t             siteMgrInitParams;
     connInitParams_t                connInitParams;
@@ -1243,6 +1269,8 @@ typedef struct
     TRoamScanMngrInitParams         tRoamScanMngrInitParams;
 
     TStaCapInitParams               tStaCapabilityParams;
+
+    TPwrStateInitParams             tPwrStateInitParams;
 } TInitTable;
 
 

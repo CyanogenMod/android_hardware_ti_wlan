@@ -323,7 +323,7 @@ TI_STATUS scanResultTable_UpdateEntry (TI_HANDLE hScanResultTable, TMacAddr *pBs
     {
         /*if the current channel != channel on which the frame was received then call to scanResultTable_UpdateSiteData */
         if (((pFrame->parsedIEs->content.iePacket.pDSParamsSet != NULL)  &&
-            (pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel == pFrame->channel)) ||
+            (pFrame->parsedIEs->content.iePacket.pDSParamsSet->currChannel == pFrame->channel)) || 
             (TI_NOK != scanResultTable_CheckRxSignalValidity(pScanResultTable, pSite, pFrame->rssi, pFrame->channel)))
         {
             TRACE0(pScanResultTable->hReport, REPORT_SEVERITY_INFORMATION , "scanResultTable_UpdateEntry: entry already exists, updating\n");
@@ -1319,16 +1319,16 @@ TI_STATUS scanResultTable_GetBssidSupportedRatesList (TI_HANDLE hScanResultTable
         /* Only include 11n rates if support is enabled */
 		if (b11nEnable != TI_FALSE) {
 		  rate_DrvBitmapToNetStrIncluding11n (pSiteEntry->rateMask.supportedRateMask,
-		                                    pSiteEntry->rateMask.basicRateMask,
-		                                    (TI_UINT8*)pCurrRateString,
-		                                    &firstOFDMloc);
+ 		                                    pSiteEntry->rateMask.basicRateMask,
+ 		                                    (TI_UINT8*)pCurrRateString,
+ 		                                    &firstOFDMloc);
 		} else {
 		  rate_DrvBitmapToNetStr (pSiteEntry->rateMask.supportedRateMask,
 					  pSiteEntry->rateMask.basicRateMask,
 					  (TI_UINT8*)pCurrRateString,
 					  &i,
 					  &firstOFDMloc);
-		}
+		}	
     }
 
     return TI_OK;

@@ -1,5 +1,5 @@
 /*
- * WlanDrvCommon.h
+ * version.c
  *
  * Copyright(c) 1998 - 2010 Texas Instruments. All rights reserved.      
  * All rights reserved.                                                  
@@ -32,89 +32,91 @@
  */
 
 
-
-/** \file   WlanDrvCommon.h 
- *  \brief  Defines WlanDrvIf objects common to all OS types.                                  
+/** \file report.c
+ *  \brief report module implementation
  *
- *  \see    WlanDrvIf.h
+ *  \see version.h
  */
+#include "version.h"
+#include "osApi.h"
 
-#ifndef __WLAN_DRV_COMMON_H__
-#define __WLAN_DRV_COMMON_H__
+#define MAX_NUMBER_LENGTH_IN_VERSION 60
 
+#define SW_FW_API_VERSION_INDEX 2
+#define SW_INI_API_VERSION_INDEX 3
 
-#include "tidef.h"
-#include "TWDriver.h"
+TI_UINT16 version_atoi(TI_UINT8* str);
 
-#define DRV_ADDRESS_SIZE					(sizeof(TI_INT32))
-#define MAX_CHUNKS_IN_FILE					(1000)
-#define OS_SPECIFIC_RAM_ALLOC_LIMIT			(0xFFFFFFFF)	/* assume OS never reach that limit */
-
-/* Driver steady states - for driver external users */
-typedef enum 
+TI_UINT16 version_findSubVersion(TI_UINT8 *str, TI_UINT16 len, TI_UINT8 delim, TI_UINT8 indexToFind)
 {
-    DRV_STATE_IDLE,
-    DRV_STATE_RUNNING,
-    DRV_STATE_STOPING,
-    DRV_STATE_STOPPED,
-    DRV_STATE_FAILED
-} EDriverSteadyState;
+    TI_UINT16 strPos = 0;
+    TI_UINT16 currStringInArrayPos = 0;
+    TI_UINT8 tempBuff[MAX_NUMBER_LENGTH_IN_VERSION] = {0};
 
+    TI_UINT8 currentDelimCount = 0;
 
-/* The driver Start/Stop actions */
-typedef enum
+    while ( (strPos < len) && (currentDelimCount <= indexToFind))
+    {
+        if (str[strPos] == delim)
+        {
+            currentDelimCount++;
+        }
+        else
+        {
+            if (currentDelimCount == indexToFind)
+            {
+                tempBuff[currStringInArrayPos] = str[strPos];
+                currStringInArrayPos++;
+            }
+        }
+        strPos++;
+    }
+
+    return version_atoi(tempBuff);
+}
+
+TI_UINT16 version_strlen(TI_UINT8* str)
 {
-    ACTION_TYPE_NONE, 
-    ACTION_TYPE_START, 
-    ACTION_TYPE_STOP
-} EActionType;
+    TI_UINT16 ret = 0;
 
-/* Initialization file info */
-typedef struct 
+    while (str[ret])
+    {
+        ret++;
+    }
+
+    return ret;
+}
+
+TI_UINT16 version_atoi(TI_UINT8* str)
 {
-    void            *pImage;
-    unsigned long    uSize;
-} TInitImageInfo;
+    TI_UINT16 ret = 0;
+    TI_INT16 i = 0;
+    TI_UINT16 j = 1;
 
-/* WlanDrvIf object common part (included by TWlanDrvIfObj from each OS abstraction layer) */
-typedef struct 
+    for (i = 0; str[i] ; i++, j*=10)
+    {
+        ret += (str[i]-'0')*j;
+    }
+
+    return ret;
+}
+
+TI_BOOL version_fwDriverMatch(TI_UINT8* fwVersion, TI_UINT16* pFwVersionOutput)
 {
-    /* Other modules handles */
-    void               *hDrvMain;
-    void               *hCmdHndlr;
-    void               *hContext;
-    void               *hTxDataQ;
-    void               *hTxMgmtQ;
-    void               *hTxCtrl;
-    void               *hTWD;
-    void               *hEvHandler;
-    void               *hReport;
-    void               *hCmdDispatch;
-    void               *hPwrState;
+    TI_UINT16   fwVersionInt = 0;
+    TI_UINT16   drvVersionInt = 0;
 
-    /* Initialization files info */
-    TInitImageInfo      tIniFile;
-    TInitImageInfo      tNvsImage;
-    TInitImageInfo      tFwImage;
+    fwVersionInt  = version_findSubVersion(fwVersion, version_strlen(fwVersion), '.', SW_FW_API_VERSION_INDEX);
+    drvVersionInt = version_findSubVersion(SW_VERSION_STR, version_strlen(SW_VERSION_STR), '.', SW_FW_API_VERSION_INDEX);
 
-    EDriverSteadyState  eDriverState;   /* The driver state as presented to the OS */
-    TI_UINT32           uLinkSpeed;
+    *pFwVersionOutput = fwVersionInt;
 
-} TWlanDrvIfCommon;
+    return (fwVersionInt == drvVersionInt ? TI_TRUE : TI_FALSE);
+}
 
-
-/* The loader files interface */
-typedef struct
+TI_BOOL version_IniDriverMatch(TI_UINT16 iniVersion)
 {
-  TI_UINT32 uNvsFileLength;
-  TI_UINT32 uFwFileLength;
-  TI_UINT32 uIniFileLength;
-  char data[1];
-  /* eeprom image follows   */
-  /* firmware image follows */
-  /* init file follows      */
-} TLoaderFilesData;
+    TI_UINT16   drvVersionInt =  version_findSubVersion(SW_VERSION_STR, version_strlen(SW_VERSION_STR), '.', SW_INI_API_VERSION_INDEX);
 
-
-
-#endif /* __WLAN_DRV_COMMON_H__ */
+    return (drvVersionInt == iniVersion ? TI_TRUE : TI_FALSE);
+}

@@ -83,7 +83,8 @@ typedef struct
     TI_HANDLE               hTrafficMonitor;
     TI_HANDLE               hTxDataQ;
     TI_HANDLE               hStaCap;
-    
+    TI_HANDLE               hRsn;
+
     TMacAddr                ctrlDataCurrentBSSID; 
     ScanBssType_e           ctrlDataCurrentBssType; 
     TI_UINT32               ctrlDataCurrentRateMask;

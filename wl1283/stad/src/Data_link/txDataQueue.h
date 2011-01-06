@@ -50,9 +50,9 @@
 
 /* Max number of packets in each queue */
 #define DATA_QUEUE_DEPTH_BE  60
-#define DATA_QUEUE_DEPTH_BK  10
+#define DATA_QUEUE_DEPTH_BK  32
 #define DATA_QUEUE_DEPTH_VI  32
-#define DATA_QUEUE_DEPTH_VO  10
+#define DATA_QUEUE_DEPTH_VO  32
 #define DATA_QUEUE_DEPTH_TOTAL  (DATA_QUEUE_DEPTH_BE + DATA_QUEUE_DEPTH_BK + DATA_QUEUE_DEPTH_VI + DATA_QUEUE_DEPTH_VO)
 
 /* Verify that there are enough TxCtrlBlks for all users that are queueing packets (driver + FW) */

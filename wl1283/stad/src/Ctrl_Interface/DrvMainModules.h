@@ -77,7 +77,7 @@ typedef struct
     TI_HANDLE           hCmdDispatch; 
     TI_HANDLE           hStaCap;
     TI_HANDLE           hTxnQ;
-
+    TI_HANDLE           hPwrState;
 } TStadHandlesList;
 
 
