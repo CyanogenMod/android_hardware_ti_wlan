@@ -5,12 +5,13 @@ STATIC_LIB ?= y
 DEBUG ?= y
 BUILD_SUPPL = n
 WPA_ENTERPRISE ?= y
-CONFIG_EAP_WSC = n
+CONFIG_EAP_WSC ?= y
 TI_HOSTAPD_LIB ?= y
 
 WILINK_ROOT = ../..
 CUDK_ROOT ?= $(WILINK_ROOT)/CUDK
 CU_ROOT = $(CUDK_ROOT)/configurationutility
+SUPPL_PATH ?= external/wpa_supplicant_6
 
 ifeq ($(DEBUG),y)
  DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   # "-O" is needed to expand inlines
@@ -60,17 +61,26 @@ LOCAL_C_INCLUDES = \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/platforms/os/common/inc \
 	$(LOCAL_PATH)/$(KERNEL_DIR)/include \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/TWD/FW_Transfer/Export_Inc \
-	external/wpa_supplicant 
+	$(CUDK_ROOT)/$(TI_SUPP_LIB_DIR) \
+	$(SUPPL_PATH)/wpa_supplicant/ \
+	$(SUPPL_PATH)/wpa_supplicant/src/ \
+	$(SUPPL_PATH)/wpa_supplicant/src/common \
+	$(SUPPL_PATH)/wpa_supplicant/src/eap_peer \
+	$(SUPPL_PATH)/wpa_supplicant/src/drivers \
+	$(SUPPL_PATH)/wpa_supplicant/src/l2_packet \
+	$(SUPPL_PATH)/wpa_supplicant/src/utils \
+	$(SUPPL_PATH)/wpa_supplicant/src/wps \
+	$(SUPPL_PATH)/wpa_supplicant/src/eap_peer 
 
 LOCAL_SRC_FILES:= \
 	src/console.c \
 	src/cu_common.c \
+	src/cu_hostapd.c \
 	src/cu_cmd.c \
 	src/ticon.c \
-	src/cu_hostapd.c \
 	src/wpa_core.c
 
-LOCAL_CFLAGS+= -Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(DK_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -DDRV_NAME='"tiwlan"'
+LOCAL_CFLAGS+= -Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(DK_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -DDRV_NAME='"tiap"'
 
 LOCAL_CFLAGS += $(ARMFLAGS)
 

@@ -77,7 +77,7 @@ ifneq ($(KERNELRELEASE),)
 	#
 	# Adds the current directory as a prefix to all include directories.
 	#
-	EXTRA_CFLAGS += $(addprefix -I$(M)/, $(OS_DK_INCS) $(OS_INCS))
+	EXTRA_CFLAGS += -O3 -Wall $(addprefix -I$(M)/, $(OS_DK_INCS) $(OS_INCS) )
 
 	#
 	# Intermediate object name - this should be converted to the appropriate library file

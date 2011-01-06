@@ -817,22 +817,19 @@ void txnQ_ClearQueues (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
     /* For all function priorities */
     for (uPrio = 0; uPrio < pTxnQ->aFuncInfo[uFuncId].uNumPrios; uPrio++)
     {
-        while (1) 
+        do
         {
             /* Dequeue Txn from current priority queue */
             pTxn = (TTxnStruct *) que_Dequeue (pTxnQ->aTxnQueues[uFuncId][uPrio]);
 
             /* If NULL Txn (queue empty), exit while loop */
-            if (pTxn == NULL)
-            {
-                break;
-            }
 
             /* 
              * Drop on Restart 
              * do not call fTxnQueueDoneCb (hCbHandle, pTxn) callback 
              */
         }
+        while (pTxn != NULL);
     }
 
     /* Clear state - for restart (doesn't call txnQ_Open) */

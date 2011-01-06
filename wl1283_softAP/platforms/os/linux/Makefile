@@ -13,7 +13,7 @@ STATIC_LIB ?= y
 #
 # Rebuild the supplicant
 #
-BUILD_SUPPL ?= y
+BUILD_SUPPL ?= n
 
 #
 # Supplicant
@@ -56,6 +56,7 @@ TEST ?= n
 
 ETH_SUPPORT ?=n
 
+CONFIG_EAP_WSC ?= y
 ##
 ##
 ## File lists and locations

@@ -133,6 +133,9 @@ static void FillDeauthTemplate(TI_HANDLE hRoleAP, TSetTemplate *pTemplateStruct)
 static void ConfigureFrameTemplates(TI_HANDLE hRoleAP);
 static void ConfigureRatePolicies(TI_HANDLE hRoleAP);
 static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP);
+static void setDeauthTemplate( TRoleAP * pRoleAP );
+static void setQosNullDataTemplate( TRoleAP * pRoleAP);
+static void setNullDataTemplate(TRoleAP * pRoleAP);
 static TI_STATUS setKey(TI_HANDLE hRoleAP, TSecurityKeys *pTwdKey);
 static TI_STATUS FillBeaconTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBeaconParams, TSetTemplate *pTemplateStruct);
 static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBeaconParams, TSetTemplate *pTemplateStruct);
@@ -1679,7 +1682,8 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
     /* Copy the Probe Response Tail section */
 
     /* insert WPS IE if exists */
-    if (pRoleAP->tWpsIe.iIeLen != 0) {
+    if (pRoleAP->tWpsIe.iIeLen != 0)
+    {
 
     	TI_UINT8 *pPos = pAPBeaconParams->cTail;
     	TI_UINT8 *pEnd = pAPBeaconParams->cTail + pAPBeaconParams->iTailLen;
@@ -1691,25 +1695,29 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
 #define WPA_GET_BE32(a) ((((u32) (a)[0]) << 24) | (((u32) (a)[1]) << 16) | \
 			 (((u32) (a)[2]) << 8) | ((u32) (a)[3]))
 
-        while (pPos + 1 < pEnd) {
-    		if (pPos + 2 + pPos[1] > pEnd) {
-    			WLAN_OS_REPORT((" FillProbeRespTemplate(): wrong size of IE\n"));
-    			break;
-    		}
-    		if (pPos[0] == WLAN_EID_VENDOR_SPECIFIC && pPos[1] >= 4 &&
-    				WPA_GET_BE32(&pPos[2]) == WPS_DEV_OUI_WFA) {
-    			pWps = pPos;
-    			WLAN_OS_REPORT((" FillProbeRespTemplate(): found WPS IE\n"));
-    			break;
-    		}
-    		pPos += 2 + pPos[1];
-    	}
+        while (pPos + 1 < pEnd)
+        {
+            if (pPos + 2 + pPos[1] > pEnd)
+            {
+                WLAN_OS_REPORT((" FillProbeRespTemplate(): wrong size of IE\n"));
+                break;
+            }
+            if (pPos[0] == WLAN_EID_VENDOR_SPECIFIC && pPos[1] >= 4 &&
+                    WPA_GET_BE32(&pPos[2]) == WPS_DEV_OUI_WFA)
+            {
+                pWps = pPos;
+                WLAN_OS_REPORT((" FillProbeRespTemplate(): found WPS IE\n"));
+                break;
+            }
+            pPos += 2 + pPos[1];
+        }
 
-    	if (!pWps) {
-    		WLAN_OS_REPORT((" FillProbeRespTemplate(): no WPS IE was found in beacon, this is likely an error\n"));
-    	}
-       
-    	// IDAN, TODO, add error handling
+        if (!pWps)
+        {
+            WLAN_OS_REPORT((" FillProbeRespTemplate(): no WPS IE was found in beacon, this is likely an error\n"));
+        }
+
+        // IDAN, TODO, add error handling
 
     	/* copy first part of tail */
     	pCopyPos = pTemplateStruct->ptr + uTempSize;
@@ -1728,10 +1736,11 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
     	pTemplateStruct->len = pCopyPos - pTemplateStruct->ptr;
         
     }
-    else { /* no WPS IE, just copy tail as it is */
-    os_memoryCopy(pRoleAP->hOs, pTemplateStruct->ptr + uTempSize, pAPBeaconParams->cTail, pAPBeaconParams->iTailLen);
-    uTempSize += pAPBeaconParams->iTailLen;
-    pTemplateStruct->len = uTempSize;
+    else
+    {
+        os_memoryCopy(pRoleAP->hOs, pTemplateStruct->ptr + uTempSize, pAPBeaconParams->cTail, pAPBeaconParams->iTailLen);
+        uTempSize += pAPBeaconParams->iTailLen;
+        pTemplateStruct->len = uTempSize;
     }
 
     ((probeRspTemplate_t*)pTemplateStruct->ptr)->hdr.fc = ENDIAN_HANDLE_WORD(DOT11_FC_PROBE_RESP);
@@ -1775,17 +1784,12 @@ static void FillDeauthTemplate(TI_HANDLE hRoleAP, TSetTemplate *pTemplateStruct)
  */ 
 static void ConfigureFrameTemplates(TI_HANDLE hRoleAP)
 {
-	TRoleAP *pRoleAP      = (TRoleAP *)hRoleAP;
-	TSetTemplate            tTemplateStruct;
-	disconnTemplate_t		tDeauthTemplate;
+    TRoleAP *pRoleAP      = (TRoleAP *)hRoleAP;
 
-	setBeaconProbeRspTempl(pRoleAP);
-
-	tTemplateStruct.type = AP_DEAUTH_TEMPLATE;
-	tTemplateStruct.ptr = (TI_UINT8*)&tDeauthTemplate;
-    FillDeauthTemplate(hRoleAP, &tTemplateStruct);
-	TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
-	report_PrintDump(tTemplateStruct.ptr, tTemplateStruct.len);
+    setBeaconProbeRspTempl(pRoleAP);
+    setDeauthTemplate(pRoleAP);
+    setQosNullDataTemplate(pRoleAP);
+    setNullDataTemplate(pRoleAP);
 }
 
 /** 
@@ -2218,17 +2222,125 @@ static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP)
     os_memoryFree (pRoleAP->hOs, tTemplateStruct.ptr, uLen);
 	return tRes;
 }
-
-/** 
- * \fn     DecodeStaRates
- * \brief  Decode STA supported rates from how they are encoded
- * in Assoc Response to the human format
- * 
- * \param   aRates - Rates array
- * \param   uRatesLen - Rates array length
- * 
+/**
+ * \fn     setDeauthTemplate
+ * \brief  The functions is called to set de-authentication
+ * template
+ *
+ * The function s called by ConfigureFrameTemplates
+ *
+ * \note
+ * \param   pRoleAP - pointer to RoleAP object
+ *
  * \return  void
+ * \sa      roleAP_Start()
  */
+static void setDeauthTemplate( TRoleAP * pRoleAP )
+{
+    TSetTemplate            tTemplateStruct;
+    disconnTemplate_t		tDeauthTemplate;
+
+
+    tTemplateStruct.type = AP_DEAUTH_TEMPLATE;
+    tTemplateStruct.ptr = (TI_UINT8*)&tDeauthTemplate;
+    tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
+    FillDeauthTemplate(pRoleAP, &tTemplateStruct);
+    TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
+}
+
+/**
+ * \fn     setQosNullDataTemplate
+ * \brief  The functions is called to set QOS Null Data
+ * template
+ *
+ * The function s called by ConfigureFrameTemplates
+ *
+ * \note
+ * \param   pRoleAP - pointer to RoleAP object
+ *
+ * \return  void
+ * \sa      roleAP_Start()
+ */
+static void setQosNullDataTemplate( TRoleAP * pRoleAP)
+{
+
+    TSetTemplate            tTemplateStruct;
+    QosNullDataTemplate_t   tQosNullDataTemplate;
+    QosNullDataTemplate_t	*pBuffer;
+    TI_UINT16				fc;
+    TI_UINT16				qosControl;
+
+    tTemplateStruct.type = QOS_NULL_DATA_TEMPLATE;
+    tTemplateStruct.ptr = (TI_UINT8*)&tQosNullDataTemplate;
+    tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
+    pBuffer =  (QosNullDataTemplate_t*)tTemplateStruct.ptr;
+    os_memoryZero(pRoleAP->hOs, pBuffer, sizeof(QosNullDataTemplate_t));
+
+
+    MAC_COPY (pBuffer->hdr.address2, pRoleAP->tBssCapabilities.tBssid);
+    MAC_COPY (pBuffer->hdr.address3, pRoleAP->tBssCapabilities.tBssid);
+    fc = DOT11_FC_DATA_NULL_QOS | (1 << DOT11_FC_FROM_DS_SHIFT);
+    COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
+    qosControl = 0;  /* User priority */
+    qosControl <<= QOS_CONTROL_UP_SHIFT;
+    COPY_WLAN_WORD(&pBuffer->hdr.qosControl, &qosControl); /* copy with endianess handling. */
+
+
+    tTemplateStruct.len = WLAN_QOS_HDR_LEN;
+
+    TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
+}
+
+/**
+ * \fn     setNullDataTemplate
+ * \brief  The functions is called to set Null Data template
+ *
+ * The function s called by ConfigureFrameTemplates
+ *
+ * \note
+ * \param   pRoleAP - pointer to RoleAP object
+ *
+ * \return  void
+ * \sa      roleAP_Start()
+ */
+static void setNullDataTemplate(TRoleAP * pRoleAP)
+{
+    TSetTemplate            tTemplateStruct;
+    nullDataTemplate_t      tNullDataTemplate;
+    nullDataTemplate_t      *pBuffer;
+    TI_UINT16				fc;
+
+    tTemplateStruct.type = NULL_DATA_TEMPLATE;
+    tTemplateStruct.ptr = (TI_UINT8*)&tNullDataTemplate;
+    tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
+    pBuffer =  (nullDataTemplate_t*)tTemplateStruct.ptr;
+
+    os_memoryZero(pRoleAP->hOs, pBuffer, sizeof(nullDataTemplate_t));
+
+
+    /* Set BSSID address */
+    MAC_COPY (pBuffer->hdr.BSSID, pRoleAP->tBssCapabilities.tBssid);
+    MAC_COPY (pBuffer->hdr.SA,    pRoleAP->tBssCapabilities.tBssid);
+
+
+    fc = DOT11_FC_DATA_NULL_FUNCTION | (1 << DOT11_FC_FROM_DS_SHIFT);
+
+    COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
+
+    tTemplateStruct.len = sizeof(dot11_mgmtHeader_t);
+    TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
+}
+
+/**
+* \fn     DecodeStaRates
+* \brief  Decode STA supported rates from how they are encoded
+* in Assoc Response to the human format
+*
+* \param   aRates - Rates array
+* \param   uRatesLen - Rates array length
+*
+* \return  void
+           */
 static void DecodeStaRates(TI_UINT8 *aRates, TI_UINT32 uRatesLen)
 {
 	int i;

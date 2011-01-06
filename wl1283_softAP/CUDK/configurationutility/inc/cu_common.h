@@ -37,6 +37,16 @@ typedef struct
     U32 matchedPacketsCount[MAX_DATA_FILTERS];  /* number of packets matching each of the filters */
 } TCuCommon_RxDataFilteringStatistics;
 
+typedef struct
+{
+    U32 temp; /* the place of the IE's id and length */
+    U32 MissedBeacons;
+    U8 snr;       /* The current average SNR in db - For Data Packets*/
+    U8 snrBeacon;     /* The current average SNR in db - For Beacon Packets*/
+    S8 rssi;      /* The current average RSSI  - For Data Packets*/
+    S8 rssiBeacon;
+} TCuCommon_RoamingStatisticsTable;
+
 
 /* functions */
 /*************/

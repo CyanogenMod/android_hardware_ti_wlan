@@ -263,11 +263,14 @@ void sendDataPacket (TI_HANDLE hOs)
 
 void sendMgmtPacket(TI_HANDLE hOs)
 {
-    static TI_UINT8            aMsg[2000];
     TI_UINT32           i;
+    TI_UINT8            *aMsg;
     dot11MgmtSubType_e  eMsgType = DE_AUTH;
-    
-    for (i = 0; i < packetLength; i++) 
+
+    aMsg = os_memoryAlloc(hOs, 2000);
+    if(!aMsg)
+        return;
+    for (i = 0; i < packetLength; i++)
     {
         aMsg[i] = i;
     }
@@ -285,6 +288,7 @@ void sendMgmtPacket(TI_HANDLE hOs)
     {
         os_timerStart(hOs, dTimer, 1000); 
     }
+    os_memoryFree(hOs, aMsg, 2000);
 }
 
 void FW_DebugSendPacket(TI_HANDLE hDrvMain ,TI_HANDLE hOs, TI_HANDLE hTxMgmtQ, void *pParam)

@@ -234,6 +234,9 @@ TI_STATUS cmdBld_SetDownlinkData  (TI_HANDLE hCmdBld, TI_BOOL bDownlinkFlag);
 void cmdBld_DbgForceTemplatesRates (TI_HANDLE hCmdBld, TI_UINT32 uRateMask);
 #endif
 
+/* Definition of CB function */
+typedef void (*InitSeqCB) (TI_HANDLE handle);
+
 #define CMD_IS_INVALID  0
 #define CMD_IS_VALID    1
 
@@ -250,6 +253,7 @@ typedef enum
 {
     __CFG_PLATFORM_PARAMS,
     __CFG_RADIO_PARAMS,
+	__CFG_EXTENDED_RADIO_PARAMS,
     __CMD_PROBE_REQ,
     __CMD_NULL_DATA,
     __CMD_DISCONN,
@@ -388,6 +392,7 @@ typedef struct
     TI_HANDLE                  hJoinCmpltOriginalCbHndl;
 
     TI_UINT32                  uIniSeq;         /* Init sequence counter */
+    void                       *fInitSeqCB;     /* CB function pointer */
 
     TI_UINT32                  uLastElpCtrlMode;/* Init sleep mode */
 
@@ -421,6 +426,7 @@ typedef struct
 #define DB_KEYS(HCMDBLD)            (((TCmdBld *)HCMDBLD)->tDb.keys)
 #define DB_RX_DATA_FLTR(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.rxDataFilters)
 #define DB_RADIO(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tRadioIniParams)
+#define DB_EXT_RADIO(HCMDBLD)		(((TCmdBld *)HCMDBLD)->tDb.tExtRadioIniParams)
 #define DB_GEN(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tPlatformGenParams)
 #define DB_SR(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tSmartReflex)
 #define DB_RM(HCMDBLD)    (((TCmdBld *)HCMDBLD)->tDb.tRateMngParams)

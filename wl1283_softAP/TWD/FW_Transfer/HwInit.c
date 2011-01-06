@@ -416,7 +416,7 @@ static TI_STATUS hwInit_InitTopRegisterWrite(TI_HANDLE hHwInit, TI_UINT32 uAddre
 static TI_STATUS hwInit_PllConfigSm (TI_HANDLE hHwInit);
 #endif
 #ifdef DOWNLOAD_TIMER_REQUIERD
-static void      hwInit_StallTimerCb                (TI_HANDLE hHwInit);
+static void      hwInit_StallTimerCb                (TI_HANDLE hHwInit, TI_BOOL bTwdInitOccured);
 #endif
 
 /*******************************************************************************
@@ -474,7 +474,7 @@ TI_STATUS hwInit_Destroy (TI_HANDLE hHwInit)
         if (pHwInit->hStallTimer)
         {
 #ifdef DOWNLOAD_TIMER_REQUIERD
-            os_timerDestroy(pHwInit->hOs, pHwInit->hStallTimer);
+		tmr_DestroyTimer (pHwInit->hStallTimer);
 #endif
         }        
 
@@ -522,7 +522,7 @@ TI_STATUS hwInit_Init (TI_HANDLE      hHwInit,
     }
 
 #ifdef DOWNLOAD_TIMER_REQUIERD
-	pHwInit->hStallTimer = os_timerCreate (pHwInit->hOs, hwInit_StallTimerCb, hHwInit);
+	pHwInit->hStallTimer = tmr_CreateTimer (hTimer);
 	if (pHwInit->hStallTimer == NULL) 
 	{
 		return TI_NOK;
@@ -1745,8 +1745,8 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
                 pHwInit->uFinStage = 3;
                 pHwInit->uFinLoop ++;
 #ifdef DOWNLOAD_TIMER_REQUIERD
-					os_timerStart (pHwInit->hOs, pHwInit->hStallTimer, STALL_TIMEOUT);
-					return TI_PENDING;
+                tmr_StartTimer (pHwInit->hStallTimer, hwInit_StallTimerCb, hHwInit, STALL_TIMEOUT, TI_FALSE);
+                return TXN_STATUS_PENDING;
 #endif
 
             }
@@ -2210,305 +2210,7 @@ static TI_STATUS hwInit_LoadFwImageSm (TI_HANDLE hHwInit)
 #define TOP_REG_ADDR_MASK    0x7FF
 #endif
 
-/****************************************************************************
- *                      hwInit_ReadRadioParamsSm ()
- ****************************************************************************
- * DESCRIPTION: hwInit_ReadRadioParamsSm 
- * INPUTS:  None    
- * 
- * OUTPUT:  None
- * 
- * RETURNS: TI_OK or TI_NOK
- ****************************************************************************/
-TI_STATUS hwInit_ReadRadioParamsSm (TI_HANDLE hHwInit)
-{ 
-    THwInit      *pHwInit = (THwInit *)hHwInit;
-    TTwd         *pTWD = (TTwd *)pHwInit->hTWD;
-   IniFileGeneralParam *pGenParams = &DB_GEN(pTWD->hCmdBld);
-    TI_UINT32  val= 0, value;
-    TI_UINT32  add = FUNC7_SEL;
-	TI_UINT32  retAddress;
-    TTxnStruct  *pTxn;
-    TI_STATUS   status = 0;
-    
-#ifdef FPGA_SKIP_TOP_INIT
-    WLAN_OS_REPORT(("hwInit_ReadRadioParamsSm: Skip also Radio params\n"));
-    TWD_FinalizeFEMRead(pHwInit->hTWD);
-    return TI_OK;
-#endif
-             
-    while (TI_TRUE)
-    {
-       switch (pHwInit->uRegStage)
-        {
-        case 0:
-            pHwInit->uRegStage = 1;
-            pHwInit->uTxnIndex++;
 
-            /*
-             * Select GPIO over Debug for BT_FUNC7 clear bit 17
-             */
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, GPIO_SELECT, 0, 
-                               REGISTER_SIZE, TXN_DIRECTION_READ, (TTxnDoneCb)hwInit_ReadRadioParamsSm, hHwInit)
-            status = twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            EXCEPT (pHwInit, status)
-
-        case 1:
-            pHwInit->uRegStage ++;
-            pHwInit->uRegLoop = 0;
-
-            /* We don't zero pHwInit->uTxnIndex at the begining because we need it's value to the next transaction */
-            val = (pHwInit->aHwInitTxn[pHwInit->uTxnIndex].uData);                
-            val &= 0xFFFDFFFF; /*clear bit 17*/
-            /* Now we can zero the index */
-            pHwInit->uTxnIndex = 0;
-
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, GPIO_SELECT, val, 
-                               REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-
-            twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            pHwInit->uTxnIndex++; 
-
-            pHwInit->uRegData = FUNC7_SEL;
-
-            continue;
-
-        case 2:
-
-            pHwInit->uRegStage ++;
-            add = pHwInit->uRegData;
-
-     
-            /* Select GPIO over Debug for BT_FUNC7*/
-            retAddress = (TI_UINT32)(add / 2);
-	        val = (retAddress & TOP_REG_ADDR_MASK);
-        	val |= BIT_16 | BIT_17;
-
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, OCP_POR_CTR, val, 
-                               REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-            twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            pHwInit->uTxnIndex++;  
-
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, OCP_CMD, 0x2, 
-                               REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-            twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            continue;
-
-        case 3:
-
-            pHwInit->uRegStage ++;
-            pHwInit->uTxnIndex++; 
-
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, OCP_DATA_RD, 0, 
-                               REGISTER_SIZE, TXN_DIRECTION_READ, (TTxnDoneCb)hwInit_ReadRadioParamsSm, hHwInit)
-            status = twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            EXCEPT (pHwInit, status)
-
-           
-        case 4:
-
-            val = (pHwInit->aHwInitTxn[pHwInit->uTxnIndex].uData);
-            
-            pHwInit->uTxnIndex = 0;
-            if (val & BIT_18)
-            {
-              if ((val & BIT_16) && (!(val & BIT_17)))
-              {
-                  pHwInit->uRegStage ++;
-                  pHwInit->uRegLoop = 0;
-
-              }
-              else 
-              {
-                TRACE0(pHwInit->hReport, REPORT_SEVERITY_ERROR , "can't writing bt_func7_sel\n");
-                               
-                TWD_FinalizeFEMRead(pHwInit->hTWD);
-
-                return TI_NOK;
-              }
-            }
-            else
-            {
-              if (pHwInit->uRegLoop < READ_TOP_REG_LOOP)
-              {
-                 pHwInit->uRegStage = 3;
-                 pHwInit->uRegLoop++;
-              }
-              else 
-              {
-
-                TRACE0(pHwInit->hReport, REPORT_SEVERITY_ERROR , "Timeout waiting for writing bt_func7_sel\n");
-               
-                TWD_FinalizeFEMRead(pHwInit->hTWD);
-
-                return TI_NOK;
-
-              }
-            }
-
-            continue;
-
-        case 5:
-               pHwInit->uRegStage ++;
-               add = pHwInit->uRegData;
-               retAddress = (TI_UINT32)(add / 2);
-	           value = (retAddress & TOP_REG_ADDR_MASK);
-               value |= BIT_16 | BIT_17;
-
-               BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, OCP_POR_CTR, value, 
-                                  REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-               twIf_Transact(pHwInit->hTwIf, pTxn);
-
-               pHwInit->uTxnIndex++;  
-
-              if (pHwInit->uRegSeqStage == 0)
-              {
-                  if (pHwInit->uRegData == FUNC7_SEL)
-                    value = (val | 0x600);
-                  else
-                    value = (val | 0x1000);
-              }
-              else
-              {
-                  if (pHwInit->uRegData == FUNC7_SEL)
-                    value = (val & 0xF8FF);
-                  else
-                    value = (val & 0xCFFF);
-
-              }
-
-	      value &= 0xFFFF;
-          
-               BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, OCP_POR_WDATA, value, 
-                                  REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-               twIf_Transact(pHwInit->hTwIf, pTxn);
-
-               pHwInit->uTxnIndex++; 
-
-               BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, OCP_CMD, 0x1, 
-                                  REGISTER_SIZE, TXN_DIRECTION_WRITE, (TTxnDoneCb)hwInit_ReadRadioParamsSm, hHwInit)
-
-               /*BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, INDIRECT_REG5, 0x1, 
-                                  REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL) */
-
-               status = twIf_Transact(pHwInit->hTwIf, pTxn);
-
-               pHwInit->uTxnIndex++;                
-
-               if ((pHwInit->uRegData == FUNC7_SEL)&& (pHwInit->uRegSeqStage == 0))
-               {
-                 pHwInit->uRegData = FUNC7_PULL;
-                 pHwInit->uRegStage = 2;
-               }
-               else
-               {
-                  if ((pHwInit->uRegData == FUNC7_PULL)&& (pHwInit->uRegSeqStage == 1))
-                   {
-                     pHwInit->uRegData = FUNC7_SEL;
-                     pHwInit->uRegStage = 2;
-                   }
-               }
-
-               EXCEPT (pHwInit, status)                 
-               continue;
-
-        case 6:
-
-              if (pHwInit->uRegSeqStage == 1)
-              {
-                  pHwInit->uRegStage = 8;
-              }
-              else
-              {
-                pHwInit->uRegStage ++;
-                pHwInit->uTxnIndex++; 
-
-                BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, GPIO_OE_RADIO, 0, 
-                               REGISTER_SIZE, TXN_DIRECTION_READ, (TTxnDoneCb)hwInit_ReadRadioParamsSm, hHwInit)
-                status = twIf_Transact(pHwInit->hTwIf, pTxn);
-                EXCEPT (pHwInit, status)
-              }
-              continue;
-
-        case 7:
-            pHwInit->uRegStage ++;
-
-            /* We don't zero pHwInit->uTxnIndex at the begining because we need it's value to the next transaction */
-            val = (pHwInit->aHwInitTxn[pHwInit->uTxnIndex].uData);                
-            val |= 0x00020000;
-
-            pHwInit->uTxnIndex = 0; 
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, GPIO_OE_RADIO, val, 
-                               REGISTER_SIZE, TXN_DIRECTION_WRITE, NULL, NULL)
-            twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            pHwInit->uTxnIndex++;  
-
-            BUILD_HW_INIT_TXN_DATA(pHwInit, pTxn, GPIO_IN, 0, 
-                               REGISTER_SIZE, TXN_DIRECTION_READ, (TTxnDoneCb)hwInit_ReadRadioParamsSm, hHwInit)
-            status = twIf_Transact(pHwInit->hTwIf, pTxn);
-
-            EXCEPT (pHwInit, status)
-
-            
-        case 8:
-            if (pHwInit->uRegSeqStage == 0)
-             {
-	       val = (pHwInit->aHwInitTxn[pHwInit->uTxnIndex].uData);                  
-	       val &= 0x20000;
-	       if(val)
-	      {
-		   pGenParams->TXBiPFEMManufacturer = FEM_TRIQUINT_TYPE_E;
-	      }
-	      else
-	      {
-	  	   pGenParams->TXBiPFEMManufacturer = FEM_RFMD_TYPE_E;
-	      }
-               WLAN_OS_REPORT (("FEM Type %d \n",pGenParams->TXBiPFEMManufacturer));
-			   pHwInit->uTxnIndex = 0;
-               pHwInit->uRegSeqStage = 1;
-               pHwInit->uRegStage = 2;
-               pHwInit->uRegData = FUNC7_PULL;
-               continue;
-             }
-             else
-             {
-              TRACE0(pHwInit->hReport, REPORT_SEVERITY_INFORMATION, "hwInit_ReadRadioParamsSm Ended Successfully\n");
-              
-              TWD_FinalizeFEMRead(pHwInit->hTWD);
-
-              return TI_OK;
-
-             }
-
-        } /* End switch */
-
-    } /* End while */
-
-}
-
-
-/****************************************************************************
- *                      hwInit_ReadRadioParams()
- ****************************************************************************
- * DESCRIPTION: hwInit_ReadRadioParamsSm 
- * initalizie hwInit_ReadRadioParamsSm parmaeters
-  ****************************************************************************/
-   
-TI_STATUS hwInit_ReadRadioParams (TI_HANDLE hHwInit)
-{
-  THwInit      *pHwInit = (THwInit *)hHwInit;
-
-  pHwInit->uRegStage = 0;
-  pHwInit->uRegSeqStage = 0;
- 
-  return hwInit_ReadRadioParamsSm (hHwInit);
-}
 
 /****************************************************************************
  *                      hwInit_InitPoalrity()
@@ -2954,7 +2656,7 @@ TI_STATUS hwInit_InitTopRegisterRead(TI_HANDLE hHwInit, TI_UINT32 uAddress)
 * RETURNS: None
 ****************************************************************************/
 #ifdef DOWNLOAD_TIMER_REQUIERD
-static void hwInit_StallTimerCb (TI_HANDLE hHwInit)
+ static void hwInit_StallTimerCb (TI_HANDLE hHwInit, TI_BOOL bTwdInitOccured)
 {
 	hwInit_FinalizeDownloadSm(hHwInit);
 }

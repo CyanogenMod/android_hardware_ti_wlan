@@ -70,7 +70,6 @@ TI_STATUS hwInit_SetFwImage (TI_HANDLE hHwInit, TFileInfo *pFileInfo);
 TI_STATUS hwInit_Destroy (TI_HANDLE hHwInit);
 TI_STATUS hwInit_Boot (TI_HANDLE hHwInit);
 TI_STATUS hwInit_LoadFw (TI_HANDLE hHwInit);
-TI_STATUS hwInit_ReadRadioParamsSm (TI_HANDLE hHwInit);
 TI_STATUS hwInit_ReadRadioParams (TI_HANDLE hHwInit);
 TI_STATUS hwInit_WriteIRQPolarity(TI_HANDLE hHwInit);
 TI_STATUS hwInit_InitPolarity(TI_HANDLE hHwInit);

@@ -686,7 +686,7 @@ void fwEvent_SetInitMask (TI_HANDLE hFwEvent)
     TfwEvent *pFwEvent = (TfwEvent *)hFwEvent;
 
     /* Unmask only the interrupts needed for the FW configuration process. */
-    pFwEvent->uEventMask = ACX_INTR_CMD_COMPLETE | ACX_INTR_EVENT_A | ACX_INTR_EVENT_B;
+    pFwEvent->uEventMask = ACX_INTR_CMD_COMPLETE | ACX_INTR_EVENT_A | ACX_INTR_EVENT_B | ACX_INTR_HW_AVAILABLE;
     pFwEvent->tMaskTxn.uData = ~pFwEvent->uEventMask;
     TXN_FW_EVENT_SET_MASK_ADDR(pFwEvent)
     twIf_Transact(pFwEvent->hTwIf, &(pFwEvent->tMaskTxn.tTxnStruct));

@@ -238,7 +238,7 @@ TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv,
      *           SDIO driver into pBusDrv->pDmaBuffer.
      */
 
-    iStatus = sdioAdapt_ConnectBus (busDrv_TxnDoneCb, 
+    iStatus = sdioAdapt_ConnectBus ((void *)busDrv_TxnDoneCb,
                                     hBusDrv, 
                                     pBusDrv->uBlkSizeShift, 
                                     pBusDrvCfg->tSdioCfg.uBusDrvThreadPriority,
@@ -313,6 +313,7 @@ ETxnStatus busDrv_Transact (TI_HANDLE hBusDrv, TTxnStruct *pTxn)
     pBusDrv->pCurrTxn               = pTxn;
     pBusDrv->uCurrTxnPartsCount     = 0;
     pBusDrv->uCurrTxnPartsCountSync = 0;
+    TXN_PARAM_SET_STATUS(pTxn, TXN_PARAM_STATUS_OK);
 
     /* Prepare the transaction parts in a table. */
     bWithinAggregation = busDrv_PrepareTxnParts (pBusDrv, pTxn);
@@ -580,7 +581,6 @@ static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
     }
     
     /* Set status OK in Txn struct, and call TxnDone CB if not fully sync */
-    TXN_PARAM_SET_STATUS(pTxn, TXN_PARAM_STATUS_OK);
     if (pBusDrv->uCurrTxnPartsCountSync != pBusDrv->uCurrTxnPartsCount)
     {
         pBusDrv->fTxnDoneCb (pBusDrv->hCbHandle, pTxn);

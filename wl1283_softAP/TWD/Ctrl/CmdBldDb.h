@@ -356,8 +356,9 @@ typedef struct
     TSecurReconf               keys;                /* Security keys            */
     TRxDataFiltersTable        rxDataFilters;       /* Rx data filters          */
     IniFileGeneralParam        tPlatformGenParams;  /* platfrom gen params from public_radio.h  */   
-    IniFileRadioParam          tRadioIniParams;     /* Radio ini params from public_radio.h     */
-    TSmartReflexParams         tSmartReflex;
+    IniFileRadioParam          tRadioIniParams[NUMBER_OF_FEM_TYPES_E];     /* Radio ini params from public_radio.h     */
+    IniFileExtendedRadioParam  tExtRadioIniParams[NUMBER_OF_FEM_TYPES_E];  /* Extended Radio ini params from public_radio.h     */
+	TSmartReflexParams         tSmartReflex;
 	TRateMngParams		       tRateMngParams;      /* rate management params */
 } TCmdBldDb;
 

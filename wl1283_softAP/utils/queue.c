@@ -177,14 +177,16 @@ TI_STATUS que_Destroy (TI_HANDLE hQue)
 {
     TQueue *pQue = (TQueue *)hQue;
 
-    /* Alert if the queue is unloaded before it was cleared from items */
-    if (pQue->uCount)
+    if (pQue)
     {
-        TRACE0(pQue->hReport, REPORT_SEVERITY_ERROR, "que_Destroy() Queue Not Empty!!");
+        /* Alert if the queue is unloaded before it was cleared from items */
+        if (pQue->uCount)
+        {
+            TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING, "que_Destroy() Queue Not Empty!!");
+        }
+        /* free Queue object */
+        os_memoryFree (pQue->hOs, pQue, sizeof(TQueue));
     }
-    /* free Queue object */
-	os_memoryFree (pQue->hOs, pQue, sizeof(TQueue));
-	
     return TI_OK;
 }
 
@@ -230,12 +232,13 @@ TI_STATUS que_Enqueue (TI_HANDLE hQue, TI_HANDLE hItem)
 	TQueue      *pQue = (TQueue *)hQue;
     TQueNodeHdr *pQueNodeHdr;  /* the Node-Header in the given item */
 
-    
-    /* Check queue limit */
-	if(pQue->uCount < pQue->uLimit)
-	{
-        /* Find NodeHeader in the given item */
-        pQueNodeHdr = (TQueNodeHdr *)((TI_UINT8*)hItem + pQue->uNodeHeaderOffset);
+    if (pQue)
+    {
+        /* Check queue limit */
+        if(pQue->uCount < pQue->uLimit)
+        {
+            /* Find NodeHeader in the given item */
+            pQueNodeHdr = (TQueNodeHdr *)((TI_UINT8*)hItem + pQue->uNodeHeaderOffset);
 
         /* Verify that pNext is NULL --> Sanity check that this item is not already linked to a queue */
         if (pQueNodeHdr->pNext)
@@ -267,7 +270,7 @@ TI_STATUS que_Enqueue (TI_HANDLE hQue, TI_HANDLE hItem)
 	pQue->uOverflow++;
     TRACE0(pQue->hReport, REPORT_SEVERITY_WARNING , "que_Enqueue(): Queue Overflow\n");
 #endif
-	
+    }
 	return TI_NOK;
 }
 
@@ -286,11 +289,12 @@ TI_STATUS que_Enqueue (TI_HANDLE hQue, TI_HANDLE hItem)
 TI_HANDLE que_Dequeue (TI_HANDLE hQue)
 {
     TQueue   *pQue = (TQueue *)hQue;
-	TI_HANDLE hItem;
- 
-    if (pQue->uCount)
+    TI_HANDLE hItem;
+    if (pQue)
     {
-        /* Queue is not empty, take packet from the queue tail */
+        if (pQue->uCount)
+        {
+            /* Queue is not empty, take packet from the queue tail */
 
         /* find pointer to the node entry */
          hItem = (TI_HANDLE)((TI_UINT8*)pQue->tHead.pPrev - pQue->uNodeHeaderOffset); 
@@ -304,6 +308,7 @@ TI_HANDLE que_Dequeue (TI_HANDLE hQue)
 #endif
 
          return (hItem);
+        }
     }
     
 	/* Queue is empty */

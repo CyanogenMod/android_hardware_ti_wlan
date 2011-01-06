@@ -35,6 +35,10 @@
 #define OSAL_FAILURE				1
 #define OS_GETINPUTSTRING_CONTINUE  TRUE+1
 
+#ifndef BIT
+#define BIT(x) (1 << (x))
+#endif
+
 #if !defined(max)
 #define max(a,b) ((a>b)?a:b)
 #endif

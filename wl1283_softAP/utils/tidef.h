@@ -280,8 +280,8 @@
                                     ((TI_UINT8 *)(dst))[1] = ((val) >> 16) & 0xff; \
                                     ((TI_UINT8 *)(dst))[0] = ((val) >> 24) & 0xff
 
-#define WLAN_WORD(src)              (((TI_UINT8 *)(src))[1]) | (((TI_UINT8 *)(src))[0] << 8)
-#define WLAN_LONG(src)              (((TI_UINT8 *)(src))[3]) | (((TI_UINT8 *)(src))[2] << 8) | (((TI_UINT8 *)(src))[1] << 16) | (((TI_UINT8 *)(src))[0] << 24)
+#define WLAN_WORD(src)              ((((TI_UINT8 *)(src))[1]) | (((TI_UINT8 *)(src))[0] << 8))
+#define WLAN_LONG(src)              ((((TI_UINT8 *)(src))[3]) | (((TI_UINT8 *)(src))[2] << 8) | (((TI_UINT8 *)(src))[1] << 16) | (((TI_UINT8 *)(src))[0] << 24))
 
 #elif defined (__BYTE_ORDER_LITTLE_ENDIAN)
 

@@ -64,7 +64,8 @@ static int cmdInterpret_unregisterEvents(TI_HANDLE hCmdInterpret, TI_HANDLE hEvH
 #define CHECK_PENDING_RESULT(x,y)     if (x == COMMAND_PENDING) { os_printf ("Unexpected COMMAND PENDING result (cmd = 0x%x)\n",y->paramType);  break; }
 #define CHECK_PENDING_RESULT_RET(x,y) if (x == COMMAND_PENDING) { os_printf ("Unexpected COMMAND PENDING result (cmd = 0x%x)\n",y->paramType);  return NULL; }
 
-static const char *ieee80211_modes[] = {
+static const char *ieee80211_modes[] =
+{
     "?", "IEEE 802.11 B", "IEEE 802.11 A", "IEEE 802.11 BG", "IEEE 802.11 ABG"
 };
 #ifdef XCC_MODULE_INCLUDED
@@ -190,7 +191,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             if (res == TI_OK)
             {
                 wrqu->freq.m = pParam->content.siteMgrCurrentChannel;
-                wrqu->freq.e = 0;
+			wrqu->freq.e = 3;
                 wrqu->freq.i = 0;
             }
             break;
@@ -515,7 +516,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
         /* trigger scanning (list cells) */
     case SIOCSIWSCAN:
         {
-            struct iw_scan_req pScanReq;
+		struct iw_scan_req scanReq;
             TScanParams scanParams;
             pParam->content.pScanParams = &scanParams;
 
@@ -523,16 +524,18 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
 
             /* Init the parameters in case the Supplicant doesn't support them*/
             pParam->content.pScanParams->desiredSsid.len = 0;
-            pScanReq.scan_type = SCAN_TYPE_TRIGGERED_ACTIVE;
+		scanReq.scan_type = SCAN_TYPE_TRIGGERED_ACTIVE;
 
-            if (wrqu->data.pointer)
-            {
-            	if ( copy_from_user( &pScanReq, wrqu->data.pointer, sizeof(pScanReq)) )
-                {
-                printk("CRITICAL: Could not copy data from user space!!!");
-                return -EFAULT;
 
-            }
+
+		if (cmdObj->param3)
+
+        {
+
+			os_memoryCopy(pCmdInterpret->hOs, &scanReq, cmdObj->param3, sizeof(scanReq));
+
+
+
 
  
 
@@ -540,9 +543,9 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
 
                                                 {
 
-                pParam->content.pScanParams->desiredSsid.len = pScanReq.essid_len;
+				pParam->content.pScanParams->desiredSsid.len = scanReq.essid_len;
 
-                os_memoryCopy(pCmdInterpret->hOs,pParam->content.pScanParams->desiredSsid.str, pScanReq.essid, pScanReq.essid_len);
+				os_memoryCopy(pCmdInterpret->hOs,pParam->content.pScanParams->desiredSsid.str, scanReq.essid, scanReq.essid_len);
 
                                                 }
 
@@ -558,7 +561,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
 
 
             /* set the scan type according to driver trigger scan */
-            if (IW_SCAN_TYPE_PASSIVE == pScanReq.scan_type) 
+		if (IW_SCAN_TYPE_PASSIVE == scanReq.scan_type)
             {
                 pParam->content.pScanParams->scanType = SCAN_TYPE_TRIGGERED_PASSIVE;
             }
@@ -603,7 +606,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
 
             /* Allocate required memory */
             my_list = os_memoryAlloc (pCmdInterpret->hOs, allocated_size);
-            if (!my_list) {
+		if (!my_list)
+		{
                 res = -ENOMEM;
                 goto cmd_end;
             }
@@ -687,7 +691,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 os_memorySet (pCmdInterpret->hOs, &iwe, 0, sizeof(iwe));
                 iwe.cmd = SIOCGIWFREQ;
                 iwe.u.freq.m = my_current->Configuration.Union.channel;
-                iwe.u.freq.e = 0;
+			iwe.u.freq.e = 3;
                 iwe.u.freq.i = 0;
                 iwe.len = IW_EV_FREQ_LEN;
 
@@ -812,7 +816,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 /* Connect to ANY ESSID - use empty */
                 os_memoryCopy(pCmdInterpret->hOs, &pParam->content.siteMgrCurrentSSID.str, "\00", 1);
                 pParam->content.siteMgrCurrentSSID.len = 0;;
-            } else
+		}
+		else
             {
                 /* Handle ESSID length issue in WEXT (backward compatibility with old/new versions) */
                 length = wrqu->essid.length - 1;
@@ -864,7 +869,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
         /* set node name/nickname */
     case SIOCSIWNICKN:
         {
-            if (wrqu->data.length > IW_ESSID_MAX_SIZE) {
+        if (wrqu->data.length > IW_ESSID_MAX_SIZE)
+		{
                 res = -EINVAL;
                 goto cmd_end;
             }
@@ -1004,7 +1010,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             {
                 os_memoryCopy(pCmdInterpret->hOs, &pParam->content.rsnOsKey.KeyMaterial, cmdObj->buffer2, wrqu->data.length);
                 pParam->content.rsnOsKey.KeyLength = wrqu->data.length;
-            } else
+		}
+		else
             {
                 /* No key material is provided, just set given index as default TX key */
                 pParam->paramType = RSN_DEFAULT_KEY_ID;
@@ -1083,14 +1090,14 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
         {
         pParam->paramType = RSN_GENERIC_IE_PARAM;
         pParam->content.rsnGenericIE.length = wrqu->data.length;
-        if (wrqu->data.length) {
+		if (wrqu->data.length)
+		{
             os_memoryCopy(pCmdInterpret->hOs, pParam->content.rsnGenericIE.data, cmdObj->param3, wrqu->data.length);
         }
         res = cmdDispatch_SetParam (pCmdInterpret->hCmdDispatch, pParam);
         CHECK_PENDING_RESULT(res,pParam);
-
+	}
             break;
-        }
 
         /* Set Authentication */
     case SIOCSIWAUTH:
@@ -1162,12 +1169,15 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             TI_UINT8 temp[32];
 
 #ifdef GEM_SUPPORTED
-                    if ( ext->alg == KEY_GEM ) {
+		if ( ext->alg == KEY_GEM )
+		{
                             TSecurityKeys key;
                             os_memoryZero(pCmdInterpret->hOs, &key, sizeof(key));
                             key.keyType = ext->alg;
                             if (ext->key_len > MAX_KEY_LEN) {
-                                    return -EINVAL;
+			{
+				res = -EINVAL;
+				break;
                             }
                             key.encLen = ext->key_len;
                             os_memoryCopy(pCmdInterpret->hOs, key.encKey, ext->key, ext->key_len);
@@ -1230,7 +1240,8 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 os_memoryCopy(pCmdInterpret->hOs,(TI_UINT8*)(((TI_UINT8*)&temp)+16),(TI_UINT8*)(((TI_UINT8*)&ext->key)+24),8);
                 os_memoryCopy(pCmdInterpret->hOs,&temp,&ext->key,16);
                 os_memoryCopy(pCmdInterpret->hOs, &pParam->content.rsnOsKey.KeyMaterial, &temp, ext->key_len);
-            } else
+		}
+		else
             {
                 os_memoryCopy(pCmdInterpret->hOs, &pParam->content.rsnOsKey.KeyMaterial, &ext->key, ext->key_len);
             }
@@ -1531,7 +1542,8 @@ static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData)
 
                     memptr = os_memoryAlloc (pCmdInterpret->hOs, TotalLength);
 
-                    if (!memptr) {
+				if (!memptr)
+				{
                         res = TI_NOK;
                         goto event_end;
                     }
@@ -1576,7 +1588,8 @@ static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData)
 
 
             my_current = os_memoryAlloc (pCmdInterpret->hOs,MAX_BEACON_BODY_LENGTH);
-            if (!my_current) {
+		if (!my_current)
+		{
                 res = TI_NOK;
                 goto event_end;
             }
@@ -1611,7 +1624,8 @@ static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData)
 
             cckm_assoc.assocRespLen = pParam->content.assocReqBuffer.bufferSize - ASSOC_RESP_FIXED_DATA_LEN ;
             cckm_assoc.assocRespBuffer = os_memoryAlloc (pCmdInterpret->hOs, cckm_assoc.assocRespLen);
-            if (!cckm_assoc.assocRespBuffer) {
+		if (!cckm_assoc.assocRespBuffer)
+		{
                 res = TI_NOK;
                 goto event_end;
             }
@@ -1702,7 +1716,8 @@ event_end:
                     wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVMICHAELMICFAILURE, &wrqu, (char *) &ev);
                 }
 
-            } else if (*(TI_UINT32*)buf == os802_11StatusType_PMKID_CandidateList)
+        }
+        else if (*(TI_UINT32*)buf == os802_11StatusType_PMKID_CandidateList)
             {
                 OS_802_11_PMKID_CANDIDATELIST  *pCandList = (OS_802_11_PMKID_CANDIDATELIST *) (buf + sizeof(TI_UINT32));
                 int i;
@@ -1793,7 +1808,8 @@ static int cmdInterpret_setSecurityParams (TI_HANDLE hCmdInterpret)
             auth_mode = os802_11AuthModeWPA2;
         else
             auth_mode = os802_11AuthModeWPA2PSK;
-    } else if (pCmdInterpret->wai.iw_auth_wpa_version & IW_AUTH_WPA_VERSION_WPA)
+    }
+    else if (pCmdInterpret->wai.iw_auth_wpa_version & IW_AUTH_WPA_VERSION_WPA)
     {
         if (pCmdInterpret->wai.iw_auth_key_mgmt & IW_AUTH_KEY_MGMT_802_1X)
             auth_mode = os802_11AuthModeWPA;
@@ -1801,13 +1817,15 @@ static int cmdInterpret_setSecurityParams (TI_HANDLE hCmdInterpret)
             auth_mode = os802_11AuthModeWPAPSK;
         else
             auth_mode = os802_11AuthModeWPANone;
-    } else if (pCmdInterpret->wai.iw_auth_80211_auth_alg & IW_AUTH_ALG_SHARED_KEY)
+    }
+    else if (pCmdInterpret->wai.iw_auth_80211_auth_alg & IW_AUTH_ALG_SHARED_KEY)
     {
         if (pCmdInterpret->wai.iw_auth_80211_auth_alg & IW_AUTH_ALG_OPEN_SYSTEM)
             auth_mode = os802_11AuthModeAutoSwitch;
         else
             auth_mode = os802_11AuthModeShared;
-    } else
+			}
+			else
         auth_mode = os802_11AuthModeOpen;
 
     if (pCmdInterpret->wai.iw_auth_cipher_pairwise & IW_AUTH_CIPHER_CCMP)
@@ -1870,7 +1888,6 @@ void *cmdInterpret_GetStat (TI_HANDLE hCmdInterpret)
        pParam->paramType = SITE_MGR_GET_STATS;
        res = cmdDispatch_GetParam ( pCmdInterpret->hCmdDispatch, pParam );
 
-       CHECK_PENDING_RESULT_RET(res, pParam);
 
       if (res == TI_OK)
       {
@@ -1893,7 +1910,7 @@ void *cmdInterpret_GetStat (TI_HANDLE hCmdInterpret)
       pCmdInterpret->wstats.discard.code = 0;         /* Rx : Unable to code/decode (WEP) */
       pCmdInterpret->wstats.discard.fragment = 0;     /* Rx : Can't perform MAC reassembly */
       pCmdInterpret->wstats.discard.misc = 0;     /* Others cases */
-
+		os_memoryFree(pCmdInterpret->hOs, pParam, sizeof(paramInfo_t));
         return &pCmdInterpret->wstats;
     }
     return (void *)NULL;

@@ -617,12 +617,13 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
 {
     TTwd         *pTWD = (TTwd *)hTWD;
 
-    TWlanParams         *pWlanParams = &DB_WLAN(pTWD->hCmdBld);
-    TKeepAliveList      *pKlvParams = &DB_KLV(pTWD->hCmdBld);
-    IniFileRadioParam   *pRadioParams = &DB_RADIO(pTWD->hCmdBld);
-    IniFileGeneralParam *pGenParams = &DB_GEN(pTWD->hCmdBld);
-	TRateMngParams      *pRateMngParams = &DB_RM(pTWD->hCmdBld);
-    TDmaParams          *pDmaParams = &DB_DMA(pTWD->hCmdBld);
+    TWlanParams         		*pWlanParams = &DB_WLAN(pTWD->hCmdBld);
+    TKeepAliveList      		*pKlvParams = &DB_KLV(pTWD->hCmdBld);
+    IniFileRadioParam   		*pRadioParams = DB_RADIO(pTWD->hCmdBld);
+    IniFileExtendedRadioParam   *pExtRadioParams = DB_EXT_RADIO(pTWD->hCmdBld);
+    IniFileGeneralParam 		*pGenParams = &DB_GEN(pTWD->hCmdBld);
+    TRateMngParams      		*pRateMngParams = &DB_RM(pTWD->hCmdBld);
+    TDmaParams          		*pDmaParams = &DB_DMA(pTWD->hCmdBld);
 
     TI_UINT32            k, uIndex;
     int iParam;
@@ -856,7 +857,8 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
                                                               CAP_BIT_MASK_SHORT_GI_FOR_20MHZ_PACKETS);
     pWlanParams->tTwdHtCapabilities.uMCSFeedback =           MCS_FEEDBACK_NO; 
 
-    os_memoryCopy(pTWD->hOs, (void*)pRadioParams, (void*)&pInitParams->tIniFileRadioParams, sizeof(IniFileRadioParam));
+    os_memoryCopy(pTWD->hOs, (void*)pRadioParams, (void*)&pInitParams->tIniFileRadioParams, sizeof(IniFileRadioParam) * NUMBER_OF_FEM_TYPES_E);
+    os_memoryCopy(pTWD->hOs, (void*)pExtRadioParams, (void*)&pInitParams->tIniFileExtRadioParams, sizeof(IniFileExtendedRadioParam) * NUMBER_OF_FEM_TYPES_E);
     os_memoryCopy(pTWD->hOs, (void*)pGenParams, (void*)&pInitParams->tPlatformGenParams, sizeof(IniFileGeneralParam));
 
     CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(pTWD->hCmdBld, __CFG_PLATFORM_PARAMS)
@@ -958,12 +960,12 @@ void TWD_FinalizeDownload (TI_HANDLE hTWD)
 {
     TTwd *pTWD = (TTwd *)hTWD;
 
-    TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_FinalizeDownload: called\n");
 
 	if ( pTWD == NULL )
 	{
 		return;
 	}
+    TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_FinalizeDownload: called\n");
     /* Here at the end call the Initialize Complete callback that will release the user Init semaphore */
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT, "Before sending the Init Complet callback !!!!!\n");
 
@@ -1297,9 +1299,9 @@ void TWD_EnableExternalEvents (TI_HANDLE hTWD)
      * Enable sleep after all firmware initializations completed 
      * The awake was in the TWD_initHw phase
      */
-    twIf_Sleep (pTWD->hTwIf);
 
     fwEvent_EnableExternalEvents (pTWD->hFwEvent);
+    twIf_Sleep (pTWD->hTwIf);
 }
 
 TI_BOOL TWD_RecoveryEnabled (TI_HANDLE hTWD)
@@ -1882,30 +1884,12 @@ TI_UINT8 TWD_GetFEMType (TI_HANDLE hTWD)
 
 }
 
-/** 
- *  \brief TWD end function of read radio state machine
- *  *  * 
- * \param  Handle        	- handle to object
- * \return void
- * 
- * \par Description
- * The function calling to HwInit call back function, after finish reading FEM registers * 
- * \sa
- */ 
-void TWD_FinalizeFEMRead(TI_HANDLE hTWD)
+
+void TWD_FinalizePolarityRead(TI_HANDLE hTWD)
 {
   TTwd *pTWD = (TTwd *)hTWD;
 
   (*pTWD->fInitHwCb) (pTWD->hUser, TI_OK);
 }
 
-
-
-
-void TWD_FinalizePolarityRead(TI_HANDLE hTWD)
-{
-  TTwd *pTWD = (TTwd *)hTWD;
-  /*  allways read FEM type from Radio Registers */ 
-   hwInit_ReadRadioParams(pTWD->hHwInit);   
-}
 

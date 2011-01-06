@@ -348,6 +348,7 @@ int apCmd_Execute(TI_HANDLE hApCmd, TConfigCommand *pCmdObj)
 			   /* TODO */
 		   default:
                TRACE2(pApCmd->hReport,REPORT_SEVERITY_ERROR ,"\n %s: Invalid alg=%u\n", __FUNCTION__, tKeyParam.cAlg);
+                os_memoryFree(pApCmd->hOs, pParamInfo, sizeof(TApCmd_Type));
 			   return TI_NOK;
 		   }
 
@@ -382,6 +383,7 @@ int apCmd_Execute(TI_HANDLE hApCmd, TConfigCommand *pCmdObj)
              {
         		 TRACE1(pApCmd->hReport,REPORT_SEVERITY_ERROR ,"\n apCmd_Execute:  Can't find Hlid for STA "REPORT_MACSTR"\n",
 						REPORT_MAC2STR(tKeyParam.cMac));
+                    os_memoryFree(pApCmd->hOs, pParamInfo, sizeof(TApCmd_Type));
 				 return TI_NOK;
              }
 
@@ -419,6 +421,7 @@ int apCmd_Execute(TI_HANDLE hApCmd, TConfigCommand *pCmdObj)
              {
                 TRACE1(pApCmd->hReport,REPORT_SEVERITY_ERROR ,"\n apCmd_Execute:  Can't find Hlid for STA "REPORT_MACSTR"\n",
 						REPORT_MAC2STR(tKeyParam.cMac));
+                    os_memoryFree(pApCmd->hOs, pParamInfo, sizeof(TApCmd_Type));
                 return TI_NOK;
              }
 
@@ -464,7 +467,7 @@ int apCmd_Execute(TI_HANDLE hApCmd, TConfigCommand *pCmdObj)
   {
       pApCmd->pAsyncCmd = NULL;
   }
-
+    os_memoryFree(pApCmd->hOs, pParamInfo, sizeof(TApCmd_Type));
   return tRes;
 }
 

@@ -55,6 +55,11 @@ TI_HANDLE EvHandler_Create (TI_HANDLE hOs)
 
     PRINT(DBG_INIT_LOUD, (" EvHandlerInit\n"));
     pEvHandler = os_memoryAlloc(hOs,sizeof(TEvHandlerObj));
+    if (NULL == pEvHandler)
+    {
+        PRINT(DBG_INIT_LOUD, ("EvHandler_Create() - Allocation failed! Returning NULL.\n"));
+        return NULL;
+    }
     os_memoryZero(hOs,pEvHandler,sizeof(TEvHandlerObj));
 
     #ifdef EV_HANDLER_DEBUG
@@ -90,7 +95,8 @@ TI_UINT32 EvHandlerRegisterEvent(TI_HANDLE hEvHandler, TI_UINT8* pData, TI_UINT3
     IPC_EVENT_PARAMS*    pEvParams;
     TI_UINT32  ModuleIndex;
 
-    if( (hEvHandler==NULL) || (pData == NULL)){
+    if( (hEvHandler==NULL) || (pData == NULL))
+    {
         PRINT(DBG_INIT_ERROR, "EvHandler:EvHandlerRegisterEvent Bad Handle passed \n");
         return TI_NOK;
     }
@@ -118,7 +124,8 @@ TI_UINT32 EvHandlerRegisterEvent(TI_HANDLE hEvHandler, TI_UINT8* pData, TI_UINT3
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
     }
 
-    if( pEvParams->uEventType >= IPC_EVENT_MAX){
+    if ( pEvParams->uEventType >= IPC_EVENT_MAX)
+    {
         PRINTF(DBG_INIT_ERROR, (" EvHandlerRegisterEvent Error - Invalid Event Type = %d \n",
               pEvParams->uEventType));
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
@@ -126,15 +133,15 @@ TI_UINT32 EvHandlerRegisterEvent(TI_HANDLE hEvHandler, TI_UINT8* pData, TI_UINT3
 
     ModuleIndex = 0;
 
-    while ( (pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex].uEventID != NULL )
-            && ( ModuleIndex < MAX_REGISTERED_MODULES)    )
+    while ((ModuleIndex < MAX_REGISTERED_MODULES) &&
+            (pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex].uEventID != NULL))
     {
         ModuleIndex++; 
     }
 
     if(ModuleIndex == MAX_REGISTERED_MODULES)
     {
-        PRINTF(DBG_INIT_WARNING, (" EvHandlerRegisterEvent %d"
+        PRINTF(DBG_INIT_WARNING, (" EvHandlerRegisterEvent %d "
                                   "Registration queue full or event already registered!\n",
                                   pEvParams->uEventType));
 
@@ -179,7 +186,8 @@ TI_UINT32 EvHandlerUnRegisterEvent(TI_HANDLE hEvHandler, TI_HANDLE uEventID)
 
     PRINTF(DBG_INIT_LOUD, (" EvHandlerUnRegisterEvent EventType = %d \n",pEvParams->uEventType));
 
-    if( pEvParams->uEventType >= IPC_EVENT_MAX){
+    if ( pEvParams->uEventType >= IPC_EVENT_MAX)
+    {
         PRINTF(DBG_INIT_ERROR, (" EvHandlerRegisterEvent Error Event Type = %d \n",
               pEvParams->uEventType));
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
@@ -187,15 +195,15 @@ TI_UINT32 EvHandlerUnRegisterEvent(TI_HANDLE hEvHandler, TI_HANDLE uEventID)
 
     ModuleIndex = 0;
 
-    while ( (pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex].uEventID != pEvParams->uEventID )
-            && ( ModuleIndex < MAX_REGISTERED_MODULES)    )
+    while ((ModuleIndex < MAX_REGISTERED_MODULES) &&
+            (pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex].uEventID != pEvParams->uEventID))
     {
         ModuleIndex++; 
     }
 
     if(ModuleIndex == MAX_REGISTERED_MODULES)
     {
-        PRINTF(DBG_INIT_ERROR, (" EvHandlerUnRegisterEvent %d"
+        PRINTF(DBG_INIT_ERROR, (" EvHandlerUnRegisterEvent %d "
                                "Registration queue doesn't hold this event!\n",
                                pEvParams->uEventType ));
 
@@ -220,7 +228,8 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
 
     PRINTF(DBG_INIT_LOUD, (" EvHandlerSendEvent %d  \n", EvType));
 
-    if(hEvHandler == NULL){
+    if (hEvHandler == NULL)
+    {
         PRINT(DBG_INIT_ERROR, "EvHandlerSendEvent Bad Handle passed \n");
         return TI_NOK;
     }
@@ -269,7 +278,8 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
                                           "ModuleIndex = %d  \n", EvType, ModuleIndex));
                     IPC_EventSend (pEvHandler->hOs,(TI_UINT8*)pNewEvent,sizeof(IPC_EV_DATA));
             }
-            else {
+            else
+            {
 
                 pEvHandler->LastUMEventType = EvType;
                 pEvHandler->SendEventArray.TailIndex = (TailIndex+1) % MAX_SEND_EVENTS;

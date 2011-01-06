@@ -33,6 +33,12 @@
 #include "cu_osapi.h"
 #include "oserr.h"
 
+#ifdef ANDROID
+#include <linux/if.h>
+#else
+#include <net/if.h>
+#endif
+
 #include <linux/rtnetlink.h>
 #include <linux/wireless.h>
 #include <string.h>

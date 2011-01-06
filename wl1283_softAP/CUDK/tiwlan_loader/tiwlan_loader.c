@@ -58,10 +58,10 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
                  PS8 init_file_name, PS8 firmware_file_name )
 {
     PVOID f1=NULL, f2=NULL, f3 = NULL;
-    U32 eeprom_image_length=0;
-    U32 init_file_length=0;
-    U32 firmware_image_length = 0;
-    U32 req_size=0;
+    S32 eeprom_image_length=0;
+    S32 init_file_length=0;
+    S32 firmware_image_length = 0;
+    S32 req_size=0;
     TLoaderFilesData *init_info = NULL;
     S32 rc = -1;
 	THandle hIpcSta;

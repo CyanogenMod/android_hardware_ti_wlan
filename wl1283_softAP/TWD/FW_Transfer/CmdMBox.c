@@ -214,7 +214,7 @@ TI_STATUS cmdMbox_SendCommand       (TI_HANDLE hCmdMbox, Command_e cmdType, TI_U
     pCmdMbox->uReadLen = uReadLen + CMDMBOX_HEADER_LEN;
     /* Prepare the Cmd Hw template */
     pCmd->cmdID = cmdType;
-    pCmd->cmdStatus = TI_OK;
+    pCmd->cmdStatus = CMD_STATUS_SUCCESS;
     os_memoryCopy (pCmdMbox->hOs, (void *)pCmd->parameters, (void *)pParamsBuf, uWriteLen);
 
     /* Add the CMDMBOX_HEADER_LEN to the write length */

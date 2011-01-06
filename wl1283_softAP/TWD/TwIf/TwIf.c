@@ -486,6 +486,11 @@ void twIf_SetPartition (TI_HANDLE hTwIf,
 
     /* Allocate memory for the current 4 partition transactions */
     pPartitionRegTxn = (TPartitionRegTxn *) os_memoryAlloc (pTwIf->hOs, 7*sizeof(TPartitionRegTxn));
+    if (NULL == pPartitionRegTxn)
+    {
+        TRACE0(pTwIf->hReport, REPORT_SEVERITY_FATAL_ERROR, "twIf_SetPartition() - Allocation for pPartitionRegTxn has failed! Return.\n");
+        return;
+    }
     pTxnHdr       = &(pPartitionRegTxn->tHdr);
 
     /* Zero the allocated memory to be certain that unused fields will be initialized */
@@ -716,9 +721,9 @@ ETxnStatus twIf_TransactReadFWStatus (TI_HANDLE hTwIf, TTxnStruct *pTxn)
 static ETxnStatus twIf_SendTransaction (TTwIfObj *pTwIf, TTxnStruct *pTxn)
 {
     ETxnStatus eStatus;
+#ifdef TI_DBG
     TI_UINT32  data=0;
 
-#ifdef TI_DBG
     /* Verify that the Txn HW-Address is 4-bytes aligned */
     if (pTxn->uHwAddr & 0x3)
     {
@@ -738,8 +743,14 @@ TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned H
 
 #ifdef TI_DBG
     pTwIf->uDbgCountTxn++;
-    if      (eStatus == TXN_STATUS_COMPLETE) { pTwIf->uDbgCountTxnComplete++; }
-    else if (eStatus == TXN_STATUS_PENDING ) { pTwIf->uDbgCountTxnPending++;  }
+    if      (eStatus == TXN_STATUS_COMPLETE)
+    {
+        pTwIf->uDbgCountTxnComplete++;
+    }
+    else if (eStatus == TXN_STATUS_PENDING )
+    {
+        pTwIf->uDbgCountTxnPending++;
+    }
 
     COPY_WLAN_LONG(&data,&(pTxn->aBuf[0]));
     TRACE8(pTwIf->hReport, REPORT_SEVERITY_INFORMATION, "twIf_SendTransaction: Status = %d, Params=0x%x, HwAddr=0x%x, Len0=%d, Len1=%d, Len2=%d, Len3=%d, Data=0x%x \n", eStatus, pTxn->uTxnParams, pTxn->uHwAddr, pTxn->aLen[0], pTxn->aLen[1], pTxn->aLen[2], pTxn->aLen[3],data);

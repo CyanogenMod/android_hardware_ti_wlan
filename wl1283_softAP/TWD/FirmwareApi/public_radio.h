@@ -717,6 +717,7 @@ typedef enum
 /*	0x23	*/	TEST_CMD_SMART_REFLEX,
 /*	0x24	*/	TEST_CMD_CHANNEL_RESPONSE,
 /*	0x25	*/	TEST_CMD_DCO_ITRIM_FEATURE,
+    /*	0x26	*/	TEST_CMD_INI_FILE_RF_EXTENDED_PARAM,
 
     MAX_TEST_CMD_ID = 0xFF	/* Dummy - must be last!!! (make sure that Enum variables are type of int) */
         
@@ -1521,7 +1522,6 @@ typedef struct
 	uint8 RxTraceInsertionLoss_2_4G;																							
 	uint8 TXTraceLoss_2_4G;																							
 	int8  RxRssiAndProcessCompensation_2_4G[RSSI_AND_PROCESS_COMPENSATION_TABLE_SIZE];						
-	
 	/* SECTION 2: 5G parameters */										 
 	uint8 RxTraceInsertionLoss_5G[NUMBER_OF_SUB_BANDS_IN_5G_BAND_E];																
 	uint8 TXTraceLoss_5G[NUMBER_OF_SUB_BANDS_IN_5G_BAND_E];																
@@ -1568,7 +1568,15 @@ typedef struct
 	TDynRadioParams		tDynRadioParams;
         uint8                   Padding[2];
 
-}IniFileRadioParam;  
+} IniFileRadioParam;
+
+typedef struct
+{
+    int8  TxPerChannelPowerCompensation_2_4G[HALF_NUMBER_OF_2_4_G_CHANNELS]; /* 7 */
+    int8  TxPerChannelPowerCompensation_5G_OFDM[HALF_NUMBER_OF_5G_CHANNELS]; /* 18 */
+    uint8 Padding[3];
+
+} IniFileExtendedRadioParam;
 
 /*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*/
 
@@ -1635,6 +1643,7 @@ typedef struct
 		TFWVerisons						fwVersions;
 		TTestCmdRunCalibration			RunCalibration;
         IniFileRadioParam				IniFileRadioParams;
+        IniFileExtendedRadioParam		IniFileExtendedRadioParams;
         IniFileGeneralParam				IniFileGeneralParams;
 		EfuseParameters_t				EfuseParams;
 		TestToneParams_t				TestToneParams;
@@ -1746,7 +1755,7 @@ typedef enum PHY_RADIO_GAIN_MONITOR_TYPES_ENMT
 	LAST_GAIN_MONITOR_TYPE_E = (NUMBER_OF_GAIN_MONITOR_TYPES_E - 1)	
 
 }PHY_RADIO_GAIN_MONITOR_TYPES_ENM;
-#elif defined TNETW1273
+#else
 typedef enum PHY_RADIO_GAIN_MONITOR_TYPES_ENMT
 {
 	FIRST_GAIN_MONITOR_TYPE_E,

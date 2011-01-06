@@ -171,28 +171,30 @@ void os_printf(const char *format ,...)
    os_memoryZero(NULL,msg, MAX_MESSAGE_SIZE);
    
     /* Format the message and keep the message length */
-   va_start(ap,format);
-   message_len = vsnprintf(&msg[0], sizeof(msg) -1 , format, ap);
-   if( from_new_line )
+    va_start(ap,format);
+    message_len = vsnprintf(&msg[0], sizeof(msg) -1 , format, ap);
+    if(message_len > 0)
     {
-        if (msg[1] == '$')
+        if( from_new_line )
         {
-            p_msg += 4;
-        }
-        
-        sec = os_timeStampUs(NULL);
-        uSec = sec % MICROSECOND_IN_SECONDS;
-        sec /= MICROSECOND_IN_SECONDS;
-        
-        printk(KERN_INFO DRIVER_NAME ": %d.%06d: %s",sec,uSec,p_msg);
-    }
-    else
-    {
-    printk(&msg[0]);
-    }
-    
-    from_new_line = ( msg[message_len] == '\n' );
+            if (msg[1] == '$')
+            {
+                p_msg += 4;
+            }
 
+            sec = os_timeStampUs(NULL);
+            uSec = sec % MICROSECOND_IN_SECONDS;
+            sec /= MICROSECOND_IN_SECONDS;
+
+            printk(KERN_INFO DRIVER_NAME ": %d.%06d: %s",sec,uSec,p_msg);
+        }
+        else
+        {
+            printk(&msg[0]);
+        }
+
+        from_new_line = ( msg[message_len - 1] == '\n' );
+    }
     va_end(ap);
 }
 
@@ -223,10 +225,12 @@ TI_HANDLE os_timerCreate (TI_HANDLE OsContext, fTimerFunction pRoutine, TI_HANDL
 {
     TOsTimer *pOsTimer = os_memoryAlloc (OsContext, sizeof(TOsTimer));
 
-    init_timer (pOsTimer);
-    pOsTimer->function = (void *)pRoutine;
-    pOsTimer->data     = (int)hFuncHandle;
-
+    if(pOsTimer)
+    {
+        init_timer (pOsTimer);
+        pOsTimer->function = (void *)pRoutine;
+        pOsTimer->data     = (int)hFuncHandle;
+    }
     return (TI_HANDLE)pOsTimer;
 }
 
@@ -629,8 +633,7 @@ Return Value:  TI_OK
 -----------------------------------------------------------------------------*/
 int os_RequestSchedule (TI_HANDLE OsContext)
 {
-   TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
-   int  iRes = TI_OK;
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
 
    /* Note: The performance trace below doesn't inclose the schedule itself because the rescheduling  
     *         can occur immediately and call os_RequestSchedule again which will confuse the trace tools
@@ -640,10 +643,10 @@ int os_RequestSchedule (TI_HANDLE OsContext)
 
    if (!queue_work (drv->pWorkQueue, &drv->tWork))
    {
-       iRes = TI_NOK;
+        return TI_NOK;
    }
 
-   return iRes;
+    return TI_OK;
 }
 
 
@@ -676,8 +679,14 @@ Return Value: TI_OK
 -----------------------------------------------------------------------------*/
 int os_SignalObjectWait (TI_HANDLE OsContext, void *signalObject)
 {
-   wait_for_completion ((struct completion *)signalObject);
-   return TI_OK;
+    if(!signalObject)
+        return TI_NOK;
+    if (!wait_for_completion_timeout((struct completion *)signalObject,
+                                     msecs_to_jiffies(10000)))
+    {
+        printk("tiwlan: 10 sec %s timeout\n", __func__);
+    }
+    return TI_OK;
 }
 
 
@@ -692,8 +701,10 @@ Return Value: TI_OK
 -----------------------------------------------------------------------------*/
 int os_SignalObjectSet (TI_HANDLE OsContext, void *signalObject)
 {
-   complete ((struct completion *)signalObject);
-   return TI_OK;
+    if(!signalObject)
+        return TI_NOK;
+    complete ((struct completion *)signalObject);
+    return TI_OK;
 }
 
 
@@ -708,8 +719,10 @@ Return Value: TI_OK
 -----------------------------------------------------------------------------*/
 int os_SignalObjectFree (TI_HANDLE OsContext, void *signalObject)
 {
-   os_memoryFree(OsContext, signalObject, sizeof(struct completion));
-   return TI_OK;
+    if(!signalObject)
+        return TI_NOK;
+    os_memoryFree(OsContext, signalObject, sizeof(struct completion));
+    return TI_OK;
 }
 
 

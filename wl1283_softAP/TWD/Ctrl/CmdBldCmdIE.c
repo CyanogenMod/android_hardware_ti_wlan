@@ -200,17 +200,20 @@ TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCom
 TI_STATUS cmdBld_CmdIeEnableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld  *pCmdBld = (TCmdBld *)hCmdBld;
-    TI_UINT8  uChannelNumber;
+    TI_UINT8  aEnableRx_buf[4];
 
-    uChannelNumber = DB_DEFAULT_CHANNEL (hCmdBld);
+    aEnableRx_buf[0] = DB_DEFAULT_CHANNEL (hCmdBld);
+    aEnableRx_buf[1] = 0; /* padding */
+    aEnableRx_buf[2] = 0; /* padding */
+    aEnableRx_buf[3] = 0; /* padding */
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_ENABLE_RX, 
-                             (TI_CHAR *)&uChannelNumber, 
-                             sizeof(TI_UINT8),
-                             fCb,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_ENABLE_RX,
+                                 (TI_CHAR *)aEnableRx_buf,
+                                 sizeof(aEnableRx_buf),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 
@@ -230,14 +233,19 @@ TI_STATUS cmdBld_CmdIeEnableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 TI_STATUS cmdBld_CmdIeEnableTx (TI_HANDLE hCmdBld, TI_UINT8 channel, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
+    TI_UINT8  aEnableTx_buf[4];
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_ENABLE_TX, 
-                             (TI_CHAR *)&channel, 
-                             sizeof(TI_UINT8),
-                             fCb,
-                             hCb,
-                             NULL);
+    aEnableTx_buf[0] = channel;
+    aEnableTx_buf[1] = 0; /* padding */
+    aEnableTx_buf[2] = 0; /* padding */
+    aEnableTx_buf[3] = 0; /* padding */
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_ENABLE_TX,
+                                 (TI_CHAR *)aEnableTx_buf,
+                                 sizeof(aEnableTx_buf),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 

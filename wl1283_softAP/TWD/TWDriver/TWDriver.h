@@ -936,9 +936,9 @@ typedef enum
 /*	6	*/	KEEP_ALIVE_TEMPLATE,		/**< Keep Alive Template 					*/
 /*	7	*/	DISCONN_TEMPLATE,			/**< Disconn (Deauth/Disassoc) Template		*/
 /*	8	*/	ARP_RSP_TEMPLATE,			/**< ARP Ressponse Template		            */
-/*	7	*/	AP_BEACON_TEMPLATE,			/**< AP beacon Template             		*/
-/*	8	*/	AP_PROBE_RESPONSE_TEMPLATE,	/**< AP Probe Response Template		        */
-/*	9	*/	AP_DEAUTH_TEMPLATE			/**< AP Deauth Station Template		        */
+/*	9	*/	AP_BEACON_TEMPLATE,			/**< AP beacon Template             		*/
+/*	10	*/	AP_PROBE_RESPONSE_TEMPLATE,	/**< AP Probe Response Template		        */
+/*	11  */	AP_DEAUTH_TEMPLATE			/**< AP Deauth Station Template		        */
 
 } ETemplateType;
 
@@ -2794,7 +2794,8 @@ typedef struct
     TScanSrvInitParams                  tScanSrv;			 /**< Scan Service Initialization Parameters    */
     TArpIpFilterInitParams              tArpIpFilter;		 /**< ARP IP filter Initialization Parameters	*/
     TMacAddrFilterInitParams            tMacAddrFilter;		 /**< MAC Address Initialization Parameters		*/
-    IniFileRadioParam                   tIniFileRadioParams; /**< Radio Initialization Parameters   		*/
+    IniFileRadioParam                   tIniFileRadioParams[NUMBER_OF_FEM_TYPES_E];     /**< Radio Initialization Parameters   		*/
+	IniFileExtendedRadioParam			tIniFileExtRadioParams[NUMBER_OF_FEM_TYPES_E];  /**< Radio Initialization Parameters   		*/
     IniFileGeneralParam                 tPlatformGenParams; /**< Radio Initialization Parameters   	        */
     ACXSmartReflexConfigParams_t        tSmartReflexParams;       /**< Smart Refelx Parameters   	        */
     ACXSmartReflexDebugParams_t         tSmartReflexDebugParams;  /**< Smart Refelx Debug Parameters   	    */

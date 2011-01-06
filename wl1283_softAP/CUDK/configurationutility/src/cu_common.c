@@ -62,15 +62,6 @@ typedef enum
     DRIVER_STATUS_RUNNING           = 1
 } PARAM_OUT_Driver_Status_e;
 
-typedef struct 
-{
-    U32 temp; /* the place of the IE's id and length */
-    U32 MissedBeacons;
-    U8 snr;       /* The current average SNR in db - For Data Packets*/
-    U8 snrBeacon;     /* The current average SNR in db - For Beacon Packets*/
-    S8 rssi;      /* The current average RSSI  - For Data Packets*/
-    S8 rssiBeacon;  
-}TCuCommon_RoamingStatisticsTable;
 
 
 /* local variables */
@@ -517,7 +508,8 @@ static S32 RunShellCmd(S8 *cmd)
 			return -1;
 		}
 		else 
-		{   /* pid!=0; parent process */
+        {
+            /* pid!=0; parent process */
 			waitpid(pid,0,0); /* wait for child to exit */
 		}
 	}

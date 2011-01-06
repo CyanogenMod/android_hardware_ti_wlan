@@ -1029,8 +1029,8 @@ static void txCtrl_BuildMgmtPkt (txCtrl_t *pTxCtrl, TTxCtrlBlk *pPktCtrlBlk, TI_
 	if (uPktType == TX_PKT_TYPE_EAPOL)
 	{
         uHdrAlignPad = txCtrl_BuildDataPktHdr ((TI_HANDLE)pTxCtrl, pPktCtrlBlk, ACK_POLICY_LEGACY);
-
-		uRatePolicy = pTxCtrl->dataRatePolicy[uAc];
+        /* Use Managment policy for EAPOL transmit*/
+		uRatePolicy = pTxCtrl->mgmtRatePolicy[0];
 	}
 
 	/*  Other types are already in WLAN format so copy header from Wbuf to Ctrl-Blk. */
