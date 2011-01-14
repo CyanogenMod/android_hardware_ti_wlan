@@ -334,6 +334,10 @@ irqreturn_t wlanDrvIf_HandleInterrupt (int irq, void *hDrv, struct pt_regs *cpu_
 {
     TWlanDrvIfObj *drv = (TWlanDrvIfObj *)hDrv;
 
+#ifdef OMAP_LEVEL_INT
+    disable_irq_nosync(drv->irq);
+#endif
+
     TWD_InterruptRequest (drv->tCommon.hTWD);
 
     return IRQ_HANDLED;
@@ -831,7 +835,7 @@ static int wlanDrvIf_Create (void)
 
     drv->tCommon.eDriverState = DRV_STATE_IDLE;
 
-	drv->tiwlan_wq = create_singlethread_workqueue(DRIVERWQ_NAME);
+	drv->tiwlan_wq = create_freezeable_workqueue(DRIVERWQ_NAME);
 	if (!drv->tiwlan_wq)
 	{
 		ti_dprintf (TIWLAN_LOG_ERROR, "wlanDrvIf_Create(): Failed to create workQ!\n");
@@ -844,10 +848,6 @@ static int wlanDrvIf_Create (void)
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_init (&drv->wl_wifi, WAKE_LOCK_SUSPEND, "wifi_wake");
 	wake_lock_init (&drv->wl_rxwake, WAKE_LOCK_SUSPEND, "wifi_rx_wake");
-#ifdef PER_DOMAIN_PM_HACK
-       wake_lock_init (&drv->wl_pm_hack, WAKE_LOCK_SUSPEND, "wifi_temp_hack");
-       wake_lock(&drv->wl_pm_hack);
-#endif
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
 	INIT_WORK(&drv->tWork, wlanDrvIf_DriverTask, (void *)drv);
@@ -937,9 +937,6 @@ drv_create_end_2:
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_destroy (&drv->wl_wifi);
 	wake_lock_destroy (&drv->wl_rxwake);
-#ifdef PER_DOMAIN_PM_HACK
-	wake_lock_destroy (&drv->wl_pm_hack);
-#endif
 #endif
 	if (drv->tiwlan_wq)
 		destroy_workqueue(drv->tiwlan_wq);
@@ -1020,10 +1017,6 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_destroy (&drv->wl_wifi);
 	wake_lock_destroy (&drv->wl_rxwake);
-#ifdef PER_DOMAIN_PM_HACK
-       wake_unlock(&drv->wl_pm_hack);
-       wake_lock_destroy (&drv->wl_pm_hack);
-#endif
 #endif
 
     /*

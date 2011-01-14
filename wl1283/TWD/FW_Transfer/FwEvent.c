@@ -436,6 +436,9 @@ static void fwEvent_StateMachine (TfwEvent *pFwEvent)
                 /* Else - all done so release TwIf to sleep and exit */
                 else 
                 {
+#ifdef OMAP_LEVEL_INT
+                    os_InterruptServiced (pFwEvent->hOs);
+#endif
                     twIf_Sleep(pFwEvent->hTwIf);
                     pFwEvent->eSmState = FWEVENT_STATE_IDLE;
 

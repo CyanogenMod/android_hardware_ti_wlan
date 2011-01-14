@@ -1582,6 +1582,10 @@ static void drvMain_Sm (TI_HANDLE hDrvMain, ESmEvent eEvent)
             	invokeCallback(pDrvMain->fFwInitDoneCb, pDrvMain->hFwInitDoneCb);
             }
 
+#ifdef OMAP_LEVEL_INT
+            os_enableIrq(hOs);
+#endif
+
             TWD_EnableInterrupts(pDrvMain->tStadHandles.hTWD);
           #ifdef PRIODIC_INTERRUPT
             /* Start periodic interrupts. It means that every period of time the FwEvent SM will be called */

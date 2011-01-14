@@ -37,6 +37,7 @@
 #include <linux/platform_device.h>
 #include <linux/wifi_tiwlan.h>
 #include <linux/completion.h>
+#include <linux/interrupt.h>
 
 #include "host_platform.h"
 #include "ioctl_init.h"
@@ -239,20 +240,26 @@ int hPlatform_Wlan_Hardware_Init(void *tnet_drv)
 int hPlatform_initInterrupt(void *tnet_drv, void* handle_add) 
 {
 	TWlanDrvIfObj *drv = tnet_drv;
+	unsigned long irq_flags;
 	int rc;
+
+#ifdef OMAP_LEVEL_INT
+	irq_flags = IRQF_DISABLED | IRQF_TRIGGER_LOW | IRQF_TRIGGER_FALLING;
+#else
+	irq_flags = drv->irq_flags;
+#endif
 
 	if (drv->irq == 0 || handle_add == NULL) {
 	  print_err("hPlatform_initInterrupt() bad param drv->irq=%d handle_add=0x%x !!!\n",drv->irq,(int)handle_add);
 	  return -EINVAL;
 	}
 
-	rc = request_irq(drv->irq, handle_add, drv->irq_flags, drv->netdev->name, drv);
+	rc = request_irq(drv->irq, handle_add, irq_flags, drv->netdev->name, drv);
 	if (rc) {
 	    print_err("TIWLAN: Failed to register interrupt handler\n");
 		return rc;
 	}
 
-	enable_irq_wake(drv->irq);
 	return rc;
 }
 
@@ -260,7 +267,6 @@ void hPlatform_freeInterrupt(void *tnet_drv)
 {
 	TWlanDrvIfObj *drv = tnet_drv;
 
-	disable_irq_wake(drv->irq);
 	free_irq(drv->irq, drv);
 }
 

@@ -427,7 +427,7 @@ int sdio_tiwlan_resume(struct device *dev)
 	sdioDrv_ClaimHost(SDIO_WLAN_FUNC);
 	generic_write_bytes(0, ELP_CTRL_REG_ADDR, pElpData, 1, 1, 0);
 	sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
-	mdelay(5);
+	//mdelay(5);
 
 	/* Configuring the host and chip back to maximum capability
 	 * (bus width and speed)

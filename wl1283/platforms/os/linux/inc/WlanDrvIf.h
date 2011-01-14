@@ -81,15 +81,6 @@
 #endif
 
 
-/* FixMe:
- * Temporary hack to not allow suspend when Wi-Fi is on.
- * OMAP4 power management has issues with external
- * GPIO wakeup in open switch retention.
- *
- * This will be removed when OSWR issue is resolved
- */
-#define PER_DOMAIN_PM_HACK
-
 typedef enum
 {
    TIWLAN_LOG_ERROR,
@@ -128,9 +119,6 @@ typedef struct
 #ifdef CONFIG_HAS_WAKELOCK
     struct wake_lock         wl_wifi;   /* Wifi wakelock */
     struct wake_lock         wl_rxwake; /* Wifi rx wakelock */
-#ifdef PER_DOMAIN_PM_HACK
-    struct wake_lock         wl_pm_hack; /* Temp hack to not allow suspend with Wi-Fi */
-#endif
 #endif
     NDIS_HANDLE		         ConfigHandle;/* Temp - For Windows compatibility */
 
