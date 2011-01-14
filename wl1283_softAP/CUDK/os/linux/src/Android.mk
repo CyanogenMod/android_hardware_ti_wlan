@@ -63,7 +63,7 @@ LOCAL_C_INCLUDES := \
 	external/wpa_supplicant \
         $(LOCAL_PATH)/$(CUDK_ROOT)/configurationutility/inc
 
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE:=libtiOsLibAP
 
 include $(BUILD_STATIC_LIBRARY)

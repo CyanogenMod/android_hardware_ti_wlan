@@ -76,7 +76,7 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/$(CUDK_ROOT)/configurationutility/inc \
 	$(WPA_SUPPL_DIR_INCLUDE)
 
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libtiOsLib
 
 include $(BUILD_STATIC_LIBRARY)

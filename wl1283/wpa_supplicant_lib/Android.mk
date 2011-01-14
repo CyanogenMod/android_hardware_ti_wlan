@@ -99,7 +99,7 @@ endif
  
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCustomWifi
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_SHARED_LIBRARIES := libc libcutils
 LOCAL_CFLAGS := $(L_CFLAGS)
 LOCAL_SRC_FILES := $(OBJS)
