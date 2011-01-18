@@ -108,6 +108,13 @@ static int wpa_driver_tista_get_ssid(void *priv, u8 *ssid)
 	return wpa_driver_wext_get_ssid(drv->wext, ssid);
 }
 
+static int wpa_driver_tista_set_ssid(void *priv, const u8 *ssid, size_t ssid_len)
+{
+	struct wpa_driver_ti_data *drv = priv;
+        TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+	return wpa_driver_wext_set_ssid(drv->wext, ssid, ssid_len);
+}
+
 static int wpa_driver_tista_private_send( void *priv, u32 ioctl_cmd, void *bufIn, u32 sizeIn, void *bufOut, u32 sizeOut )
 {
 	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
@@ -1416,6 +1423,7 @@ const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.desc = "TI Station Driver (1283)",
 	.get_bssid = wpa_driver_tista_get_bssid,
 	.get_ssid = wpa_driver_tista_get_ssid,
+	.set_ssid = wpa_driver_tista_set_ssid,
 	.set_wpa = wpa_driver_tista_set_wpa,
 	.set_key = wpa_driver_tista_set_key,
 	.set_countermeasures = wpa_driver_tista_set_countermeasures,
