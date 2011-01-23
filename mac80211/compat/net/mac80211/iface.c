@@ -456,15 +456,19 @@ static void ieee80211_do_stop(struct ieee80211_sub_if_data *sdata,
 		struct ieee80211_sub_if_data *vlan, *tmpsdata;
 		struct beacon_data *old_beacon =
 			rtnl_dereference(sdata->u.ap.beacon);
+		struct sk_buff *old_probe_resp =
+			rtnl_dereference(sdata->u.ap.probe_resp);
 
 		/* sdata_running will return false, so this will disable */
 		ieee80211_bss_info_change_notify(sdata,
 						 BSS_CHANGED_BEACON_ENABLED);
 
-		/* remove beacon */
+		/* remove beacon and probe response */
 		rcu_assign_pointer(sdata->u.ap.beacon, NULL);
+		rcu_assign_pointer(sdata->u.ap.probe_resp, NULL);
 		synchronize_rcu();
 		kfree(old_beacon);
+		kfree(old_probe_resp);
 
 		/* free all potentially still buffered bcast frames */
 		while ((skb = skb_dequeue(&sdata->u.ap.ps_bc_buf))) {

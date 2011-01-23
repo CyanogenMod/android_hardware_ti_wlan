@@ -1167,6 +1167,34 @@ static int ieee80211_leave_mesh(struct wiphy *wiphy, struct net_device *dev)
 }
 #endif
 
+static int ieee80211_set_probe_resp(struct ieee80211_sub_if_data *sdata,
+				    u8 *resp, size_t resp_len)
+{
+	struct sk_buff *new, *old;
+
+	old = sdata->u.ap.probe_resp;
+
+	if (!resp || !resp_len)
+		return -EINVAL;
+
+	new = dev_alloc_skb(resp_len);
+	if (!new) {
+		printk(KERN_DEBUG "%s: failed to allocate buffer for probe "
+		       "response template\n", sdata->name);
+		return -ENOMEM;
+	}
+
+	memcpy(skb_put(new, resp_len), resp, resp_len);
+
+	rcu_assign_pointer(sdata->u.ap.probe_resp, new);
+	synchronize_rcu();
+
+	if (old)
+		dev_kfree_skb(old);
+
+	return 0;
+}
+
 static int ieee80211_change_bss(struct wiphy *wiphy,
 				struct net_device *dev,
 				struct bss_parameters *params)
@@ -1234,6 +1262,13 @@ static int ieee80211_change_bss(struct wiphy *wiphy,
 		       params->ssid_len);
 		sdata->vif.bss_conf.ssid_len = params->ssid_len;
 		changed |= BSS_CHANGED_SSID;
+	}
+
+	if (params->probe_resp_len > 0) {
+		int ret = ieee80211_set_probe_resp(sdata, params->probe_resp,
+						   params->probe_resp_len);
+		if (!ret)
+			changed |= BSS_CHANGED_AP_PROBE_RESP;
 	}
 
 	ieee80211_bss_info_change_notify(sdata, changed);
