@@ -1015,6 +1015,8 @@ enum nl80211_commands {
  *	This attribute is used with %NL80211_CMD_TRIGGER_SCAN and
  *	%NL80211_CMD_FRAME commands.
  *
+ * @NL80211_ATTR_PROBE_RESP: Probe Response template data
+ *
  * @NL80211_ATTR_MAX: highest attribute number currently defined
  * @__NL80211_ATTR_AFTER_LAST: internal use
  */
@@ -1217,6 +1219,8 @@ enum nl80211_attrs {
 	NL80211_ATTR_SCAN_SUPP_RATES,
 
 	NL80211_ATTR_TX_NO_CCK_RATE,
+
+	NL80211_ATTR_PROBE_RESP,
 
 	/* add attributes here, update the policy in nl80211.c */
 

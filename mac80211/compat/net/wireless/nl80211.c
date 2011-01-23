@@ -178,6 +178,8 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_SCHED_SCAN_INTERVAL] = { .type = NLA_U32 },
 	[NL80211_ATTR_SCAN_SUPP_RATES] = { .type = NLA_NESTED },
 	[NL80211_ATTR_TX_NO_CCK_RATE] = { .type = NLA_FLAG },
+	[NL80211_ATTR_PROBE_RESP] = { .type = NLA_BINARY,
+				      .len = IEEE80211_MAX_DATA_LEN },
 };
 
 /* policy for the key attributes */
@@ -2807,6 +2809,15 @@ static int nl80211_set_bss(struct sk_buff *skb, struct genl_info *info)
 		if (params.ssid_len == 0 ||
 		    params.ssid_len > IEEE80211_MAX_SSID_LEN)
 			return -EINVAL;
+	}
+	if (info->attrs[NL80211_ATTR_PROBE_RESP]) {
+		if (dev->ieee80211_ptr->iftype != NL80211_IFTYPE_AP)
+			return -EOPNOTSUPP;
+
+		params.probe_resp =
+			nla_data(info->attrs[NL80211_ATTR_PROBE_RESP]);
+		params.probe_resp_len =
+			nla_len(info->attrs[NL80211_ATTR_PROBE_RESP]);
 	}
 
 	if (!rdev->ops->change_bss)
