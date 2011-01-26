@@ -1254,8 +1254,6 @@ TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl)
 	case DRV_STATE_FAILED:
 	case DRV_STATE_STOPING:
 	case DRV_STATE_STOPPED:
-		bEnabled = TI_FALSE;
-		break;
 	case DRV_STATE_IDLE:
 		bEnabled = (uIoctl==SIOCIWFIRSTPRIV); /* to allow DRIVER_INIT_PARAM command. see wlanDrvIf_IsCmdEnabled() */
 		break;
@@ -1298,15 +1296,19 @@ TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd)
 	switch (pWlanDrvIf->tCommon.eDriverState)
 	{
 	case DRV_STATE_RUNNING:
-		bEnabled = TI_TRUE;
+		bEnabled = (uCmd != DRIVER_START_PARAM); /* reject START when driver is running (accepted when driver is stopped) */
 		break;
 	case DRV_STATE_FAILED:
 	case DRV_STATE_STOPING:
+		bEnabled = (uCmd == DRIVER_STATUS_PARAM);
+		break;
 	case DRV_STATE_STOPPED:
-		bEnabled = TI_FALSE;
+		bEnabled = ( (uCmd == DRIVER_START_PARAM)
+				|| (uCmd == DRIVER_STATUS_PARAM) );
 		break;
 	case DRV_STATE_IDLE:
-		bEnabled = (uCmd == DRIVER_INIT_PARAM); /* used by tiwlan_loader */
+		bEnabled = ((uCmd == DRIVER_INIT_PARAM) /* used by tiwlan_loader */
+				|| (uCmd == DRIVER_STATUS_PARAM) );
 		break;
 	}
 

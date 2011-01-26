@@ -157,6 +157,85 @@ static struct iw_statistics *wlanDrvWext_GetWirelessStats(struct net_device *dev
     return (struct iw_statistics *) cmdHndlr_GetStat (drv->tCommon.hCmdHndlr);
 }
 
+/*
+ * \brief	handle driver-level (marked for module DRIVER) commands
+ *
+ * \param	my_command	command to handle
+ * \ret		TI_OK / TI_NOK
+ */
+int handleDriverLevelCommand(struct net_device *dev, ti_private_cmd_t my_command)
+{
+	TWlanDrvIfObj   *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
+
+	switch (my_command.cmd)
+	{
+	case DRIVER_INIT_PARAM:
+		return wlanDrvIf_LoadFiles (drv, my_command.in_buffer);
+
+	case DRIVER_START_PARAM:
+	{
+		/* execute a PwrOn command and ifconfig up */
+
+		TI_UINT32 rc;
+		ti_private_cmd_t tOnCmd =
+		{
+			.cmd = PWR_STATE_PWR_ON_PARAM,
+			.flags = PRIVATE_CMD_GET_FLAG, /* (commands from user-space have this field set in IPC_STA_Private_Send()) */
+			.in_buffer = 0,
+			.in_buffer_len = 0,
+			.out_buffer = 0,
+			.out_buffer_len = 0,
+		};
+
+		rc = cmdHndlr_InsertCommand(drv->tCommon.hCmdHndlr, SIOCIWFIRSTPRIV, 0,
+			NULL /* not used by SIOCIWFIRSTPRIV */, 0,
+			NULL /* not used by SIOCIWFIRSTPRIV */, 0, (TI_UINT32*)&tOnCmd, NULL);
+
+		if (rc)
+		{
+			return rc;
+		}
+
+		rc = wlanDrvIf_Open (dev);
+
+		return rc;
+	}
+	case DRIVER_STOP_PARAM:
+	{
+		/* ifconfig down and execute a PwrOff command */
+
+		TI_UINT32 rc;
+		ti_private_cmd_t tOffCmd =
+		{
+			.cmd = PWR_STATE_PWR_OFF_PARAM,
+			.flags = PRIVATE_CMD_GET_FLAG, /* (commands from user-space have this field set in IPC_STA_Private_Send()) */
+			.in_buffer = 0,
+			.in_buffer_len = 0,
+			.out_buffer = 0,
+			.out_buffer_len = 0,
+		};
+
+		rc = wlanDrvIf_Release(dev);
+		if (rc)
+		{
+			return rc;
+		}
+
+		rc = cmdHndlr_InsertCommand(drv->tCommon.hCmdHndlr, SIOCIWFIRSTPRIV, 0,
+			NULL /* not used by SIOCIWFIRSTPRIV */, 0,
+			NULL /* not used by SIOCIWFIRSTPRIV */, 0, (TI_UINT32*)&tOffCmd, NULL);
+
+		return rc;
+	}
+	case DRIVER_STATUS_PARAM:
+		*(TI_UINT32 *)my_command.out_buffer =
+				(drv->tCommon.eDriverState == DRV_STATE_RUNNING) ? TI_TRUE : TI_FALSE;
+		return TI_OK;
+	default:
+		return TI_NOK;
+	}
+}
+
 /* Generic callback for WEXT commands */
 
 int wlanDrvWext_Handler (struct net_device *dev,
@@ -199,25 +278,11 @@ int wlanDrvWext_Handler (struct net_device *dev,
 		return TI_NOK;
 	}
 
-	   if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
+       if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
        {
-		   /* If it's a driver level command, handle it here and exit */
-           switch (my_command.cmd)
-           {
-           case DRIVER_INIT_PARAM:
-               return wlanDrvIf_LoadFiles (drv, my_command.in_buffer);
-                
-           case DRIVER_START_PARAM:
-               return wlanDrvIf_Open (dev);
+           /* If it's a driver level command, handle it here and exit */
+           return handleDriverLevelCommand(dev, my_command);
 
-           case DRIVER_STOP_PARAM:
-               return wlanDrvIf_Release(dev);
-
-           case DRIVER_STATUS_PARAM:
-               *(TI_UINT32 *)my_command.out_buffer = 
-                   (drv->tCommon.eDriverState == DRV_STATE_RUNNING) ? TI_TRUE : TI_FALSE;
-               return TI_OK;
-           }
        }
 	   /* if we are still here handle a normal private command*/
 
