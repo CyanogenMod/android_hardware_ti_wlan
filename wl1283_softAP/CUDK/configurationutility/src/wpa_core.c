@@ -49,7 +49,7 @@
 
 /* defines */
 /***********/
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 #define WSC_MODE_OFF	0
 #define WSC_MODE_PIN	1
 #define WSC_MODE_PBC	2
@@ -70,7 +70,7 @@ typedef struct
 	U8 wep_key[4][32];
 	U8 default_wep_key;
 	U8 wep_key_length;
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 	U8	WscMode;
 	PS8 pWscPin;
 #endif
@@ -119,7 +119,7 @@ static VOID WpaCore_InitWpaParams(TWpaCore* pWpaCore)
 	  pWpaCore->WpaSupplParams.pair_wise = WPA_CIPHER_NONE;
 	  pWpaCore->WpaSupplParams.group = WPA_CIPHER_NONE; 
       pWpaCore->WpaSupplParams.anyWpaMode = 0;
-      #ifdef CONFIG_EAP_WSC
+      #ifdef CONFIG_WPS
 	pWpaCore->WpaSupplParams.pWscPin = NULL;
 	pWpaCore->WpaSupplParams.WscMode = WSC_MODE_OFF;
 #endif
@@ -164,7 +164,7 @@ VOID WpaCore_Destroy(THandle hWpaCore)
 
 	if(pWpaCore->hIpcWpa)
 		IpcWpa_Destroy(pWpaCore->hIpcWpa);
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 	if(pWpaCore->WpaSupplParams.pWscPin)
 		os_MemoryFree(pWpaCore->WpaSupplParams.pWscPin);	
 #endif
@@ -414,7 +414,7 @@ S32 WpaCore_GetDefaultKey(THandle hWpaCore, U32* pDefaultKeyIndex)
 	return OK;
 }
 
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 S32 WpaCore_StartWpsPIN(THandle hWpaCore)
 {
 	TWpaCore* pWpaCore = (TWpaCore*)hWpaCore;
@@ -843,7 +843,7 @@ S32 WpaCore_SetSsid(THandle hWpaCore, OS_802_11_SSID* ssid, TMacAddr bssid)
 	}
 
    
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 	if (pWpaCore->WpaSupplParams.WscMode)
 	{
 		os_sprintf(cmd, (PS8)"SET_NETWORK %d wsc_mode %d", NetworkID, pWpaCore->WpaSupplParams.WscMode);

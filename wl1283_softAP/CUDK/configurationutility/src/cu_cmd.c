@@ -5358,7 +5358,7 @@ VOID nvsUpdateFile(THandle hCuCmd, TNvsStruct nvsStruct, TI_UINT8 version,  S8 u
 #ifdef _WINDOWS
     PS8 nvsFilePath = (PS8)"/windows/nvs_map.bin";
 #else
-    PS8 nvsFilePath = (PS8)"./nvs_map.bin";
+    PS8 nvsFilePath = (PS8)"/data/misc/wifi/nvs_map.bin";
 #endif /*_WINDOWS*/
 	TI_UINT8		currentNVSbuffer[1500];
 	TI_UINT16		lengthOfCurrentNVSBufer;
@@ -6669,7 +6669,9 @@ VOID CuCmd_SendResetCmdToHostapd(THandle hCuCmd,  ConParm_t parm[], U16 nParms)
     THostapdCLICmd cmd;
 
 	cmd.eCmdType = HOSTAPD_CLI_CMD_RESET;
+#ifdef TI_HOSTAPD_CLI_LIB
 	HostapdCLI_RunCommand("tiap0", &cmd);
+#endif
 }
 
 VOID CuCmd_SendStopCmdToHostapd(THandle hCuCmd,  ConParm_t parm[], U16 nParms)
@@ -6677,7 +6679,9 @@ VOID CuCmd_SendStopCmdToHostapd(THandle hCuCmd,  ConParm_t parm[], U16 nParms)
     THostapdCLICmd cmd;
 
 	cmd.eCmdType = HOSTAPD_CLI_CMD_STOP;
+#ifdef TI_HOSTAPD_CLI_LIB
 	HostapdCLI_RunCommand("tiap0", &cmd);
+#endif
 }
 
 VOID CuCmd_SendStartCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
@@ -6692,8 +6696,9 @@ VOID CuCmd_SendStartCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 
 	cmd.eCmdType = HOSTAPD_CLI_CMD_START;
 	os_memcpy((PVOID)cmd.u.tCmdStart.config_fname, parm[0].value, os_strlen(parm[0].value));
-	
+#ifdef TI_HOSTAPD_CLI_LIB
 	HostapdCLI_RunCommand("tiap0", &cmd);
+#endif
 }
 
 VOID CuCmd_SetGenericCmdToFW(THandle hCuCmd, ConParm_t parm[], U16 nParms)

@@ -16,24 +16,22 @@ WILINK_ROOT = ../../../..
 CUDK_ROOT = $(WILINK_ROOT)/CUDK
 ANDR_TI_SUPP_LIB_DIR = $(WILINK_ROOT)/../../../../external/wpa_supplicant_6
 
-DK_DEFINES = 
+AP_DEFINES = 
 ifeq ($(WPA_ENTERPRISE), y)
-        DK_DEFINES += -D WPA_ENTERPRISE
+        AP_DEFINES += -D WPA_ENTERPRISE
 endif
 
 ifeq ($(BUILD_SUPPL), y)
-  DK_DEFINES += -D WPA_SUPPLICANT -D CONFIG_CTRL_IFACE -D CONFIG_CTRL_IFACE_UNIX
+  AP_DEFINES += -D WPA_SUPPLICANT -D CONFIG_CTRL_IFACE -D CONFIG_CTRL_IFACE_UNIX
   -include external/wpa_supplicant/.config
-  ifeq ($(CONFIG_EAP_WSC), y)
-    DK_DEFINES += -DCONFIG_EAP_WSC
+  ifeq ($(CONFIG_WPS), y)
+    AP_DEFINES += -DCONFIG_WPS
   endif
 endif
 
-LOCAL_CFLAGS+= \
-	 -DANDROID
 
 LOCAL_CFLAGS+= \
-	-Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(DK_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -fno-common #-pipe
+	-Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(AP_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -fno-common #-pipe
 
 LOCAL_SRC_FILES:= \
 	cu_wext.c \

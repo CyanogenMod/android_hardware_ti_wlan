@@ -67,7 +67,7 @@ S32 WpaCore_SetXCC(THandle hWpaCore, U16 XCCConfig);
 
 
 
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 S32 WpaCore_StartWpsPIN(THandle hWpaCore);
 S32 WpaCore_StartWpsPBC(THandle hWpaCore);
 S32 WpaCore_StopWps(THandle hWpaCore);

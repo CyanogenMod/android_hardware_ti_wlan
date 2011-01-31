@@ -111,7 +111,7 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 	Console_AddToken(pTiCon->hConsole,h, (PS8)"Full_bssid_list", (PS8)"Full_bssid_list", (FuncToken_t) CuCmd_FullBssidList, NULL );
 #endif
 	
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 	CHK_NULL(h1 = (THandle) Console_AddDirExt(pTiCon->hConsole,  (THandle) h, (PS8)"wPs", (PS8)"WiFi Protected Setup" ) );
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"Pin", (PS8)"Acquire profile using PIN", (FuncToken_t) CuCmd_StartEnrolleePIN, NULL );
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"pBc", (PS8)"Acquire profile using Push Button", (FuncToken_t) CuCmd_StartEnrolleePBC, NULL );

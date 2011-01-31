@@ -55,7 +55,7 @@ VOID CuCmd_Show_Status(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 VOID CuCmd_BssidList(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_FullBssidList(THandle hCuCmd, ConParm_t parm[], U16 nParms);
-#ifdef CONFIG_EAP_WSC
+#ifdef CONFIG_WPS
 VOID CuCmd_StartEnrolleePIN(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_StartEnrolleePBC(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_StopEnrollee(THandle hCuCmd, ConParm_t parm[], U16 nParms);
