@@ -47,6 +47,7 @@
 
 #define NOISE_HISTOGRAM_LENGTH              8
 #define MAX_NUM_OF_MSR_TYPES_IN_PARALLEL    3
+#define INVALID_MSR_INDEX                   (MAX_NUM_OF_MSR_TYPES_IN_PARALLEL+1)
 
 /* The size of the time frame in which we must start the */
 /* measurement request or give up (in millisecond) */

@@ -291,8 +291,8 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
 	/* Leave critical section */
 	context_LeaveCriticalSection (pCmdHndlr->hContext);
 
-        /* Request driver task schedule for command handling (after we left critical section!) */
-        context_RequestSchedule (pCmdHndlr->hContext, pCmdHndlr->uContextId);
+	/* Request driver task schedule for command handling (after we left critical section!) */
+	context_RequestSchedule (pCmdHndlr->hContext, pCmdHndlr->uContextId);
 
 	/* Wait until the command is executed */
 	os_SignalObjectWait (pCmdHndlr->hOs, pNewCmd->pSignalObject);
@@ -419,7 +419,7 @@ void cmdHndlr_Complete (TI_HANDLE hCmdHndlr)
 
     if (pCmdHndlr->pCurrCmd)
     {
-        /* set Status to COMPLETE */
+	/* set Status to COMPLETE */
         pCmdHndlr->pCurrCmd->eCmdStatus = TI_OK;
     
         /* save the wait flag before free semaphore */

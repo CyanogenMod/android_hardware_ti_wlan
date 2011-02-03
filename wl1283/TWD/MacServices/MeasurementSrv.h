@@ -122,6 +122,8 @@ typedef struct
                                             * when it is called 
                                             */
     /* Timers */
+    TI_HANDLE           hApDiscoveryTimer;
+    TI_UINT32           uApDiscoveryRequestIndex;
     TI_HANDLE           hRequestTimer[ MAX_NUM_OF_MSR_TYPES_IN_PARALLEL ];
                                                         /**< Timers for different measurement types */
     TI_BOOL             bRequestTimerRunning[ MAX_NUM_OF_MSR_TYPES_IN_PARALLEL ];

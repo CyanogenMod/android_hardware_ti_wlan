@@ -99,6 +99,7 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
         break;
 
     case SCAN_CNCN_STOP_APP_SCAN:
+
         /* verify that scan is currently running */
         if (pScanCncn->pScanClients[SCAN_SCC_APP_ONE_SHOT]->bCurrentlyRunning) 
         {
@@ -155,6 +156,7 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
             return TI_ERROR;
 
         }
+
         break;
 
     case SCAN_CNCN_STOP_PERIODIC_SCAN:
@@ -166,6 +168,7 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
         break;
 
     case SCAN_CNCN_BSSID_LIST_SCAN_PARAM:
+
         /* check if OID scans are enabled in the registry */
         if (0 == pScanCncn->tInitParams.uMinimumDurationBetweenOsScans)
         {
@@ -199,6 +202,7 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
         pScanCncn->uOSScanLastTimeStamp = uCurrentTimeStamp;
         TRACE0(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncnApp_SetParam: starting OID scan process...\n");
 
+
 		if(0 != pParam->content.pScanParams->desiredSsid.len)
         {
 			pScanCncn->tOsScanParams.desiredSsid.len = pParam->content.pScanParams->desiredSsid.len;
@@ -213,11 +217,14 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 		pScanCncn->tOsScanParams.scanType = pParam->content.pScanParams->scanType;
         pScanCncn->tOsScanParams.eScanClient = pParam->content.pScanParams->eScanClient;
 
+
         /* Perform aging process before the scan */
         scanResultTable_PerformAging(pScanCncn->hScanResultTable);
 
+
         /* and actually start the scan */
         genSM_Event (pScanCncn->hOSScanSm, SCAN_CNCN_OS_SM_EVENT_START_SCAN, hScanCncn);
+
 
         break;
 
@@ -287,6 +294,7 @@ TI_STATUS scanCncnApp_GetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
     return TI_OK;
 }
+
 
 /** 
  * \fn     scanCncnApp_ApplicationScanResultCB
@@ -391,7 +399,7 @@ void scanCncnApp_ScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status
         if (TI_TRUE == pScanCncn->bOSScanRunning && eScanCncnClient == SCAN_SCC_APP_ONE_SHOT)
         {
             /* send a scan complete event to the OS scan SM. It will stabliza the table when needed */
-            genSM_Event (pScanCncn->hOSScanSm, SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE, hScanCncn);
+             genSM_Event (pScanCncn->hOSScanSm, SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE, hScanCncn);
         }
         else
         {

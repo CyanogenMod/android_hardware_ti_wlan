@@ -5824,20 +5824,20 @@ VOID CuCmd_BIP_SetNVSVersion(THandle hCuCmd, ConParm_t parm[], U16 nParms)
         }
         os_memset(&data, 0, sizeof(TTestCmd));
 
-        data.testCmdId = TEST_CMD_SET_NVS_VERSION;
+	data.testCmdId = TEST_CMD_SET_NVS_VERSION;
         data.testCmd_u.changeNVSVersion.nvsVersionChange =  parm[0].value;
 
-        if(OK != CuCommon_Radio_Test(pCuCmd->hCuCommon, &data))
-        {
-            os_error_printf(CU_MSG_INFO2, (PS8)"Set NVS version failed\n");
-            return;
-        }
+	if(OK != CuCommon_Radio_Test(pCuCmd->hCuCommon, &data))
+	{
+		os_error_printf(CU_MSG_INFO2, (PS8)"Set NVS version failed\n");
+		return;
+	}
 
         if (TI_OK != data.testCmd_u.RxPlt.oRadioStatus)
-        {
-            os_error_printf(CU_MSG_INFO2, (PS8)"Set NVS version returned status: %d\n", data.testCmd_u.RxPlt.oRadioStatus);
-            return;
-        }
+		{
+			os_error_printf(CU_MSG_INFO2, (PS8)"Set NVS version returned status: %d\n", data.testCmd_u.RxPlt.oRadioStatus);
+			return;
+		}
 
     }
     else
@@ -6732,5 +6732,5 @@ void CuCmd_PowerStateConfigRxDataFilter(THandle hCuCmd, ConParm_t parm[], U16 nP
     parseRxDataFilterRequest( parm, nParms, &request );
 
     CuCommon_SetBuffer(pCuCmd->hCuCommon, PWR_STATE_RX_FILTER_PARAM,
-            &request, sizeof(TRxDataFilterRequest));
+		&request, sizeof(TRxDataFilterRequest));
 }

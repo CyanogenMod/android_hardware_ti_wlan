@@ -61,6 +61,7 @@ static struct iw_statistics *wlanDrvWext_GetWirelessStats (struct net_device *de
 extern int wlanDrvIf_LoadFiles (TWlanDrvIfObj *drv, TLoaderFilesData *pInitInfo);
 extern int wlanDrvIf_Open (struct net_device *dev);
 extern int wlanDrvIf_Release (struct net_device *dev);
+
 extern int wlanDrvIf_Suspend(TI_HANDLE hWlanDrvIf);
 extern int wlanDrvIf_Resume(TI_HANDLE hWlanDrvIf);
 
@@ -114,7 +115,7 @@ static const iw_handler aWextHandlers[] = {
 	(iw_handler) NULL,		        			/* SIOCGIWPOWER */
 	(iw_handler) NULL,				            /* -- hole -- */
 	(iw_handler) NULL,				            /* -- hole -- */
-    (iw_handler) wlanDrvWext_Handler,           /* SIOCSIWGENIE */
+        (iw_handler) wlanDrvWext_Handler,                       /* SIOCSIWGENIE */
 	(iw_handler) NULL,		        			/* SIOCGIWGENIE */
 	(iw_handler) wlanDrvWext_Handler,		    /* SIOCSIWAUTH */
 	(iw_handler) wlanDrvWext_Handler,		    /* SIOCGIWAUTH */
@@ -179,17 +180,17 @@ int handleDriverLevelCommand(struct net_device *dev, ti_private_cmd_t my_command
 		TI_UINT32 rc;
 		ti_private_cmd_t tOnCmd =
 		{
-			.cmd = PWR_STATE_PWR_ON_PARAM,
-			.flags = PRIVATE_CMD_GET_FLAG, /* (commands from user-space have this field set in IPC_STA_Private_Send()) */
-			.in_buffer = 0,
-			.in_buffer_len = 0,
-			.out_buffer = 0,
-			.out_buffer_len = 0,
+				.cmd = PWR_STATE_PWR_ON_PARAM,
+				.flags = PRIVATE_CMD_GET_FLAG, /* (commands from user-space have this field set in IPC_STA_Private_Send()) */
+				.in_buffer = 0,
+				.in_buffer_len = 0,
+				.out_buffer = 0,
+				.out_buffer_len = 0,
 		};
 
 		rc = cmdHndlr_InsertCommand(drv->tCommon.hCmdHndlr, SIOCIWFIRSTPRIV, 0,
-			NULL /* not used by SIOCIWFIRSTPRIV */, 0,
-			NULL /* not used by SIOCIWFIRSTPRIV */, 0, (TI_UINT32*)&tOnCmd, NULL);
+				NULL /* not used by SIOCIWFIRSTPRIV */, 0,
+				NULL /* not used by SIOCIWFIRSTPRIV */, 0, (TI_UINT32*)&tOnCmd, NULL);
 
 		if (rc)
 		{
@@ -207,12 +208,12 @@ int handleDriverLevelCommand(struct net_device *dev, ti_private_cmd_t my_command
 		TI_UINT32 rc;
 		ti_private_cmd_t tOffCmd =
 		{
-			.cmd = PWR_STATE_PWR_OFF_PARAM,
-			.flags = PRIVATE_CMD_GET_FLAG, /* (commands from user-space have this field set in IPC_STA_Private_Send()) */
-			.in_buffer = 0,
-			.in_buffer_len = 0,
-			.out_buffer = 0,
-			.out_buffer_len = 0,
+				.cmd = PWR_STATE_PWR_OFF_PARAM,
+				.flags = PRIVATE_CMD_GET_FLAG, /* (commands from user-space have this field set in IPC_STA_Private_Send()) */
+				.in_buffer = 0,
+				.in_buffer_len = 0,
+				.out_buffer = 0,
+				.out_buffer_len = 0,
 		};
 
 		rc = wlanDrvIf_Release(dev);
@@ -222,8 +223,8 @@ int handleDriverLevelCommand(struct net_device *dev, ti_private_cmd_t my_command
 		}
 
 		rc = cmdHndlr_InsertCommand(drv->tCommon.hCmdHndlr, SIOCIWFIRSTPRIV, 0,
-			NULL /* not used by SIOCIWFIRSTPRIV */, 0,
-			NULL /* not used by SIOCIWFIRSTPRIV */, 0, (TI_UINT32*)&tOffCmd, NULL);
+				NULL /* not used by SIOCIWFIRSTPRIV */, 0,
+				NULL /* not used by SIOCIWFIRSTPRIV */, 0, (TI_UINT32*)&tOffCmd, NULL);
 
 		return rc;
 	}
@@ -273,17 +274,17 @@ int wlanDrvWext_Handler (struct net_device *dev,
 	   }
 
 	/* abort if the private-command is disabled */
-	if (!wlanDrvIf_IsCmdEnabled(drv, my_command.cmd))
-	{
-		return TI_NOK;
-	}
+	   if (!wlanDrvIf_IsCmdEnabled(drv, my_command.cmd))
+	   {
+		   return TI_NOK;
+	   }
 
-       if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
+	   if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
        {
-           /* If it's a driver level command, handle it here and exit */
+		   /* If it's a driver level command, handle it here and exit */
            return handleDriverLevelCommand(dev, my_command);
-
        }
+
 	   /* if we are still here handle a normal private command*/
 
 	   if ((my_command.in_buffer) && (my_command.in_buffer_len))
@@ -343,7 +344,7 @@ int wlanDrvWext_Handler (struct net_device *dev,
          TI_UINT16 ie_length = ((union iwreq_data *)iw_req)->data.length;
          TI_UINT8 *ie_content = ((union iwreq_data *)iw_req)->data.pointer;
 
-         if ((ie_length == 0) && (ie_content == NULL)) {
+         if (ie_length == 0) {
                  /* Do nothing, deleting the IE */
          } else if ((ie_content != NULL) && (ie_length <= RSN_MAX_GENERIC_IE_LENGTH) && (ie_length > 0)) { 
                  /* One IE cannot be larger than RSN_MAX_GENERIC_IE_LENGTH bytes */
@@ -365,14 +366,18 @@ int wlanDrvWext_Handler (struct net_device *dev,
    if (drv->tCommon.eDriverState != DRV_STATE_RUNNING)
    {
        if (my_command.in_buffer)
+       {
            os_memoryFree (drv, my_command.in_buffer, my_command.in_buffer_len);
+       }
        if (my_command.out_buffer)
+       {
            os_memoryFree (drv, my_command.out_buffer, my_command.out_buffer_len);
+       }
        return TI_NOK;
    }
 
    /* Call the Cmd module with the given user paramters */
-   rc = cmdHndlr_InsertCommand (drv->tCommon.hCmdHndlr, 
+   rc = (cmdHndlr_InsertCommand (drv->tCommon.hCmdHndlr,
                                    info->cmd, 
                                    info->flags, 
                                    iw_req, 
@@ -380,11 +385,11 @@ int wlanDrvWext_Handler (struct net_device *dev,
                                    extra, 
                                    0, 
                                    param3, 
-                                   NULL);
+                                   NULL));
    /* Here we are after the command was completed */
    if (my_command.in_buffer)
    {
-	 	os_memoryFree (drv, my_command.in_buffer, my_command.in_buffer_len);
+	 os_memoryFree (drv, my_command.in_buffer, my_command.in_buffer_len);
    }
    if (my_command.out_buffer)
    {
@@ -395,5 +400,6 @@ int wlanDrvWext_Handler (struct net_device *dev,
 	 }
 	 os_memoryFree (drv, my_command.out_buffer, my_command.out_buffer_len);
    }
+
    return rc;
 }

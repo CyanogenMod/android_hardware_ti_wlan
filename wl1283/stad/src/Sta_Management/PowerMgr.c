@@ -579,8 +579,8 @@ RETURN:    TI_STATUS - TI_OK on success else TI_NOK.\n
 ****************************************************************************************/
 TI_STATUS PowerMgr_setPowerMode(TI_HANDLE hPowerMgr)
 {
-    PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
-    PowerMgr_PowerMode_e powerMode;
+    PowerMgr_t           *pPowerMgr = (PowerMgr_t*)hPowerMgr;
+    PowerMgr_PowerMode_e  powerMode;
     TI_STATUS             rc = TI_OK;
 
     /*in this way we will run with the highest priority that is enabled*/

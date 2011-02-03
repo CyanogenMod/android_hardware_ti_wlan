@@ -58,6 +58,7 @@
 #define DRIVERWQ_NAME      "tiwlan_wq"
 #define TIWLAN_DRV_IF_NAME TIWLAN_DRV_NAME"%d"
 
+
 #ifdef TI_DBG
 #define ti_dprintf(log, fmt, args...) do { \
    if (log != TIWLAN_LOG_OTHER) {   \
@@ -70,7 +71,6 @@
 
 
 #define ti_nodprintf(log, fmt, args...)
-
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29)
 #define NETDEV_SET_PRIVATE(dev, drv)    dev->priv = drv
@@ -97,7 +97,6 @@ typedef enum
 typedef struct
 {
 } TCmdRespUnion;
-
 
 /* Driver object */
 typedef struct

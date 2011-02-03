@@ -110,6 +110,7 @@ TI_STATUS conn_stop (TI_HANDLE               hConn,
 				     TI_HANDLE				connStatCbObj );
 
 void conn_timeout (TI_HANDLE hConn, TI_BOOL bTwdInitOccured);
+void conn_selfTimeout (TI_HANDLE hConn, TI_BOOL bTwdInitOccured);
 
 TI_STATUS conn_ibssStaJoined (TI_HANDLE hConn);
 TI_STATUS conn_ibssMerge (TI_HANDLE hConn);

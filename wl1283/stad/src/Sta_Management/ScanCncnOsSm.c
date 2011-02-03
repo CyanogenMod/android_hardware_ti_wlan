@@ -314,14 +314,17 @@ void scanCncnOsSm_ActionStartAScan (TI_HANDLE hScanCncn)
     regulatoryDomain_getParam (pScanCncn->hRegulatoryDomain, &tParam);
 
     /* scan type is passive if 802.11d is enabled and country IE was not yet found, active otherwise */
-    if (((TI_TRUE == bRegulatoryDomainEnabled) && (TI_FALSE == tParam.content.bIsCountryFound)) || SCAN_TYPE_TRIGGERED_PASSIVE == pScanCncn->tOsScanParams.scanType)
+    if (((TI_TRUE == bRegulatoryDomainEnabled) &&
+        (TI_FALSE == tParam.content.bIsCountryFound)) ||
+        SCAN_TYPE_TRIGGERED_PASSIVE == pScanCncn->tOsScanParams.scanType ||
+        SCAN_TYPE_NORMAL_PASSIVE == pScanCncn->tOsScanParams.scanType)
     {
-        pScanCncn->tOsScanParams.scanType = SCAN_TYPE_TRIGGERED_PASSIVE;
+        pScanCncn->tOsScanParams.scanType = SCAN_TYPE_NORMAL_PASSIVE;
     }
     /* All paramters in the func are hard coded, due to that we set to active if not passive */
 	else
     {
-        pScanCncn->tOsScanParams.scanType = SCAN_TYPE_TRIGGERED_ACTIVE;
+        pScanCncn->tOsScanParams.scanType = SCAN_TYPE_NORMAL_ACTIVE;
         /* also set number and rate of probe requests */
         pScanCncn->tOsScanParams.probeReqNumber = SCAN_OID_DEFAULT_PROBE_REQUEST_NUMBER_A;
         pScanCncn->tOsScanParams.probeRequestRate = (ERateMask)SCAN_OID_DEFAULT_PROBE_REQUEST_RATE_A;

@@ -59,7 +59,7 @@
 
 #include "osApi.h"
 #include "commonTypes.h"
-    
+
 #define MAX_STRING_LEN         32 
 #ifdef REPORT_LOG
 #define PRINTF_ROLLBACK

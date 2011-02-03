@@ -46,7 +46,7 @@
 
 #include "public_types.h"
 #include "public_commands.h"
-#include "public_radio.h" 
+#include "public_radio.h"
 
 typedef enum
 {
@@ -65,7 +65,7 @@ typedef enum
     ACX_PWR_CONSUMPTION_STATISTICS       =0x0014,
     ACX_FEATURE_CFG             = 0x0015,
     ACX_TID_CFG                 = 0x001A,
-    ACX_PS_RX_STREAMING         = 0x001B, 
+    ACX_PS_RX_STREAMING         = 0x001B,
     ACX_BEACON_FILTER_OPT       = 0x001F,
     ACX_NOISE_HIST              = 0x0021,
     ACX_HDK_VERSION             = 0x0022, /* ???*/
@@ -83,8 +83,8 @@ typedef enum
     ACX_BEACON_FILTER_TABLE     = 0x0038,
     ACX_ARP_IP_FILTER           = 0x0039,
     ACX_ROAMING_STATISTICS_TBL  = 0x003B,
-    ACX_RATE_POLICY             = 0x003D, 
-    ACX_CTS_PROTECTION          = 0x003E, 
+    ACX_RATE_POLICY             = 0x003D,
+    ACX_CTS_PROTECTION          = 0x003E,
     ACX_SLEEP_AUTH              = 0x003F,
     ACX_PREAMBLE_TYPE           = 0x0040,
     ACX_ERROR_CNT               = 0x0041,
@@ -98,16 +98,16 @@ typedef enum
     ACX_RX_CONFIG_OPT           = 0x004E,
     ACX_FRAG_CFG                = 0x004F,
     ACX_BET_ENABLE              = 0x0050,
-	
+
 #ifdef RADIO_SCOPE  /* RADIO MODULE SECTION START */
 
-	ACX_RADIO_MODULE_START      = 0x0500,
-	ACX_RS_ENABLE				= ACX_RADIO_MODULE_START,
-	ACX_RS_RX					= 0x0501,
+    ACX_RADIO_MODULE_START      = 0x0500,
+    ACX_RS_ENABLE				= ACX_RADIO_MODULE_START,
+    ACX_RS_RX					= 0x0501,
 
     /* Add here ... */
 
-	ACX_RADIO_MODULE_END        = 0x0600,
+    ACX_RADIO_MODULE_END        = 0x0600,
 
 #endif /* RADIO MODULE SECTION END */
 
@@ -120,28 +120,28 @@ typedef enum
     ACX_PEER_HT_CAP             = 0x0057,
     ACX_HT_BSS_OPERATION        = 0x0058,
     ACX_COEX_ACTIVITY           = 0x0059,
-	ACX_BURST_MODE				= 0x005C,
+    ACX_BURST_MODE				= 0x005C,
 
     ACX_SET_RATE_MAMAGEMENT_PARAMS = 0x005D,
     ACX_GET_RATE_MAMAGEMENT_PARAMS = 0x005E,
 
     ACX_SET_DCO_ITRIM_PARAMS   = 0x0061,
-	
+
     ACX_GEN_FW_CMD              = 0x0070,
     ACX_HOST_IF_CFG_BITMAP      = 0x0071,
-   
+
     DOT11_RX_MSDU_LIFE_TIME     = 0x1004,
     DOT11_CUR_TX_PWR            = 0x100D,
     DOT11_RX_DOT11_MODE         = 0x1012,
-    DOT11_RTS_THRESHOLD         = 0x1013, 
+    DOT11_RTS_THRESHOLD         = 0x1013,
     DOT11_GROUP_ADDRESS_TBL     = 0x1014,
     ACX_SET_RADIO_PARAMS		= 0x1015,
-	ACX_PM_CONFIG               = 0x1016,
-	ACX_CONFIG_PS               = 0x1017,
- 	ACX_CONFIG_HANGOVER         = 0x1018,
-     
+    ACX_PM_CONFIG               = 0x1016,
+    ACX_CONFIG_PS               = 0x1017,
+    ACX_CONFIG_HANGOVER         = 0x1018,
+
     MAX_DOT11_IE = ACX_CONFIG_HANGOVER,
-    
+
     MAX_IE = 0xFFFF   /*force enumeration to 16bits*/
 } InfoElement_enum;
 
@@ -161,13 +161,13 @@ typedef struct
 } InfoElement_t;
 
 
-typedef struct 
+typedef struct
 {
     uint16 id;
     uint16 len;
 } EleHdrStruct;
 
-#define MAX_NUM_AID     4 /* max number of STAs in IBSS */  
+#define MAX_NUM_AID     4 /* max number of STAs in IBSS */
 
 
 #ifdef HOST_COMPILE
@@ -197,14 +197,14 @@ typedef struct
 {
     INFO_ELE_HDR
     uint8  wakeUpConditionBitmap;   /* The host can set one bit only. */
-                                    /* WakeUpEventBitMask_e describes the Possible */
-                                    /* Wakeup configuration bits*/
+    /* WakeUpEventBitMask_e describes the Possible */
+    /* Wakeup configuration bits*/
 
     uint8  listenInterval;          /* 0 for Beacon and Dtim, */
-                                    /* xDtims (1-10) for Listen Interval and */
-                                    /* xBeacons (1-255) for NxBeacon*/
+    /* xDtims (1-10) for Listen Interval and */
+    /* xBeacons (1-255) for NxBeacon*/
     uint8  padding[2];              /* alignment to 32bits boundry   */
-}WakeUpCondition_t;
+} WakeUpCondition_t;
 
 /******************************************************************************
 
@@ -219,28 +219,28 @@ typedef struct
 {
     INFO_ELE_HDR
     uint8   rxMemblockNumber;           /* specifies the number of memory buffers that */
-                                        /* is allocated to the Rx memory pool. The */
-                                        /* actual number allocated may be less than*/
-                                        /* this number if there are not enough memory */
-                                        /* blocks left over for the Minimum Number of */
-                                        /* Tx Blocks. Returns the actual number of RX */
-                                        /* buffers allocated in the memory map*/
+    /* is allocated to the Rx memory pool. The */
+    /* actual number allocated may be less than*/
+    /* this number if there are not enough memory */
+    /* blocks left over for the Minimum Number of */
+    /* Tx Blocks. Returns the actual number of RX */
+    /* buffers allocated in the memory map*/
 
     uint8   txMinimumMemblockNumber;    /* specifies the minimum number of blocks that */
-                                        /* must be allocated to the TX pool. Follows */
-                                        /* this limit even if the Number of Rx Memory */
-                                        /* Blocks parameter is ignored.*/
+    /* must be allocated to the TX pool. Follows */
+    /* this limit even if the Number of Rx Memory */
+    /* Blocks parameter is ignored.*/
 
     uint8   numStations;                /* The number of STAs supported in IBSS mode. */
-                                        /* The FW uses this field to allocate memory */
-                                        /* for STA context data such as security keys*/
+    /* The FW uses this field to allocate memory */
+    /* for STA context data such as security keys*/
 
     uint8   numSsidProfiles;            /* The number of SSID profiles used in IBSS mode */
-                                        /* Enables different profiles for different STAs */
+    /* Enables different profiles for different STAs */
 
     uint32  totalTxDescriptors;         /* Total TX Descriptors - in the past it was configured per AC */
 
-	uint8    dynMemEnable;              /* 0 - not supported */
+    uint8    dynMemEnable;              /* 0 - not supported */
 
     uint8    txFreeReq;                 /* minimum required free memory blocks in TX pool*/
 
@@ -299,10 +299,10 @@ typedef enum
     AC_BK = 1,          /* Background*/
     AC_VI = 2,          /* Video*/
     AC_VO = 3,          /* Voice*/
-    /* AC_BCAST    = 4, */  /* Broadcast dummy access category      */ 
-    AC_CTS2SELF = 4,        /* CTS2Self fictitious AC,              */  
-                            /* uses #4 to follow AC_VO, as          */
-                            /* AC_BCAST does not seem to be in use. */
+    /* AC_BCAST    = 4, */  /* Broadcast dummy access category      */
+    AC_CTS2SELF = 4,        /* CTS2Self fictitious AC,              */
+    /* uses #4 to follow AC_VO, as          */
+    /* AC_BCAST does not seem to be in use. */
     AC_ANY_TID = 0x1F,
     AC_INVALID = 0xFF,  /* used for gTxACconstraint */
     NUM_ACCESS_CATEGORIES = 4
@@ -310,20 +310,20 @@ typedef enum
 
 typedef enum
 {
-	TID0 = 0,			/* Best Effort/Legacy*/
-	TID1 = 1,			/* Best Effort/Legacy*/
-	TID2 = 2,			/* Background*/
-	TID3 = 3,			/* Video*/
-	TID4 = 4,			/* Voice*/
-	TID5 = 5,		/* Broadcast dummy access category*/
-	TID6 = 6,
-	TID7 = 7,           /* managment */
-	NUM_TRAFFIC_CATEGORIES = 8
+    TID0 = 0,			/* Best Effort/Legacy*/
+    TID1 = 1,			/* Best Effort/Legacy*/
+    TID2 = 2,			/* Background*/
+    TID3 = 3,			/* Video*/
+    TID4 = 4,			/* Voice*/
+    TID5 = 5,		/* Broadcast dummy access category*/
+    TID6 = 6,
+    TID7 = 7,           /* managment */
+    NUM_TRAFFIC_CATEGORIES = 8
 } TrafficCategory_enum;
 
 
 #define AC_REQUEST                      0xfe    /* Special access category type for */
-                                                /* requests*/
+/* requests*/
 
 
 /* following are defult values for the IE fields*/
@@ -337,7 +337,7 @@ typedef enum
 #define CWMAX_VO  7
 #define AIFS_PIFS 1 /* slot number setting to start transmission at PIFS interval */
 #define AIFS_DIFS 2 /* slot number setting to start transmission at DIFS interval - */
-                    /* normal DCF access */
+/* normal DCF access */
 
 #define AIFS_MIN AIFS_PIFS
 
@@ -355,15 +355,15 @@ typedef enum
 /* rxTimeout values */
 #define NO_RX_TIMEOUT 0
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint8   ac;         /* Access Category - The TX queue's access category */
-                        /* (refer to AccessCategory_enum)*/
+    /* (refer to AccessCategory_enum)*/
     uint8   cwMin;      /* The contention window minimum size (in slots) for */
-                        /* the access class.*/
+    /* the access class.*/
     uint16  cwMax;      /* The contention window maximum size (in slots) for */
-                        /* the access class.*/
+    /* the access class.*/
     uint8   aifsn;      /* The AIF value (in slots) for the access class.*/
     uint8   reserved;
     uint16  txopLimit;  /* The TX Op Limit (in microseconds) for the access class.*/
@@ -378,11 +378,11 @@ typedef struct
     Length: 72
     Note:   Except for the numTxMemBlks, numRxMemBlks fields, this is
             used in MASTER mode only!!!
-    
+
 ******************************************************************************/
 #define MEM_MAP_NUM_FIELDS  24
 
-typedef struct 
+typedef struct
 {
     uint32 *controlBlock; /* array of two 32-bit entries in the following order:
                             1. Tx-Result entries counter written by the FW
@@ -394,18 +394,18 @@ typedef struct
 typedef struct
 {
     INFO_ELE_HDR
-    void *codeStart;                
-    void *codeEnd;                  
+    void *codeStart;
+    void *codeEnd;
     void *wepDefaultKeyStart;
-    void *wepDefaultKeyEnd;         
+    void *wepDefaultKeyEnd;
     void *staTableStart;
-    void *staTableEnd;              
+    void *staTableEnd;
     void *packetTemplateStart;
-    void *packetTemplateEnd;        
-    TxResultPointers_t  trqBlock;             
- 
+    void *packetTemplateEnd;
+    TxResultPointers_t  trqBlock;
+
     void *queueMemoryStart;
-    void *queueMemoryEnd; 
+    void *queueMemoryEnd;
     void *packetMemoryPoolStart;
     void *packetMemoryPoolEnd;
     void *debugBuffer1Start;
@@ -431,18 +431,18 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 2
-    
+
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
     uint16  Aid;    /* The Association ID to the WiLink. The WiLink uses this */
-                    /* field to determine when the STA's AID bit is set in a */
-                    /* received beacon and when a PS Poll frame should be */
-                    /* transmitted to the AP. The host configures this information */
-                    /* element after it has associated with an AP. This information */
-                    /* element does not need to be set in Ad Hoc mode.*/
+    /* field to determine when the STA's AID bit is set in a */
+    /* received beacon and when a PS Poll frame should be */
+    /* transmitted to the AP. The host configures this information */
+    /* element after it has associated with an AP. This information */
+    /* element does not need to be set in Ad Hoc mode.*/
     uint8  padding[2];  /* alignment to 32bits boundry   */
 } ACXAid_t;
 
@@ -453,25 +453,25 @@ typedef struct
     Type:   Operation
     Access: Read Only
     Length: 12
-    
+
 ******************************************************************************/
 typedef struct
 {
     INFO_ELE_HDR
     uint32 PLCPErrorCount;  /* The number of PLCP errors since the last time this */
-                            /* information element was interrogated. This field is */
-                            /* automatically cleared when it is interrogated.*/
-    
+    /* information element was interrogated. This field is */
+    /* automatically cleared when it is interrogated.*/
+
     uint32 FCSErrorCount;   /* The number of FCS errors since the last time this */
-                            /* information element was interrogated. This field is */
-                            /* automatically cleared when it is interrogated.*/
-    
+    /* information element was interrogated. This field is */
+    /* automatically cleared when it is interrogated.*/
+
     uint32 validFrameCount; /* The number of MPDUÂ’s without PLCP header errors received*/
-                            /* since the last time this information element was interrogated. */
-                            /* This field is automatically cleared when it is interrogated.*/
+    /* since the last time this information element was interrogated. */
+    /* This field is automatically cleared when it is interrogated.*/
 
     uint32 seqNumMissCount; /* the number of missed sequence numbers in the squentially */
-                            /* values of frames seq numbers */
+    /* values of frames seq numbers */
 
 } ACXErrorCounters_t;
 
@@ -497,7 +497,7 @@ typedef struct
     Type:   Filtering Configuration
     Access: Write Only
     Length: 8
-    
+
 ******************************************************************************/
 /*
  * Rx configuration (filter) information element
@@ -508,32 +508,32 @@ typedef struct
     Bit     Definition
     ===     ==========
     31:14   Reserved
-    13      Copy RX Status - when set, write three receive status words to top of 
+    13      Copy RX Status - when set, write three receive status words to top of
             rx'd MPDU.
             When clear, do not write three status words (added rev 1.5)
     12      Reserved
-    11      RX Complete upon FCS error - when set, give rx complete interrupt for 
-            FCS errors, after the rx filtering, e.g. unicast frames not to us with 
+    11      RX Complete upon FCS error - when set, give rx complete interrupt for
+            FCS errors, after the rx filtering, e.g. unicast frames not to us with
             FCS error will not generate an interrupt
-    10      SSID Filter Enable - When set, the WiLink discards all beacon, 
-            probe request, and probe response frames with an SSID that does not 
-            match the SSID specified by the host in the START/JOIN command. 
+    10      SSID Filter Enable - When set, the WiLink discards all beacon,
+            probe request, and probe response frames with an SSID that does not
+            match the SSID specified by the host in the START/JOIN command.
             When clear, the WiLink receives frames with any SSID.
-    9       Broadcast Filter Enable - When set, the WiLink discards all broadcast 
+    9       Broadcast Filter Enable - When set, the WiLink discards all broadcast
             frames. When clear, the WiLink receives all received broadcast frames.
     8:6     Reserved
-    5       BSSID Filter Enable - When set, the WiLink discards any frames with a 
-            BSSID that does not match the BSSID specified by the host. 
+    5       BSSID Filter Enable - When set, the WiLink discards any frames with a
+            BSSID that does not match the BSSID specified by the host.
             When clear, the WiLink receives frames from any BSSID.
-    4       MAC Addr Filter - When set, the WiLink discards any frames with a 
-            destination address that does not match the MAC address of the adaptor. 
+    4       MAC Addr Filter - When set, the WiLink discards any frames with a
+            destination address that does not match the MAC address of the adaptor.
             When clear, the WiLink receives frames destined to any MAC address.
-    3       Promiscuous - When set, the WiLink receives all valid frames 
-            (i.e., all frames that pass the FCS check). 
+    3       Promiscuous - When set, the WiLink receives all valid frames
+            (i.e., all frames that pass the FCS check).
             When clear, only frames that pass the other filters specified are received.
-    2       FCS - When set, the WiLink includes the FCS with the received frame. 
+    2       FCS - When set, the WiLink includes the FCS with the received frame.
             When clear, the FCS is discarded.
-    1       PLCP header - When set, write all data from baseband to frame buffer 
+    1       PLCP header - When set, write all data from baseband to frame buffer
             including PHY header.
     0       Reserved - Always equal to 0.
 
@@ -541,73 +541,73 @@ typedef struct
     Bit     Definition
     ===     ==========
     31:12   Reserved - Always equal to 0.
-    11      Association - When set, the WiLink receives all association related frames 
-            (association request/response, reassocation request/response, and 
+    11      Association - When set, the WiLink receives all association related frames
+            (association request/response, reassocation request/response, and
             disassociation). When clear, these frames are discarded.
-    10      Auth/De auth - When set, the WiLink receives all authentication and 
+    10      Auth/De auth - When set, the WiLink receives all authentication and
             de-authentication frames. When clear, these frames are discarded.
-    9       Beacon - When set, the WiLink receives all beacon frames. When clear, 
+    9       Beacon - When set, the WiLink receives all beacon frames. When clear,
             these frames are discarded.
-    8       Contention Free - When set, the WiLink receives all contention free frames. 
+    8       Contention Free - When set, the WiLink receives all contention free frames.
             When clear, these frames are discarded.
-    7       Control - When set, the WiLink receives all control frames. 
+    7       Control - When set, the WiLink receives all control frames.
             When clear, these frames are discarded.
-    6       Data - When set, the WiLink receives all data frames.   
+    6       Data - When set, the WiLink receives all data frames.
             When clear, these frames are discarded.
-    5       FCS Error - When set, the WiLink receives frames that have FCS errors. 
+    5       FCS Error - When set, the WiLink receives frames that have FCS errors.
             When clear, these frames are discarded.
-    4       Management - When set, the WiLink receives all management frames. 
+    4       Management - When set, the WiLink receives all management frames.
             When clear, these frames are discarded.
-    3       Probe Request - When set, the WiLink receives all probe request frames. 
+    3       Probe Request - When set, the WiLink receives all probe request frames.
             When clear, these frames are discarded.
-    2       Probe Response - When set, the WiLink receives all probe response frames. 
+    2       Probe Response - When set, the WiLink receives all probe response frames.
             When clear, these frames are discarded.
-    1       RTS/CTS/ACK - When set, the WiLink receives all RTS, CTS and ACK frames. 
+    1       RTS/CTS/ACK - When set, the WiLink receives all RTS, CTS and ACK frames.
             When clear, these frames are discarded.
-    0       Rsvd Type/Sub Type - When set, the WiLink receives all frames that 
-            have reserved frame types and sub types as defined by the 802.11 
-            specification. 
+    0       Rsvd Type/Sub Type - When set, the WiLink receives all frames that
+            have reserved frame types and sub types as defined by the 802.11
+            specification.
             When clear, these frames are discarded.
 */
 typedef struct
 {
     INFO_ELE_HDR
     uint32          ConfigOptions;  /* The configuration of the receiver in the WiLink. */
-                                    /* "RX ConfigOptions Table" describes the format of */
-                                    /* this field.*/
+    /* "RX ConfigOptions Table" describes the format of */
+    /* this field.*/
     uint32          FilterOptions;  /* The types of frames that the WiLink can receive. */
-                                    /* "RX FilterOptions Table" describes the format of */
-                                    /* this field.*/
+    /* "RX FilterOptions Table" describes the format of */
+    /* this field.*/
 } ACXRxConfig_t;
 
 /******************************************************************************
 
     Name:   ACX_BEACON_FILTER_OPT
-    Desc:   This information element enables the host to activate beacon filtering. 
-            The filter can only be activated when the STA is in PS mode. 
-            When activated, either the host is not notified about beacons whose 
-            unicast TIM bit is not set, or these beacons are buffered first and 
+    Desc:   This information element enables the host to activate beacon filtering.
+            The filter can only be activated when the STA is in PS mode.
+            When activated, either the host is not notified about beacons whose
+            unicast TIM bit is not set, or these beacons are buffered first and
             the host is notified only after the buffer reaches a predetermined size.
-            The host should not activate the filter if it configures the firmware 
-            to listen to broadcasts (see the VBM Options field in the 
-            ACXPowerMgmtOptions information element). The filter only affects beacons, 
-            and not other MSDUs - the firmware notifies the host immediately about 
+            The host should not activate the filter if it configures the firmware
+            to listen to broadcasts (see the VBM Options field in the
+            ACXPowerMgmtOptions information element). The filter only affects beacons,
+            and not other MSDUs - the firmware notifies the host immediately about
             their arrival.
     Type:   Filtering Configuration
     Access: Write Only
     Length: 2
- 
+
 ******************************************************************************/
-typedef struct  
+typedef struct
 {
     INFO_ELE_HDR
     uint8   enable;                /* Indicates whether the filter is enabled. */
-                                   /* 1 - enabled, 0 - disabled. */
+    /* 1 - enabled, 0 - disabled. */
     uint8   maxNumOfBeaconsStored; /* The number of beacons without the unicast TIM */
-                                   /* bit set that the firmware buffers before */
-                                   /* signaling the host about ready frames. */
-                                   /* When set to 0 and the filter is enabled, beacons */
-                                   /* without the unicast TIM bit set are dropped.*/
+    /* bit set that the firmware buffers before */
+    /* signaling the host about ready frames. */
+    /* When set to 0 and the filter is enabled, beacons */
+    /* without the unicast TIM bit set are dropped.*/
     uint8  padding[2];             /* alignment to 32bits boundry   */
 } ACXBeaconFilterOptions_t;
 
@@ -616,34 +616,34 @@ typedef struct
 
     Name:   ACX_BEACON_FILTER_TABLE
     Desc:   This information element configures beacon filtering handling for the
-            set of information elements. An information element in a beacon can be 
-            set to be: ignored (never compared, and changes will not cause beacon 
-            transfer), checked (compared, and transferred in case of a change), or 
+            set of information elements. An information element in a beacon can be
+            set to be: ignored (never compared, and changes will not cause beacon
+            transfer), checked (compared, and transferred in case of a change), or
             transferred (transferred to the host for each appearance or disappearance).
-            The table contains all information elements that are subject to monitoring 
-            for host transfer. 
-            All information elements that are not in the table should be ignored for 
+            The table contains all information elements that are subject to monitoring
+            for host transfer.
+            All information elements that are not in the table should be ignored for
             monitoring.
-            This functionality is only enabled when beacon filtering is enabled by 
+            This functionality is only enabled when beacon filtering is enabled by
             ACX_BEACON_FILTER_OPT.
     Type:   Filtering Configuration
     Access: Write Only
     Length: 101
-    Notes:  the field measuring the value of received beacons for which the device 
-            wakes up the host in ACX_BEACON_FILTER_OPT does not affect 
+    Notes:  the field measuring the value of received beacons for which the device
+            wakes up the host in ACX_BEACON_FILTER_OPT does not affect
             this information element.
-    
+
 ******************************************************************************/
 
 /*
     ACXBeaconFilterEntry (not 221)
-    Byte Offset     Size (Bytes)    Definition 
+    Byte Offset     Size (Bytes)    Definition
     ===========     ============    ==========
     0               1               IE identifier
     1               1               Treatment bit mask
 
     ACXBeaconFilterEntry (221)
-    Byte Offset     Size (Bytes)    Definition 
+    Byte Offset     Size (Bytes)    Definition
     ===========     ============    ==========
     0               1               IE identifier
     1               1               Treatment bit mask
@@ -655,7 +655,7 @@ typedef struct
     Treatment bit mask - The information element handling:
                          bit 0 - The information element is compared and transferred
                                  in case of change.
-                         bit 1 - The information element is transferred to the host 
+                         bit 1 - The information element is transferred to the host
                                  with each appearance or disappearance.
                          Note that both bits can be set at the same time.
 */
@@ -670,7 +670,7 @@ typedef struct ACXBeaconFilterIETableStruct
 {
     INFO_ELE_HDR
     uint8 NumberOfIEs;                          /* The number of IE's in the table*/
-                                                /* 0 - clears the table.*/
+    /* 0 - clears the table.*/
 
     uint8 padding[3];  /* alignment to 32bits boundry   */
     uint8 IETable[BEACON_FILTER_TABLE_MAX_SIZE];
@@ -679,13 +679,13 @@ typedef struct ACXBeaconFilterIETableStruct
 /******************************************************************************
 
     Name:   ACX_COEX_ACTIVITY_TABLE
-    
+
 ******************************************************************************/
 
 typedef enum
 {
     COEX_IP_BT = 0,
-    COEX_IP_WLAN, 
+    COEX_IP_WLAN,
     COEX_IP_DUAL_MODE,   /* That define isn't valid value in DR&FW interface and use just in the FW */
     MAX_COEX_IP
 } CoexIp_enum;
@@ -700,7 +700,7 @@ typedef struct ACXCoexActivityIEStruct
 {
     INFO_ELE_HDR
     CoexIp_e coexIp;         /* 0-BT, 1-WLAN (according to CoexIp_e in FW) */
-    uint8  activityId;       /* According to BT/WLAN activity numbering in FW */ 
+    uint8  activityId;       /* According to BT/WLAN activity numbering in FW */
     uint8  defaultPriority;  /* 0-255, activity default priority */
     uint8  raisedPriority;   /* 0-255, activity raised priority */
     uint16 minService;       /* 0-65535, The minimum service requested either in
@@ -711,7 +711,7 @@ typedef struct ACXCoexActivityIEStruct
 
 /******************************************************************************
 
-    Name:   ACX_ARP_IP_FILTER 
+    Name:   ACX_ARP_IP_FILTER
     Type:   Filtering Configuration
     Access: Write Only
     Length: 20
@@ -723,27 +723,27 @@ typedef struct ACXCoexActivityIEStruct
 #define ARP_FILTER_AUTO_ARP_ENABLED			(0x02)
 
 #define ARP_FILTER_SUSPENDED_BY_FW			(0x80)		// Bit set/cleared by FW to indicate temporary suspention of Auto-ARP 
-														// (due to join, before template is configured)
-														// This is NEVER used by the Host itself
+// (due to join, before template is configured)
+// This is NEVER used by the Host itself
 
 #define ARP_FILTER_HOST_ENABLE_MASK			(0x03)		// Take only two lower bits of host configuration
 
-typedef struct  
-{    
+typedef struct
+{
     INFO_ELE_HDR
     uint8     ipVersion;       /* The IP version of the IP address: 4 - IPv4, 6 - IPv6.*/
     uint8     arpFilterEnable; /* BITMAP (!) field containing all "enabled" ARP features */
-							   /* 0x00 - No ARP features */
-							   /* 0x01 - Only ARP filtering */
-							   /* 0x02 - Only Auto-ARP */
-	                           /* 0x03 - Both ARP filtering and Auto-ARP */
-                               /* For IPv6 it MUST be 0 */
+    /* 0x00 - No ARP features */
+    /* 0x01 - Only ARP filtering */
+    /* 0x02 - Only Auto-ARP */
+    /* 0x03 - Both ARP filtering and Auto-ARP */
+    /* For IPv6 it MUST be 0 */
     uint8     padding[2];      /* alignment to 32bits boundry   */
     uint8     address[16];     /* The IP address used to filter ARP packets. ARP packets */
-                               /* that do not match this address are dropped. */
-                               /* When the IP Version is 4, the last 12 bytes of */
-                               /* the address are ignored.*/
-    
+    /* that do not match this address are dropped. */
+    /* When the IP Version is 4, the last 12 bytes of */
+    /* the address are ignored.*/
+
 } ACXConfigureIP_t;
 
 
@@ -753,14 +753,14 @@ typedef struct
   Type:     Filtering Configuration
   Access:   Write Only
   Length:   1
-  
+
 ******************************************************************************/
-typedef struct  
+typedef struct
 {
     INFO_ELE_HDR
     uint8   enable; /* if set (i.e. IBSS mode), forward beacons from the same SSID*/
-                    /* (also from different BSSID), with bigger TSF then the this of */
-                    /* the current BSS.*/
+    /* (also from different BSSID), with bigger TSF then the this of */
+    /* the current BSS.*/
     uint8   padding[3]; /* alignment to 32bits boundry   */
 } ACXIBSSFilterOptions_t;
 
@@ -771,17 +771,17 @@ typedef struct
   Type:     Configuration
   Access:   Write Only
   Length:   1
-  
+
 ******************************************************************************/
-typedef struct 
-{    
+typedef struct
+{
     INFO_ELE_HDR
     uint16 PsPollTimeout; /* the maximum time that the device will wait to receive */
-                          /* traffic from the AP after transmission of PS-poll.*/
-    
+    /* traffic from the AP after transmission of PS-poll.*/
+
     uint16 UpsdTimeout;   /* the maximum time that the device will wait to receive */
-                          /* traffic from the AP after transmission from UPSD enabled*/
-                          /* queue.*/
+    /* traffic from the AP after transmission from UPSD enabled*/
+    /* queue.*/
 } ACXRxTimeout_t;
 
 /******************************************************************************
@@ -790,7 +790,7 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 8
-    
+
 ******************************************************************************/
 typedef struct
 {
@@ -798,9 +798,9 @@ typedef struct
     uint8   qID;                        /* The TX queue ID number.*/
     uint8   padding[3];                 /* alignment to 32bits boundry   */
     uint16  numberOfBlockHighThreshold; /* The maximum memory blocks allowed in the */
-                                        /* queue.*/
+    /* queue.*/
     uint16  numberOfBlockLowThreshold;  /* The minimum memory blocks that are */
-                                        /* guaranteed for this queue.*/
+    /* guaranteed for this queue.*/
 } ACXTxQueueCfg_t;
 
 
@@ -809,11 +809,11 @@ typedef struct
     Name:   ACX_STATISTICS
     Type:   Statistics
     Access: Write Only
-    Length: 
+    Length:
     Note:   Debug API
 
 ******************************************************************************/
-typedef struct 
+typedef struct
 {
     uint32  debug1;
     uint32  debug2;
@@ -821,18 +821,18 @@ typedef struct
     uint32  debug4;
     uint32  debug5;
     uint32  debug6;
-}DbgStatistics_t;
+} DbgStatistics_t;
 
-typedef struct 
+typedef struct
 {
     uint32  numOfTxProcs;
     uint32  numOfPreparedDescs;
     uint32  numOfTxXfr;
-    uint32  numOfTxDma;    
+    uint32  numOfTxDma;
     uint32  numOfTxCmplt;
     uint32  numOfRxProcs;
     uint32  numOfRxData;
-}RingStatistics_t;
+} RingStatistics_t;
 
 typedef struct
 {
@@ -873,18 +873,18 @@ typedef struct
     uint32 RxDroppedFrame;
     uint32 RxCompleteDroppedFrame;
     uint32 RxAllocFrame;
-	uint32 RxDoneQueue;
-	uint32 RxDone;
-	uint32 RxDefrag;
-	uint32 RxDefragEnd;
-	uint32 RxMic;
-	uint32 RxMicEnd;
-	uint32 RxXfr;
+    uint32 RxDoneQueue;
+    uint32 RxDone;
+    uint32 RxDefrag;
+    uint32 RxDefragEnd;
+    uint32 RxMic;
+    uint32 RxMicEnd;
+    uint32 RxXfr;
     uint32 RxXfrEnd;
     uint32 RxCmplt;
     uint32 RxPreCmplt;
     uint32 RxCmpltTask;
-	uint32 RxPhyHdr;
+    uint32 RxPhyHdr;
     uint32 RxTimeout;
 } RxStatistics_t;
 
@@ -923,13 +923,13 @@ typedef struct PwrStatistics_t
     uint32 RcvdBeaconsCnt;      /* Count the number of received beacons.*/
     uint32 ConnectionOutOfSync;         /* Count the number of times TSF Out Of Sync occures, meaning we lost more consecutive beacons that defined by the host's threshold.*/
     uint32 ContMissBcnsSpread[PWR_STAT_MAX_CONT_MISSED_BCNS_SPREAD];  /* Gives statistics about the spread continuous missed beacons.*/
-                                    /* The 16 LSB are dedicated for the PS mode.*/
-                                    /* The 16 MSB are dedicated for the PS mode.*/
-                                    /* ContMissBcnsSpread[0] - single missed beacon.*/
-                                    /* ContMissBcnsSpread[1] - two continuous missed beacons.*/
-                                    /* ContMissBcnsSpread[2] - three continuous missed beacons.*/
-                                    /* ...*/
-                                    /* ContMissBcnsSpread[9] - ten and more continuous missed beacons.*/
+    /* The 16 LSB are dedicated for the PS mode.*/
+    /* The 16 MSB are dedicated for the PS mode.*/
+    /* ContMissBcnsSpread[0] - single missed beacon.*/
+    /* ContMissBcnsSpread[1] - two continuous missed beacons.*/
+    /* ContMissBcnsSpread[2] - three continuous missed beacons.*/
+    /* ...*/
+    /* ContMissBcnsSpread[9] - ten and more continuous missed beacons.*/
     uint32 RcvdAwakeBeaconsCnt; /* Count the number of beacons in awake mode.*/
 } PwrStatistics_t;
 
@@ -991,30 +991,30 @@ typedef struct RxFilterStatistics_t
 
 typedef struct ClaibrationFailStatistics_t
 {
-	uint32 initCalTotal;
-	uint32 initRadioBandsFail;
-	uint32 initSetParams;
-	uint32 initTxClpcFail;
-	uint32 initRxIqMmFail;
-	uint32 tuneCalTotal;
-	uint32 tuneDrpwRTrimFail;
-	uint32 tuneDrpwPdBufFail;
-	uint32 tuneDrpwTxMixFreqFail;
-	uint32 tuneDrpwTaCal;
-	uint32 tuneDrpwRxIf2Gain;
-	uint32 tuneDrpwRxDac;
-	uint32 tuneDrpwChanTune;
-	uint32 tuneDrpwRxTxLpf;
-	uint32 tuneDrpwLnaTank;
-	uint32 tuneTxLOLeakFail;
-	uint32 tuneTxIqMmFail;
-	uint32 tuneTxPdetFail;
-	uint32 tuneTxPPAFail;
-	uint32 tuneTxClpcFail;
-	uint32 tuneRxAnaDcFail;
-	uint32 tuneRxIqMmFail;
-	uint32 calStateFail;
-}ClaibrationFailStatistics_t;
+    uint32 initCalTotal;
+    uint32 initRadioBandsFail;
+    uint32 initSetParams;
+    uint32 initTxClpcFail;
+    uint32 initRxIqMmFail;
+    uint32 tuneCalTotal;
+    uint32 tuneDrpwRTrimFail;
+    uint32 tuneDrpwPdBufFail;
+    uint32 tuneDrpwTxMixFreqFail;
+    uint32 tuneDrpwTaCal;
+    uint32 tuneDrpwRxIf2Gain;
+    uint32 tuneDrpwRxDac;
+    uint32 tuneDrpwChanTune;
+    uint32 tuneDrpwRxTxLpf;
+    uint32 tuneDrpwLnaTank;
+    uint32 tuneTxLOLeakFail;
+    uint32 tuneTxIqMmFail;
+    uint32 tuneTxPdetFail;
+    uint32 tuneTxPPAFail;
+    uint32 tuneTxClpcFail;
+    uint32 tuneRxAnaDcFail;
+    uint32 tuneRxIqMmFail;
+    uint32 calStateFail;
+} ClaibrationFailStatistics_t;
 
 typedef struct ACXStatisticsStruct
 {
@@ -1032,29 +1032,29 @@ typedef struct ACXStatisticsStruct
     EventStatistics_t event;
     PsPollUpsdStatistics_t ps;
     RxFilterStatistics_t rxFilter;
-	ClaibrationFailStatistics_t radioCal;
+    ClaibrationFailStatistics_t radioCal;
     GemStatistics_t  gem;
 } ACXStatistics_t;
 
 /******************************************************************************
 
     Name:   ACX_ROAMING_STATISTICS_TBL
-    Desc:   This information element reads the current roaming triggers 
-            counters/metrics. 
+    Desc:   This information element reads the current roaming triggers
+            counters/metrics.
     Type:   Statistics
     Access: Read Only
     Length: 6
 
 ******************************************************************************/
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint32 MissedBeacons; /* The current number of consecutive lost beacons*/
-	uint8  snrData;       /* The current average SNR in db - For Data Packets*/
-	uint8  snrBeacon;     /* The current average SNR in db - For Beacon Packets*/
+    uint8  snrData;       /* The current average SNR in db - For Data Packets*/
+    uint8  snrBeacon;     /* The current average SNR in db - For Beacon Packets*/
     int8   rssiData;      /* The current average RSSI  - For Data Packets*/
     int8   rssiBeacon;    /* The current average RSSI - For Beacon Packets*/
-}ACXRoamingStatisticsTable_t;
+} ACXRoamingStatisticsTable_t;
 
 
 /******************************************************************************
@@ -1064,7 +1064,7 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 8
-    
+
 ******************************************************************************/
 
 /* bit defines for Option: */
@@ -1072,9 +1072,9 @@ typedef struct
 
 /* bit defines for dataflowOptions: */
 #define DF_ENCRYPTION_DISABLE       0x00000001  /* When set, enable encription in FW.*/
-                                                /* when clear, disable encription. */
+/* when clear, disable encription. */
 #define DF_SNIFF_MODE_ENABLE        0x00000080  /* When set, enable decryption in FW.*/
-                                                /* when clear, disable decription. */
+/* when clear, disable decription. */
 typedef struct
 {
     INFO_ELE_HDR
@@ -1090,7 +1090,7 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 16
-    
+
 ******************************************************************************/
 typedef enum
 {
@@ -1105,7 +1105,7 @@ typedef enum
     PS_SCHEME_LEGACY         = 0, /* Regular PS: simple sending of packets*/
     PS_SCHEME_UPSD_TRIGGER   = 1, /* UPSD: sending a packet triggers a UPSD downstream*/
     PS_SCHEME_LEGACY_PSPOLL  = 2, /* Legacy PSPOLL: a PSPOLL packet will be sent before */
-                                  /* every data packet transmission in this queue.*/
+    /* every data packet transmission in this queue.*/
     PS_SCHEME_SAPSD          = 3, /* Scheduled APSD mode.*/
     MAX_PS_SCHEME = PS_SCHEME_SAPSD
 } PSScheme_enum;
@@ -1141,17 +1141,17 @@ typedef struct
     INFO_ELE_HDR
     uint8   queueID;        /* The TX queue ID number (0-7).*/
     uint8   channelType;    /* Channel access type for the queue.*/
-                            /* Refer to ChannelType_enum.*/
+    /* Refer to ChannelType_enum.*/
     uint8   tsid;           /* for EDCA - the AC Index (0-3, refer to*/
-                            /* AccessCategory_enum).*/
-                            /* For HCCA - HCCA Traffic Stream ID (TSID) of */
-                            /* the queue (8-15).*/
+    /* AccessCategory_enum).*/
+    /* For HCCA - HCCA Traffic Stream ID (TSID) of */
+    /* the queue (8-15).*/
     PSScheme_e  psScheme;   /* The power save scheme of the specified queue.*/
-                            /* Refer to PSScheme_enum.*/
+    /* Refer to PSScheme_enum.*/
     AckPolicy_e ackPolicy;  /* The TX queue ACK policy. */
     uint8  padding[3];      /* alignment to 32bits boundry   */
     uint32 APSDConf[2];     /* Not supported in this version !!!*/
-}ACXTIDConfig_t;
+} ACXTIDConfig_t;
 
 
 
@@ -1161,20 +1161,20 @@ typedef struct
 	Type:	Configuration
 	Access:	Write Only
 	Length: 32
-	
+
 ******************************************************************************/
 typedef struct
 {
     INFO_ELE_HDR
     uint8 	TID;            /* The TID index*/
     Bool_e 	rxPSDEnabled;   /* indicates if this traffic stream requires */
-                            /* employing an RX Streaming delivery mechanism for the TID*/
+    /* employing an RX Streaming delivery mechanism for the TID*/
 
     uint8   streamPeriod;   /* the time period for which a trigger needs to be transmitted*/
-                            /* in case no data TX triggers are sent by host*/
+    /* in case no data TX triggers are sent by host*/
     uint8   txTimeout;      /* the timeout from last TX trigger after which FW*/
-                            /* starts generating triggers by itself*/
-}ACXPsRxStreaming_t;
+    /* starts generating triggers by itself*/
+} ACXPsRxStreaming_t;
 
 /************************************************************
 *      MULTIPLE RSSI AND SNR                                *
@@ -1183,12 +1183,12 @@ typedef struct
 typedef enum
 {
     RX_QUALITY_EVENT_LEVEL = 0,  /* The event is a "Level" indication which keeps */
-                               /* triggering as long as the average RSSI is below*/
-                               /* the threshold.*/
+    /* triggering as long as the average RSSI is below*/
+    /* the threshold.*/
 
-	RX_QUALITY_EVENT_EDGE = 1    /* The event is an "Edge" indication which triggers*/
-                               /* only when the RSSI threshold is crossed from above.*/
-}rxQualityEventType_enum;
+    RX_QUALITY_EVENT_EDGE = 1    /* The event is an "Edge" indication which triggers*/
+    /* only when the RSSI threshold is crossed from above.*/
+} rxQualityEventType_enum;
 
 /* The direction in which the trigger is active */
 typedef enum
@@ -1196,7 +1196,7 @@ typedef enum
     RSSI_EVENT_DIR_LOW = 0,
     RSSI_EVENT_DIR_HIGH = 1,
     RSSI_EVENT_DIR_BIDIR = 2
-}RssiEventDir_e;
+} RssiEventDir_e;
 
 /******************************************************************************
 
@@ -1218,13 +1218,13 @@ typedef struct
     uint8  index; /* Index of Event. Values 0 - 7 */
     uint8  enable; /* 1 - Configured, 2 - Not Configured;  (for recovery using) */
     uint8  padding[2];
-}RssiSnrTriggerCfg_t;
+} RssiSnrTriggerCfg_t;
 
 typedef struct
 {
     INFO_ELE_HDR
     RssiSnrTriggerCfg_t param;
-}ACXRssiSnrTriggerCfg_t;
+} ACXRssiSnrTriggerCfg_t;
 
 /* Filter Weight for every one of 4 RSSI /SNR Trigger Metrics  */
 typedef struct
@@ -1233,22 +1233,22 @@ typedef struct
     uint8 rssiPacketAverageWeight;
     uint8 snrBeaconAverageWeight;
     uint8 snrPacketAverageWeight;
-}RssiSnrAverageWeights_t;
+} RssiSnrAverageWeights_t;
 
 typedef struct
 {
     INFO_ELE_HDR
     RssiSnrAverageWeights_t param;
-}ACXRssiSnrAverageWeights_t;
+} ACXRssiSnrAverageWeights_t;
 
 typedef enum
 {
     METRIC_EVENT_RSSI_BEACON = 0,
     METRIC_EVENT_RSSI_DATA   = 1,
     METRIC_EVENT_SNR_BEACON  = 2,
-    METRIC_EVENT_SNR_DATA     = 3, 
-	METRIC_EVENT_TRIGGER_SIZE = 4
-}MetricEvent_e;
+    METRIC_EVENT_SNR_DATA     = 3,
+    METRIC_EVENT_TRIGGER_SIZE = 4
+} MetricEvent_e;
 
 /******************************************************************************
 
@@ -1258,25 +1258,25 @@ typedef enum
     Type:   Configuration
     Access: Read Only
     Length: 48 (NOISE_HIST_LEN=8)
-    
+
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
     uint32 counters[NOISE_HIST_LEN]; /* This array of eight 32 bit counters describes */
-                                     /* the histogram created by the FW noise */
-                                     /* histogram engine.*/
+    /* the histogram created by the FW noise */
+    /* histogram engine.*/
 
     uint32 numOfLostCycles;          /* This field indicates the number of measurement */
-                                     /* cycles with failure because Tx was active.*/
+    /* cycles with failure because Tx was active.*/
 
     uint32 numOfTxHwGenLostCycles;   /* This field indicates the number of measurement */
-                                     /* cycles with failure because Tx (FW Generated)*/
-                                     /* was active.*/
+    /* cycles with failure because Tx (FW Generated)*/
+    /* was active.*/
 
     uint32 numOfRxLostCycles;        /* This field indicates the number of measurement */
-                                     /* cycles because the Rx CCA was active. */
+    /* cycles because the Rx CCA was active. */
 } NoiseHistResult_t;
 
 /******************************************************************************
@@ -1307,14 +1307,14 @@ typedef struct
 #define HOST_MAX_RATE_POLICIES       (8)
 
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint32        numOfClasses;                    /* The number of transmission rate */
-                                                   /* fallback policy classes.*/
+    /* fallback policy classes.*/
 
     txAttrClass_t rateClasses[HOST_MAX_RATE_POLICIES];  /* Rate Policies table*/
-}ACXTxAttrClasses_t;
+} ACXTxAttrClasses_t;
 
 
 
@@ -1324,17 +1324,17 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 1
-    
+
 ******************************************************************************/
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint8   ctsProtectMode; /* This field is a flag enabling or disabling the*/
-                                /* CTS-to-self protection mechanism:*/
-                                /* 0 - disable, 1 - enable*/
+    /* CTS-to-self protection mechanism:*/
+    /* 0 - disable, 1 - enable*/
     uint8  padding[3];          /* alignment to 32bits boundry   */
-}ACXCtsProtection_t;
+} ACXCtsProtection_t;
 
 /******************************************************************************
 
@@ -1347,7 +1347,7 @@ typedef struct
     INFO_ELE_HDR
     uint16  fragThreshold;
     uint8   padding[2];          /* alignment toIE_RTS_CTS_CFG 32bits boundry   */
-   
+
 } ACXFRAGThreshold_t;
 
 
@@ -1356,7 +1356,7 @@ typedef struct
     ACX_RX_CONFIG_OPT
 
 ******************************************************************************/
-typedef enum  
+typedef enum
 {
     RX_QUEUE_TYPE_RX_LOW_PRIORITY,    /* All except the high priority */
     RX_QUEUE_TYPE_RX_HIGH_PRIORITY,   /* Management and voice packets */
@@ -1366,19 +1366,19 @@ typedef enum
 
 
 #ifdef HOST_COMPILE
-    typedef uint8 RxQueueType_e;
+typedef uint8 RxQueueType_e;
 #else
-    typedef RxQueueType_enum RxQueueType_e;
+typedef RxQueueType_enum RxQueueType_e;
 #endif
 
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint16         rxMblkThreshold;   /* Occupied Rx mem-blocks number which requires interrupting the host (0 = no buffering) */
-    uint16         rxPktThreshold;    /* Rx packets number which requires interrupting the host  (0 = no buffering) */ 
+    uint16         rxPktThreshold;    /* Rx packets number which requires interrupting the host  (0 = no buffering) */
     uint16         rxCompleteTimeout; /* Max time in msec the FW may delay Rx-Complete interrupt */
-    RxQueueType_e  rxQueueType;       /* see above */   
+    RxQueueType_e  rxQueueType;       /* see above */
     uint8          reserved;
 } ACXRxBufferingConfig_t;
 
@@ -1391,10 +1391,10 @@ typedef struct
 
 #define GEN_FW_CMD_SIZE    16
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
-    uint8         genFwCmdBytes[GEN_FW_CMD_SIZE];   
+    uint8         genFwCmdBytes[GEN_FW_CMD_SIZE];
 } ACXGenFwCmd_t;
 
 /******************************************************************************
@@ -1410,10 +1410,10 @@ typedef struct
 #define HOST_IF_CFG_BITMAP_TX_PAD_TO_SDIO_BLK 0x00000008
 
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
-    uint32         HostIfCfgBitmap;   
+    uint32         HostIfCfgBitmap;
 } ACXHostIfCfgBitmap_t;
 
 /******************************************************************************
@@ -1426,16 +1426,16 @@ typedef struct
 
 ******************************************************************************/
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint8   sleepAuth; /* The sleep level authorization of the device. */
-                       /* 0 - Always active*/
-                       /* 1 - Power down mode: light / fast sleep*/
-                       /* 2 - ELP mode: Deep / Max sleep*/
-        
+    /* 0 - Always active*/
+    /* 1 - Power down mode: light / fast sleep*/
+    /* 2 - ELP mode: Deep / Max sleep*/
+
     uint8  padding[3]; /* alignment to 32bits boundry   */
-}ACXSleepAuth_t;
+} ACXSleepAuth_t;
 
 /******************************************************************************
 
@@ -1447,14 +1447,14 @@ typedef struct
 
 ******************************************************************************/
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
-	uint32	hostClkSettlingTime;	/* Host CLK settling time (in uSec units) */
-	uint8	hostFastWakeupSupport;	/* 0 - not supported */
-									/* 1 - supported */
+    uint32	hostClkSettlingTime;	/* Host CLK settling time (in uSec units) */
+    uint8	hostFastWakeupSupport;	/* 0 - not supported */
+    /* 1 - supported */
     uint8  padding[3]; 				/* alignment to 32bits boundry   */
-}ACXPMConfig_t;
+} ACXPMConfig_t;
 
 /******************************************************************************
 
@@ -1462,17 +1462,17 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 1
-    
+
 ******************************************************************************/
 
 typedef enum
 {
-	LONG_PREAMBLE			= 0,
-	SHORT_PREAMBLE			= 1,
-	OFDM_PREAMBLE			= 4,
-	N_MIXED_MODE_PREAMBLE	= 6,
-	GREENFIELD_PREAMBLE		= 7,
-	PREAMBLE_INVALID		= 0xFF
+    LONG_PREAMBLE			= 0,
+    SHORT_PREAMBLE			= 1,
+    OFDM_PREAMBLE			= 4,
+    N_MIXED_MODE_PREAMBLE	= 6,
+    GREENFIELD_PREAMBLE		= 7,
+    PREAMBLE_INVALID		= 0xFF
 } Preamble_enum;
 
 
@@ -1487,9 +1487,9 @@ typedef struct
 {
     INFO_ELE_HDR
     Preamble_e preamble; /* When set, the WiLink transmits beacon, probe response, */
-                         /* RTS and PS Poll frames with a short preamble. */
-                         /* When clear, the WiLink transmits the frame with a long */
-                         /* preamble.*/
+    /* RTS and PS Poll frames with a short preamble. */
+    /* When clear, the WiLink transmits the frame with a long */
+    /* preamble.*/
     uint8  padding[3];  /* alignment to 32bits boundry   */
 } ACXPreamble_t;
 
@@ -1500,18 +1500,18 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 2
-    
+
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
     uint16 rxCCAThreshold; /* The Rx Clear Channel Assessment threshold in the PHY*/
-                           /* (the energy threshold).*/
+    /* (the energy threshold).*/
     Bool_e txEnergyDetection;  /* The Tx ED value for TELEC Enable/Disable*/
     uint8  padding;
 } ACXEnergyDetection_t;
-      
+
 
 /******************************************************************************
 
@@ -1519,15 +1519,15 @@ typedef struct
     Type:   Operation
     Access: Write Only
     Length: 8
-    
+
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
     uint32 lowEventMask;   /* Indicates which events are masked and which are not*/
-                           /* Refer to EventMBoxId_enum in public_event_mbox.h.*/
-    
+    /* Refer to EventMBoxId_enum in public_event_mbox.h.*/
+
     uint32 highEventMask;  /* Not in use (should always be set to 0xFFFFFFFF).*/
 } ACXEventMboxMask_t;
 
@@ -1535,8 +1535,8 @@ typedef struct
 /******************************************************************************
 
     Name:   ACX_CONN_MONIT_PARAMS
-    Desc:   This information element configures the SYNCHRONIZATION_TIMEOUT 
-            interrupt indicator. It configures the number of missed Beacons 
+    Desc:   This information element configures the SYNCHRONIZATION_TIMEOUT
+            interrupt indicator. It configures the number of missed Beacons
             before issuing the SYNCHRONIZATION_TIMEOUT event.
     Type:   Configuration
     Access: Write Only
@@ -1548,32 +1548,32 @@ typedef struct
 {
     INFO_ELE_HDR
     uint32 TSFMissedThreshold; /* The number of consecutive beacons that can be */
-                               /* lost before the WiLink raises the */
-                               /* SYNCHRONIZATION_TIMEOUT event.*/
+    /* lost before the WiLink raises the */
+    /* SYNCHRONIZATION_TIMEOUT event.*/
 
     uint32 BSSLossTimeout;     /* The delay (in time units) between the time at */
-                               /* which the device issues the SYNCHRONIZATION_TIMEOUT*/
-                               /* event until, if no probe response or beacon is */
-                               /* received a BSS_LOSS event is issued.*/
+    /* which the device issues the SYNCHRONIZATION_TIMEOUT*/
+    /* event until, if no probe response or beacon is */
+    /* received a BSS_LOSS event is issued.*/
 } AcxConnectionMonitorOptions;
 
 /******************************************************************************
 
     Name:   ACX_CONS_TX_FAILURE
     Desc:   This information element configures the number of frames transmission
-            failures before issuing the "Max Tx Retry" event. The counter is 
-            incremented only for unicast frames or frames that require Ack 
+            failures before issuing the "Max Tx Retry" event. The counter is
+            incremented only for unicast frames or frames that require Ack
     Type:   Configuration
     Access: Write Only
     Length: 1
-    
+
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
     uint8 maxTxRetry; /* the number of frames transmission failures before */
-                      /* issuing the "Max Tx Retry" event*/
+    /* issuing the "Max Tx Retry" event*/
     uint8  padding[3];  /* alignment to 32bits boundry   */
 } ACXConsTxFailureTriggerParameters_t;
 
@@ -1584,16 +1584,16 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 5
-    
+
 ******************************************************************************/
 
-typedef struct 
-{    
+typedef struct
+{
     INFO_ELE_HDR
     uint16 beaconRxTimeOut;
     uint16 broadcastTimeOut;
     uint8  rxBroadcastInPS;  /* if set, enables receive of broadcast packets */
-                             /* in Power-Save mode.*/
+    /* in Power-Save mode.*/
     uint8  consecutivePsPollDeliveryFailureThr;         /* Consecutive PS Poll Fail before updating the Driver */
     uint8  padding[2];       /* alignment to 32bits boundry   */
 } ACXBeaconAndBroadcastOptions_t;
@@ -1603,19 +1603,19 @@ typedef struct
 
     Name:   ACX_SG_ENABLE
     Desc:   This command instructs the WiLink to set the Soft Gemini (BT co-existence)
-            state to either enable/disable or sense mode. 
+            state to either enable/disable or sense mode.
     Type:   Configuration
     Access: Write Only
     Length: 1
-    
+
 ******************************************************************************/
 typedef struct
 {
     INFO_ELE_HDR
-	uint8	coexOperationMode; /* 0- Co-ex operation is Disabled
+    uint8	coexOperationMode; /* 0- Co-ex operation is Disabled
 								  1- Co-ex operation is configured to Protective mode
-								  2- Co-ex operation is configured to Opportunistic mode 
-			                      
+								  2- Co-ex operation is configured to Opportunistic mode
+
 								  Default Value: 0- Co-ex operation is Disabled
 								*/
 
@@ -1627,26 +1627,26 @@ typedef struct
 
 /** \struct TSoftGeminiParams
  * \brief Soft Gemini Parameters
- * 
+ *
  * \par Description
  * Used for Setting/Printing Soft Gemini Parameters
- * 
+ *
  * \sa
- */ 
+ */
 
 typedef enum
-{   
-	SOFT_GEMINI_BT_PER_THRESHOLD = 0,
-	SOFT_GEMINI_HV3_MAX_OVERRIDE,
-	SOFT_GEMINI_BT_NFS_SAMPLE_INTERVAL,
-	SOFT_GEMINI_BT_LOAD_RATIO,
-	SOFT_GEMINI_AUTO_PS_MODE,	
-	SOFT_GEMINI_AUTO_SCAN_PROBE_REQ,
-	SOFT_GEMINI_ACTIVE_SCAN_DURATION_FACTOR_HV3,
-	SOFT_GEMINI_ANTENNA_CONFIGURATION,
-	SOFT_GEMINI_BEACON_MISS_PERCENT,
-	SOFT_GEMINI_RATE_ADAPT_THRESH,
-	SOFT_GEMINI_RATE_ADAPT_SNR, 
+{
+    SOFT_GEMINI_BT_PER_THRESHOLD = 0,
+    SOFT_GEMINI_HV3_MAX_OVERRIDE,
+    SOFT_GEMINI_BT_NFS_SAMPLE_INTERVAL,
+    SOFT_GEMINI_BT_LOAD_RATIO,
+    SOFT_GEMINI_AUTO_PS_MODE,
+    SOFT_GEMINI_AUTO_SCAN_PROBE_REQ,
+    SOFT_GEMINI_ACTIVE_SCAN_DURATION_FACTOR_HV3,
+    SOFT_GEMINI_ANTENNA_CONFIGURATION,
+    SOFT_GEMINI_BEACON_MISS_PERCENT,
+    SOFT_GEMINI_RATE_ADAPT_THRESH,
+    SOFT_GEMINI_RATE_ADAPT_SNR,
     SOFT_GEMINI_WLAN_PS_BT_ACL_MASTER_MIN_BR,
     SOFT_GEMINI_WLAN_PS_BT_ACL_MASTER_MAX_BR,
     SOFT_GEMINI_WLAN_PS_MAX_BT_ACL_MASTER_BR,
@@ -1654,88 +1654,88 @@ typedef enum
     SOFT_GEMINI_WLAN_PS_BT_ACL_SLAVE_MAX_BR,
     SOFT_GEMINI_WLAN_PS_MAX_BT_ACL_SLAVE_BR,
     SOFT_GEMINI_WLAN_PS_BT_ACL_MASTER_MIN_EDR,
-	SOFT_GEMINI_WLAN_PS_BT_ACL_MASTER_MAX_EDR,
-	SOFT_GEMINI_WLAN_PS_MAX_BT_ACL_MASTER_EDR,
+    SOFT_GEMINI_WLAN_PS_BT_ACL_MASTER_MAX_EDR,
+    SOFT_GEMINI_WLAN_PS_MAX_BT_ACL_MASTER_EDR,
     SOFT_GEMINI_WLAN_PS_BT_ACL_SLAVE_MIN_EDR,
-	SOFT_GEMINI_WLAN_PS_BT_ACL_SLAVE_MAX_EDR,
-	SOFT_GEMINI_WLAN_PS_MAX_BT_ACL_SLAVE_EDR,
+    SOFT_GEMINI_WLAN_PS_BT_ACL_SLAVE_MAX_EDR,
+    SOFT_GEMINI_WLAN_PS_MAX_BT_ACL_SLAVE_EDR,
     SOFT_GEMINI_RXT,
-	SOFT_GEMINI_TXT,
-	SOFT_GEMINI_ADAPTIVE_RXT_TXT,
-	SOFT_GEMINI_PS_POLL_TIMEOUT,
-	SOFT_GEMINI_UPSD_TIMEOUT,
-	SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MASTER_MIN_EDR,
-	SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MASTER_MAX_EDR,
-	SOFT_GEMINI_WLAN_ACTIVE_MAX_BT_ACL_MASTER_EDR,
+    SOFT_GEMINI_TXT,
+    SOFT_GEMINI_ADAPTIVE_RXT_TXT,
+    SOFT_GEMINI_PS_POLL_TIMEOUT,
+    SOFT_GEMINI_UPSD_TIMEOUT,
+    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MASTER_MIN_EDR,
+    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MASTER_MAX_EDR,
+    SOFT_GEMINI_WLAN_ACTIVE_MAX_BT_ACL_MASTER_EDR,
     SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_SLAVE_MIN_EDR,
-	SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_SLAVE_MAX_EDR,
-	SOFT_GEMINI_WLAN_ACTIVE_MAX_BT_ACL_SLAVE_EDR,
-    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MIN_BR,   
-    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MAX_BR, 
-    SOFT_GEMINI_WLAN_ACTIVE_MAX_BT_ACL_BR, 
+    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_SLAVE_MAX_EDR,
+    SOFT_GEMINI_WLAN_ACTIVE_MAX_BT_ACL_SLAVE_EDR,
+    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MIN_BR,
+    SOFT_GEMINI_WLAN_ACTIVE_BT_ACL_MAX_BR,
+    SOFT_GEMINI_WLAN_ACTIVE_MAX_BT_ACL_BR,
     SOFT_GEMINI_PASSIVE_SCAN_DURATION_FACTOR_HV3,
     SOFT_GEMINI_PASSIVE_SCAN_DURATION_FACTOR_A2DP,
-	SOFT_GEMINI_PASSIVE_SCAN_A2DP_BT_TIME,
-	SOFT_GEMINI_PASSIVE_SCAN_A2DP_WLAN_TIME,
-	SOFT_GEMINI_HV3_MAX_SERVED, 
-	SOFT_GEMINI_DHCP_TIME,
+    SOFT_GEMINI_PASSIVE_SCAN_A2DP_BT_TIME,
+    SOFT_GEMINI_PASSIVE_SCAN_A2DP_WLAN_TIME,
+    SOFT_GEMINI_HV3_MAX_SERVED,
+    SOFT_GEMINI_DHCP_TIME,
     SOFT_GEMINI_ACTIVE_SCAN_DURATION_FACTOR_A2DP,
-	SOFT_GEMINI_TEMP_PARAM_1,
-	SOFT_GEMINI_TEMP_PARAM_2,
-	SOFT_GEMINI_TEMP_PARAM_3,
-	SOFT_GEMINI_TEMP_PARAM_4,
-	SOFT_GEMINI_TEMP_PARAM_5,
-	SOFT_GEMINI_PARAMS_MAX
+    SOFT_GEMINI_TEMP_PARAM_1,
+    SOFT_GEMINI_TEMP_PARAM_2,
+    SOFT_GEMINI_TEMP_PARAM_3,
+    SOFT_GEMINI_TEMP_PARAM_4,
+    SOFT_GEMINI_TEMP_PARAM_5,
+    SOFT_GEMINI_PARAMS_MAX
 } softGeminiParams;
 
 typedef struct
-{	
-  uint32   coexParams[SOFT_GEMINI_PARAMS_MAX];
-  uint8    paramIdx;       /* the param index which the FW should update, if it equals to 0xFF - update all */ 
-  uint8       padding[3];
+{
+    uint32   coexParams[SOFT_GEMINI_PARAMS_MAX];
+    uint8    paramIdx;       /* the param index which the FW should update, if it equals to 0xFF - update all */
+    uint8       padding[3];
 } TSoftGeminiParams;
 
 
 /******************************************************************************
 
     Name:   ACX_SG_CFG
-    Desc:   This command instructs the WiLink to set the Soft Gemini (BT co-existence) 
-            parameters to the desired values. 
+    Desc:   This command instructs the WiLink to set the Soft Gemini (BT co-existence)
+            parameters to the desired values.
     Type:   Configuration
 	Access:	Write (Read For GWSI - disable for now)
     Length: 1
-    
+
 ******************************************************************************/
 typedef struct
 
 {
     INFO_ELE_HDR
-	
-	TSoftGeminiParams softGeminiParams;
+
+    TSoftGeminiParams softGeminiParams;
 } ACXBluetoothWlanCoParamsStruct;
-  
+
 /******************************************************************************
 
     Name:   ACX_FM_COEX_CFG
     Desc:   This command instructs the WiLink to set the FM co-existence
-            parameters to the desired values. 
+            parameters to the desired values.
     Type:   Configuration
 	Access:	Write
-    Length: 
-    
+    Length:
+
 ******************************************************************************/
 typedef struct
 
 {
     INFO_ELE_HDR
-	
+
     uint8   enable;                     /* enable(1) / disable(0) the FM Coex feature */
 
     uint8   swallowPeriod;              /* Swallow period used in COEX PLL swallowing mechanism,
                                            Range: 0-0xFF,  0xFF = use FW default
                                         */
 
-    uint8   nDividerFrefSet1;           /* The N divider used in COEX PLL swallowing mechanism for Fref of 38.4/19.2 Mhz.  
+    uint8   nDividerFrefSet1;           /* The N divider used in COEX PLL swallowing mechanism for Fref of 38.4/19.2 Mhz.
                                            Range: 0-0xFF,  0xFF = use FW default
                                         */
 
@@ -1759,20 +1759,20 @@ typedef struct
                                            0xFFFFFFFF = use FW default
                                         */
 
-    uint8   fmDisturbedBandMargin;      /* The disturbed frequency band margin around the disturbed 
-                                             frequency center (single sided). 
-                                           For example, if 2 is configured, the following channels 
-                                             will be considered disturbed channel: 
+    uint8   fmDisturbedBandMargin;      /* The disturbed frequency band margin around the disturbed
+                                             frequency center (single sided).
+                                           For example, if 2 is configured, the following channels
+                                             will be considered disturbed channel:
                                              80 +- 0.1 MHz, 91 +- 0.1 MHz, 98 +- 0.1 MHz, 102 +- 0.1 MHz
                                            0xFF = use FW default
                                         */
 
-	uint8	swallowClkDif;              /* The swallow clock difference of the swallowing mechanism.
+    uint8	swallowClkDif;              /* The swallow clock difference of the swallowing mechanism.
                                            0xFF = use FW default
                                         */
 
 } ACXWlanFmCoexStruct;
-  
+
 
 
 /******************************************************************************
@@ -1792,28 +1792,28 @@ typedef struct ACX_fwTSFInformation
     uint32 lastTBTTLow;
     uint8 LastDTIMCount;
     uint8  padding[3];  /* alignment to 32bits boundry   */
-}ACX_fwTSFInformation_t;
+} ACX_fwTSFInformation_t;
 
- 
+
 /******************************************************************************
 
 Name:   ACX_BET_ENABLE
 Desc:   Enable or Disable the Beacon Early Termination module. In addition initialized the
         Max Dropped beacons parameter
 Type:   Configuration
-Access: Write 
+Access: Write
 Length: 6
-Note:  
+Note:
 ******************************************************************************/
 typedef struct
 
 {
     INFO_ELE_HDR
     uint8           Enable;                                     /* specifies if beacon early termination procedure is enabled or disabled: 0 – disabled, 1 – enabled */
-    uint8           MaximumConsecutiveET;           /* specifies the maximum number of consecutive beacons that may be early terminated. After this number is reached 
+    uint8           MaximumConsecutiveET;           /* specifies the maximum number of consecutive beacons that may be early terminated. After this number is reached
                                                        at least one full beacon must be correctly received in FW before beacon ET resumes.  Legal range: 0 – 255 */
     uint8           padding[2];
-}ACXBet_Enable_t;
+} ACXBet_Enable_t;
 
 
 /******************************************************************************
@@ -1822,16 +1822,16 @@ typedef struct
     Type:   Operation
     Access: Write Only
     Length: 4
-    
+
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
     uint32 RxMsduLifeTime; /* The maximum amount of time, in TU, that the WiLink */
-                           /* should attempt to collect fragments of an MSDU before */
-                           /* discarding them. */
-                           /* The default value for this field is 512.*/
+    /* should attempt to collect fragments of an MSDU before */
+    /* discarding them. */
+    /* The default value for this field is 512.*/
 } dot11RxMsduLifeTime_t;
 
 
@@ -1842,11 +1842,11 @@ typedef struct
     Type:   Operation
     Access: Write Only
     Length: 1
-    
+
 ******************************************************************************/
 
 typedef struct
-{ 
+{
     INFO_ELE_HDR
     uint8 dot11CurrentTxPower; /* the max Power in Dbm/10 to be used to transmit data.*/
     uint8  padding[3];  /* alignment to 32bits boundry   */
@@ -1860,7 +1860,7 @@ typedef struct
     Type:   Configuration
     Access: Write Only
     Length: 4
-    
+
 ******************************************************************************/
 /*
 Possible values for Rx DOT11 Mode are the following:
@@ -1881,28 +1881,28 @@ typedef struct
 
 /******************************************************************************
 
-    Name:   DOT11_RTS_THRESHOLD 
+    Name:   DOT11_RTS_THRESHOLD
     Type:   Configuration
     Access: Write Only
     Length: 2
 
 ******************************************************************************/
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint16  RTSThreshold; /* The number of octets in an MPDU, below which an */
-                          /* RTS/CTS handshake is not performed.*/
-    
+    /* RTS/CTS handshake is not performed.*/
+
     uint8  padding[2];  /* alignment to 32bits boundry   */
-}dot11RTSThreshold_t;
+} dot11RTSThreshold_t;
 
 
 /******************************************************************************
 
     Name:   DOT11_GROUP_ADDRESS_TBL
     Desc:   The variable lengths of MAC addresses that are define as listening for
-            multicast. The field Number of groups identifies how many MAC Addresses 
+            multicast. The field Number of groups identifies how many MAC Addresses
             are relevant in that information element.
     Type:   Configuration
     Access: Write Only
@@ -1911,18 +1911,18 @@ typedef struct
 ******************************************************************************/
 #define ADDRESS_GROUP_MAX       (8)
 #define ADDRESS_GROUP_MAX_LEN   (6 * ADDRESS_GROUP_MAX)
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint8   fltrState;                           /* 1 - multicast filtering is enabled. */
-                                                 /* 0 - multicast filtering is disabled.*/
+    /* 0 - multicast filtering is disabled.*/
 
     uint8   numOfGroups;                         /* number of relevant multicast */
-                                                 /* addresses.*/
+    /* addresses.*/
 
     uint8   padding[2];  /* alignment to 32bits boundary   */
     uint8   dataLocation[ADDRESS_GROUP_MAX_LEN]; /* table of MAC addresses.*/
-}dot11MulticastGroupAddrStart_t;
+} dot11MulticastGroupAddrStart_t;
 
 /******************************************************************************
 
@@ -1930,20 +1930,20 @@ typedef struct
 
 ******************************************************************************/
 
-typedef struct 
-{    
+typedef struct
+{
     INFO_ELE_HDR
-    uint32      ConfigPsOnWmmMode;  /* TRUE  - Configure PS to work on WMM mode - do not send the NULL/PS_POLL 
+    uint32      ConfigPsOnWmmMode;  /* TRUE  - Configure PS to work on WMM mode - do not send the NULL/PS_POLL
                                                packets even if TIM is set.
-                                       FALSE - Configure PS to work on Non-WMM mode - work according to the 
+                                       FALSE - Configure PS to work on Non-WMM mode - work according to the
                                                standard. */
 } ACXConfigPsWmm_t;
 
 /******************************************************************************
 
-      
+
     Name:   ACX_SET_RX_DATA_FILTER
-    Desc:   This IE configure one filter in the data filter module. can be used 
+    Desc:   This IE configure one filter in the data filter module. can be used
             for add / remove / modify filter.
     Type:   Filtering Configuration
     Access: Write Only
@@ -1964,9 +1964,9 @@ typedef enum
 {
     FILTER_DROP = 0,
     FILTER_SIGNAL  ,
-    FILTER_FW_HANDLE, 
+    FILTER_FW_HANDLE,
     FILTER_MAX  = 0xFF
-}filter_enum;
+} filter_enum;
 
 #endif
 
@@ -1984,18 +1984,18 @@ typedef filter_enum filter_e;
 #define MAX_DATA_FILTERS 4
 #define MAX_DATA_FILTER_SIZE 98
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint8                command;   /* 0-remove, 1-add */
     uint8                index;     /* range 0-MAX_DATA_FILTERS */
-    filter_e             action;    /* action: FILTER_DROP, FILTER_SIGNAL, FILTER_FW_HANDLE */  
+    filter_e             action;    /* action: FILTER_DROP, FILTER_SIGNAL, FILTER_FW_HANDLE */
     uint8                numOfFields; /* number of field in specific filter */
     uint8                FPTable;   /* filter fields starts here. variable size. */
 } DataFilterConfig_t;
 
 /******************************************************************************
-      
+
     Name:   ACX_ENABLE_RX_DATA_FILTER
     Desc:   This IE disable / enable the data filtering feature. in case the
             featue is enabled - default action should be set as well.
@@ -2005,18 +2005,18 @@ typedef struct
 
 ******************************************************************************/
 
-typedef struct  
+typedef struct
 {
     INFO_ELE_HDR
     uint8       enable;     /* 1 - enable, 0 - disable the data data filtering feature */
     filter_e    action;     /* default action that should be implemented for packets that wont
                                match any of the filters, or in case no filter is configured */
-    uint8   padding[2];     /* alignment to 32bits boundary   */        
+    uint8   padding[2];     /* alignment to 32bits boundary   */
 } DataFilterDefault_t;
 
 
 /******************************************************************************
-      
+
     Name:   ACX_GET_DATA_FILTER_STATISTICS
     Desc:   get statistics of the data filtering module.
     Type:   Statistics
@@ -2025,7 +2025,7 @@ typedef struct
 
 ******************************************************************************/
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint32  unmatchedPacketsCount;                  /* number of packets didn't match any filter (when the feature was enabled). */
@@ -2040,51 +2040,51 @@ typedef struct
 
     Name:	ACX_RS_ENABLE
 	Desc:   This command instructs the WiLink to set the Radio Scope functionality
-	        state to either enable/disable. 
+	        state to either enable/disable.
 	Type:	Configuration
 	Access:	Write Only
 	Length: 1
-	
+
 ******************************************************************************/
 typedef struct
 {
     INFO_ELE_HDR
-	uint8   Enable; /* RadioScope feature will be enabled (1) or disabled(0) */
+    uint8   Enable; /* RadioScope feature will be enabled (1) or disabled(0) */
     uint8  padding[3];  /* alignment to 32 bits  */
 } ACXRadioScopeEnableStruct;
 
 /******************************************************************************
 
     Name:	ACX_RS_RX
-	Desc:   This command instructs the WiLink to set the Radio Scope 
-	        parameters to the desired values. 
+	Desc:   This command instructs the WiLink to set the Radio Scope
+	        parameters to the desired values.
 	Type:	Configuration
-	Access:	Read/Write 
+	Access:	Read/Write
 	Length: 1
 
 	We have the following available memory area:
-		
+
 			Information Element ID -		2 bytes
-			Information Element Length -	2 bytes			
-			
+			Information Element Length -	2 bytes
+
 				Now the rest is MAX_CMD_PARAMS
 				but 4 bytes must be subtracted
 				because of the IE in Buffer.
-			
-	
+
+
 ******************************************************************************/
 typedef struct
-{	    
-	uint16  service;
-	uint16	length;
-	uint8	channel;
-	uint8	band;
-	uint8	status;
-	uint8   padding[1]; /*32 bit padding */
-}RxPacketStruct;
+{
+    uint16  service;
+    uint16	length;
+    uint8	channel;
+    uint8	band;
+    uint8	status;
+    uint8   padding[1]; /*32 bit padding */
+} RxPacketStruct;
 
-typedef struct 
-{		
+typedef struct
+{
     /*  We have the following available memory area:        */
     /*                                                      */
     /*  Information Element ID -        2 bytes             */
@@ -2094,15 +2094,15 @@ typedef struct
     /*        Now the rest is MAX_CMD_PARAMS                */
     /*        but 2 bytes must be subtracted                */
     /*        because of the Number Of Packets in Buffer.   */
-	RxPacketStruct packet[(MAX_CMD_PARAMS-2)/sizeof(RxPacketStruct)];
-}RxCyclicBufferStruct;
+    RxPacketStruct packet[(MAX_CMD_PARAMS-2)/sizeof(RxPacketStruct)];
+} RxCyclicBufferStruct;
 
 typedef struct
 
 {
     INFO_ELE_HDR
     /*uint8   padding[MAX_CMD_PARAMS-4]; */
-	RxCyclicBufferStruct buf;
+    RxCyclicBufferStruct buf;
 } ACXRadioScopeRxParamsStruct;
 
 #endif /* RADIO_SCOPE */
@@ -2117,10 +2117,10 @@ typedef struct
 
 typedef struct
 {
-INFO_ELE_HDR
+    INFO_ELE_HDR
     Bool_e  modeEnabled;
     uint8 padding [3];
-}AcxKeepAliveMode;
+} AcxKeepAliveMode;
 
 
 /******************************************************************************
@@ -2161,7 +2161,7 @@ typedef KeepAliveTemplateValidation_enum KeepAliveTemplateValidation_e;
 typedef struct
 {
     INFO_ELE_HDR
-	uint32 period; /*at range 1000-3600000 (msec). (To allow better range for debugging)*/
+    uint32 period; /*at range 1000-3600000 (msec). (To allow better range for debugging)*/
     uint8 index;
     KeepAliveTemplateValidation_e   valid;
     KeepAliveTrigger_e  trigger;
@@ -2178,52 +2178,52 @@ typedef struct
     uint8 uTid;                     /* TID */
     uint8 uPolicy;                  /* Enable / Disable */
     uint16 uWinSize;                /* windows size in num of packet */
-    uint16 uInactivityTimeout;      /* as initiator inactivity timeout in time units(TU) of 1024us / 
+    uint16 uInactivityTimeout;      /* as initiator inactivity timeout in time units(TU) of 1024us /
                                        as receiver reserved */
 } TAxcBaSessionInitiatorResponderPolicy;
 
 /******************************************************************************
 
     Name:	ACX_PEER_HT_CAP
-	Desc:   Configure HT capabilities - declare the capabilities of the peer 
+	Desc:   Configure HT capabilities - declare the capabilities of the peer
             we are connected to.
 	Type:	Configuration
 	Access:	Write Only
-    Length: 
+    Length:
 
 ******************************************************************************/
 
 typedef struct
 {
     INFO_ELE_HDR
-    uint32 uHtCapabilites;      /* 
+    uint32 uHtCapabilites;      /*
                                  * bit 0 – Allow HT Operation
                                  * bit 1 - Allow Greenfield format in TX
-                                 * bit 2 – Allow Short GI in TX 
+                                 * bit 2 – Allow Short GI in TX
                                  * bit 3 – Allow L-SIG TXOP Protection in TX
-                                 * bit 4 – Allow HT Control fields in TX. 
-                                 *         Note, driver will still leave space for HT control in packets regardless 
-                                 *         of the value of this field. FW will be responsible to drop the HT field 
+                                 * bit 4 – Allow HT Control fields in TX.
+                                 *         Note, driver will still leave space for HT control in packets regardless
+                                 *         of the value of this field. FW will be responsible to drop the HT field
                                  *         from any frame when this Bit is set to 0.
-                                 * bit 5 - Allow RD initiation in TXOP. FW is allowed to initate RD. Exact policy 
+                                 * bit 5 - Allow RD initiation in TXOP. FW is allowed to initate RD. Exact policy
                                  *         setting for this feature is TBD.
                                  *         Note, this bit can only be set to 1 if bit 3 is set to 1.
                                  */
 
-     uint8  aMacAddress[6];     /*
+    uint8  aMacAddress[6];     /*
                                  * Indicates to which peer these capabilities are relevant.
-                                 * Note, currently this value will be set to FFFFFFFFFFFF to indicate it is 
-                                 * relevant for all peers since we only support HT in infrastructure mode. 
+                                 * Note, currently this value will be set to FFFFFFFFFFFF to indicate it is
+                                 * relevant for all peers since we only support HT in infrastructure mode.
                                  * Later on this field will be relevant to IBSS/DLS operation
                                  */
 
-     uint8  uAmpduMaxLength;    /* 
-                                 * This the maximum a-mpdu length supported by the AP. The FW may not 
+    uint8  uAmpduMaxLength;    /*
+                                 * This the maximum a-mpdu length supported by the AP. The FW may not
                                  * exceed this length when sending A-MPDUs
                                  */
 
-     uint8  uAmpduMinSpacing;   /* This is the minimal spacing required when sending A-MPDUs to the AP. */
-     
+    uint8  uAmpduMinSpacing;   /* This is the minimal spacing required when sending A-MPDUs to the AP. */
+
 } TAxcHtCapabilitiesIeFwInterface;
 
 /* EHtCapabilitesFwBitMask mapping */
@@ -2244,7 +2244,7 @@ typedef enum
 	Desc:   Configure HT capabilities - AP rules for behavior in the BSS.
 	Type:	Configuration
 	Access:	Write Only
-    Length: 
+    Length:
 
 ******************************************************************************/
 
@@ -2255,18 +2255,18 @@ typedef struct
     uint8 uHtProtection;        /* Values: 0 – 3 like in spec */
     uint8 uGfProtection;        /* Values: 0 - GF protection not required, 1 – GF protection required */
     uint8 uHtTxBurstLimit;      /* Values: 0 – TX Burst limit not required, 1 – TX Burst Limit required */
-    uint8 uDualCtsProtection;   /* 
+    uint8 uDualCtsProtection;   /*
                                  * Values: 0 – Dual CTS protection not required, 1 Dual CTS Protection required
-                                 *             Note: When this value is set to 1 FW will protect all TXOP with RTS 
-                                 *             frame and will not use CTS-to-self regardless of the value of the 
-                                 *             ACX_CTS_PROTECTION information element 
+                                 *             Note: When this value is set to 1 FW will protect all TXOP with RTS
+                                 *             frame and will not use CTS-to-self regardless of the value of the
+                                 *             ACX_CTS_PROTECTION information element
                                  */
     uint8 padding[3];
 
 } TAxcHtInformationIeFwInterface;
 
 /******************************************************************************
- FwStaticData_t - information stored in command mailbox area after the Init 
+ FwStaticData_t - information stored in command mailbox area after the Init
                   process is complete
 
  Note:  This structure is passed to the host via the mailbox at Init-Complete
@@ -2276,27 +2276,27 @@ typedef struct
 
 typedef struct
 {
-	/* dot11StationIDStruct */
-	uint8 dot11StationID[6]; /* The MAC address for the STA.*/
+    /* dot11StationIDStruct */
+    uint8 dot11StationID[6]; /* The MAC address for the STA.*/
     uint8 padding[2];       /* alignment to 32bits boundry   */
-	/* ACXRevision_t */
-	char FWVersion[20];		/* The WiLink firmware version, an ASCII string x.x.x.x.x */
-							/* that uniquely identifies the current firmware. */
-							/* The left most digit is incremented each time a */
-							/* significant change is made to the firmware, such as */
-							/* WLAN new project.*/
-							/* The second and third digit is incremented when major enhancements*/
-							/* are added or major fixes are made.*/
-							/* The fourth digit is incremented for each SP release */
-                            /* and it indicants the costumer private branch */
-							/* The fifth digit is incremented for each build.*/
-		
+    /* ACXRevision_t */
+    char FWVersion[20];		/* The WiLink firmware version, an ASCII string x.x.x.x.x */
+    /* that uniquely identifies the current firmware. */
+    /* The left most digit is incremented each time a */
+    /* significant change is made to the firmware, such as */
+    /* WLAN new project.*/
+    /* The second and third digit is incremented when major enhancements*/
+    /* are added or major fixes are made.*/
+    /* The fourth digit is incremented for each SP release */
+    /* and it indicants the costumer private branch */
+    /* The fifth digit is incremented for each build.*/
+
     uint32 HardWareVersion; /* This 4 byte field specifies the WiLink hardware version. */
-							/* bits 0  - 15: Reserved.*/
-							/* bits 16 - 23: Version ID - The WiLink version ID  */
-							/*              (1 = first spin, 2 = second spin, and so on).*/
-							/* bits 24 - 31: Chip ID - The WiLink chip ID. */
-        uint8 txPowerTable[NUMBER_OF_SUB_BANDS_E][NUM_OF_POWER_LEVEL]; /* Maximun Dbm in Dbm/10 units */
+    /* bits 0  - 15: Reserved.*/
+    /* bits 16 - 23: Version ID - The WiLink version ID  */
+    /*              (1 = first spin, 2 = second spin, and so on).*/
+    /* bits 24 - 31: Chip ID - The WiLink chip ID. */
+    uint8 txPowerTable[NUMBER_OF_SUB_BANDS_E][NUM_OF_POWER_LEVEL]; /* Maximun Dbm in Dbm/10 units */
 } FwStaticData_t;
 
 /******************************************************************************
@@ -2305,11 +2305,11 @@ typedef struct
 
     ACX_TX_CONFIG_OPT
 
- 
+
 
 ******************************************************************************/
 
-typedef struct 
+typedef struct
 {
     INFO_ELE_HDR
     uint16  txCompleteTimeout;   /* Max time in msec the FW may delay frame Tx-Complete interrupt */
@@ -2323,7 +2323,7 @@ Name:	ACX_PWR_CONSUMPTION_STATISTICS
 Desc:   Retrieve time statistics of the different power states.
 Type:	Configuration
 Access:	Read Only
-Length: 20 
+Length: 20
 
 ******************************************************************************/
 
@@ -2341,7 +2341,7 @@ typedef struct
     uint32 ListenMode11BTimeCnt_Hi;
     uint32 ListenModeOFDMTimeCnt_Low;
     uint32 ListenModeOFDMTimeCnt_Hi;
-}ACXPowerConsumptionTimeStat_t;
+} ACXPowerConsumptionTimeStat_t;
 
 
 /******************************************************************************
@@ -2355,10 +2355,10 @@ typedef struct
 
 typedef struct
 {
-INFO_ELE_HDR
+    INFO_ELE_HDR
     Bool_e  enable;
     uint8 padding [3];
-}AcxBurstMode;
+} AcxBurstMode;
 
 
 /******************************************************************************
@@ -2372,23 +2372,23 @@ INFO_ELE_HDR
 typedef enum
 {
     RATE_MGMT_RETRY_SCORE_PARAM,
-	RATE_MGMT_PER_ADD_PARAM,
-	RATE_MGMT_PER_TH1_PARAM,
-	RATE_MGMT_PER_TH2_PARAM,
-	RATE_MGMT_MAX_PER_PARAM,
-	RATE_MGMT_INVERSE_CURIOSITY_FACTOR_PARAM,
-	RATE_MGMT_TX_FAIL_LOW_TH_PARAM,
-	RATE_MGMT_TX_FAIL_HIGH_TH_PARAM,
-	RATE_MGMT_PER_ALPHA_SHIFT_PARAM,
-	RATE_MGMT_PER_ADD_SHIFT_PARAM,
-	RATE_MGMT_PER_BETA1_SHIFT_PARAM,
-	RATE_MGMT_PER_BETA2_SHIFT_PARAM,
-	RATE_MGMT_RATE_CHECK_UP_PARAM,
-	RATE_MGMT_RATE_CHECK_DOWN_PARAM,
-	RATE_MGMT_RATE_RETRY_POLICY_PARAM,
-	RATE_MGMT_PER_WEIGHT_SHIFT_PARAM,
-	RATE_MGMT_TP_WEIGHT_SHIFT_PARAM,
-	RATE_MGMT_ALL_PARAMS = 0xff
+    RATE_MGMT_PER_ADD_PARAM,
+    RATE_MGMT_PER_TH1_PARAM,
+    RATE_MGMT_PER_TH2_PARAM,
+    RATE_MGMT_MAX_PER_PARAM,
+    RATE_MGMT_INVERSE_CURIOSITY_FACTOR_PARAM,
+    RATE_MGMT_TX_FAIL_LOW_TH_PARAM,
+    RATE_MGMT_TX_FAIL_HIGH_TH_PARAM,
+    RATE_MGMT_PER_ALPHA_SHIFT_PARAM,
+    RATE_MGMT_PER_ADD_SHIFT_PARAM,
+    RATE_MGMT_PER_BETA1_SHIFT_PARAM,
+    RATE_MGMT_PER_BETA2_SHIFT_PARAM,
+    RATE_MGMT_RATE_CHECK_UP_PARAM,
+    RATE_MGMT_RATE_CHECK_DOWN_PARAM,
+    RATE_MGMT_RATE_RETRY_POLICY_PARAM,
+    RATE_MGMT_PER_WEIGHT_SHIFT_PARAM,
+    RATE_MGMT_TP_WEIGHT_SHIFT_PARAM,
+    RATE_MGMT_ALL_PARAMS = 0xff
 } rateAdaptParam_enum;
 
 #ifdef HOST_COMPILE
@@ -2402,29 +2402,29 @@ typedef rateAdaptParam_enum rateAdaptParam_e;
 typedef struct
 {
     INFO_ELE_HDR
-	rateAdaptParam_e paramIndex;
-	uint16 RateRetryScore;
-	uint16 PerAdd;
-	uint16 PerTh1;
-	uint16 PerTh2;
-	uint16 MaxPer;
-	uint8 InverseCuriosityFactor;
-	uint8 TxFailLowTh;
+    rateAdaptParam_e paramIndex;
+    uint16 RateRetryScore;
+    uint16 PerAdd;
+    uint16 PerTh1;
+    uint16 PerTh2;
+    uint16 MaxPer;
+    uint8 InverseCuriosityFactor;
+    uint8 TxFailLowTh;
 
-	uint8 TxFailHighTh;
-	uint8 PerAlphaShift;
-	uint8 PerAddShift;
-	uint8 PerBeta1Shift;
-	uint8 PerBeta2Shift;
-	uint8 RateCheckUp;
-	uint8 RateCheckDown;
-	uint8 RateRetryPolicy[RATE_MGMT_NUM_OF_RATES]; 
-}AcxRateMangeParams;
+    uint8 TxFailHighTh;
+    uint8 PerAlphaShift;
+    uint8 PerAddShift;
+    uint8 PerBeta1Shift;
+    uint8 PerBeta2Shift;
+    uint8 RateCheckUp;
+    uint8 RateCheckDown;
+    uint8 RateRetryPolicy[RATE_MGMT_NUM_OF_RATES];
+} AcxRateMangeParams;
 
 /******************************************************************************
     Name:   ACX_GET_RATE_MAMAGEMENT_PARAMS
     Desc:   read the configurable parameters of rate management module.
-    Type:   
+    Type:
     Access: read
     Length: 8 bytes
 
@@ -2438,19 +2438,19 @@ typedef struct
     int32  attemptEvaluateTH;
     int32  goodAttemptTH;
     int32  curveCorrectionStep;
-}AcxRateMangeReadParams;
+} AcxRateMangeReadParams;
 
 
 /******************************************************************************
 
-    Name:   ACX_SET_DCO_ITRIM_PARAMS    
-    Desc:   Configure DCO Itrim operational parameters:               
-            1. Enable/disable of the entire feature.                                     
+    Name:   ACX_SET_DCO_ITRIM_PARAMS
+    Desc:   Configure DCO Itrim operational parameters:
+            1. Enable/disable of the entire feature.
             2. Moderation timeout (usec) - how much time to wait from last TX
             until DCO Itrim can be set low.
     Type:   Configuration
     Access: Write Only
-    Length: 
+    Length:
 
 ******************************************************************************/
 
@@ -2459,18 +2459,18 @@ typedef struct
     INFO_ELE_HDR
     Bool_e enable;
     uint32 moderation_timeout_usec;
-}ACXDCOItrimParams_t ;
+} ACXDCOItrimParams_t ;
 
 /******************************************************************************
 
-    Name:   ACX_CONFIG_PS    
-    Desc:   Configure PS operational parameters:               
+    Name:   ACX_CONFIG_PS
+    Desc:   Configure PS operational parameters:
             numOfEnterPsRetries        -  Number of retries attempts when enter to PS.
 			numOfExitPsRetries         -  Number of retries attempts when exit from PS.
 			RequestedRateForNullDataTx - Rates requested for sending the Null Data packet.
     Type:   Configuration
     Access: Write Only
-    Length: 
+    Length:
 
 ******************************************************************************/
 
@@ -2479,28 +2479,28 @@ typedef struct
     INFO_ELE_HDR
     uint8 	numOfExitPsRetries;
     uint8	numOfEnterPsRetries;
-	uint8	temp1;
+    uint8	temp1;
     uint8   temp2;
-	EHwRateBitFiled RequestedRateForNullDataTx;
-}ACXConfigPsParams_t ;
+    EHwRateBitFiled RequestedRateForNullDataTx;
+} ACXConfigPsParams_t ;
 
 
 /******************************************************************************
 
-    Name:   ACX_CONFIG_HANGOVER    
-    Desc:   Configure Hangover operational parameters:               
-        	
+    Name:   ACX_CONFIG_HANGOVER
+    Desc:   Configure Hangover operational parameters:
+
             bDynamicHangoverMode-          Enable/Disable dynamic hangover algorithm.
        	    maxHangOverPeriod-             max time that hangover can be.
         	minHangOverPeriod-             min time that hangover can be.
                                            hangover is decreased to the next time: max hangover inside sliding
                                            window + this parameter
-        	increaseDelatTimeFromHangover- if the time stamp of the last RX packet is bigger 
+		increaseDelatTimeFromHangover- if the time stamp of the last RX packet is bigger
                                            than (hangover - IncreaseDelatTimeFromHangover) means
-                                           the hangover is increased. 
-        	decreaseDelatTimeFromHangover- if the time stamp of the last RX packet is smaller than 
+                                           the hangover is increased.
+		decreaseDelatTimeFromHangover- if the time stamp of the last RX packet is smaller than
                                            (hangover - DecreaseDelatTimeFromHangover) during all sliding window
-                                           means the hangover is decreased. 
+                                           means the hangover is decreased.
         	recoverTime-                   how often to return to the original hangover.If time is zero means
                                            recover hangover feature is disabled
         	bEarlyTerminationMode-         Enable/Disable early termination in dynamic hangover algorithm.
@@ -2510,48 +2510,48 @@ typedef struct
             hangOverPeriod-                original hangover - hangover time if bDynamicHangoverMode is disable,
                                            hangover every restart of the algorithm(every join command)
                                            hangover every recovery time
-                                           
 
-            NOTE -PAY ATTENTION  
+
+            NOTE -PAY ATTENTION
             all the times and periods are in units of half MSEC.
             1  = 0.5 MSEC
             2  = 1   MSEC
             3  = 1.5 MSEC
-                    
+
             for example:
             if IncreaseDelatTimeFromHangover = 1 (value of host command) that means that the hangover will be
             increase with 0.5 MSEC each time.
-            Because the module parameters are with USEC units 
+            Because the module parameters are with USEC units
             there is a multiply by 500 to each host parameters which describes time
             so in the the module IncreaseDelatTimeFromHangover will be 500 (500 USEC means 0.5 MSEC
             means 1 in half MSEC units).
 
-  
+
     Type:   Configuration
     Access: Write Only
-    Length: 
+    Length:
 
 ******************************************************************************/
 
 typedef struct
 {
-  INFO_ELE_HDR  
-  uint8  hangOverPeriod;
-  Bool_e bDynamicHangoverMode;
-  Bool_e bEarlyTerminationMode;
-  uint32 recoverTime;
-  uint8  maxHangOverPeriod;
-  uint8  minHangOverPeriod;
-  uint8  increaseDelatTimeFromHangover;
-  uint8  decreaseDelatTimeFromHangover;
-  uint8  quietTimeForEarlyTermination;
-  uint8  increaseHangoverTime;
-  uint8  slidingWindowSize;
-  uint8  spare1;
-  uint8  spare2;
-  uint8  spare3;
+    INFO_ELE_HDR
+    uint8  hangOverPeriod;
+    Bool_e bDynamicHangoverMode;
+    Bool_e bEarlyTerminationMode;
+    uint32 recoverTime;
+    uint8  maxHangOverPeriod;
+    uint8  minHangOverPeriod;
+    uint8  increaseDelatTimeFromHangover;
+    uint8  decreaseDelatTimeFromHangover;
+    uint8  quietTimeForEarlyTermination;
+    uint8  increaseHangoverTime;
+    uint8  slidingWindowSize;
+    uint8  spare1;
+    uint8  spare2;
+    uint8  spare3;
 
-}ACXConfigHangOverParams_t ;
+} ACXConfigHangOverParams_t ;
 
 
 

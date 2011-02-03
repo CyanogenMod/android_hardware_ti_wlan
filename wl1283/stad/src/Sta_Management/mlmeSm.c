@@ -191,7 +191,7 @@ void mlme_smStartIdle(TI_HANDLE hMlme)
     TI_STATUS       status = TI_OK;
 	mlme_t *pMlme = (mlme_t*)hMlme;
 
-	tmr_StopTimer(pMlme->hMlmeTimer);
+    tmr_StopTimer(pMlme->hMlmeTimer);
     status = mlme_sendAuthRequest(pMlme);
 
     if (TI_OK == status)

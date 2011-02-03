@@ -55,6 +55,7 @@
 #include "TWDriver.h"
 #ifdef XCC_MODULE_INCLUDED
 #include "XCCMngr.h"
+#include "roamingMngrApi.h"
 #endif
 /* Constants */
 
@@ -165,6 +166,7 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
     						     TI_HANDLE hTimer,
     						     TI_HANDLE hTWD,
                                  TI_HANDLE hTxCtrl,
+                                 TI_HANDLE hRoamMng,
     						     trafficAdmCtrlInitParams_t *pTrafficAdmCtrlInitParams)
 {
 	trafficAdmCtrl_t	*pTrafficAdmCtrl;
@@ -181,6 +183,7 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
 	pTrafficAdmCtrl->hTimer	    = hTimer;
 	pTrafficAdmCtrl->hTWD	    = hTWD;
 	pTrafficAdmCtrl->hTxCtrl	= hTxCtrl;
+	pTrafficAdmCtrl->hRoamMng   = hRoamMng;
 
 	for (uAcId = 0; uAcId < MAX_NUM_OF_AC; uAcId++)
     {
@@ -356,6 +359,23 @@ TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token Not foun
 			TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "***** admCtrlQos_recv: admission reject [ statusCode = %d ]\n"
 															  "ADDTS Response (reject) userPriority = %d\n",statusCode, tspecInfo.userPriority);
             qosMngr_setAdmissionInfo(pTrafficAdmCtrl->hQosMngr, tspecInfo.AC, &tspecInfo, STATUS_TRAFFIC_ADM_REQUEST_REJECT);
+#ifdef XCC_MODULE_INCLUDED
+
+            if (ADDTS_STATUS_CODE_REFUSED == statusCode)
+            {
+                paramInfo_t *pParam;
+                pParam = (paramInfo_t *)os_memoryAlloc(pTrafficAdmCtrl->hOs, sizeof(paramInfo_t));
+                if (!pParam)
+                {
+                    return TI_NOK;
+                }
+                TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: TSPEC rejected due to insufficient over-the-air bandwidth! \n");
+                pParam->paramType = ROAMING_MNGR_TRIGGER_EVENT;
+                pParam->content.roamingTriggerType = ROAMING_TRIGGER_TSPEC_REJECTED;
+                roamingMngr_setParam(pTrafficAdmCtrl->hRoamMng, pParam);
+                os_memoryFree(pTrafficAdmCtrl->hOs, pParam, sizeof(paramInfo_t));
+            }
+#endif
 		}
 		else
 		{
@@ -366,6 +386,11 @@ TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token Not foun
 															  "mediumTime = %d\n surplusBandwidthAllowance = %d.%d \n",
 															  statusCode, tspecInfo.userPriority, tspecInfo.mediumTime, 
 															  tspecInfo.surplausBwAllowance>>13, tspecInfo.surplausBwAllowance & 0x1FFF);
+
+			if (tspecInfo.mediumTime == 0)
+			{
+			    TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "admCtrlQos_recv: ADDTS was accepted with medium Time = 0\n");
+			}
 
 			qosMngr_setAdmissionInfo(pTrafficAdmCtrl->hQosMngr, tspecInfo.AC, &tspecInfo, STATUS_TRAFFIC_ADM_REQUEST_ACCEPT);
 		}
@@ -795,6 +820,7 @@ void trafficAdmCtrl_buildTSPec(trafficAdmCtrl_t	*pTrafficAdmCtrl,
 	COPY_WLAN_WORD(pDataBuf +  2, &maxMSDUSize);			    /* Maximum-MSDU-size. */
 	COPY_WLAN_LONG(pDataBuf +  4, &pTSpecInfo->uMinimumServiceInterval); /* Minimum service interval */
 	COPY_WLAN_LONG(pDataBuf +  8, &pTSpecInfo->uMaximumServiceInterval); /* Maximum service interval */
+	COPY_WLAN_LONG(pDataBuf + 12, &pTSpecInfo->uInactivityInterval);     /* Inactivity Interval */
 	COPY_WLAN_LONG(pDataBuf + 16, &suspensionInterval);
 	COPY_WLAN_LONG(pDataBuf + 24, &pTSpecInfo->meanDataRate);	/* Minimum-data-rate. */
 	COPY_WLAN_LONG(pDataBuf + 28, &pTSpecInfo->meanDataRate);	/* Mean-data-rate. */
@@ -854,6 +880,7 @@ void trafficAdmCtrl_parseTspecIE(tspecInfo_t *pTSpecInfo, TI_UINT8 *pData)
 	COPY_WLAN_WORD(&pTSpecInfo->nominalMsduSize, pData);
 	COPY_WLAN_LONG(&pTSpecInfo->uMinimumServiceInterval, pData + 4);
 	COPY_WLAN_LONG(&pTSpecInfo->uMaximumServiceInterval, pData + 8);
+	COPY_WLAN_LONG(&pTSpecInfo->uInactivityInterval, pData + 12);
 	COPY_WLAN_LONG(&pTSpecInfo->meanDataRate, pData + 28);
 	COPY_WLAN_LONG(&pTSpecInfo->minimumPHYRate, pData + 44);
 	COPY_WLAN_WORD(&pTSpecInfo->surplausBwAllowance, pData + 48);

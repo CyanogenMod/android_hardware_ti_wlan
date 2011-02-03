@@ -43,14 +43,14 @@
 
 /*
  ***********************************************************************
- *	Constant definitions.
+ *  Constant definitions.
  ***********************************************************************
  */
 
 
 /*
  ***********************************************************************
- *	Enums.
+ *  Enums.
  ***********************************************************************
  */
 
@@ -65,6 +65,7 @@ typedef enum
     MSR_SRV_EVENT_ALL_TYPES_COMPLETE,
     MSR_SRV_EVENT_STOP_COMPLETE,
     MSR_SRV_EVENT_MEASURE_STOP_REQUEST,
+    MSR_SRV_EVENT_AP_DISCOVERY,
     MSR_SRV_NUM_OF_EVENTS
 } measurement_SRVSMEvents_e;
 
@@ -75,6 +76,7 @@ typedef enum
 {
     MSR_SRV_STATE_IDLE                      =0,
     MSR_SRV_STATE_WAIT_FOR_MEASURE_START,
+    MSR_SRV_STATE_WAIT_FOR_AP_DISCOVERY_START,
     MSR_SRV_STATE_MEASURE_IN_PROGRESS,
     MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP,
     MSR_SRV_NUM_OF_STATES
@@ -83,26 +85,26 @@ typedef enum
 
 /*
  ***********************************************************************
- *	Typedefs.
+ *  Typedefs.
  ***********************************************************************
  */
 
 
 /*
  ***********************************************************************
- *	Structure definitions.
+ *  Structure definitions.
  ***********************************************************************
 */
 
 /*
  ***********************************************************************
- *	External data definitions.
+ *  External data definitions.
  ***********************************************************************
  */
 
 /*
  ***********************************************************************
- *	External functions definitions
+ *  External functions definitions
  ***********************************************************************
  */
 
@@ -220,6 +222,48 @@ TI_STATUS measurementSRVSM_measureStartFailure( TI_HANDLE hMeasurementSRV );
  * \return always TI_OK.\n
  */
 TI_STATUS measurementSRVSRVSM_dummyStop( TI_HANDLE hmeasurementSrv );
+
+/**
+ * \\n
+ * \brief Handle ap discovery measurement start request
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_waitApDiscovery(TI_HANDLE hMeasurementSRV);
+
+/**
+ * \\n
+ * \brief Handle measurement start success if all measurements
+ *        failed send ALL_TYPE_COMPLETE event to stop measure command to the FW.\n
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_startMeasureTypesSuccess( TI_HANDLE hMeasurementSRV );
+
+/**
+ * \\n
+ * \brief Handle ap discovery measurement start request
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_startApDiscovery(TI_HANDLE hMeasurementSRV);
+
+/**
+ * \\n
+ * \date 08-November-2005\n
+ * \brief handle AP_DISCOVERY event received from firmware after AP_DISCOVERY_STOP command\n
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_apDiscoveryStopComplete(TI_HANDLE hMeasurementSRV);
 
 #endif /* __MEASUREMENT_SRV_SM_H__ */
 

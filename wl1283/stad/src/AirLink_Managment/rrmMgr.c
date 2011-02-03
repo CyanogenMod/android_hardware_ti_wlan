@@ -531,7 +531,7 @@ TI_STATUS rrmMgr_ParseRequestElement(TI_HANDLE hMeasurementMgr, TI_UINT8 *pData,
                         {
 				/* if pCurrRequest->uActualNumOfChannelsBandBG overflowed, break (won't be able to add any channel) */
 				if (pCurrRequest->uActualNumOfChannelsBandBG >= SCAN_MAX_NUM_OF_CHANNELS) {
-							TRACE2(pMeasurementMgr->hReport,
+					TRACE2(pMeasurementMgr->hReport,
 									   REPORT_SEVERITY_WARNING,
 									   "rrmMgr_ParseRequestElement: pCurrRequest->uActualNumOfChannelsBandBG (%d) >= SCAN_MAX_NUM_OF_CHANNELS (%d). breaking\n",
 									   pCurrRequest->uActualNumOfChannelsBandBG,

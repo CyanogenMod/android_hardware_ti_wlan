@@ -35,14 +35,14 @@
 /****************************************************************************
  *
  *   MODULE:  txHwQueue.c
- *   
- *   PURPOSE: manage the wlan hardware Tx memory blocks allocation per queue. 
- * 
- *   DESCRIPTION:  
+ *
+ *   PURPOSE: manage the wlan hardware Tx memory blocks allocation per queue.
+ *
+ *   DESCRIPTION:
  *   ============
  *      This module is responsible for the HW Tx data-blocks and descriptors allocation.
- *      The HW Tx blocks are allocated in the driver by rough calculations without 
- *        accessing the FW. 
+ *      The HW Tx blocks are allocated in the driver by rough calculations without
+ *        accessing the FW.
  *      They are freed according to FW counters that are provided by the FwEvent module
  *          on every FW interrupt.
  ****************************************************************************/
@@ -54,21 +54,21 @@
 #include "txHwQueue_api.h"
 #include "Ethernet.h"
 
-/* Translate input TID to AC */            
+/* Translate input TID to AC */
 /* Note: This structure is shared with other modules */
-const EAcTrfcType WMEQosTagToACTable[MAX_NUM_OF_802_1d_TAGS] = 
-	{QOS_AC_BE, QOS_AC_BK, QOS_AC_BK, QOS_AC_BE, QOS_AC_VI, QOS_AC_VI, QOS_AC_VO, QOS_AC_VO};
+const EAcTrfcType WMEQosTagToACTable[MAX_NUM_OF_802_1d_TAGS] =
+{QOS_AC_BE, QOS_AC_BK, QOS_AC_BK, QOS_AC_BE, QOS_AC_VI, QOS_AC_VI, QOS_AC_VO, QOS_AC_VO};
 
-/* 
+/*
  *  Local definitions:
  */
 
 /* Spare blocks written in extraMemBlks field in TxDescriptor for HW use */
-#define BLKS_HW_ALLOC_SPARE             1 
+#define BLKS_HW_ALLOC_SPARE             1
 #define TXHWQUEUE_QUOTA                 30
 /* Set queue's backpressure bit (indicates queue state changed from ready to busy or inversely). */
 #define SET_QUEUE_BACKPRESSURE(pBackpressure, uQueueId)   (*pBackpressure |= (1 << uQueueId))
-/* Set low scheduler priority indication */ 
+/* Set low scheduler priority indication */
 #define SET_QUEUE_LOW_PRIORITY(priorityBitMap, uQueueId)   (priorityBitMap |= (1 << uQueueId))
 /* Set high scheduler priority indication */
 #define SET_QUEUE_HIGH_PRIORITY(priorityBitMap,uQueueId)   (priorityBitMap &= ~(1 << uQueueId))
@@ -82,8 +82,8 @@ typedef struct
     TI_UINT32  uNumBlksThresh;          /* Minimum HW blocks that must be reserved for this Queue. */
     TI_UINT32  uNumBlksUsed;            /* Number of HW blocks that are currently allocated for this Queue. */
     TI_UINT32  uNumBlksReserved;        /* Number of HW blocks currently reserved for this Queue (to guarentee the low threshold). */
-    TI_UINT32  uAllocatedBlksCntr;      /* Accumulates allocated blocks for FW freed-blocks counter coordination. */ 
-    TI_UINT32  uFwFreedBlksCntr;        /* Accumulated freed blocks in FW. */ 
+    TI_UINT32  uAllocatedBlksCntr;      /* Accumulates allocated blocks for FW freed-blocks counter coordination. */
+    TI_UINT32  uFwFreedBlksCntr;        /* Accumulated freed blocks in FW. */
     TI_UINT32  uNumBlksCausedBusy;      /* Number of HW blocks that caused queue busy state. */
     TI_BOOL    bQueueBusy;              /* If TI_TRUE, this queue is currently stopped. */
     TI_UINT16  uPercentOfBlkLowThresh;  /* Configured percentage of blocks to use as the queue's low allocation threshold */
@@ -95,7 +95,7 @@ typedef struct
 {
     TI_HANDLE  hOs;
     TI_HANDLE  hReport;
-    
+
     tUpdateBusyMapCb fUpdateBusyMapCb;  /* The upper layers UpdateBusyMap callback */
     TI_HANDLE        hUpdateBusyMapHndl;/* The handle for the fUpdateBusyMapCb */
 
@@ -103,14 +103,14 @@ typedef struct
     TI_HANDLE        hUpdatePriorityMapHndl;/* The handle for the fUpdateBusyMapCb */
 
     TI_UINT32  uNumTotalBlks;           /* The total number of Tx blocks        */
-    TI_UINT32  uNumTotalBlksFree;       /* Total number of free HW blocks       */    
+    TI_UINT32  uNumTotalBlksFree;       /* Total number of free HW blocks       */
     TI_UINT32  uNumTotalBlksReserved;   /* Total number of free but reserved HW blocks */
     TI_UINT32  uNumUsedDescriptors;     /* Total number of packets in the FW. */
     TI_UINT32  uSdioBlkSizeShift;       /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
     TI_UINT32  uHostIfCfgBitmap;         /* Host interface configuration bitmap */
     TI_UINT8   uFwTxResultsCntr;        /* Accumulated freed descriptors in FW. */
     TI_UINT8   uDrvTxPacketsCntr;       /* Accumulated allocated descriptors in driver. */
-    
+
     TTxHwQueueInfo  aTxHwQueueInfo[MAX_NUM_OF_AC]; /* The per queue variables */
     ECipherSuite    eSecurityMode;      /* Current security mode default TWD_CIPHER_NONE - 0*/
     TI_UINT32       uExtraHwBlocks;     /* Default value BLKS_HW_ALLOC_SPARE*/
@@ -128,12 +128,12 @@ static TI_UINT32 txHwQueue_CheckResources (TTxHwQueue *pTxHwQueue, TTxHwQueueInf
 /****************************************************************************
  *                      txHwQueue_Create()
  ****************************************************************************
- * DESCRIPTION: Create the Tx buffers pool object 
- * 
+ * DESCRIPTION: Create the Tx buffers pool object
+ *
  * INPUTS:  None
- * 
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: The Created object
  ****************************************************************************/
 TI_HANDLE txHwQueue_Create (TI_HANDLE hOs)
@@ -156,12 +156,12 @@ TI_HANDLE txHwQueue_Create (TI_HANDLE hOs)
 /****************************************************************************
  *                      txHwQueue_Destroy()
  ****************************************************************************
- * DESCRIPTION: Destroy the Tx buffers pool object 
- * 
+ * DESCRIPTION: Destroy the Tx buffers pool object
+ *
  * INPUTS:  hTxHwQueue - The object to free
- * 
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS txHwQueue_Destroy (TI_HANDLE hTxHwQueue)
@@ -188,7 +188,7 @@ TI_STATUS txHwQueue_Destroy (TI_HANDLE hTxHwQueue)
 TI_STATUS txHwQueue_Init (TI_HANDLE hTxHwQueue, TI_HANDLE hReport)
 {
     TTxHwQueue *pTxHwQueue = (TTxHwQueue *)hTxHwQueue;
-    
+
     pTxHwQueue->hReport = hReport;
     pTxHwQueue->uExtraHwBlocks = BLKS_HW_ALLOC_SPARE;
 
@@ -199,19 +199,19 @@ TI_STATUS txHwQueue_Init (TI_HANDLE hTxHwQueue, TI_HANDLE hReport)
 /****************************************************************************
  *                      txHwQueue_Config()
  ****************************************************************************
- * DESCRIPTION: Configure the Tx buffers pool object 
- * 
+ * DESCRIPTION: Configure the Tx buffers pool object
+ *
  * INPUTS:  None
- * 
+ *
  * OUTPUT:  None
- * 
- * RETURNS: 
+ *
+ * RETURNS:
  ****************************************************************************/
 TI_STATUS txHwQueue_Config (TI_HANDLE hTxHwQueue, TTwdInitParams *pInitParams)
 {
     TTxHwQueue *pTxHwQueue = (TTxHwQueue *)hTxHwQueue;
     TI_UINT32   TxQid;
-    
+
     /* Configure queue parameters to Tx-HW queue module */
     for (TxQid = 0; TxQid < MAX_NUM_OF_AC; TxQid++)
     {
@@ -229,28 +229,28 @@ TI_STATUS txHwQueue_Config (TI_HANDLE hTxHwQueue, TTwdInitParams *pInitParams)
  *                  txHwQueue_SetHwInfo()
  ****************************************************************************
 
-  DESCRIPTION:  
-  
+  DESCRIPTION:
+
     Called after the HW configuration in the driver init or recovery process.
     Configure Tx HW information, including Tx-HW-blocks number, and per queue
       Tx-descriptors number. Than, restart the module variables.
 
     Two thresholds are defined per queue:
-    a)  TxBlocksLowPercentPerQueue[queue] - The lower threshold is the minimal number of 
+    a)  TxBlocksLowPercentPerQueue[queue] - The lower threshold is the minimal number of
         Tx blocks guaranteed for each queue.
         The sum of all low thresholds should be less than 100%.
     b)  TxBlocksHighPercentPerQueue[queue] - The higher threshold is the maximal number of
         Tx blocks that may be allocated to the queue.
-        The extra blocks above the low threshold can be allocated when needed only 
+        The extra blocks above the low threshold can be allocated when needed only
         if they are currently available and are not needed in order to guarantee
         the other queues low threshold.
         The sum of all high thresholds should be more than 100%.
  ****************************************************************************/
-TI_STATUS txHwQueue_SetHwInfo (TI_HANDLE hTxHwQueue, TDmaParams *pDmaParams) 
+TI_STATUS txHwQueue_SetHwInfo (TI_HANDLE hTxHwQueue, TDmaParams *pDmaParams)
 {
     TTxHwQueue *pTxHwQueue = (TTxHwQueue *)hTxHwQueue;
-    
-    pTxHwQueue->uNumTotalBlks = pDmaParams->NumTxBlocks; 
+
+    pTxHwQueue->uNumTotalBlks = pDmaParams->NumTxBlocks;
     TRACE1(pTxHwQueue->hReport, REPORT_SEVERITY_INFORMATION,"pTxHwQueue->uNumTotalBlks = %d \n",pTxHwQueue->uNumTotalBlks);
     /* Restart the module variables. */
     txHwQueue_Restart (hTxHwQueue);
@@ -262,7 +262,7 @@ TI_STATUS txHwQueue_SetHwInfo (TI_HANDLE hTxHwQueue, TDmaParams *pDmaParams)
 /****************************************************************************
  *               txHwQueue_Restart()
  ****************************************************************************
-   DESCRIPTION:  
+   DESCRIPTION:
    ============
      Called after the HW configuration in the driver init or recovery process.
      Restarts the Tx-HW-Queue module.
@@ -272,14 +272,14 @@ TI_STATUS txHwQueue_Restart (TI_HANDLE hTxHwQueue)
     TTxHwQueue     *pTxHwQueue = (TTxHwQueue *)hTxHwQueue;
     TTxHwQueueInfo *pQueueInfo;
     TI_UINT32       TxQid;
-    
 
-    /* 
+
+    /*
      * All blocks are free at restart.
-     * Note that free means all blocks that are currently not in use, while reserved are 
+     * Note that free means all blocks that are currently not in use, while reserved are
      *   a part of the free blocks that are the summary of all queues reserved blocks.
      * Each queue may take from the reserved part only up to its own reservation (according to
-     *   its low threshold). 
+     *   its low threshold).
      */
     pTxHwQueue->uNumTotalBlksFree = pTxHwQueue->uNumTotalBlks;
     pTxHwQueue->uNumTotalBlksReserved = 0;
@@ -293,7 +293,7 @@ TI_STATUS txHwQueue_Restart (TI_HANDLE hTxHwQueue)
         pQueueInfo = &pTxHwQueue->aTxHwQueueInfo[TxQid];
 
         pQueueInfo->uNumBlksUsed = 0;
-        pQueueInfo->uAllocatedBlksCntr = 0; 
+        pQueueInfo->uAllocatedBlksCntr = 0;
         pQueueInfo->uFwFreedBlksCntr = 0;
         pQueueInfo->uNumBlksCausedBusy = 0;
         pQueueInfo->bQueueBusy = TI_FALSE;
@@ -313,10 +313,10 @@ TI_STATUS txHwQueue_Restart (TI_HANDLE hTxHwQueue)
 /****************************************************************************
  *                  txHwQueue_AllocResources()
  ****************************************************************************
- * DESCRIPTION: 
+ * DESCRIPTION:
    ============
     1.  Estimate required HW-blocks number.
-    2.  If the required blocks are not available or no free descriptor, 
+    2.  If the required blocks are not available or no free descriptor,
             return  STOP_CURRENT  (to stop current queue and requeue the packet).
     3.  Resources are available so update allocated blocks and descriptors counters.
     4.  If no resources for another similar packet, return STOP_NEXT (to stop current queue).
@@ -351,7 +351,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
 
     /* The length not yet included in the uNumBlksToAlloc is the sum of:
         1) 4 bytes per block as a result of using 256 instead of 252 block size.
-        2) The remainder of the division by 256. 
+        2) The remainder of the division by 256.
         3) Overhead due to header translation, security and LLC header (subtracting ethernet header).
     */
     uExcludedLength = (uNumBlksToAlloc << 2) + (uTotalLength & 0xFF);
@@ -368,7 +368,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
 
     /* Find max available blocks for this queue (0 could indicate no descriptors). */
     uAvailableBlks = txHwQueue_CheckResources (pTxHwQueue, pQueueInfo);
-    
+
     /* If we need more blocks than available, return  STOP_CURRENT (stop current queue and requeue packet). */
     if (uNumBlksToAlloc > uAvailableBlks)
     {
@@ -386,7 +386,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
     /* Update blocks numbers in Tx descriptor */
 #ifdef TNETW1283
     /* in 1283, no need of extra mem blocks setting to the hardware */
-    /* set total blocks in the extra blocks field, FW will deliver only total blocks */ 
+    /* set total blocks in the extra blocks field, FW will deliver only total blocks */
 
     /* !!!!!!!!!!!!!just for test - swap fields - OK for HW, fw will have the value on other field */
     pTxCtrlBlk->tTxDescriptor.totalMemBlks = uNumBlksToAlloc;
@@ -401,7 +401,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
     pQueueInfo->uAllocatedBlksCntr += uNumBlksToAlloc; /* For FW counter coordination. */
     uReservedBlks = pQueueInfo->uNumBlksReserved;
 
-    /* If we are currently using less than the low threshold (i.e. we have some reserved blocks), 
+    /* If we are currently using less than the low threshold (i.e. we have some reserved blocks),
         blocks allocation should reduce the reserved blocks number as follows:
     */
     if (uReservedBlks)
@@ -409,8 +409,8 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
 
         /* If adding the allocated blocks to the used blocks will pass the low-threshold,
             only the part up to the low-threshold is subtracted from the reserved blocks.
-            This is because blocks are reserved for the Queue only up to its low-threshold. 
-            
+            This is because blocks are reserved for the Queue only up to its low-threshold.
+
               0   old used                    low      new used       high
               |######|                         |          |            |
               |######|                         |          |            |
@@ -427,7 +427,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
 
         /* Else, if allocating less than reserved,
             the allocated blocks are subtracted from the reserved blocks:
-            
+
               0   old used       new used               low      high
               |######|               |                   |        |
               |######|               |                   |        |
@@ -465,7 +465,7 @@ ETxHwQueStatus txHwQueue_AllocResources (TI_HANDLE hTxHwQueue, TTxCtrlBlk *pTxCt
 /****************************************************************************
  *                  txHwQueue_SetSecureMode()
  ****************************************************************************
- * DESCRIPTION: 
+ * DESCRIPTION:
    ============
     1.  Set cipher mode for connection.
     2.  Calculate number of Extra HW block depending on security mode
@@ -498,7 +498,7 @@ void txHwQueue_SetSecureMode (TI_HANDLE hTxHwQueue, ECipherSuite eSecurityMode)
 /****************************************************************************
  *                  txHwQueue_UpdateFreeBlocks()
  ****************************************************************************
- * DESCRIPTION: 
+ * DESCRIPTION:
    ===========
     This function is called per queue after reading the freed blocks counters from the FwStatus.
     It updates the queue's blocks status according to the freed blocks.
@@ -513,7 +513,7 @@ static void txHwQueue_UpdateFreeBlocks (TTxHwQueue *pTxHwQueue, TI_UINT32 uQueue
 
     /* If the FW free blocks counter didn't change, exit */
     uFreeBlocks = ENDIAN_HANDLE_LONG(uFreeBlocks);
-    if (uFreeBlocks == pQueueInfo->uFwFreedBlksCntr) 
+    if (uFreeBlocks == pQueueInfo->uFwFreedBlksCntr)
     {
         return;
     }
@@ -562,8 +562,8 @@ static void txHwQueue_UpdateFreeBlocks (TTxHwQueue *pTxHwQueue, TI_UINT32 uQueue
     pQueueInfo->uNumBlksUsed = newUsedBlks;
 
     lowThreshold = pQueueInfo->uNumBlksThresh;
-    
-    /* If after freeing the blocks we are using less than the low threshold, 
+
+    /* If after freeing the blocks we are using less than the low threshold,
         update total reserved blocks number as follows:
        (note: if we are above the low threshold after freeing the blocks we still have no reservation.)
     */
@@ -574,17 +574,17 @@ static void txHwQueue_UpdateFreeBlocks (TTxHwQueue *pTxHwQueue, TI_UINT32 uQueue
         newReserved = lowThreshold - newUsedBlks;
 
         /* newReserved can't be larger than the maximum possible*/
-        if (maxReservedBlks < newReserved) 
+        if (maxReservedBlks < newReserved)
         {
             newReserved = maxReservedBlks;
         }
         pQueueInfo->uNumBlksReserved = newReserved;
 
-        
+
         /* If freeing the blocks reduces the used blocks from above to below the low-threshold,
-            only the part from the low-threshold to the new used number is added to the 
+            only the part from the low-threshold to the new used number is added to the
             reserved blocks (because blocks are reserved for the Queue only up to its low-threshold):
-            
+
               0        new used               low            old used         high
               |###########|####################|################|             |
               |###########|####################|################|             |
@@ -597,8 +597,8 @@ static void txHwQueue_UpdateFreeBlocks (TTxHwQueue *pTxHwQueue, TI_UINT32 uQueue
 
 
         /* Else, if we were under the low-threshold before freeing these blocks,
-            all freed blocks are added to the reserved blocks: 
-            
+            all freed blocks are added to the reserved blocks:
+
               0             new used          old used             low               high
               |################|#################|                  |                  |
               |################|#################|                  |                  |
@@ -617,7 +617,7 @@ static void txHwQueue_UpdateFreeBlocks (TTxHwQueue *pTxHwQueue, TI_UINT32 uQueue
 /****************************************************************************
  *                  txHwQueue_UpdateFreeResources()
  ****************************************************************************
- * DESCRIPTION: 
+ * DESCRIPTION:
    ===========
    Called by FwEvent upon Data interrupt to update freed HW-Queue resources as follows:
     1) For all queues, update blocks and descriptors numbers according to FwStatus information.
@@ -639,32 +639,32 @@ ETxnStatus txHwQueue_UpdateFreeResources (TI_HANDLE hTxHwQueue, FwStatus_t *pFwS
 
     pTxHwQueue->iTxTotaldiff += (uNewTxTotal - pTxHwQueue->uNumTotalBlks) ;
 
-    /* 
-     * If TxResults counter changed in FwStatus, update descriptors number according to  information 
+    /*
+     * If TxResults counter changed in FwStatus, update descriptors number according to  information
      */
     uTempFwCounters = (ENDIAN_HANDLE_LONG(pFwStatus->counters));
     pFwStatusCounters = (FwStatCntrs_t *)&uTempFwCounters;
-    if (pFwStatusCounters->txResultsCntr != pTxHwQueue->uFwTxResultsCntr) 
+    if (pFwStatusCounters->txResultsCntr != pTxHwQueue->uFwTxResultsCntr)
     {
-        pTxHwQueue->uFwTxResultsCntr = pFwStatusCounters->txResultsCntr; 
+        pTxHwQueue->uFwTxResultsCntr = pFwStatusCounters->txResultsCntr;
 
         /* Calculate new number of used descriptors (the else is for wrap around case) */
-        if (pTxHwQueue->uFwTxResultsCntr <= pTxHwQueue->uDrvTxPacketsCntr) 
+        if (pTxHwQueue->uFwTxResultsCntr <= pTxHwQueue->uDrvTxPacketsCntr)
         {
             uNewNumUsedDescriptors = (TI_UINT32)(pTxHwQueue->uDrvTxPacketsCntr - pTxHwQueue->uFwTxResultsCntr);
         }
-        else 
+        else
         {
             uNewNumUsedDescriptors = 0x100 - (TI_UINT32)(pTxHwQueue->uFwTxResultsCntr - pTxHwQueue->uDrvTxPacketsCntr);
         }
-    
+
 #ifdef TI_DBG   /* Sanity check: make sure we don't free more descriptors than allocated. */
         if (uNewNumUsedDescriptors >= pTxHwQueue->uNumUsedDescriptors)
         {
             TRACE2(pTxHwQueue->hReport, REPORT_SEVERITY_ERROR, ":  Used descriptors number should decrease: UsedDesc %d, NewUsedDesc %d\n", pTxHwQueue->uNumUsedDescriptors, uNewNumUsedDescriptors);
         }
 #endif
-    
+
         /* Update number of packets left in FW (for descriptors allocation check). */
         pTxHwQueue->uNumUsedDescriptors = uNewNumUsedDescriptors;
     }
@@ -676,8 +676,8 @@ ETxnStatus txHwQueue_UpdateFreeResources (TI_HANDLE hTxHwQueue, FwStatus_t *pFwS
         /* In case we have possitive difference we can add the blocks to TX poll */
         pTxHwQueue->uNumTotalBlksFree += pTxHwQueue->iTxTotaldiff;
     }
-    /* 
-     * For all queues, update blocks numbers according to FwStatus information 
+    /*
+     * For all queues, update blocks numbers according to FwStatus information
      */
     for (uQueueId = 0; uQueueId < MAX_NUM_OF_AC; uQueueId++)
     {
@@ -691,32 +691,32 @@ ETxnStatus txHwQueue_UpdateFreeResources (TI_HANDLE hTxHwQueue, FwStatus_t *pFwS
         }
         else
         {
-            SET_QUEUE_HIGH_PRIORITY(uPriorityQueueBitMap, uQueueId); 
+            SET_QUEUE_HIGH_PRIORITY(uPriorityQueueBitMap, uQueueId);
         }
     }
     if((pTxHwQueue->uPriorityBitMap != uPriorityQueueBitMap) && (pTxHwQueue->fUpdatePriorityMapCb != NULL))
-    { 
-        pTxHwQueue->fUpdatePriorityMapCb(pTxHwQueue->hUpdatePriorityMapHndl, uPriorityQueueBitMap); 
+    {
+        pTxHwQueue->fUpdatePriorityMapCb(pTxHwQueue->hUpdatePriorityMapHndl, uPriorityQueueBitMap);
         pTxHwQueue->uPriorityBitMap = uPriorityQueueBitMap;
     }
-	if(pTxHwQueue->iTxTotaldiff > 0)
+    if(pTxHwQueue->iTxTotaldiff > 0)
     {
         pTxHwQueue->iTxTotaldiff = 0;
     }
-    /* 
-     * For each busy queue, if now available indicate it in the backpressure bitmap 
+    /*
+     * For each busy queue, if now available indicate it in the backpressure bitmap
      */
     for (uQueueId = 0; uQueueId < MAX_NUM_OF_AC; uQueueId++)
     {
         pQueueInfo = &(pTxHwQueue->aTxHwQueueInfo[uQueueId]);
 
         /* If the queue was stopped */
-        if (pQueueInfo->bQueueBusy) 
+        if (pQueueInfo->bQueueBusy)
         {
             /* Find max available blocks for this queue (0 could indicate no descriptors). */
             uAvailableBlks = txHwQueue_CheckResources (pTxHwQueue, pQueueInfo);
 
-            /* If the required blocks and a descriptor are available, 
+            /* If the required blocks and a descriptor are available,
                  set the queue's backpressure bit to indicate NOT-busy! */
             if (pQueueInfo->uNumBlksCausedBusy <= uAvailableBlks)
             {
@@ -740,7 +740,7 @@ ETxnStatus txHwQueue_UpdateFreeResources (TI_HANDLE hTxHwQueue, FwStatus_t *pFwS
 /****************************************************************************
  *                  txHwQueue_CheckResources()
  ****************************************************************************
- * DESCRIPTION: 
+ * DESCRIPTION:
    ============
     Return the given queue's available blocks.
     If no descriptors available, return 0.
@@ -774,18 +774,18 @@ void txHwQueue_RegisterCb (TI_HANDLE hTxHwQueue, TI_UINT32 uCallBackId, void *fC
 
     switch (uCallBackId)
     {
-        case TWD_INT_UPDATE_BUSY_MAP:
-            pTxHwQueue->fUpdateBusyMapCb   = (tUpdateBusyMapCb)fCbFunc;
-            pTxHwQueue->hUpdateBusyMapHndl = hCbHndl;
-            break;
-        case TWD_INT_UPDATE_PRIORITY_QUEUE_MAP:
-            pTxHwQueue->fUpdatePriorityMapCb   = (tUpdatePriorityMapCb)fCbFunc;
-            pTxHwQueue->hUpdatePriorityMapHndl = hCbHndl;
-            break;
+    case TWD_INT_UPDATE_BUSY_MAP:
+        pTxHwQueue->fUpdateBusyMapCb   = (tUpdateBusyMapCb)fCbFunc;
+        pTxHwQueue->hUpdateBusyMapHndl = hCbHndl;
+        break;
+    case TWD_INT_UPDATE_PRIORITY_QUEUE_MAP:
+        pTxHwQueue->fUpdatePriorityMapCb   = (tUpdatePriorityMapCb)fCbFunc;
+        pTxHwQueue->hUpdatePriorityMapHndl = hCbHndl;
+        break;
 
-        default:
-            TRACE1(pTxHwQueue->hReport, REPORT_SEVERITY_ERROR, " - Illegal parameter = %d\n", uCallBackId);
-            return;
+    default:
+        TRACE1(pTxHwQueue->hReport, REPORT_SEVERITY_ERROR, " - Illegal parameter = %d\n", uCallBackId);
+        return;
     }
 }
 
@@ -814,23 +814,23 @@ void txHwQueue_PrintInfo (TI_HANDLE hTxHwQueue)
 
     for(TxQid = 0; TxQid < MAX_NUM_OF_AC; TxQid++)
     {
-        WLAN_OS_REPORT(("Q=%d: Used=%d, Reserve=%d, Threshold=%d\n", 
-            TxQid,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksUsed,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksReserved,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksThresh));
+        WLAN_OS_REPORT(("Q=%d: Used=%d, Reserve=%d, Threshold=%d\n",
+        TxQid,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksUsed,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksReserved,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksThresh));
     }
 
     WLAN_OS_REPORT(("\n"));
 
     for(TxQid = 0; TxQid < MAX_NUM_OF_AC; TxQid++)
     {
-        WLAN_OS_REPORT(("Queue=%d: HostAllocCount=0x%x, FwFreeCount=0x%x, BusyBlks=%d, Busy=%d\n", 
-            TxQid,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].uAllocatedBlksCntr,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].uFwFreedBlksCntr,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksCausedBusy,
-            pTxHwQueue->aTxHwQueueInfo[TxQid].bQueueBusy));
+        WLAN_OS_REPORT(("Queue=%d: HostAllocCount=0x%x, FwFreeCount=0x%x, BusyBlks=%d, Busy=%d\n",
+        TxQid,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].uAllocatedBlksCntr,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].uFwFreedBlksCntr,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].uNumBlksCausedBusy,
+        pTxHwQueue->aTxHwQueueInfo[TxQid].bQueueBusy));
     }
 #endif
 }

@@ -779,7 +779,7 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
                 clkVal = 0x5;
             }
 
-	WLAN_OS_REPORT(("CHIP VERSION... set 1273 chip top registers\n"));
+            WLAN_OS_REPORT(("CHIP VERSION... set 1273 chip top registers\n"));
 #ifdef FPGA_SKIP_TOP_INIT
             WLAN_OS_REPORT(("hwInit_BootSm: SKIP TOP INIT\n"));
             /* 
@@ -1083,6 +1083,7 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
             status = hwInit_InitTopRegisterRead(hHwInit, TESTMODE_CLK_REQ_OUTN_SEL);
             EXCEPT (pHwInit, status)
         }
+
 #endif
 
     case 10:

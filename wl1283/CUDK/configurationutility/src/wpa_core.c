@@ -429,6 +429,7 @@ S32 WpaCore_StartWpsPIN(THandle hWpaCore)
 
 #ifdef SUPPL_WPS_SUPPORT
 	os_sprintf(cmd, "WPS_PIN any");
+
 	IpcWpa_Command(pWpaCore->hIpcWpa, cmd, TRUE);
 #endif
 	

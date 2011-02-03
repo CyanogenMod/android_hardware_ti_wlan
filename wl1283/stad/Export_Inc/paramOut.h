@@ -56,7 +56,7 @@
 #else
 #define   XCC_PARAM_FIELDS
 #endif
- 
+
 #include "InternalCmdCodes.h"
 #include "commonTypes.h"
 #include "coreDefaultParams.h"
@@ -82,7 +82,7 @@
 #define VAL_TX_POWER_VALUE			100
 #define VAL_NETWORK_TYPE			101
 #define VAL_AP_TX_POWER_LEVEL	    102
-/* #define VAL_COUNTRY_CODE    	        103 */ 
+/* #define VAL_COUNTRY_CODE    	        103 */
 /* #define VAL_REG_DOMAIN_BAND_24	    104 */
 /* #define VAL_REG_DOMAIN_BAND_50	    105 */
 #define VAL_PACKET_BURSTING			106
@@ -111,7 +111,7 @@ typedef enum
 {
     AUTH_LEGACY_OPEN_SYSTEM     = 0,
     AUTH_LEGACY_SHARED_KEY      = 1,
-	AUTH_LEGACY_FT              = 2,
+    AUTH_LEGACY_FT              = 2,
     AUTH_LEGACY_AUTO_SWITCH     = 3,
     AUTH_LEGACY_RESERVED1       = 128,
     AUTH_LEGACY_NONE            = 255
@@ -150,14 +150,14 @@ typedef enum
     BAND_TYPE_2_4GHZ = 0,
     BAND_TYPE_5_GHZ,
     BAND_TYPE_4_9GHZ,
-    BAND_TYPE_NONE   
+    BAND_TYPE_NONE
 } BandType_e;
 
 typedef struct
 {
     TI_UINT8    Channel[REG_DOMAIN_MAX_CHAN_NUM];
     BandType_e  band;
-}RegClassChannelList_t;
+} RegClassChannelList_t;
 
 
 /* Scan Control Table for 2.4-G band type */
@@ -212,8 +212,8 @@ typedef struct
 typedef struct
 {
     ESoftGeminiEnableModes  SoftGeminiEnable;
-	TI_UINT32   coexParams[SOFT_GEMINI_PARAMS_MAX];
- } SoftGeminiInitParams_t;
+    TI_UINT32   coexParams[SOFT_GEMINI_PARAMS_MAX];
+} SoftGeminiInitParams_t;
 
 typedef enum
 {
@@ -252,8 +252,8 @@ typedef enum
 /* enumerator for PRE_AUTH event */
 typedef enum
 {
-   RSN_PRE_AUTH_START,
-   RSN_PRE_AUTH_END
+    RSN_PRE_AUTH_START,
+    RSN_PRE_AUTH_END
 } preAuthStatusEvent_e;
 
 
@@ -267,7 +267,7 @@ typedef enum
 {
     SCAN_DISABLED   = 0,	/* TI_FALSE*/
     SCAN_ENABLED    = 1,	/* TI_TRUE*/
-	SKIP_NEXT_SCAN	= 2		/* Skip only one next coming scan, then set this parameter to TI_TRUE*/
+    SKIP_NEXT_SCAN	= 2		/* Skip only one next coming scan, then set this parameter to TI_TRUE*/
 } scanEnabledOptions_e;
 
 
@@ -295,34 +295,34 @@ typedef struct rxDataFilterFieldPattern_t
     TI_UINT8       mask[RX_DATA_FILTER_MAX_PATTERN_SIZE]; /* bit-masking of the internal field content */
 } rxDataFilterFieldPattern_t;
 
-typedef struct 
+typedef struct
 {
-	void	*handler;
-	void	*callback; 
-}QoS_renegVoiceTspecReq_t;
+    void	*handler;
+    void	*callback;
+} QoS_renegVoiceTspecReq_t;
 
 /* Authentication/encryption capability */
 #define MAX_AUTH_ENCR_PAIR 13
 
-typedef struct 
+typedef struct
 {
-	EExternalAuthMode   authenticationMode;
-	ECipherSuite        cipherSuite;
+    EExternalAuthMode   authenticationMode;
+    ECipherSuite        cipherSuite;
 
 } authEncrPairList_t;
 
-typedef struct 
+typedef struct
 {
-	TI_UINT32              NoOfPMKIDs;
-	TI_UINT32              NoOfAuthEncrPairSupported;
-	authEncrPairList_t     authEncrPairs[MAX_AUTH_ENCR_PAIR];
+    TI_UINT32              NoOfPMKIDs;
+    TI_UINT32              NoOfAuthEncrPairSupported;
+    authEncrPairList_t     authEncrPairs[MAX_AUTH_ENCR_PAIR];
 
 } rsnAuthEncrCapability_t;
 
-typedef struct 
+typedef struct
 {
-	TI_UINT32       numOfPreAuthBssids;
-	TMacAddr     	*listOfPreAuthBssid;
+    TI_UINT32       numOfPreAuthBssids;
+    TMacAddr     	*listOfPreAuthBssid;
 
 } rsnPreAuthBssidList_t;
 
@@ -357,8 +357,8 @@ typedef struct
 
 typedef struct
 {
-	TI_UINT32 thresholdCross;                /* high or low */
-	TI_UINT32 thresholdCrossDirection;       /* direction of crossing */
+    TI_UINT32 thresholdCross;                /* high or low */
+    TI_UINT32 thresholdCrossDirection;       /* direction of crossing */
 } trafficIntensityThresholdCross_t;
 
 /************************************/
@@ -389,31 +389,31 @@ typedef enum
 {
     AC_ACTIVE = 0,
     AC_NOT_ACTIVE
-}acActive;
+} acActive;
 
 
 typedef struct
 {
-	TI_UINT8	*buffer;
-	TI_UINT16	bufLength;
-	TI_UINT8	isBeacon; 	/* If true, Beacon packet is returned, otherwise it is Probe Response */
+    TI_UINT8	*buffer;
+    TI_UINT16	bufLength;
+    TI_UINT8	isBeacon; 	/* If true, Beacon packet is returned, otherwise it is Probe Response */
 } BufferParameters_t;
 
 
 
 typedef struct
 {
-	TI_UINT32		trafficAdmCtrlResponseTimeout;
+    TI_UINT32		trafficAdmCtrlResponseTimeout;
     TI_BOOL        trafficAdmCtrlUseFixedMsduSize;
-}trafficAdmCtrlInitParams_t;
+} trafficAdmCtrlInitParams_t;
 
 typedef struct
 {
     TI_BOOL       wmeEnable;
     TI_BOOL       trafficAdmCtrlEnable;
     TI_BOOL       qosTagZeroConverHeader;
-	TI_UINT8      PacketBurstEnable;
-	TI_UINT32     PacketBurstTxOpLimit;
+    TI_UINT8      PacketBurstEnable;
+    TI_UINT32     PacketBurstTxOpLimit;
     TI_UINT32     TxOpLimit[MAX_NUM_OF_AC];
     TI_UINT32     MsduLifeTime[MAX_NUM_OF_AC];
     TRxTimeOut    rxTimeOut;
@@ -421,23 +421,23 @@ typedef struct
     TI_UINT8      LongRetryLimit[MAX_NUM_OF_AC];
     TI_UINT8      desiredWmeAcPsMode[MAX_NUM_OF_AC];        /* wme per ac power save mode */
     EQOverflowPolicy QueueOvFlowPolicy[MAX_NUM_OF_AC];
-	TI_UINT8      acAckPolicy[MAX_NUM_OF_AC];               /* ack policy per AC */
+    TI_UINT8      acAckPolicy[MAX_NUM_OF_AC];               /* ack policy per AC */
     trafficAdmCtrlInitParams_t	trafficAdmCtrlInitParams;
-	TI_UINT8	  desiredPsMode;						    /* The desired PS mode of the station */
-	TI_UINT8	  desiredMaxSpLen;
+    TI_UINT8	  desiredPsMode;						    /* The desired PS mode of the station */
+    TI_UINT8	  desiredMaxSpLen;
 
     TI_BOOL      bCwFromUserEnable;  /* flag to use CwMin & CwMax user setting: 0 disable user setting (values from beacon) , 1 enable user setting (beacon cw ignore)*/
     TI_UINT8     uDesireCwMin;		/**< The contention window minimum size (in slots) from ini file */
     TI_UINT16    uDesireCwMax;		/**< The contention window maximum size (in slots) from ini file */
-	TI_BOOL		 bEnableBurstMode;
- /* Enable the Burst mode from ini file */
+    TI_BOOL		 bEnableBurstMode;
+    /* Enable the Burst mode from ini file */
     /* 802.11n BA session */
     TI_UINT8               aBaPolicy[MAX_NUM_OF_802_1d_TAGS];
     TI_UINT16              aBaInactivityTimeout[MAX_NUM_OF_802_1d_TAGS];
-	/*Parameter for Auto Rx streaming */
-	TI_UINT8	uPsTrafficPeriod;
-	
-}QosMngrInitParams_t;
+    /*Parameter for Auto Rx streaming */
+    TI_UINT8	uPsTrafficPeriod;
+
+} QosMngrInitParams_t;
 
 
 
@@ -445,8 +445,8 @@ typedef struct
 
 typedef struct
 {
-	TI_UINT16		bufferSize;
-	TI_UINT8		*buffer;
+    TI_UINT16		bufferSize;
+    TI_UINT8		*buffer;
     TI_BOOL 		reAssoc;
 } TAssocReqBuffer;
 
@@ -463,15 +463,15 @@ typedef struct
 } neighbor_AP_t;
 
 typedef struct
-{    
-    TI_UINT16          maxChannelDuration;		/* One channel max duration time. (time slot 0 - 65000) */    
-    TI_UINT16          minChannelDuration;		/* One channel max duration time. (time slot 0 - 65000) */    
+{
+    TI_UINT16          maxChannelDuration;		/* One channel max duration time. (time slot 0 - 65000) */
+    TI_UINT16          minChannelDuration;		/* One channel max duration time. (time slot 0 - 65000) */
     TI_UINT8           earlyTerminationMode;	/**< 0 = Stay until max duration time. 1 = Terminate scan in
 												* a channel upon a reception of Prob-Res or Beacon. 2 = Terminate scan
 												* in a channel upon a reception of any frame
-												*/    
+												*/
     TI_UINT8           eTMaxNumOfAPframes;		/**< number of AP frames (beacon/probe_resp) to trigger Early termination.
-												* Applicable only when EarlyTerminationMode = 1 
+												* Applicable only when EarlyTerminationMode = 1
 												*/
     TI_UINT8           numOfProbeReq;			/* Number of probe request transmitted on each channel */
 
@@ -479,49 +479,49 @@ typedef struct
 
 
 typedef struct
-{	
-	TI_UINT16 		channelNum;
-	TI_BOOL		channelValidity;
-	ERadioBand		band;
+{
+    TI_UINT16 		channelNum;
+    TI_BOOL		channelValidity;
+    ERadioBand		band;
 } channelValidity_t;
 
 /** \struct channelCapabilityRet_t
  * \brief Channel Capability Response
- * 
+ *
  * \par Description
  * Defines scan capabilities information, which is given as a response to a scan capabilities query.
- * 
+ *
  * \sa
- */ 
+ */
 typedef struct
 {
-	TI_BOOL 	channelValidity;	/**< Indicates whether the channel is valid for the requested scan type. 
-									* TRUE: channel is valid; FALSE: not valid 
+    TI_BOOL 	channelValidity;	/**< Indicates whether the channel is valid for the requested scan type.
+									* TRUE: channel is valid; FALSE: not valid
 									*/
-	TI_UINT8	maxTxPowerDbm; 		/**< Maximum TX power level allowed on this channel from 1 to 5, 
-									* where 1 is the highest and 5 is the lowest. Units: Dbm/10 
+    TI_UINT8	maxTxPowerDbm; 		/**< Maximum TX power level allowed on this channel from 1 to 5,
+									* where 1 is the highest and 5 is the lowest. Units: Dbm/10
 									*/
 }	channelCapabilityRet_t;
 
 typedef struct
 {
-	TI_UINT8		*listOfChannels;
-	TI_UINT8		sizeOfList;
+    TI_UINT8		*listOfChannels;
+    TI_UINT8		sizeOfList;
 } supportedChannels_t;
 
 /** \struct channelCapabilityReq_t
  * \brief Channel Capability Resuest
- * 
+ *
  * \par Description
  * Defines the regulatory domain scan capability query information
- * 
+ *
  * \sa
- */ 
+ */
 typedef struct
 {
-	regulatoryDomain_scanOption_e 	scanOption;	/**< Desired scan type (passive or active)		*/
-	TI_UINT8						channelNum; /**< Channel on which scan is to be performed	*/		
-	ERadioBand                     	band; 		/**< Band on which scan is to be performed		*/	
+    regulatoryDomain_scanOption_e 	scanOption;	/**< Desired scan type (passive or active)		*/
+    TI_UINT8						channelNum; /**< Channel on which scan is to be performed	*/
+    ERadioBand                     	band; 		/**< Band on which scan is to be performed		*/
 }	channelCapabilityReq_t;
 
 typedef struct
@@ -533,8 +533,8 @@ typedef struct
 
 typedef struct
 {
-	TTxDataCounters 			*pTxDataCounters;
-	TI_UINT8				acID;
+    TTxDataCounters 			*pTxDataCounters;
+    TI_UINT8				acID;
 }	reportTsStatisticsReq_t;
 
 /* SME parameters definition */
@@ -549,31 +549,31 @@ typedef enum
 
 typedef struct
 {
-		TI_UINT8      length;
-        TI_UINT8      data[255];
+    TI_UINT8      length;
+    TI_UINT8      data[255];
 } rsnGenericIE_t;
 
 
 /** \struct paramInfo_t
  * \brief General Parameters Structure
- * 
+ *
  * \par Description
- * This structure holds information for the regulatory domain (and other modules 
+ * This structure holds information for the regulatory domain (and other modules
  * that are outside of the scope of this document) queries
- * 
+ *
  * \sa
- */ 
+ */
 typedef struct
 {
     TI_UINT32              paramType;		/**< Parameter identification value */
     TI_UINT32              paramLength;		/**< Parameter actual length (or the length allocated in content for parameter value) */
 
-	/* Actual parameter value */
+    /* Actual parameter value */
     union
     {
         /* HAL Control section */
-		TI_UINT16							halCtrlRtsThreshold;
-		TI_UINT16							halCtrlFragThreshold;
+        TI_UINT16							halCtrlRtsThreshold;
+        TI_UINT16							halCtrlFragThreshold;
 
         /* site manager section */
         TI_UINT8                			siteMgrDesiredChannel;
@@ -598,7 +598,7 @@ typedef struct
         EDraftNumber           				siteMgrUseDraftNum;
         TI_UINT8                			siteMgrCurrentChannel;
         TSsid                   			siteMgrCurrentSSID;
-		ScanBssType_e						siteMgrCurrentBSSType;
+        ScanBssType_e						siteMgrCurrentBSSType;
         EModulationType         			siteMgrCurrentModulationType;
         ESlotTime               			siteMgrSlotTime;
         signal_t                			siteMgrCurrentSignal;
@@ -624,18 +624,18 @@ typedef struct
 
         OS_802_11_CONFIGURATION 			*pSiteMgrConfiguration;
         siteMgr_prioritySite_t  			siteMgrPrioritySite;
-		BufferParameters_t					siteMgrLastBeacon;
-		TI_UINT8							siteMgrDesiredBeaconFilterState;
-		TI_BOOL								siteMgrAllowTxPowerCheck;
+        BufferParameters_t					siteMgrLastBeacon;
+        TI_UINT8							siteMgrDesiredBeaconFilterState;
+        TI_BOOL								siteMgrAllowTxPowerCheck;
 
         void     							*pPrimarySite;
         TI_BOOL                             bPrimarySiteHtSupport;
         TI_UINT8                            RRMEnabledCapabilities[5];
 
         /* WiFI SimpleConfig */
-		TWscMode 							siteMgrWSCMode; /* used to set the WiFi Simple Config mode */
-		TI_UINT8							*pProbeReqExtraIes;
-		TI_BOOL								siteMgrWpsEnabled; 
+        TWscMode 							siteMgrWSCMode; /* used to set the WiFi Simple Config mode */
+        TI_UINT8							*pProbeReqExtraIes;
+        TI_BOOL								siteMgrWpsEnabled;
 
         /* SME SM section */
         TMacAddr                			smeDesiredBSSID;
@@ -655,7 +655,7 @@ typedef struct
         TI_UINT32               			assocResponseTimeout;
 
         OS_802_11_ASSOCIATION_INFORMATION  	assocAssociationInformation;
-		
+
         /* RSN section */
         TI_BOOL                 			rsnPrivacyOptionImplemented;
         EAuthSuite              			rsnDesiredAuthType;
@@ -673,29 +673,29 @@ typedef struct
 
         EExternalAuthMode      	 			rsnExtAuthneticationMode;
         TI_BOOL                    			rsnMixedMode;
-		TI_BOOL								rsnPreAuthStatus;
-		TMacAddr							rsnApMac;
+        TI_BOOL								rsnPreAuthStatus;
+        TMacAddr							rsnApMac;
         OS_802_11_EAP_TYPES     			eapType;
         TI_BOOL                    			wpa_802_1x_AkmExists;
         TI_BOOL                    			rsnPortStatus;
-		rsnGenericIE_t                      rsnGenericIE;
-		TI_BOOL                             rsnExternalMode;
+        rsnGenericIE_t                      rsnGenericIE;
+        TI_BOOL                             rsnExternalMode;
 
 
         /* Rx Data section */
         rxDataCounters_t        			rxDataCounters;
         TI_BOOL                    			rxDataFilterEnableDisable;
         TRxDataFilterRequest    			rxDataFilterRequest;
-		TI_UINT16                           rxGenericEthertype;
+        TI_UINT16                           rxGenericEthertype;
 
         /* Tx Data section */
         portStatus_e            			txDataPortStatus;
         TTxDataCounters        				*pTxDataCounters;
-		TI_UINT32 							txPacketsCount;
-		reportTsStatisticsReq_t 			tsMetricsCounters;
+        TI_UINT32 							txPacketsCount;
+        reportTsStatisticsReq_t 			tsMetricsCounters;
         OS_802_11_THRESHOLD_CROSS_PARAMS  	txDataMediumUsageThreshold;
         TI_UINT8                       		txDataEncryptionFieldSize;
-		TI_UINT16                           txGenericEthertype;
+        TI_UINT16                           txGenericEthertype;
 
         /* Ctrl Data section */
         TI_BOOL                    			ctrlDataPowerSaveEnable;
@@ -713,11 +713,11 @@ typedef struct
         ERate                  				ctrlDataCurrentActiveRate;
         TMacAddr            				ctrlDataDeviceMacAddress;
         TStreamTrafficProperties   			ctrlDataUpOfStream;
-		TClsfrTableEntry					ctrlDataClsfrInsertTable;
+        TClsfrTableEntry					ctrlDataClsfrInsertTable;
         EClsfrType              			ctrlDataClsfrType;
 
- 		TI_UINT32							ctrlDataTrafficIntensityEventsFlag;
-		OS_802_11_TRAFFIC_INTENSITY_THRESHOLD_PARAMS ctrlDataTrafficIntensityThresholds;
+        TI_UINT32							ctrlDataTrafficIntensityEventsFlag;
+        OS_802_11_TRAFFIC_INTENSITY_THRESHOLD_PARAMS ctrlDataTrafficIntensityThresholds;
 
         connectionType_e        			connType;
 
@@ -749,19 +749,19 @@ typedef struct
 																	or The desired Tx power (in Dbm) as forced by teh OS */
         TI_INT8                    			ExternTxPowerPreferred; /*for other extern elements that want
 																	to effect the transmit power*/
-		TpowerLevelTable_t		     		powerLevelTable;
-		channelValidity_t					channelValidity;
-		channelCapabilityRet_t				channelCapabilityRet;
-		channelCapabilityReq_t				channelCapabilityReq;
-		supportedChannels_t					supportedChannels;					
+        TpowerLevelTable_t		     		powerLevelTable;
+        channelValidity_t					channelValidity;
+        channelCapabilityRet_t				channelCapabilityRet;
+        channelCapabilityReq_t				channelCapabilityReq;
+        supportedChannels_t					supportedChannels;
         TI_BOOL                    			enableDisable_802_11d;
         TI_BOOL                    			enableDisable_802_11h;
-		TI_BOOL								bActivateTempPowerFix;
-		TI_BOOL								bIsCountryFound;
-		TI_BOOL								bIsChannelSupprted;
+        TI_BOOL								bActivateTempPowerFix;
+        TI_BOOL								bIsCountryFound;
+        TI_BOOL								bIsChannelSupprted;
         TDfsChannelRange      				DFS_ChannelRange;
         TDfsChannel             			tDfsChannel;
-		ERadioBand							eRadioBand;
+        ERadioBand							eRadioBand;
         TI_UINT32               			uTimeToCountryExpiryMs;
         RegulatoryZone_e                    countryZone;
         TI_UINT8                            regulatoryClass;
@@ -771,9 +771,9 @@ typedef struct
         RegClassChannelList_t               regClassChannelList;
 
         /* Measurement Manager section */
-		TI_UINT32							measurementEnableDisableStatus;
+        TI_UINT32							measurementEnableDisableStatus;
         TI_UINT16							measurementTrafficThreshold;
-		TI_UINT16							measurementMaxDuration;
+        TI_UINT16							measurementMaxDuration;
         TInterrogateCmdCbParams 			interogateCmdCBParams;
 
 
@@ -782,17 +782,17 @@ typedef struct
         TI_UINT32							SoftGeminiParamArray[NUM_OF_CONFIG_PARAMS_IN_SG];
         TI_UINT32							CoexActivityParamArray[NUM_OF_COEX_ACTIVITY_PARAMS_IN_SG];
 
-		/* case XCC MODULE INCLUDED */
-		XCC_PARAM_FIELDS
+        /* case XCC MODULE INCLUDED */
+        XCC_PARAM_FIELDS
 
         /* Application Config Parameters Manager */
-		TAssocReqBuffer						assocReqBuffer;
+        TAssocReqBuffer						assocReqBuffer;
         TAssocReqBuffer						assocResBuffer;
-		roamingMngrConfigParams_t			roamingConfigBuffer;
-		TI_UINT32							roamingTriggerType;
-		TI_UINT32							roamingConnStatus;
+        roamingMngrConfigParams_t			roamingConfigBuffer;
+        TI_UINT32							roamingTriggerType;
+        TI_UINT32							roamingConnStatus;
         bssList_t*              			pScanBssList;
-		TScanPolicy*						pScanPolicy;
+        TScanPolicy*						pScanPolicy;
         TI_UINT16                           uCandidateBufferLen;
         TI_UINT8*                           pCandidateBuffer;
 
@@ -800,9 +800,9 @@ typedef struct
         TScanParams                 		*pScanParams;
         TPeriodicScanParams         		*pPeriodicScanParams;
         TI_UINT32                   		uBssidListSize;
-		TI_UINT32                   		uNumBssidInList;
+        TI_UINT32                   		uNumBssidInList;
         OS_802_11_BSSID_LIST_EX     		*pBssidList;
-		OS_802_11_N_RATES					*pRateList;
+        OS_802_11_N_RATES					*pRateList;
         TSsid                   			tScanDesiredSSID;
 
         TI_UINT32                           uSraThreshold;
@@ -813,17 +813,17 @@ typedef struct
 
         /* QOS Manager */
         EQosProtocol                		qosSiteProtocol;
-		TI_UINT8   							qosPacketBurstEnb;     /* Packet Burst Enable */
-		EDot11Mode							qosMngrOperationalMode;
-		TI_UINT8							desiredPsMode;
-		TI_UINT8							currentPsMode;
+        TI_UINT8   							qosPacketBurstEnb;     /* Packet Burst Enable */
+        EDot11Mode							qosMngrOperationalMode;
+        TI_UINT8							desiredPsMode;
+        TI_UINT8							currentPsMode;
         TSpecConfigure						TspecConfigure;
         TPsRxStreaming              		tPsRxStreaming;
-		OS_802_11_QOS_RX_TIMEOUT_PARAMS		rxTimeOut;
+        OS_802_11_QOS_RX_TIMEOUT_PARAMS		rxTimeOut;
         OS_802_11_QOS_PARAMS        		qosOsParams;
-		OS_802_11_AC_QOS_PARAMS				qosApQosParams;
-		TBaPolicy							tBaPolicy;
-		
+        OS_802_11_AC_QOS_PARAMS				qosApQosParams;
+        TBaPolicy							tBaPolicy;
+
         /* AP Qos Capabilities */
         OS_802_11_AP_QOS_CAPABILITIES_PARAMS qosApCapabilities;
 
@@ -832,33 +832,33 @@ typedef struct
 
         OS_802_11_QOS_DELETE_TSPEC_PARAMS   qosDelTspecRequest;
         OS_802_11_QOS_TSPEC_PARAMS     		qosAddTspecRequest;
-		QoS_renegVoiceTspecReq_t	   		qosRenegotiateTspecRequest;
+        QoS_renegVoiceTspecReq_t	   		qosRenegotiateTspecRequest;
 
         OS_802_11_QOS_TSPEC_PARAMS     		qosTspecParameters;
 
-		OS_802_11_QOS_DESIRED_PS_MODE		qosDesiredPsMode;
+        OS_802_11_QOS_DESIRED_PS_MODE		qosDesiredPsMode;
 
         /* Power Manager */
-		PowerMgr_PowerMode_e    			PowerMode;
-		EPowerPolicy 						PowerSavePowerLevel;
-		EPowerPolicy 						DefaultPowerLevel;
-		TPowerMgr_PowerMode   				powerMngPowerMode;
-		PowerMgr_Priority_e 				powerMngPriority;
-		PowerMgr_PowerMode_e				powerMngDozeMode;
+        PowerMgr_PowerMode_e    			PowerMode;
+        EPowerPolicy 						PowerSavePowerLevel;
+        EPowerPolicy 						DefaultPowerLevel;
+        TPowerMgr_PowerMode   				powerMngPowerMode;
+        PowerMgr_Priority_e 				powerMngPriority;
+        PowerMgr_PowerMode_e				powerMngDozeMode;
         TI_BOOL                 			powerMgrKeepAliveEnaDis;
         TKeepAliveTemplate      			*pPowerMgrKeepAliveTemplate;
         TKeepAliveConfig        			*pPowerMgrKeepAliveConfig;
-	 
-		/* txRatePolicy params */
-		TTxRatePolicy         				TxRatePolicy;
-	
-		TIWLN_RADIO_RX_QUALITY 				RxRadioQuality ;
-		
-		/* MIB*/
-		TMib 								mib;
+
+        /* txRatePolicy params */
+        TTxRatePolicy         				TxRatePolicy;
+
+        TIWLN_RADIO_RX_QUALITY 				RxRadioQuality ;
+
+        /* MIB*/
+        TMib 								mib;
 
         /* Current BSS params - RSSI/SNR User Trigger */
-		TUserDefinedQualityTrigger 			rssiSnrTrigger;
+        TUserDefinedQualityTrigger 			rssiSnrTrigger;
 
         /* SDIO Validation Test */
         SdioValidationTestParams_t          tSdioValidationTestParams;
@@ -878,13 +878,12 @@ typedef struct
         /* debug */
         TDebugRegisterReq					HwRegister;
         RateMangeParams_t                   RateMng;
-        RateMangeReadParams_t               RateMngParams; 
+        RateMangeReadParams_t               RateMngParams;
 
         TIpAddr    StationIP;
-        
-    } content;
-}paramInfo_t;
 
+    } content;
+} paramInfo_t;
 
 
 
@@ -921,7 +920,7 @@ typedef struct
     TI_UINT8                   siteMgr_radioLNA[RX_LEVEL_TABLE_SIZE];
     TI_UINT8                   siteMgr_radioRSSI[RX_LEVEL_TABLE_SIZE];
     TI_UINT32                  factorRSSI; /* for RADIA only */
-}radioValues_t;
+} radioValues_t;
 
 typedef struct
 {
@@ -946,22 +945,22 @@ typedef struct
     TI_UINT16               siteMgrDesiredBeaconInterval;
     TI_UINT32               siteMgrDesiredAtimWindow;
     TI_UINT32               siteMgrFreq2ChannelTable[SITE_MGR_CHANNEL_MAX+1];
-    
+
     TI_UINT8                siteMgrExternalConfiguration;
     TI_UINT8                siteMgrPrivacyMode;
     TI_BOOL                 siteMgrWiFiAdhoc;
 
-	/* TX Power Control parameters */
+    /* TX Power Control parameters */
     TI_UINT32                  TxPowerCheckTime;
     TI_UINT32                  TxPowerControlOn;
     TI_INT32                   TxPowerRssiThresh;
     TI_INT32                   TxPowerRssiRestoreThresh;
     TI_UINT8                   TxPowerRecoverLevel;
     TI_UINT8                   TxPowerDesiredLevel;
-	
-	TBeaconFilterInitParams	beaconFilterParams; /*contains the desired state*/
 
-	TI_UINT8					includeWSCinProbeReq;
+    TBeaconFilterInitParams	beaconFilterParams; /*contains the desired state*/
+
+    TI_UINT8					includeWSCinProbeReq;
 } siteMgrInitParams_t;
 
 typedef struct
@@ -984,7 +983,7 @@ typedef struct
     TI_UINT32       uMinScanDuration;
     TI_UINT32       uMaxScanDuration;
     TI_UINT32       uProbeReqNum;
-    TI_INT8         iSnrThreshold;	
+    TI_INT8         iSnrThreshold;
     TI_INT8         iRssiThreshold;
     TI_UINT32       uScanIntervals[ PERIODIC_SCAN_MAX_INTERVAL_NUM ];
     TI_UINT32       uCycleNum;
@@ -996,16 +995,16 @@ typedef struct
 typedef struct
 {
     TI_BOOL  RoamingScanning_2_4G_enable;
-	TI_UINT8 RoamingOperationalMode;
+    TI_UINT8 RoamingOperationalMode;
     TI_UINT8 bSendTspecInReassPkt;
 }   TRoamScanMngrInitParams;
 
 typedef struct
 {
     TI_UINT8                   parseWSCInBeacons;
-	TI_UINT32                  authResponseTimeout;
+    TI_UINT32                  authResponseTimeout;
     TI_UINT32                  authMaxRetryCount;
-	TI_UINT32                  assocResponseTimeout;
+    TI_UINT32                  assocResponseTimeout;
     TI_UINT32                  assocMaxRetryCount;
 } TMlmeInitParams;
 
@@ -1017,10 +1016,10 @@ typedef struct
 
 typedef struct
 {
-	TI_UINT8				highRateThreshold;
-	TI_UINT8				lowRateThreshold;
-	TI_BOOL				    enableEvent;
-}tspecsRateParameters_t;
+    TI_UINT8				highRateThreshold;
+    TI_UINT8				lowRateThreshold;
+    TI_BOOL				    enableEvent;
+} tspecsRateParameters_t;
 
 typedef struct
 {
@@ -1029,13 +1028,13 @@ typedef struct
     TI_UINT8                   ctrlDataPowerSaveTxThreshold;
     TI_UINT8                   ctrlDataPowerSaveRxThreshold;
 
-}powerSaveInitParams_t;
+} powerSaveInitParams_t;
 
 typedef struct
 {
-	TI_UINT8 longRetryLimit;
-	TI_UINT8 shortRetryLimit;
-}txRatePolicyParams;
+    TI_UINT8 longRetryLimit;
+    TI_UINT8 shortRetryLimit;
+} txRatePolicyParams;
 
 typedef struct
 {
@@ -1044,28 +1043,28 @@ typedef struct
     TMacAddr                        ctrlDataDeviceMacAddress;
     powerSaveInitParams_t           powerSaveInitParams;
     erpProtectionType_e             ctrlDataDesiredIbssProtection;
-/* 0 = CTS protaction disable ; 1 = Standard CTS protaction */
+    /* 0 = CTS protaction disable ; 1 = Standard CTS protaction */
     RtsCtsStatus_e                  ctrlDataDesiredCtsRtsStatus;
     OS_802_11_TRAFFIC_INTENSITY_THRESHOLD_PARAMS   ctrlDataTrafficThreshold;
     TI_BOOL                         ctrlDataTrafficThresholdEnabled;
     txRatePolicyParams              ctrlDataTxRatePolicy;
 
-	TI_UINT32		                policyEnabledRatesMaskCck;
-	TI_UINT32		                policyEnabledRatesMaskOfdm;
-	TI_UINT32		                policyEnabledRatesMaskOfdmA;
-	TI_UINT32		                policyEnabledRatesMaskOfdmN;
+    TI_UINT32		                policyEnabledRatesMaskCck;
+    TI_UINT32		                policyEnabledRatesMaskOfdm;
+    TI_UINT32		                policyEnabledRatesMaskOfdmA;
+    TI_UINT32		                policyEnabledRatesMaskOfdmN;
 
 } ctrlDataInitParams_t;
 
 typedef struct
 {
     /* TxCtrl Parameters */
-	TI_UINT32					creditCalculationTimeout;
-	TI_BOOL					    bCreditCalcTimerEnabled;
+    TI_UINT32					creditCalculationTimeout;
+    TI_BOOL					    bCreditCalcTimerEnabled;
     /* TxDataQueue Parameters */
-	TI_BOOL					    bStopNetStackTx;
-	TI_UINT32					uTxSendPaceThresh;
-	TClsfrParams				ClsfrInitParam;
+    TI_BOOL					    bStopNetStackTx;
+    TI_UINT32					uTxSendPaceThresh;
+    TClsfrParams				ClsfrInitParam;
 } txDataInitParams_t;
 
 
@@ -1083,7 +1082,7 @@ typedef struct
     TI_UINT8                       multiRegulatoryDomainEnabled; /* 802.11d */
     TI_UINT8                       spectrumManagementEnabled; /* 802.11h */
     TI_UINT8                       desiredTxPower;
-	TI_UINT8					uTemporaryTxPower;
+    TI_UINT8					uTemporaryTxPower;
     scanControlTable_t          desiredScanControlTable;/* for 5 and 2.4 Ghz*/
 } regulatoryDomainInitParams_t;
 
@@ -1121,7 +1120,7 @@ typedef struct
 
 typedef struct
 {
-  TI_UINT32       qosClassifierTable[MAX_NUM_OF_802_1d_TAGS];
+    TI_UINT32       qosClassifierTable[MAX_NUM_OF_802_1d_TAGS];
 }
 clsfrParams_t;
 
@@ -1141,38 +1140,38 @@ typedef struct
     TI_UINT16                      		autoModeDozeTH;
     PowerMgr_PowerMode_e        autoModeDozeMode;
 
-    	EPowerPolicy defaultPowerLevel;
-	EPowerPolicy PowerSavePowerLevel;     	
+    EPowerPolicy defaultPowerLevel;
+    EPowerPolicy PowerSavePowerLevel;
 
-	
-	/* powerMgmtConfig IE */
+
+    /* powerMgmtConfig IE */
     TI_UINT8						mode;
     TI_UINT8						hangOverPeriod;
-    TI_UINT16						NullPktRateModulation; 
+    TI_UINT16						NullPktRateModulation;
 
-	/* PMConfigStruct */
-	TI_UINT32						ELPEnable;			/* based on "elpType" */
-	TI_UINT32						WakeOnGPIOenable;	/* based on "hwPlatformType" */
-	TI_UINT32						BaseBandWakeUpTime;	/* BBWakeUpTime */
-	TI_UINT32						PLLlockTime;
+    /* PMConfigStruct */
+    TI_UINT32						ELPEnable;			/* based on "elpType" */
+    TI_UINT32						WakeOnGPIOenable;	/* based on "hwPlatformType" */
+    TI_UINT32						BaseBandWakeUpTime;	/* BBWakeUpTime */
+    TI_UINT32						PLLlockTime;
 
-	/* ACXWakeUpCondition */
+    /* ACXWakeUpCondition */
     TI_UINT8						listenInterval;
     /* BET */
     TI_UINT32  						MaximalFullBeaconReceptionInterval; /* maximal time between full beacon reception */
     TI_UINT8   						BetEnableThreshold;
     TI_UINT8   						BetDisableThreshold;
-    TI_UINT8   						BetEnable;             
+    TI_UINT8   						BetEnable;
     TI_UINT8   						MaximumConsecutiveET;
     TI_UINT32						PsPollDeliveryFailureRecoveryPeriod;
 
-	TI_BOOL							reAuthActivePriority;	
-}PowerMgrInitParams_t;
+    TI_BOOL							reAuthActivePriority;
+} PowerMgrInitParams_t;
 
 typedef struct
 {
-	TI_UINT8  FullRecoveryEnable;
-	TI_BOOL   recoveryTriggerEnabled[ MAX_FAILURE_EVENTS ];
+    TI_UINT8  FullRecoveryEnable;
+    TI_BOOL   recoveryTriggerEnabled[ MAX_FAILURE_EVENTS ];
 } healthMonitorInitParams_t;
 
 typedef struct
@@ -1187,7 +1186,7 @@ typedef struct
     TI_BOOL	        bPushMode; /*  True means Push mode. False is the default mode, storing scan results in table. */
     TI_UINT32       uSraThreshold;
     TI_INT32        nRssiThreshold;
-	TI_UINT32       numberOfNoScanCompleteToRecovery;
+    TI_UINT32       numberOfNoScanCompleteToRecovery;
 } TScanCncnInitParams;
 
 typedef struct
@@ -1200,26 +1199,26 @@ typedef struct
 typedef struct
 {
     TI_BOOL      bRRMEnabled;
- 
+
 } TStaCapInitParams;
 
 
 
 typedef struct
 {
-	TI_BOOL                rxDataHostPacketProcessing;
+    TI_BOOL                rxDataHostPacketProcessing;
     TI_BOOL                rxDataFiltersEnabled;
     filter_e            rxDataFiltersDefaultAction;
     TRxDataFilterRequest    rxDataFilterRequests[MAX_DATA_FILTERS];
-	TI_UINT32				reAuthActiveTimeout;
-}rxDataInitParams_t;
+    TI_UINT32				reAuthActiveTimeout;
+} rxDataInitParams_t;
 
 typedef struct
 {
     TI_UINT32       uWlanDrvThreadPriority; /* Default setting of the WLAN driver task priority  */
     TI_UINT32       uBusDrvThreadPriority;  /* Default setting of the bus driver thread priority */
     TI_UINT32       uSdioBlkSizeShift;      /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
-}TDrvMainParams;
+} TDrvMainParams;
 
 typedef struct
 {
@@ -1236,7 +1235,7 @@ typedef struct
 typedef struct
 {
     TI_UINT16                       uIniFileVersion;
-	TTwdInitParams        		    twdInitParams;
+    TTwdInitParams        		    twdInitParams;
     siteMgrInitParams_t             siteMgrInitParams;
     connInitParams_t                connInitParams;
     txDataInitParams_t              txDataInitParams;
@@ -1252,13 +1251,13 @@ typedef struct
 #ifdef XCC_MODULE_INCLUDED
     XCCMngrParams_t                 XCCMngrParams;
 #endif
-	SwitchChannelInitParams_t		SwitchChannelInitParams;
-	healthMonitorInitParams_t		healthMonitorInitParams;
+    SwitchChannelInitParams_t		SwitchChannelInitParams;
+    healthMonitorInitParams_t		healthMonitorInitParams;
     apConnParams_t                  apConnParams;
     PowerMgrInitParams_t            PowerMgrInitParams;
     TScanCncnInitParams             tScanCncnInitParams;
-	rxDataInitParams_t              rxDataInitParams;
-	TI_BOOL							SendINIBufferToUser;
+    rxDataInitParams_t              rxDataInitParams;
+    TI_BOOL							SendINIBufferToUser;
     /* Traffic Monitor */
     TI_UINT8                        trafficMonitorMinIntervalPercentage;
     TReportInitParams               tReport;

@@ -31,7 +31,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- 
+
 /***************************************************************************/
 /*                                                                         */
 /*    MODULE:   txCtrl.h                                                   */
@@ -68,7 +68,7 @@ static const TI_UINT32 txDelayRangeEnd  [TX_DELAY_RANGES_NUM] = { 1000, 10000, 2
 /* BE is ordered here above BK for priority sensitive functions (BE is 0 but has higher priority than BK). */
 static const EAcTrfcType priorityOrderedAc[] = {QOS_AC_BK, QOS_AC_BE, QOS_AC_VI, QOS_AC_VO};
 
-typedef struct 
+typedef struct
 {
     TI_UINT32  dbgNumPktsSent[MAX_NUM_OF_AC];       /* Pkts sent by data-queue or mgmt-queue. */
     TI_UINT32  dbgNumPktsBackpressure[MAX_NUM_OF_AC];/* Pkts for which backpressure was set by HW-Q */
@@ -87,33 +87,33 @@ typedef struct
 
 typedef struct
 {
-    TI_HANDLE       hRequestTimer; 
-    TI_BOOL         bRequestTimerRunning;  
+    TI_HANDLE       hRequestTimer;
+    TI_BOOL         bRequestTimerRunning;
     TI_UINT8        tid;
     TTimerCbFunc    fExpiryCbFunc;
 } TSMTimerData_t;
 
-/* 
+/*
  * TokenCalculationParams_t - struct used for the tokens calculation
- *                           of the WMM-AC 
+ *                           of the WMM-AC
 */
 typedef struct
 {
-	TI_UINT16	allocatedMediumTime;
-	TI_INT16    tokens;
-	TI_UINT32   timeDiffMinThreshold;
-	TI_UINT32   defTimeDiffMinThreshold;
-	TI_UINT32   lastCalcTimeStamp;
-	TI_UINT32	usedTokensReminder;
-	TI_UINT32	unusedTokensReminder;
-	TI_UINT16	maxTokensThreshold;
-	TI_UINT16	minTokensThreshold;
+    TI_UINT16	allocatedMediumTime;
+    TI_INT16    tokens;
+    TI_UINT32   timeDiffMinThreshold;
+    TI_UINT32   defTimeDiffMinThreshold;
+    TI_UINT32   lastCalcTimeStamp;
+    TI_UINT32	usedTokensReminder;
+    TI_UINT32	unusedTokensReminder;
+    TI_UINT16	maxTokensThreshold;
+    TI_UINT16	minTokensThreshold;
 } TokenCalculationParams_t;
 
-/* 
- *  Module object structure. 
+/*
+ *  Module object structure.
  */
-typedef struct 
+typedef struct
 {
     /* Handles */
     TI_HANDLE           hOs;
@@ -133,7 +133,7 @@ typedef struct
     TI_HANDLE           hMeasurementMgr;
     TI_HANDLE           hSiteMgr;
 
-    
+
     TI_HANDLE           hCreditTimer;   /* The medium-usage credit timer handle */
 
     /* External parameters */
@@ -146,7 +146,7 @@ typedef struct
     TI_UINT16           aMsduLifeTimeTu[MAX_NUM_OF_AC];
     AckPolicy_e         ackPolicy[MAX_NUM_OF_AC];
     TtxCtrlHtControl    tTxCtrlHtControl;
-	TI_UINT16           genericEthertype;
+    TI_UINT16           genericEthertype;
 
     /* ACs admission and busy mapping */
     TI_UINT32           busyAcBitmap;   /* Current bitmap of busy ACs (in HW-Q backpressure format). */
@@ -155,7 +155,7 @@ typedef struct
     EAcTrfcType         highestAdmittedAc[MAX_NUM_OF_AC]; /* Provide highest admitted AC equal or below given AC. */
     ETrafficAdmState    admissionState[MAX_NUM_OF_AC];    /* AC is allowed to transmit or not. */
     EAdmissionState     admissionRequired[MAX_NUM_OF_AC]; /* AC requires AP's admission or not. */
-	TI_BOOL             acDowngraded[MAX_NUM_OF_AC];      /* AC is downgraded due to exceeded meduim time */
+    TI_BOOL             acDowngraded[MAX_NUM_OF_AC];      /* AC is downgraded due to exceeded meduim time */
 
     /* Tx Attributes */
     TI_UINT32           mgmtRatePolicy[MAX_NUM_OF_AC];  /* Current rate policy for mgmt packets per AC. */
@@ -166,14 +166,14 @@ typedef struct
 
     /* Counters */
     TTxDataCounters     txDataCounters[MAX_NUM_OF_AC]; /* Save Tx statistics per Tx-queue. */
-    TI_UINT32           SumTotalDelayUs[MAX_NUM_OF_AC]; /* Store pkt delay sum in Usecs to avoid divide per 
+    TI_UINT32           SumTotalDelayUs[MAX_NUM_OF_AC]; /* Store pkt delay sum in Usecs to avoid divide per
                                                             pkt, and covert to msec on user request. */
     TI_UINT32           currentConsecutiveRetryFail; /* current consecutive number of tx failures due to max retry */
     ERate               eCurrentTxRate;                 /* Save last data Tx rate for applications' query */
 
     /* credit calculation parameters */
-	TI_BOOL				bCreditCalcTimerEnabled;        /* credit timer is enabled from registry */
-	TI_BOOL				bCreditCalcTimerRunning;        /* credit calculation timer is running */
+    TI_BOOL				bCreditCalcTimerEnabled;        /* credit timer is enabled from registry */
+    TI_BOOL				bCreditCalcTimerRunning;        /* credit calculation timer is running */
     TI_UINT32           creditCalculationTimeout;
     TI_INT32            lowMediumUsageThreshold[MAX_NUM_OF_AC];
     TI_INT32            highMediumUsageThreshold[MAX_NUM_OF_AC];
@@ -183,13 +183,13 @@ typedef struct
     TI_UINT32           mediumTime[MAX_NUM_OF_AC];
     TI_UINT32           totalUsedTime[MAX_NUM_OF_AC];
 
-	TokenCalculationParams_t tokenCalcParams[MAX_NUM_OF_AC];
-	
+    TokenCalculationParams_t tokenCalcParams[MAX_NUM_OF_AC];
+
     /* TSM (802.11k measurements) */
-    TSMReportData_t     TSMReportStat[TSM_REPORT_NUM_OF_TID_MAX]; 
+    TSMReportData_t     TSMReportStat[TSM_REPORT_NUM_OF_TID_MAX];
     TI_UINT32           TSMInProgressBitmap;
     /*  Timers to be used for regular TSM (not triggered one) */
-    TSMTimerData_t      tTSMTimers[TSM_REPORT_NUM_OF_MEASUREMENT_IN_PARALLEL_MAX];                  
+    TSMTimerData_t      tTSMTimers[TSM_REPORT_NUM_OF_MEASUREMENT_IN_PARALLEL_MAX];
     tTriggerTSMReport   fTriggerReportCB;
 
     TI_UINT32           uSdioBlkSizeShift;       /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */

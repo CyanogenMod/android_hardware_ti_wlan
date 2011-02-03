@@ -1231,7 +1231,11 @@ S32 user_main(S32 argc, PS8* argv)
 	if(g_TiCon.hConsole == NULL)
 		return 0;
 
-	Console_GetDeviceStatus(g_TiCon.hConsole);	
+	/* warn if driver is not running */
+	if (!Console_GetDeviceStatus(g_TiCon.hConsole))
+	{
+		os_error_printf(CU_MSG_ERROR, (PS8)("ERROR - driver is not in RUNNING state!\n") );
+	}
 
 	os_Catch_CtrlC_Signal(TiCon_SignalCtrlC);		
 

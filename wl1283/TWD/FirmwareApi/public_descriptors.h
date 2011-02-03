@@ -51,7 +51,7 @@
 /******************************************************************************
 
 		TX PATH
-	 
+
 ******************************************************************************/
 
 #define AID_BROADCAST 0x0       /* broadcast frames AID */
@@ -81,14 +81,14 @@
 /* The packet transmission result, written in the status field of TxResultDescriptor_t */
 typedef enum
 {
-    TX_SUCCESS              = 0,     
-	TX_HW_ERROR             = 1,
-	TX_DISABLED             = 2,
-	TX_RETRY_EXCEEDED       = 3,
-	TX_TIMEOUT              = 4,
-	TX_KEY_NOT_FOUND        = 5,
-	TX_PEER_NOT_FOUND       = 6,
-    TX_SESSION_MISMATCH     = 7 
+    TX_SUCCESS              = 0,
+    TX_HW_ERROR             = 1,
+    TX_DISABLED             = 2,
+    TX_RETRY_EXCEEDED       = 3,
+    TX_TIMEOUT              = 4,
+    TX_KEY_NOT_FOUND        = 5,
+    TX_PEER_NOT_FOUND       = 6,
+    TX_SESSION_MISMATCH     = 7
 } TxDescStatus_enum;
 
 #ifdef HOST_COMPILE
@@ -113,8 +113,8 @@ typedef struct TxIfDescriptor_t
     uint8           totalMemBlks;   /* Total number of memory blocks allocated by the host for this packet*/
 #endif
     uint32          startTime;  /* Device time (in us) when the packet arrived to the driver */
-    uint16          lifeTime;   /* Max delay in TUs until transmission. The last device time the 
-                                      packet can be transmitted is: startTime+(1024*LifeTime) */ 
+    uint16          lifeTime;   /* Max delay in TUs until transmission. The last device time the
+                                      packet can be transmitted is: startTime+(1024*LifeTime) */
     uint16          txAttr;		/* Bitwise fields - see TX_ATTR... definitions above. */
     uint8           descID;		/* Packet identifier used also in the Tx-Result. */
     uint8           tid;		/* The packet TID value (as User-Priority) */
@@ -128,29 +128,29 @@ typedef struct TxIfDescriptor_t
 typedef struct TxResultDescriptor_t
 {
     uint8			descID;		 /* Packet Identifier - same value used in the Tx descriptor.*/
-	TxDescStatus_e	status;		 /* The status of the transmission, indicating success or one of several
+    TxDescStatus_e	status;		 /* The status of the transmission, indicating success or one of several
 									 possible reasons for failure. Refer to TxDescStatus_enum above.*/
-	uint16 			mediumUsage; /* Total air access duration including all retrys and overheads.*/
+    uint16 			mediumUsage; /* Total air access duration including all retrys and overheads.*/
     uint32 			totalDelay;	/* The time passed from host xfer to Tx-complete.*/
-	uint32 			mediumDelay; /* Total media delay (from 1st EDCA AIFS counter until TX Complete). */ 
-	uint8  			lsbSecuritySequenceNumber; /* LS-byte of last TKIP seq-num (saved per AC for recovery).*/
-    uint8  			ackFailures; /* Retry count - number of transmissions without successful ACK.*/  
+    uint32 			mediumDelay; /* Total media delay (from 1st EDCA AIFS counter until TX Complete). */
+    uint8  			lsbSecuritySequenceNumber; /* LS-byte of last TKIP seq-num (saved per AC for recovery).*/
+    uint8  			ackFailures; /* Retry count - number of transmissions without successful ACK.*/
     TxRateIndex_t	rate;		 /* The rate that succeeded getting ACK (Valid only if status=SUCCESS). */
-    uint8  			spare;       /* for 4-byte alignment. */  
+    uint8  			spare;       /* for 4-byte alignment. */
 } TxResultDescriptor_t;
 
 /* The Host-FW Tx-Result control counters */
 typedef struct
 {
-	uint32 TxResultFwCounter;	/* FW updates num of results written to results-queue since FW-init. */
+    uint32 TxResultFwCounter;	/* FW updates num of results written to results-queue since FW-init. */
     uint32 TxResultHostCounter;	/* Host updates num of results read from results-queue since FW-init. */
 } TxResultControl_t;
 
 /* The Host-FW Tx-Result Interface */
-typedef struct 
+typedef struct
 {
-	TxResultControl_t TxResultControl;  		   /* See above. */
-	TxResultDescriptor_t TxResultQueue[TRQ_DEPTH];
+    TxResultControl_t TxResultControl;  		   /* See above. */
+    TxResultDescriptor_t TxResultQueue[TRQ_DEPTH];
 } TxResultInterface_t;
 
 
@@ -175,8 +175,8 @@ typedef struct
 /*           from (0=2.4, 1=4.9, 2=5.0)  */
 /* ------------------------------------- */
 #define    RX_DESC_BAND_MASK        0x03  /* Band is in Bits 0-1 */
-#define    RX_DESC_BAND_BG          0x00  
-#define    RX_DESC_BAND_J           0x01  
+#define    RX_DESC_BAND_BG          0x00
+#define    RX_DESC_BAND_J           0x01
 #define    RX_DESC_BAND_A           0x02
 #define    RX_DESC_STBC             0x04
 #define    RX_DESC_A_MPDU           0x08
@@ -194,10 +194,10 @@ typedef struct
 /*   Bit3-7: reserved (0)                */
 /*   Bit0-2: 0 - Success,                */
 /*           1 - RX_DECRYPT_FAIL,        */
-/*           2 - RX_MIC_FAIL             */ 
+/*           2 - RX_MIC_FAIL             */
 /* ------------------------------------- */
-#define    RX_DESC_STATUS_SUCCESS           0  
-#define    RX_DESC_STATUS_DECRYPT_FAIL      1  
+#define    RX_DESC_STATUS_SUCCESS           0
+#define    RX_DESC_STATUS_DECRYPT_FAIL      1
 #define    RX_DESC_STATUS_MIC_FAIL          2
 #define    RX_DESC_STATUS_DRIVER_RX_Q_FAIL  3
 
@@ -205,7 +205,7 @@ typedef struct
 
 
 /**********************************************
-    clasify tagging 
+    clasify tagging
 ***********************************************/
 typedef enum
 {
@@ -214,7 +214,7 @@ typedef enum
     TAG_CLASS_DATA          = 2,
     TAG_CLASS_QOS_DATA      = 3,
     TAG_CLASS_BCN_PRBRSP    = 4,
-    TAG_CLASS_EAPOL         = 5, 
+    TAG_CLASS_EAPOL         = 5,
     TAG_CLASS_BA_EVENT      = 6,
     TAG_CLASS_AMSDU         = 7
 } PacketClassTag_enum;
@@ -247,9 +247,9 @@ typedef uint8 ProcessIDTag_e;
 
 ******************************************************************************/
 typedef struct
-{    
-	uint16              length;             /* Length of payload (including headers)*/
-    
+{
+    uint16              length;             /* Length of payload (including headers)*/
+
     uint8               status;             /* 0 = Success, 1 = RX Decrypt Fail, 2 = RX MIC Fail */
 
     uint8               flags;              /* See RX_DESC_xxx above */
@@ -257,11 +257,11 @@ typedef struct
     TxRateIndex_t       rate;               /* Recevied Rate:at ETxRateClassId format */
 
     uint8               channel;            /* The received channel*/
-    
-    int8                rx_level;           /* The computed RSSI value in db of current frame */  
-    
+
+    int8                rx_level;           /* The computed RSSI value in db of current frame */
+
     uint8               rx_snr;             /* The computed SNR value in db of current frame */
-                                            
+
     uint32              timestamp;          /* Timestamp in microseconds,     */
 
     PacketClassTag_e    packet_class_tag;   /* Packet classification tagging info */
@@ -271,7 +271,7 @@ typedef struct
     uint8               extraBytes;         /* Number of padding bytes added to actual packet length */
 
     uint8               driverFlags;        /* holds the driver flags to be used internally */
-    
+
 } RxIfDescriptor_t;
 
 

@@ -579,8 +579,10 @@ EScanCncnResultStatus scanCncn_StartPeriodicScan (TI_HANDLE hScanCncn,
     os_memoryCopy (pScanCncn->hOS, &(pScanCncn->pScanClients[ eClient ]->uScanParams.tPeriodicScanParams), 
                    pScanParams, sizeof(TPeriodicScanParams));
 
+
     /* ask the reg domain which channels are allowed for the requested scan type */
     status = scanCncn_VerifyChannelsWithRegDomain (hScanCncn, &(pScanCncn->pScanClients[ eClient ]->uScanParams), TI_TRUE);
+
 
     /* if no channels are available for scan, return negative result */
     if (TI_NOK == status ||
@@ -722,6 +724,7 @@ void scanCncn_ScanCompleteNotification (TI_HANDLE hScanCncn, EScanResultTag eTag
 
     /* check if all frames had been received */
     if (pScanCncn->pScanClients[ eClient ]->uResultCounter >= pScanCncn->pScanClients[ eClient ]->uResultExpectedNumber)
+
     {
         TRACE2(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncn_ScanCompleteNotificationCB: client %d received %d results, matching scan complete FW indication, sending scan complete event\n", eClient, pScanCncn->pScanClients[ eClient ]->uResultCounter);
 

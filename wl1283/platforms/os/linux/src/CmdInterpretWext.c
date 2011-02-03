@@ -575,7 +575,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
         }
     
 
-        /* trigger scanning (list cells) */
+    /* trigger scanning (list cells) */
     case SIOCSIWSCAN:
         {
 			struct iw_scan_req scanReq;
@@ -1376,9 +1376,9 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
            
             pParam->paramType = my_command->cmd;
 
+
             if (IS_PARAM_ASYNC(my_command->cmd))
             {
-
                 /* os_printf ("Detected ASYNC command - setting CB \n"); */
                 pParam->content.interogateCmdCBParams.hCb  =  (TI_HANDLE)pCmdInterpret;
                 pParam->content.interogateCmdCBParams.fCb  =  (void*)cmdInterpret_ServiceCompleteCB;
@@ -1413,7 +1413,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
             } 
             else if (my_command->flags & PRIVATE_CMD_GET_FLAG)
             {
-                pParam->paramLength = my_command->out_buffer_len;
+                  pParam->paramLength = my_command->out_buffer_len;
                 res = cmdDispatch_GetParam (pCmdInterpret->hCmdDispatch,pParam);
                 if(res == EXTERNAL_GET_PARAM_DENIED)
                 {
@@ -1444,15 +1444,18 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 }
                 else
                 {
+
                     if ((my_command->out_buffer) && (my_command->out_buffer_len))
                     {
+
                         if(IS_ALLOC_NEEDED_PARAM(my_command->cmd))
                         {
+
                             os_memoryCopy(pCmdInterpret->hOs,my_command->out_buffer,*(void**)&pParam->content,my_command->out_buffer_len);
                         }
                         else
                         {
-                            os_memoryCopy(pCmdInterpret->hOs,my_command->out_buffer,&pParam->content,my_command->out_buffer_len);
+                             os_memoryCopy(pCmdInterpret->hOs,my_command->out_buffer,&pParam->content,my_command->out_buffer_len);
                         }                   
                     }               
                 }

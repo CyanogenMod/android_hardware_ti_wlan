@@ -86,9 +86,9 @@ extern void enable_irq(unsigned int);
 
 
 /****************************************************************************************
- *                        								*
- *					OS Report API					*       
- *											*
+ *                        																*
+ *						OS Report API													*
+ *																						*
  ****************************************************************************************/
 static void SendLoggerData (TI_HANDLE OsContext, TI_UINT8 *pMsg, TI_UINT16 len)
 {    
@@ -149,33 +149,34 @@ void os_printf(const char *format ,...)
 
 	if(message_len > 0)
 	{
-		if( from_new_line )
-        	{
-			if (msg[1] == '$')
-			{
-				p_msg += 4;
-			}
-            
-			sec = os_timeStampUs(NULL);
-			uSec = sec % MICROSECOND_IN_SECONDS;
-			sec /= MICROSECOND_IN_SECONDS;
-			printk(KERN_INFO DRIVER_NAME ": %d.%06d: %s",sec,uSec,p_msg);
-        	}
-        	else
-        	{
-			printk(&msg[0]);
-        	}
- 
-		from_new_line = ( msg[message_len - 1] == '\n' );
+   if( from_new_line )
+	{
+		if (msg[1] == '$')
+		{
+			p_msg += 4;
+		}
+
+		sec = os_timeStampUs(NULL);
+		uSec = sec % MICROSECOND_IN_SECONDS;
+		sec /= MICROSECOND_IN_SECONDS;
+
+		printk(KERN_INFO DRIVER_NAME ": %d.%06d: %s",sec,uSec,p_msg);
+	}
+	else
+	{
+	printk(&msg[0]);
+	}
+
+	from_new_line = ( msg[message_len - 1] == '\n' );
 	}
 
 	va_end(ap);
 }
 
 /****************************************************************************************
- *                      								*
- *					OS TIMER API					*
- *											*
+ *                        																*
+ *							OS TIMER API												*
+ *																						*
  ****************************************************************************************/
 
 /****************************************************************************************
@@ -342,16 +343,16 @@ NOTES:
 *****************************************************************************************/
 void os_StalluSec (TI_HANDLE OsContext, TI_UINT32 uSec)
 {
-	udelay (uSec);
+    udelay (uSec);
 }
 
 
 /****************************************************************************************
- *											*
- *					Protection services API				*
- *											*
+ *                        																*
+ *							Protection services	API										*
+ *																						*
  ****************************************************************************************
- * OS protection is implemented as spin_lock_irqsave and spin_unlock_irqrestore 	*
+ * OS protection is implemented as spin_lock_irqsave and spin_unlock_irqrestore  								*
  ****************************************************************************************/
 
 
@@ -370,7 +371,7 @@ NOTES:
 *****************************************************************************************/
 TI_HANDLE os_protectCreate (TI_HANDLE OsContext)
 {
-	return NULL;
+    return NULL;
 }
 
 
@@ -403,9 +404,9 @@ NOTES:
 *****************************************************************************************/
 void os_protectLock (TI_HANDLE OsContext, TI_HANDLE ProtectContext)
 {
-	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
 
-	spin_lock_irqsave (&drv->lock, drv->flags);
+    spin_lock_irqsave (&drv->lock, drv->flags);
 }
 
 
@@ -437,6 +438,7 @@ RETURN:
 
 NOTES:         	
 *****************************************************************************************/
+
 TI_BOOL os_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacket, TI_UINT16 Length)
 {
    TWlanDrvIfObj  *drv     = (TWlanDrvIfObj *)OsContext;
@@ -470,7 +472,6 @@ TI_BOOL os_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacket, TI_U
    printk("-->> os_receivePacket() pPacket=0x%x Length=%d skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
 		  (int)pPacket, (int)Length, (int)skb, (int)skb->data, (int)skb->head, (int)skb->len);
 */
-   /* Use skb_reserve, it updates both skb->data and skb->tail. */
    skb->data = RX_ETH_PKT_DATA(pPacket);
    skb->tail = skb->data;
    skb_put(skb, RX_ETH_PKT_LEN(pPacket));
@@ -582,14 +583,14 @@ TI_INT32 os_IndicateEvent (TI_HANDLE OsContext, IPC_EV_DATA* pData)
 
 void os_disableIrq (TI_HANDLE OsContext)
 {
-	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
-	disable_irq (drv->irq);
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+    disable_irq (drv->irq);
 }
 
 void os_enableIrq (TI_HANDLE OsContext)
 {
-	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
-	enable_irq (drv->irq);
+    TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+    enable_irq (drv->irq);
 }
 
 /*-----------------------------------------------------------------------------
@@ -620,16 +621,18 @@ Return Value:  1 if lock was enabled, 0 if not
 int os_wake_lock_timeout (TI_HANDLE OsContext)
 {
 	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
-	int ret = 0;
 	unsigned long flags;
+	int ret = 0;
 
-	if (drv) {
+	if (drv)
+    {
 		spin_lock_irqsave(&drv->lock, flags);
 		ret = drv->wl_packet;
-		if (drv->wl_packet) {
+		if (drv->wl_packet)
+        {
 			drv->wl_packet = 0;
 #ifdef CONFIG_HAS_WAKELOCK
-			wake_lock_timeout(&drv->wl_rxwake, HZ);
+            wake_lock_timeout(&drv->wl_rxwake, HZ);
 #endif
 		}
 		spin_unlock_irqrestore(&drv->lock, flags);
@@ -653,7 +656,8 @@ int os_wake_lock_timeout_enable (TI_HANDLE OsContext)
 	unsigned long flags;
 	int ret = 0;
 
-	if (drv) {
+	if (drv)
+    {
 		spin_lock_irqsave(&drv->lock, flags);
 		ret = drv->wl_packet = 1;
 		spin_unlock_irqrestore(&drv->lock, flags);
@@ -676,11 +680,14 @@ int os_wake_lock (TI_HANDLE OsContext)
 	int ret = 0;
 	unsigned long flags;
 
-	if (drv) {
+	if (drv)
+    {
 		spin_lock_irqsave(&drv->lock, flags);
 #ifdef CONFIG_HAS_WAKELOCK
 		if (!drv->wl_count)
+        {
 			wake_lock(&drv->wl_wifi);
+        }
 #endif
 		drv->wl_count++;
 		ret = drv->wl_count;
@@ -705,13 +712,17 @@ int os_wake_unlock (TI_HANDLE OsContext)
 	int ret = 0;
 	unsigned long flags;
 
-	if (drv) {
+	if (drv)
+    {
 		spin_lock_irqsave(&drv->lock, flags);
-		if (drv->wl_count) {
+		if (drv->wl_count)
+        {
 			drv->wl_count--;
 #ifdef CONFIG_HAS_WAKELOCK
 			if (!drv->wl_count)
+            {
 				wake_unlock(&drv->wl_wifi);
+            }
 #endif
 			ret = drv->wl_count;
 		}
@@ -742,9 +753,9 @@ int os_RequestSchedule (TI_HANDLE OsContext, TI_BOOL *pContextSwitchRequired)
    CL_TRACE_START_L3();
    CL_TRACE_END_L3("tiwlan_drv.ko", "OS", "TASK", "");
 
-	if( !queue_work(drv->tiwlan_wq, &drv->tWork) )
+	if(!queue_work(drv->tiwlan_wq, &drv->tWork) )
 	{
-		return TI_NOK;
+       iRes = TI_NOK;
 	}
 
    return iRes;
@@ -762,11 +773,13 @@ Return Value: TI_OK
 -----------------------------------------------------------------------------*/
 void *os_SignalObjectCreate (TI_HANDLE OsContext)
 {
-	struct completion *myPtr;
-	myPtr = os_memoryAlloc(OsContext, sizeof(struct completion));
-	if (myPtr)
-		init_completion (myPtr);
-	return (myPtr);
+   struct completion *myPtr;
+   myPtr = os_memoryAlloc(OsContext, sizeof(struct completion));
+   if (myPtr)
+   {
+       init_completion (myPtr);
+   }
+   return (myPtr);
 }
 
 
@@ -789,7 +802,7 @@ int os_SignalObjectWait (TI_HANDLE OsContext, void *signalObject)
     {
 		printk("os_SignalObjectWait: 10 sec %s timeout\n", __func__);
 	}
-	return TI_OK;
+   return TI_OK;
 }
 
 
@@ -824,10 +837,12 @@ Return Value: TI_OK
 -----------------------------------------------------------------------------*/
 int os_SignalObjectFree (TI_HANDLE OsContext, void *signalObject)
 {
-	if (!signalObject)
+    if (!signalObject)
+    {
 		return TI_NOK;
-	os_memoryFree(OsContext, signalObject, sizeof(struct completion));
-	return TI_OK;
+    }
+   os_memoryFree(OsContext, signalObject, sizeof(struct completion));
+   return TI_OK;
 }
 
 
@@ -851,21 +866,21 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
 	TI_UINT32	uMaxParamValue = 0;
 	TI_UINT32	uMsgLen	= TRACE_MSG_MIN_LENGTH;
 	TI_UINT8    aMsg[TRACE_MSG_MAX_LENGTH] = {0};
-	TTraceMsg   *pMsgHdr  = (TTraceMsg *)&aMsg[0];
+    TTraceMsg   *pMsgHdr  = (TTraceMsg *)&aMsg[0];
 	TI_UINT8    *pMsgData = &aMsg[0] + sizeof(TTraceMsg);
 	va_list	    list;
 
-	if (!bRedirectOutputToLogger)
-	{
-		return;
-	}
+    if (!bRedirectOutputToLogger)
+    {
+        return;
+    }
 
 	if (uParamsNum > TRACE_MSG_MAX_PARAMS)
 	{
 		uParamsNum = TRACE_MSG_MAX_PARAMS;
 	}
 
-	/* sync on the parameters */
+    /* sync on the parameters */
 	va_start(list, uParamsNum);
 
 	/* find the longest parameter */
@@ -887,7 +902,7 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
         }
 	}
 
-	/* Set msg length and format according to the biggest parameter value (8/16/32 bits) */
+    /* Set msg length and format according to the biggest parameter value (8/16/32 bits) */
 	if (uMaxParamValue > UINT16_MAX_VAL)		
 	{
 		pMsgHdr->uFormat = TRACE_FORMAT_32_BITS_PARAMS;
@@ -904,11 +919,11 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
 		uMsgLen += uParamsNum;
 	}
 
-	/* Fill all other header information */
-	pMsgHdr->uLevel     = (TI_UINT8)uLevel;
-	pMsgHdr->uParamsNum = (TI_UINT8)uParamsNum;
-	pMsgHdr->uFileId    = (TI_UINT16)uFileId;
-	pMsgHdr->uLineNum   = (TI_UINT16)uLineNum;
+    /* Fill all other header information */
+    pMsgHdr->uLevel     = (TI_UINT8)uLevel;
+    pMsgHdr->uParamsNum = (TI_UINT8)uParamsNum;
+    pMsgHdr->uFileId    = (TI_UINT16)uFileId;
+    pMsgHdr->uLineNum   = (TI_UINT16)uLineNum;
 
 	/* re-sync on the parameters */
 	va_start(list, uParamsNum);
@@ -942,7 +957,7 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
 
 	va_end(list);
 
-	/* Send the trace message to the logger */
+    /* Send the trace message to the logger */
 	SendLoggerData(OsContext, aMsg, (TI_UINT16)uMsgLen);
 }
 

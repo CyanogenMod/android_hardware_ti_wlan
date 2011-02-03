@@ -31,7 +31,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- 
+
 /***************************************************************************/
 /*                                                                         */
 /*    MODULE:   txCtrl_Api.h                                               */
@@ -63,19 +63,19 @@ typedef struct
     TI_UINT8    uMaxConsecutiveDelayedPktsThr;     /* The number of consecutive delayed packets threshold which will cause triggering TSM report */
     TI_UINT8    uMaxConsecutiveDelayedPktsCounter; /* The number of consecutive delayed packets counter  */
 
-    
+
     /* bit field : bit0: average, bit1: consecutive, bit2: delay */
     TI_UINT8    uDelayThreshold; /* in TUs (1024 useconds)  */
-    TI_UINT8    uAverageErrorThreshold; 
+    TI_UINT8    uAverageErrorThreshold;
     TI_UINT8    uConsecutiveErrorThreshold;
 
     TI_UINT8    uConsecutiveDiscardedMsduCounter;
     TI_UINT8    uAverageDiscardedMsduCredit;
-    
+
     TI_UINT8    uPktCrossedDelayThrCounter;        /* The actual number of consecutive MSDUs crossed the Delay Threshold */
     TI_UINT32   uMsduTotalCounter;                 /* the number of MSDU that were successfully or not transmitted */
     TI_UINT32   uMsduTransmittedOKCounter;         /* the number of MSDU that were successfully transmitted */
-    TI_UINT32   uMsduRetryExceededCounter;         /* the number of transmit attempts exceeding short/long retry limit */ 
+    TI_UINT32   uMsduRetryExceededCounter;         /* the number of transmit attempts exceeding short/long retry limit */
     TI_UINT32   uMsduMultipleRetryCounter;         /* more than one retransmission attempt */
     TI_UINT32   uMsduLifeTimeExpiredCounter;       /* the number of transmit attempts with lifetime expired */
     TI_BOOL     bTSMInProgress;                    /* flag which specifies that the measurement for this TID has started */
@@ -83,7 +83,7 @@ typedef struct
     TI_UINT8    measurementToken;
     TI_UINT8    measurementCount;
     TI_UINT16   measurementDuration;
-    
+
     TI_UINT8    actualMeasurementTSF[8];
     TI_UINT8    frameToken;
     TI_UINT16   frameNumOfRepetitions;
@@ -92,9 +92,9 @@ typedef struct
     TI_UINT8    reportingReason;
     TI_UINT8    bin0Range;
     TI_UINT8    triggerCondition;
-   
 
-    
+
+
 } TSMReportData_t;
 
 
@@ -121,8 +121,8 @@ typedef struct
     TI_UINT16                       randomInterval;
     TI_UINT16                       uDuration;
     TI_UINT8                        uTID;
-    TI_UINT8                        uBin0Range; 
-    TI_UINT8                        uDelayedMsduRange; 
+    TI_UINT8                        uBin0Range;
+    TI_UINT8                        uDelayedMsduRange;
     TI_UINT8                        uDelayedMsduCount;
     TMacAddr                        peerSTA;
     TSMTriggeredReportField_t       tTriggerReporting;
@@ -139,9 +139,9 @@ typedef enum
 } EStatusXmit;
 
 
-typedef struct 
+typedef struct
 {
-	TI_BOOL    bHtEnable;	                        /* current flag of HT Capabilities enabled */
+    TI_BOOL    bHtEnable;	                        /* current flag of HT Capabilities enabled */
     TI_UINT32  uTxCtrlHtControl;        	        /* The HT Control Field for futur use. for now empty and the FW set it */
 } TtxCtrlHtControl;
 
@@ -158,9 +158,9 @@ typedef struct
 
 /****************************************************************/
 /*                  MODULE  PUBLIC  FUNCTIONS                   */
-/****************************************************************/ 
+/****************************************************************/
 
-/* 
+/*
  *  The TxCtrl MAIN public functions (in txCtrl.c):
  */
 TI_HANDLE txCtrl_Create (TI_HANDLE hOs);
@@ -182,23 +182,23 @@ TI_STATUS txCtrl_UpdateTSMParameters(TI_HANDLE          hTxCtrl,
                                      tTriggerTSMReport  fCB);
 
 
-/* 
+/*
  *  The txCtrlParams.c sub-module public functions:
  */
 void      txCtrlParams_resetCounters(TI_HANDLE hTxCtrl);
-TI_HANDLE txCtrlParams_RegNotif(TI_HANDLE hTxCtrl, 
-                                TI_UINT16 EventMask, 
+TI_HANDLE txCtrlParams_RegNotif(TI_HANDLE hTxCtrl,
+                                TI_UINT16 EventMask,
                                 GeneralEventCall_t CallBack,
-                                TI_HANDLE context, 
+                                TI_HANDLE context,
                                 TI_UINT32 Cookie);
 TI_STATUS txCtrlParams_AddToNotifMask(TI_HANDLE hTxCtrl, TI_HANDLE Notifh, TI_UINT16 EventMask);
 TI_STATUS txCtrlParams_UnRegNotif(TI_HANDLE hTxCtrl, TI_HANDLE RegEventHandle);
-TI_STATUS txCtrlParams_setAdmissionCtrlParams(TI_HANDLE hTxCtrl, 
-                                              TI_UINT8 acId, 
-                                              TI_UINT16 mediumTime, 
-                                              TI_UINT32 minimumPHYRate, 
-                                              TI_BOOL admFlag);
-TI_STATUS txCtrlParams_getParam(TI_HANDLE hTxCtrl, paramInfo_t *pParamInfo);    
+TI_STATUS txCtrlParams_setAdmissionCtrlParams(TI_HANDLE hTxCtrl,
+        TI_UINT8 acId,
+        TI_UINT16 mediumTime,
+        TI_UINT32 minimumPHYRate,
+        TI_BOOL admFlag);
+TI_STATUS txCtrlParams_getParam(TI_HANDLE hTxCtrl, paramInfo_t *pParamInfo);
 TI_STATUS txCtrlParams_setParam(TI_HANDLE hTxCtrl, paramInfo_t *pParamInfo);
 TI_STATUS txCtrlParams_SetHtControl (TI_HANDLE hTxCtrl, TtxCtrlHtControl *pHtControl);
 void txCtrlParams_setBssId (TI_HANDLE hTxCtrl, TMacAddr *pCurrBssId);
@@ -207,12 +207,12 @@ void txCtrlParams_setQosHeaderConverMode (TI_HANDLE hTxCtrl, EHeaderConvertMode 
 void txCtrlParams_setCurrentPrivacyInvokedMode (TI_HANDLE hTxCtrl, TI_BOOL currentPrivacyInvokedMode);
 void txCtrlParams_setEapolEncryptionStatus (TI_HANDLE hTxCtrl, TI_BOOL eapolEncryptionStatus);
 void txCtrlParams_setEncryptionFieldSizes (TI_HANDLE hTxCtrl, TI_UINT8 encryptionFieldSize);
-void txCtrlParams_getCurrentEncryptionInfo (TI_HANDLE hTxCtrl, 
-                                            TI_BOOL    *pCurrentPrivacyInvokedMode,
-                                            TI_UINT8   *pEncryptionFieldSize);
+void txCtrlParams_getCurrentEncryptionInfo (TI_HANDLE hTxCtrl,
+        TI_BOOL    *pCurrentPrivacyInvokedMode,
+        TI_UINT8   *pEncryptionFieldSize);
 ERate txCtrlParams_GetTxRate (TI_HANDLE hTxCtrl);
-void txCtrlParams_setAcAdmissionStatus (TI_HANDLE hTxCtrl, 
-                                        TI_UINT8 ac, 
+void txCtrlParams_setAcAdmissionStatus (TI_HANDLE hTxCtrl,
+                                        TI_UINT8 ac,
                                         EAdmissionState admissionRequired,
                                         ETrafficAdmState admissionState);
 void txCtrlParams_setDowngradeStatus(TI_HANDLE hTxCtrl,
@@ -230,7 +230,7 @@ void txCtrlParams_resetDbgCounters(TI_HANDLE hTxCtrl);
 #endif /* TI_DBG */
 
 
-/* 
+/*
  *  The txCtrlServ.c sub-module public functions:
  */
 TI_STATUS txCtrlServ_buildNullFrame(TI_HANDLE hTxCtrl, TI_UINT8* pFrame, TI_UINT32* pLength);

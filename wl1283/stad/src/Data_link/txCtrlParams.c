@@ -48,7 +48,8 @@
 #include "EvHandler.h"
 #include "txCtrl.h"
 
-
+#define USEC_PER_SEC  1000000
+#define DEFAULT_TIME_DIFF_MIN_THRESHOLD 10000
 /***********************************************************************
  *                        calcCreditFromTimer
  ***********************************************************************
@@ -269,7 +270,7 @@ TI_STATUS txCtrlParams_setAdmissionCtrlParams(TI_HANDLE hTxCtrl, TI_UINT8 acId, 
 		pTxCtrl->tokenCalcParams[acId].unusedTokensReminder = 0;
 		pTxCtrl->tokenCalcParams[acId].usedTokensReminder = 0;
 		pTxCtrl->tokenCalcParams[acId].lastCalcTimeStamp = os_timeStampUs(pTxCtrl->hOs);
-		pTxCtrl->tokenCalcParams[acId].timeDiffMinThreshold = (1000000/mediumTime);
+		pTxCtrl->tokenCalcParams[acId].timeDiffMinThreshold = mediumTime ?(USEC_PER_SEC/mediumTime) : DEFAULT_TIME_DIFF_MIN_THRESHOLD;
 		/* tspec added */
 		pTxCtrl->mediumTime[acId] = mediumTime;
         pTxCtrl->admissionState[acId] = AC_ADMITTED;

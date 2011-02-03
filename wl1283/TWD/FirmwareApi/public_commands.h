@@ -67,7 +67,7 @@ typedef enum
     CMD_TEST            = 23,
 
     CMD_NOISE_HIST      = 28,
-    
+
     CMD_LNA_CONTROL     = 32,	/* Obsolete */
     CMD_SET_BCN_MODE    = 33,
 
@@ -84,9 +84,9 @@ typedef enum
 
     CMD_SPS_SCAN = 42,
     CMD_STOP_SPS_SCAN = 43,
-    
-    CMD_HEALTH_CHECK     = 45,     
-    CMD_DEBUG            = 46, 
+
+    CMD_HEALTH_CHECK     = 45,
+    CMD_DEBUG            = 46,
     CMD_TRIGGER_SCAN_TO  = 47,
 
     CMD_CONNECTION_SCAN_CFG        = 48,
@@ -95,7 +95,7 @@ typedef enum
     CMD_STOP_PERIODIC_SCAN         = 51,
     CMD_SET_STA_STATE              = 52,
 
-NUM_COMMANDS,
+    NUM_COMMANDS,
     MAX_COMMAND_ID = 0xFFFF
 } Command_enum;
 
@@ -115,8 +115,8 @@ typedef Command_enum Command_e;
 #define     CMD_STATUS_REJECT_MEAS_SG_ACTIVE    11
 #define     CMD_STATUS_RX_BUSY             13
 #define     CMD_STATUS_INVALID_PARAM       14
-#define     CMD_STATUS_TEMPLATE_TOO_LARGE  15 
-#define     CMD_STATUS_OUT_OF_MEMORY       16 
+#define     CMD_STATUS_TEMPLATE_TOO_LARGE  15
+#define     CMD_STATUS_OUT_OF_MEMORY       16
 #define     CMD_STATUS_STA_TABLE_FULL      17
 #define     CMD_STATUS_RADIO_ERROR         18
 #define     CMD_STATUS_WRONG_NESTING       19
@@ -135,8 +135,8 @@ typedef enum
     CMD_STATUS_REJECT_MEAS_SG_ACTIVE =  11,
     CMD_STATUS_RX_BUSY            = 13,
     CMD_STATUS_INVALID_PARAM      = 14,
-    CMD_STATUS_TEMPLATE_TOO_LARGE = 15, 
-    CMD_STATUS_OUT_OF_MEMORY      = 16, 
+    CMD_STATUS_TEMPLATE_TOO_LARGE = 15,
+    CMD_STATUS_OUT_OF_MEMORY      = 16,
     CMD_STATUS_STA_TABLE_FULL     = 17,
     CMD_STATUS_RADIO_ERROR        = 18,
     CMD_STATUS_WRONG_NESTING      = 19,
@@ -155,7 +155,7 @@ typedef CommandStatus_enum CommandStatus_e;
 
 #define MAX_CMD_PARAMS 610
 
-#define DEBUG_INDICATOR      0x8000    
+#define DEBUG_INDICATOR      0x8000
 
 typedef struct
 {
@@ -168,28 +168,28 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_INTERROGATE
-    Desc:     This command requests an information element from the WiLink. The 
-              interface for this command is somewhat different from other commands 
-              since the interface is bi-directional and asymmetric. 
-              The host structure consists of the Command ID, a Command Status 
+    Desc:     This command requests an information element from the WiLink. The
+              interface for this command is somewhat different from other commands
+              since the interface is bi-directional and asymmetric.
+              The host structure consists of the Command ID, a Command Status
               (returned by WiLink) place holder, and the Information Element Heading
               (ID and expected length).
-              The response to that command is a buffer of the information element's 
+              The response to that command is a buffer of the information element's
               actual values returned by the WiLink just after the command is issued.
-              The response to that command is a buffer of the information element's 
+              The response to that command is a buffer of the information element's
               actual values returned by the WiLink just after the command is issued.
     Params:   InfoElement_t - see below.
-              
-    
+
+
 ******************************************************************************/
 /*
 Description of InfoElement structure - defined in "public_infoele.h"
 offset  length  source  description
 ======  ======  ======  ===========
-0       2       host    Information Element ID - contains the ID of the requested 
-                        information element (refer to InfoElement_enum in 
-                        pblic_infoele.h). In response to this command, the WiLink 
-                        writes the requested information element to the response area 
+0       2       host    Information Element ID - contains the ID of the requested
+                        information element (refer to InfoElement_enum in
+                        pblic_infoele.h). In response to this command, the WiLink
+                        writes the requested information element to the response area
                         for the command mailbox.
 2       4       wilink  Length - the length of the response (different for each IE
                         according to definitions in public_infoele.h).
@@ -201,7 +201,7 @@ offset  length  source  description
 /******************************************************************************
 
     ID:       CMD_CONFIGURE
-    Desc:     This command configures an information element in the WiLink. 
+    Desc:     This command configures an information element in the WiLink.
     Params:   InfoElement_t - see below.
 
 ******************************************************************************/
@@ -209,10 +209,10 @@ offset  length  source  description
 Description of InfoElement structure - defined in "public_infoele.h"
 offset  length  source  description
 ======  ======  ======  ===========
-0       2       host    Information Element ID - contains the ID of the requested 
-                        information element (refer to InfoElement_enum in 
-                        pblic_infoele.h). In response to this command, the WiLink 
-                        writes the requested information element to the response area 
+0       2       host    Information Element ID - contains the ID of the requested
+                        information element (refer to InfoElement_enum in
+                        pblic_infoele.h). In response to this command, the WiLink
+                        writes the requested information element to the response area
                         for the command mailbox.
 2       4       host    Length - the length of the response (different for each IE
                         according to definitions in public_infoele.h).
@@ -223,16 +223,16 @@ offset  length  source  description
 /******************************************************************************
 
     ID:       CMD_ENABLE_RX
-    Desc:     This command enables the normal reception of frames. 
+    Desc:     This command enables the normal reception of frames.
     Params:   Channel Number - this field indicates the radio channel on which to
                                receive data. This parameter also sets the channel on
-                               which to transmit. The last channel number used, 
-                               regardless of the order in which the ENABLE_RX and 
-                               ENABLE_TX commands are issued, is the channel number 
-                               for both RX and TX. This command must be issued after 
-                               the host has set all necessary configuration elements 
+                               which to transmit. The last channel number used,
+                               regardless of the order in which the ENABLE_RX and
+                               ENABLE_TX commands are issued, is the channel number
+                               for both RX and TX. This command must be issued after
+                               the host has set all necessary configuration elements
                                appropriately.
-    
+
 ******************************************************************************/
 
 
@@ -240,64 +240,64 @@ offset  length  source  description
 /******************************************************************************
 
     ID:       CMD_ENABLE_TX
-    Desc:     This command enables the normal transmission of frames.  
+    Desc:     This command enables the normal transmission of frames.
     Params:   Channel Number - this field indicates the radio channel on which to
                                transmit data. This parameter also sets the channel on
-                               which to receive. The last channel number used, 
-                               regardless of the order in which the ENABLE_RX and 
-                               ENABLE_TX commands are issued, is the channel number 
+                               which to receive. The last channel number used,
+                               regardless of the order in which the ENABLE_RX and
+                               ENABLE_TX commands are issued, is the channel number
                                for both RX and TX. This command must be issued after
                                the host has set all necessary configuration elements
                                appropriately.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_DISABLE_RX
-    Desc:     This command disables the normal reception of packets over the 
-              Baseband interface. 
+    Desc:     This command disables the normal reception of packets over the
+              Baseband interface.
     Params:   None
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_DISABLE_TX
-    Desc:     This command disables the normal transmission of frames. 
+    Desc:     This command disables the normal transmission of frames.
     Params:   None.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_SCAN
-    Desc:     This command instructs the WiLink to scan for BSS/IBSSs. The host 
+    Desc:     This command instructs the WiLink to scan for BSS/IBSSs. The host
               may perform either an active scan or a passive scan. During an active
-              scan, the WiLink transmits a probe request on the specified channel(s) 
-              and then listens for beacon/probe responses. During a passive scan, the 
+              scan, the WiLink transmits a probe request on the specified channel(s)
+              and then listens for beacon/probe responses. During a passive scan, the
               WiLink monitors the specified channel(s) for beacons.
-              The WiLink sends SCAN_COMPLETE event to notify the host when it has 
+              The WiLink sends SCAN_COMPLETE event to notify the host when it has
               completed a scan.
     Params:   ScanParameters_t - see below
-    
+
 ******************************************************************************/
 /*
 Offset  Length  Definition
 0       8       RX filters for Scan (refer to ACXRxConfigStruct)
 8       2       Scan options (Band select, Voice mode and Scan type = Active/Passive)
-10      1       NumChannels 
+10      1       NumChannels
 11      1       Number of Probe requests (used for Active scan)
 12      2       Probe request rate & modulation
 14      1       AC trigger (for Voice mode only)
 15      1       SSID length
 16      32      SSID string (Null terminated)
 48      2       Channel [0] ScanMinDuration
-50      2       Channel [0] ScanMaxDuration 
+50      2       Channel [0] ScanMaxDuration
 52      6       Channel [0] BSSID (4 bytes LOW and 2 bytes HIGH)
 58      1       Channel [0].bit0-3: Early Termination count. Bit 4-5: Condition
 59      1       Channel [0] TX power level for Scan (0 means do not change - other values:1-5)
-60      1       Channel [0] Channel  
+60      1       Channel [0] Channel
 61      3       Channel [0] Reserved
 64-404  340     Optional Channel [1] - Channel [15] - same format as Channel [0] fields above.
 */
@@ -354,60 +354,60 @@ typedef struct
 #define TRIGGERED_SCAN      2   /* 1 = Triggered scan, 0 = Normal scan*/
 #define SCAN_PRIORITY_HIGH  4   /* 1 = High priority scan, 0 = Low priority scan*/
 #define SCAN_FORCE          8    /* 1 = force scan even enter to PS fail, 0 = do not do scan if enter to PS fail*/
- 
+
 typedef uint8 TidTrigger_t;
 
 /* General scan parameters.*/
 typedef struct
 {
     ACXRxConfigStruct  rxCfg;         /* Rx filter to be used for each channel scan. */
-                                      /* The BSSID filter enable will be set (by the */
-                                      /* scan process) to ON for a specific channel if*/
-                                      /* the BSSID of this channel is a unicast address.*/
-                                      /* Otherwise it will be set to OFF (Refer to */
-                                      /* ACXRxConfig IE in public_infoele.h).*/
+    /* The BSSID filter enable will be set (by the */
+    /* scan process) to ON for a specific channel if*/
+    /* the BSSID of this channel is a unicast address.*/
+    /* Otherwise it will be set to OFF (Refer to */
+    /* ACXRxConfig IE in public_infoele.h).*/
 
     uint16             scanOptions;   /* This bitwise field indicates the scan options. */
-                                      /* Bits [4:15] are reserved. */
-                                      /* Bits [0:3] are defined as follows: */
-                                      /* Scan Type (bit 0) - When this bit is set, the */
-                                      /*  WiLink performs a passive scan. When this bit*/
-                                      /*  is cleared, the WiLink performs an active scan. */
-                                      /* Voice mode (bit 1) - When this bit is set, */
-                                      /*  the request is for a voice scan. When this bit*/
-                                      /*  is cleared, the request is for a normal scan. */
-                                      /* Scan priority (bit 2) - When this bit is set, */
-                                      /*  the request is for a high priority scan. When*/
-                                      /*  this bit is cleared, the request is for a low*/
-                                      /*  priority scan.*/
-	                                  /*  force mode (bit 3) - When this bit is set force scan even
-	                                      enter to PS fails, When this bit is cleared  do not do scan if 
-	                                      enter to PS fail*/
-        
+    /* Bits [4:15] are reserved. */
+    /* Bits [0:3] are defined as follows: */
+    /* Scan Type (bit 0) - When this bit is set, the */
+    /*  WiLink performs a passive scan. When this bit*/
+    /*  is cleared, the WiLink performs an active scan. */
+    /* Voice mode (bit 1) - When this bit is set, */
+    /*  the request is for a voice scan. When this bit*/
+    /*  is cleared, the request is for a normal scan. */
+    /* Scan priority (bit 2) - When this bit is set, */
+    /*  the request is for a high priority scan. When*/
+    /*  this bit is cleared, the request is for a low*/
+    /*  priority scan.*/
+    /*  force mode (bit 3) - When this bit is set force scan even
+        enter to PS fails, When this bit is cleared  do not do scan if
+        enter to PS fail*/
+
     uint8              numChannels;   /* Number of scan channels in the list (minimum is*/
-                                      /* 1, maximum is 30).*/
+    /* 1, maximum is 30).*/
 
     uint8              numOfProbRqst; /* This field indicates the number of probe */
-                                      /* requests to send per channel, in active scan. */
-    
+    /* requests to send per channel, in active scan. */
+
     EHwRateBitFiled    txdRateSet;    /* This EHwRateBitFiled format field specifies the rate and */
-	                                  /* modulation to transmit the probe request during*/
-	                                  /* an active scan. It is not used for passive scans.*/
-   
+    /* modulation to transmit the probe request during*/
+    /* an active scan. It is not used for passive scans.*/
+
     TidTrigger_t       tidTrigger;    /* used for TidTriggered scan only.*/
 
     uint8              ssidLength;    /* This field specifies the size of the SSID, */
-                                      /* which can be up to 32 bytes long. If this field*/
-                                      /* equals to zero, SSID filter is not applied. */
-    
-    uint8              padding1[2];    /* in order to align */ 
+    /* which can be up to 32 bytes long. If this field*/
+    /* equals to zero, SSID filter is not applied. */
+
+    uint8              padding1[2];    /* in order to align */
 
 
     uint32             ssidStr[8];    /* This field specifies the SSID packets from that*/
-                                      /* are relevant for the Scan result. The WiLink*/
-                                      /* uses this information to filter beacon, probe*/
-                                      /* response frames (if the SSID length field of */
-                                      /* this command structure is not zero) */
+    /* are relevant for the Scan result. The WiLink*/
+    /* uses this information to filter beacon, probe*/
+    /* response frames (if the SSID length field of */
+    /* this command structure is not zero) */
 
     RadioBand_e         band;         /* Band to scan */
 
@@ -416,7 +416,7 @@ typedef struct
 
     uint8               scanTag;      /* Scan results tag */
 
-    uint8               padding2;     /* in order to align */ 
+    uint8               padding2;     /* in order to align */
 
 } BasicScanParameters_t;
 
@@ -429,25 +429,25 @@ typedef struct
 
 /* Early Termination condition (bits 4-5) - This field can have one of the following */
 /* values (note that bits 0-3 indicates Early Termination count): */
-typedef enum 
+typedef enum
 {
     ET_COND_DISABLE = 0x00,          /* Disable - No early termination condition.*/
 
     ET_COND_BEACON  = 0x10,          /* Beacon only. When this value is selected, the */
-                                     /* Early Termination count field specifies the */
-                                     /* maximum number of beacons to collect before */
-                                     /* ending a scan. */
+    /* Early Termination count field specifies the */
+    /* maximum number of beacons to collect before */
+    /* ending a scan. */
 
     ET_COND_PROBE_RESP = 0x20,       /* Probe responses only. When this value is */
-                                     /* selected, the Early Termination count field */
-                                     /* specifies the maximum number of probe responses*/
-                                     /* to collect before ending a scan. */
+    /* selected, the Early Termination count field */
+    /* specifies the maximum number of probe responses*/
+    /* to collect before ending a scan. */
 
     ET_COND_BEACON_PROBE_RESP = 0x30,/* Beacon/probe response. When this value is */
-                                     /* selected, the Early Termination count field */
-                                     /* specifies the maximum number of beacons or probe*/
-                                     /* responses to collect before ending a scan. */
-                                     
+    /* selected, the Early Termination count field */
+    /* specifies the maximum number of beacons or probe*/
+    /* responses to collect before ending a scan. */
+
     ET_COND_INVALID = 0xFF
 } ETCondition_enum;
 
@@ -472,42 +472,42 @@ typedef struct
 {
 
     uint32        scanMinDuration;    /* For active scans, this field specifies the */
-                                      /* minimum amount of time, in time units (TUs), */
-                                      /* to wait for a frame on a channel. This */
-                                      /* parameter is not used for passive scans. The*/
-                                      /*  value can range from 0 to 65535 TUs */
-                                      /* (67.1 seconds). */
+    /* minimum amount of time, in time units (TUs), */
+    /* to wait for a frame on a channel. This */
+    /* parameter is not used for passive scans. The*/
+    /*  value can range from 0 to 65535 TUs */
+    /* (67.1 seconds). */
 
     uint32        scanMaxDuration;    /* For active scans, this field specifies the */
-                                      /* maximum amount of time, in time units (TUs), */
-                                      /* to wait for a probe response on a channel.*/
-                                      /* For passive scans, this field specifies the */
-                                      /* amount of time, in time units (TUs), to listen*/
-                                      /* on a channel. The value can range from 0 to */
-                                      /* 65535 TUs (67.1 seconds). */
-    
+    /* maximum amount of time, in time units (TUs), */
+    /* to wait for a probe response on a channel.*/
+    /* For passive scans, this field specifies the */
+    /* amount of time, in time units (TUs), to listen*/
+    /* on a channel. The value can range from 0 to */
+    /* 65535 TUs (67.1 seconds). */
+
 
     uint32        bssIdL;             /* 32 LSBits of BSSID of the AP to scan for. */
-                                      /* If scanning on this channel any BSSID, this */
-                                      /* field shall be set to broadcast BSSID. */
+    /* If scanning on this channel any BSSID, this */
+    /* field shall be set to broadcast BSSID. */
 
     uint16        bssIdH;             /* 16 MSBits of BSSID of the AP to scan for.*/
 
     ETCondCount_t ETCondCount;        /* bit 0-3: Early Termination count - This field */
-                                      /*          defines the maximum number of beacons*/
-                                      /*          or probe responses or both (according*/
-                                      /*          to condition) to collect before ending*/
-                                      /*          a scan.*/
-    
-                                      /* Bit 4-5: Early Termination Condition (refer */
-                                      /*          to ETCondition_enum).*/
-                
+    /*          defines the maximum number of beacons*/
+    /*          or probe responses or both (according*/
+    /*          to condition) to collect before ending*/
+    /*          a scan.*/
+
+    /* Bit 4-5: Early Termination Condition (refer */
+    /*          to ETCondition_enum).*/
+
     uint8         txPowerAttenuation; /* TX power level to be used per channel scanned. */
-                                      /* If 0, leave normal TX power level for this */
-                                      /* channel. Range: 0 - 20 [dB].*/
-    
+    /* If 0, leave normal TX power level for this */
+    /* channel. Range: 0 - 20 [dB].*/
+
     Channel_e     channel;            /* Channel number to scan, valid range 0-255 */
-                                      /* (1-14 for 802.11b). */
+    /* (1-14 for 802.11b). */
 
     Bool_e        dfsCandidate;       /* FW internal use only! */
     Bool_e        activityDetected;   /* FW internal use only! */
@@ -519,7 +519,7 @@ typedef struct
 typedef struct
 {
     BasicScanParameters_t basicScanParameters; /* refer to BasicScanParameters_t */
-                                               /* definition*/
+    /* definition*/
 
     BasicScanChannelParameters_t basicScanChannelParameters[SCAN_MAX_NUM_OF_CHANNELS];
 } ScanParameters_t;
@@ -527,30 +527,30 @@ typedef struct
 /*****************************************************************************
 
     ID:       CMD_TRIGGER_SCAN_TO
-    Desc:     This Command will configure the enhanced Trigger Scan Timeout 
+    Desc:     This Command will configure the enhanced Trigger Scan Timeout
                 information.
               To use legacy Trigger Scan, configure the parameter to 0
     Params:   None
-    
+
 ******************************************************************************/
-typedef struct 
+typedef struct
 {
     uint32  slicedScanTimeOut;          /* 0 - Split Scan Disable
-                                           any other value will represent the timeout 
+                                           any other value will represent the timeout
                                            for each channel "mini scan" in uSec */
-}enhancedTriggerTO_t;
+} enhancedTriggerTO_t;
 
 
 
 /*****************************************************************************
 
     ID:       CMD_STOP_SCAN
-    Desc:     This command instructs the WiLink to terminate any scan in progress. 
+    Desc:     This command instructs the WiLink to terminate any scan in progress.
               After processing this command, the WiLink returns to its previous state
               (the state before the scan was started) and generates the SCAN_COMPLETE
-              information message. 
+              information message.
     Params:   None
-    
+
 ******************************************************************************/
 
 
@@ -558,29 +558,29 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_START_JOIN
-    Desc:     This command instructs the WiLink to either join a BSS or IBSS, or 
-              start an IBSS. When the device has joined the BSS or IBSS the Join 
-              Complete event is raised to the host.  
+    Desc:     This command instructs the WiLink to either join a BSS or IBSS, or
+              start an IBSS. When the device has joined the BSS or IBSS the Join
+              Complete event is raised to the host.
     Params:   StartJoinRequest_t - see below.
 
 ******************************************************************************/
 
-/* 
+/*
  * Join command  control bit mask field:
  */
 
 
 
-/* Cyclic counter in range 1-7, advanced on every Join command to enable the FW distinguish 
+/* Cyclic counter in range 1-7, advanced on every Join command to enable the FW distinguish
      between connection sessions and drop obsolete Tx packets. */
 #define JOIN_CMD_CTRL_TX_SESSION       (BIT_3 | BIT_2 | BIT_1)
 
 /* When this bit is set,the firmware will flush all Tx frames in the pipe and will not transmit them. */
-#define JOIN_CMD_CTRL_TX_FLUSH         BIT_7 
+#define JOIN_CMD_CTRL_TX_FLUSH         BIT_7
 
 /* Offsets of the above fields */
 #define JOIN_CMD_CTRL_OFFSET_TX_SESSION             1
-#define JOIN_CMD_CTRL_OFFSET_TX_FLUSH                      7 
+#define JOIN_CMD_CTRL_OFFSET_TX_FLUSH                      7
 
 
 typedef enum
@@ -602,75 +602,75 @@ typedef BssType_enum BSS_e;
 typedef struct
 {
     uint32            bssIdL;        /* This field indicates the 32 LSBits of the MAC*/
-                                     /* address of the BSS to join. */
-                                     /* Note: To correctly generate beacon frames, the */
-                                     /* byte order of the BSS ID field must be */
-                                     /* reversed. for example, if the MAC address of */
-                                     /* the AP is 00 7E 99 11 22 33, program the BSS */
-                                     /* ID field as 33 22 11 99 7E 00.*/
-        
+    /* address of the BSS to join. */
+    /* Note: To correctly generate beacon frames, the */
+    /* byte order of the BSS ID field must be */
+    /* reversed. for example, if the MAC address of */
+    /* the AP is 00 7E 99 11 22 33, program the BSS */
+    /* ID field as 33 22 11 99 7E 00.*/
+
     uint16            bssIdH;        /* This field indicates the 16 MSBits of the MAC*/
-                                     /* address of the BSS to join. */
+    /* address of the BSS to join. */
 
     uint16            beaconInterval;/* This field specifies the time between target */
-                                     /* beacon transmission times (TBTTs), in time */
-                                     /* units (TUs). Valid values are 1 to 1024.*/
-    
+    /* beacon transmission times (TBTTs), in time */
+    /* units (TUs). Valid values are 1 to 1024.*/
+
     ACXRxConfigStruct rxFilter;      /* This filed is the Rx filter configuration for*/
-                                     /* the device while connected to the BSS or IBSS.*/
-                                     /* This setting is overridden in case of a */
-                                     /* measurement or a scan activity and is reset */
-                                     /* after these activities end.*/
+    /* the device while connected to the BSS or IBSS.*/
+    /* This setting is overridden in case of a */
+    /* measurement or a scan activity and is reset */
+    /* after these activities end.*/
 
     EHwRateBitFiled   basicRateSet;  /* For 802.11b, this field specifies the control*/
-                                     /* response frame rate for the BSS or IBSS (that*/
-                                     /* is, the BSSBasicRateSet parameter in the */
-                                     /* 802.11 Specification). The WiLink uses this */
-                                     /* field to determine the rate at which to */
-                                     /* transmit control frame responses (such as ACK */
-	                                 /* or CTS frames). */
+    /* response frame rate for the BSS or IBSS (that*/
+    /* is, the BSSBasicRateSet parameter in the */
+    /* 802.11 Specification). The WiLink uses this */
+    /* field to determine the rate at which to */
+    /* transmit control frame responses (such as ACK */
+    /* or CTS frames). */
 
-	EHwRateBitFiled   supportedRateSet;  /* This field specifies the rates supported */
-									    /* for the BSS or IBSS. */
-    
+    EHwRateBitFiled   supportedRateSet;  /* This field specifies the rates supported */
+    /* for the BSS or IBSS. */
+
     uint8             dtimInterval;  /* This field specifies the number of beacon */
-                                     /* intervals between DTIM beacon frames. The host*/
-                                     /* is only required to set this field when the */
-                                     /* BSS Type is infrastructure BSS (STA) or AP. */
-                                     /* For an independent BSS, the host should set */
-                                     /* this field to 1.*/
-    
+    /* intervals between DTIM beacon frames. The host*/
+    /* is only required to set this field when the */
+    /* BSS Type is infrastructure BSS (STA) or AP. */
+    /* For an independent BSS, the host should set */
+    /* this field to 1.*/
+
     BSS_e             bssType;       /* bits 0-2: This bitwise field specifies the type */
-                                     /*  of BSS to start or join (Refer to BssType_enum). */
-                                     /* bit 4: Band - The radio band in which to join*/
-                                     /*  or start.*/
-                                     /*  0 - 2.4GHz band    */
-                                     /*  1 - 5GHz band*/
-                                     /* bits 3, 5-7: Reserved*/
+    /*  of BSS to start or join (Refer to BssType_enum). */
+    /* bit 4: Band - The radio band in which to join*/
+    /*  or start.*/
+    /*  0 - 2.4GHz band    */
+    /*  1 - 5GHz band*/
+    /* bits 3, 5-7: Reserved*/
 
     Channel_e         channelNumber; /* This field specifies the channel number of the*/
-                                     /* BSS to join or start. Valid values are 1 to 14. */
-                                     /* If the specified channel is not allowed in the*/
-                                     /* regulatory domain, the command is rejected and*/
-                                     /* the status code 0x0005 is returned in the */
-                                     /* Command Status field.*/
-    
+    /* BSS to join or start. Valid values are 1 to 14. */
+    /* If the specified channel is not allowed in the*/
+    /* regulatory domain, the command is rejected and*/
+    /* the status code 0x0005 is returned in the */
+    /* Command Status field.*/
+
     uint8             ssidLength;    /* This field specifies the size of the SSID, which*/
-                                     /* can be up to 32 bytes long.*/
-    
+    /* can be up to 32 bytes long.*/
+
     uint32              ssidStr[MAX_SSID_STR_LEN_BYTESX4];
-                                     /* This field specifies the SSID of the BSS to */
-                                     /* start or join. The WiLink uses this information*/
-                                     /* to filter beacon, probe response and probe */
-                                     /* request frames (if configured to do so in bit 10*/
-                                     /* in the Receive Configuration field of the */
-                                     /* ACXRxConfig information element). */
-                                     /* It also uses this information to determine if a*/
-                                     /* probe response should be transmitted in */
-                                     /* response to a received probe request.*/
-    
+    /* This field specifies the SSID of the BSS to */
+    /* start or join. The WiLink uses this information*/
+    /* to filter beacon, probe response and probe */
+    /* request frames (if configured to do so in bit 10*/
+    /* in the Receive Configuration field of the */
+    /* ACXRxConfig information element). */
+    /* It also uses this information to determine if a*/
+    /* probe response should be transmitted in */
+    /* response to a received probe request.*/
+
     uint8             ctrl;          /* Join command control field (refer to */
-                                     /* the JOIN_CMD_CTRL... specified above).*/
+    /* the JOIN_CMD_CTRL... specified above).*/
 
     uint8             reserved[3];
 } StartJoinRequest_t;
@@ -679,14 +679,14 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_SET_KEYS
-    Desc:     The host issues this command to manage the WEP key cache in the WiLink. 
-              The host can issue this command during the configuration or operation 
-              phase.  
+    Desc:     The host issues this command to manage the WEP key cache in the WiLink.
+              The host can issue this command during the configuration or operation
+              phase.
     Params:   SetKey_t - see below.
 
 ******************************************************************************/
 
-#define NUM_ACCESS_CATEGORIES_COPY 4 
+#define NUM_ACCESS_CATEGORIES_COPY 4
 
 #define MAX_KEY_SIZE 32
 
@@ -730,18 +730,18 @@ KeyType_enum  Key Type                    Valid Key Size    Key Data Field Forma
 
 0x0D          GEM and MIC Pairwise Key   32                 16 bytes of GEM key data
                                                             16 bytes of MIC key data
-                                                            
+
 */
 
 
 typedef enum
 {
-  CIPHER_SUITE_NONE = 0,
-  CIPHER_SUITE_WEP  = 1,
-  CIPHER_SUITE_TKIP = 2,
-  CIPHER_SUITE_AES  = 3,
-  CIPHER_SUITE_GEM  = 4,
-  MAX_KEY_TYPE
+    CIPHER_SUITE_NONE = 0,
+    CIPHER_SUITE_WEP  = 1,
+    CIPHER_SUITE_TKIP = 2,
+    CIPHER_SUITE_AES  = 3,
+    CIPHER_SUITE_GEM  = 4,
+    MAX_KEY_TYPE
 } CipherSuite_enum;
 
 #ifdef HOST_COMPILE
@@ -769,57 +769,57 @@ typedef KeySize_enum KeySize_e;
 typedef struct
 {
     uint8 addr[MAC_ADDR_SIZE]; /* This field specifies the MAC address of the station to*/
-                               /* add or remove from the WEP key cache. This field is */
-                               /* ignored if a WEP default key is being added or removed.*/
-    
+    /* add or remove from the WEP key cache. This field is */
+    /* ignored if a WEP default key is being added or removed.*/
+
     KeyAction_e action;        /* This field specifies the action to be performed.*/
-                               /* Refer to KeyAction_enum.*/
+    /* Refer to KeyAction_enum.*/
 
     uint16      reserved;
     KeySize_e   keySize;       /* This field indicates the size of the key in bytes */
-                               /* being added. Valid values are listed in the Valid Key */
-                               /* Size column in the above "Key Size+Key Data table". */
+    /* being added. Valid values are listed in the Valid Key */
+    /* Size column in the above "Key Size+Key Data table". */
 
     CipherSuite_e   type;          /* This field indicates the type of key being added.*/
-                               /* Valid values are listed in the Value column in the*/
-                               /* KeyType_enum.*/
+    /* Valid values are listed in the Value column in the*/
+    /* KeyType_enum.*/
 
     uint8       ssidProfile;   /* This field indicates the SSID profile for which the */
-                               /* key is set.*/
+    /* key is set.*/
     uint8       id;            /* Key ID - For TKIP and AES key types, this field */
-                               /* indicates the value that should be inserted into the*/
-                               /* KeyID field of frames transmitted using this key */
-                               /* entry. For WEP default key types, this field indicates*/
-                               /* the ID of the key to add or remove. */
-                               /* For WEP key mapping key types, this field is ignored.*/
-                               /* Valid values for this field are 0 to 3.*/
-    
-    uint8       reserved2[6];  
+    /* indicates the value that should be inserted into the*/
+    /* KeyID field of frames transmitted using this key */
+    /* entry. For WEP default key types, this field indicates*/
+    /* the ID of the key to add or remove. */
+    /* For WEP key mapping key types, this field is ignored.*/
+    /* Valid values for this field are 0 to 3.*/
+
+    uint8       reserved2[6];
     uint8       key[MAX_KEY_SIZE];
-                               /* This field holds the security key data to add to the*/
-                               /* STA table. The format of this field varies depending*/
-                               /* on the type field. The format of this field for each*/
-                               /* key type is described in the Key Data Field Format */
-                               /* column in the "Key Size+Key Data table", above.*/
+    /* This field holds the security key data to add to the*/
+    /* STA table. The format of this field varies depending*/
+    /* on the type field. The format of this field for each*/
+    /* key type is described in the Key Data Field Format */
+    /* column in the "Key Size+Key Data table", above.*/
 
-    uint16      AcSeqNum16[NUM_ACCESS_CATEGORIES_COPY]; 
-                               /* This field indicates the lower part of the PN\IV */
-                               /* sequence number that is used, for the four Access*/
-                               /* Categories.*/
+    uint16      AcSeqNum16[NUM_ACCESS_CATEGORIES_COPY];
+    /* This field indicates the lower part of the PN\IV */
+    /* sequence number that is used, for the four Access*/
+    /* Categories.*/
 
-    uint32      AcSeqNum32[NUM_ACCESS_CATEGORIES_COPY]; 
-                               /* This field indicates the higher part of the PN\IV */
-                               /* sequence number that is used, for four Access */
-                               /* Categories.*/
-    
+    uint32      AcSeqNum32[NUM_ACCESS_CATEGORIES_COPY];
+    /* This field indicates the higher part of the PN\IV */
+    /* sequence number that is used, for four Access */
+    /* Categories.*/
+
 } SetKey_t;
 
 
 /******************************************************************************
 
     ID:       CMD_READ_MEMORY
-    Desc:     The host issues this command to read the WiLink device 
-              memory/registers. 
+    Desc:     The host issues this command to read the WiLink device
+              memory/registers.
     Params:   ReadWriteCommand_t - see below.
     Note:     The Base Band address has special handling (16 bits registers and
               addresses). For more information, see the hardware specification.
@@ -828,7 +828,7 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_WRITE_MEMORY
-    Desc:     The host issues this command to write the WiLink device memory/registers. 
+    Desc:     The host issues this command to write the WiLink device memory/registers.
     Params:   ReadWriteCommand_t - see below.
     Note:     The Base Band address has special handling (16 bits registers and
               addresses). For more information, see the hardware specification.
@@ -841,18 +841,18 @@ typedef struct
 {
     uint32 addr;                 /* The address of the memory to read from or write to.*/
     uint32 size;                 /* The amount of data in bytes to read from or write */
-                                 /* to the WiLink device.*/
+    /* to the WiLink device.*/
     uint8  value[MAX_READ_SIZE]; /* The actual value read from or written to the Wilink.*/
-                                 /* The source of this field is the Host in WRITE */
-                                 /* command or the Wilink in READ command.*/
+    /* The source of this field is the Host in WRITE */
+    /* command or the Wilink in READ command.*/
 } ReadWriteCommand_t;
 
 
 /******************************************************************************
 
     ID:       CMD_BEACON
-    Desc:     This command specifies the contents of the beacon template stored in 
-              the WiLink. 
+    Desc:     This command specifies the contents of the beacon template stored in
+              the WiLink.
     Params:   PktTemplate_t - see below.
 
 ******************************************************************************/
@@ -861,36 +861,36 @@ typedef struct
 
     ID:       CMD_PROBE_RESP
     Desc:     This command specifies the contents of the probe response template
-              stored in the WiLink.  
+              stored in the WiLink.
     Params:   PktTemplate_t - see below.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_NULL_DATA
     Desc:     This command specifies the contents of the Null data template
-              stored in the WiLink. 
+              stored in the WiLink.
     Params:   PktTemplate_t - see below.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_PROBE_REQ
     Desc:     This command specifies the contents of the probe request template
-              stored in the WiLink.  
+              stored in the WiLink.
     Params:   PktTemplate_t - see below.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_PS_POLL
     Desc:     This command specifies the contents of the PS-poll template
-              stored in the WiLink.  
+              stored in the WiLink.
     Params:   PktTemplate_t - see below.
-    
+
 ******************************************************************************/
 
 
@@ -898,25 +898,25 @@ typedef struct
 
     ID:       CMD_QOS_NULL_DATA
     Desc:     This command specifies the contents of the QOS-Null template
-              stored in the WiLink.  
+              stored in the WiLink.
     Params:   PktTemplate_t - see below.
-    
+
 ******************************************************************************/
 /* Template command data structure.*/
 typedef enum
 {
     TEMPLATE_NULL_DATA = 0,
-    TEMPLATE_BEACON,        
+    TEMPLATE_BEACON,
     CFG_TEMPLATE_PROBE_REQ_2_4,
     CFG_TEMPLATE_PROBE_REQ_5,
     TEMPLATE_PROBE_RESPONSE,
     TEMPLATE_QOS_NULL_DATA,
     TEMPLATE_PS_POLL,
     TEMPLATE_KLV,
-	TEMPLATE_DISCONNECT, 
+    TEMPLATE_DISCONNECT,
     TEMPLATE_PROBE_REQ_2_4, /*for firmware internal use only*/
     TEMPLATE_PROBE_REQ_5, /*for firmware internal use only*/
-	TEMPLATE_BAR, /*for firmware internal use only*/
+    TEMPLATE_BAR, /*for firmware internal use only*/
     TEMPLATE_CTS, /* For CTS-to-self (FastCTS) mechanism for BT/WLAN coexistence (SoftGemini). */
     TEMPLATE_ARP_RSP, /* Template for Automatic ARP reply by FW */
     TEMPLATE_LINK_MEASUREMENT_REPORT, /* Template for RRM (802.11k) link measurement report */
@@ -933,53 +933,53 @@ typedef TemplateType_enum TemplateType_e;
 #define MAX_TEMPLATES_SIZE 252  /* according to max size of FW memblock */
 #define RATE_MASK_UNSPECIFIED   0    /* Let the FW select the rates mask internally */
 
-/* 
+/*
 aflag definition:
 bit field       description
 =========       ===========
-0               Truncate - If set, then attempts to send a frame stop when the total 
-                valid per-rate attempts have been exhausted; 
-                otherwise transmissions will continue at the lowest available rate 
-                until the appropriate one of the Short Retry Limit, Long Retry Limit, 
-                dot11MaxTransmitMsduLifetime, or MAX TX Life Time (in ACXTIDConfig), 
+0               Truncate - If set, then attempts to send a frame stop when the total
+                valid per-rate attempts have been exhausted;
+                otherwise transmissions will continue at the lowest available rate
+                until the appropriate one of the Short Retry Limit, Long Retry Limit,
+                dot11MaxTransmitMsduLifetime, or MAX TX Life Time (in ACXTIDConfig),
                 if supported and supplied, is exhausted.
-1               Preamble Override - Indicates if the preamble type should be used in TX. 
-2               Preamble Type - The type of the preamble to be used by the policy. 
-                0 - long preamble, 
-                1 - short preamble. 
+1               Preamble Override - Indicates if the preamble type should be used in TX.
+2               Preamble Type - The type of the preamble to be used by the policy.
+                0 - long preamble,
+                1 - short preamble.
 3-7             Reserved
 */
 
 /* definition of single rate policy*/
-typedef struct 
+typedef struct
 {
 
     uint32              enabledRates;  				  /* A Bit Mask which indicates which Rates are enabled */
-                                                      /* The rates bitmap is defined in EHwBitRate. */
-                                                      /* If set to RATE_MASK_UNSPECIFIED, the FW sets it internally */
+    /* The rates bitmap is defined in EHwBitRate. */
+    /* If set to RATE_MASK_UNSPECIFIED, the FW sets it internally */
 
     uint8               shortRetryLimit;              /* The dot11ShortRetryLimit used */
-                                                      /* for Tx retries.*/
+    /* for Tx retries.*/
 
     uint8               longRetryLimit;               /* The dot11LongRetryLimit used */
-                                                      /* for Tx retries.  */
-    
+    /* for Tx retries.  */
+
     uint8               aflags;                       /* Flags controlling attributes */
-                                                      /* of the transmission. */
-                                                      /* see above description for the */
-                                                      /* structure of this field.*/
+    /* of the transmission. */
+    /* see above description for the */
+    /* structure of this field.*/
 
     uint8               reserved;
-}txAttrClass_t;
-     
+} txAttrClass_t;
+
 /* Template command data structure.*/
-typedef struct 
+typedef struct
 {
     uint16 len;
     TemplateType_e templateType;
     uint8 index;    /* relevant only for KLV_TEMPLATE type */
     txAttrClass_t templateTxAttribute;
-    uint8  templateStart[MAX_TEMPLATES_SIZE]; 
+    uint8  templateStart[MAX_TEMPLATES_SIZE];
 } PktTemplate_t;
 
 
@@ -992,7 +992,7 @@ typedef struct
 ******************************************************************************/
 #define NOISE_HIST_LEN 8
 
-typedef enum 
+typedef enum
 {
     NOISE_HIST_STOP,
     NOISE_HIST_START,
@@ -1008,22 +1008,22 @@ typedef NoiseHistMode_enum NoiseHistMode_e;
 typedef struct
 {
     NoiseHistMode_e mode;             /* Start or stop the FW engine. */
-                                      /* Possible values are 1 (Start) and 0 (Stop).*/
+    /* Possible values are 1 (Start) and 0 (Stop).*/
 
     uint16 sampleIntervalUSec;        /* The time interval in usec between measurements.*/
-                                      /* Valid values are between 100us (default) and */
-                                      /* 2ms (with 100us jumps). This parameter is */
-                                      /* relevant only when Mode is Start (1).*/
-        
+    /* Valid values are between 100us (default) and */
+    /* 2ms (with 100us jumps). This parameter is */
+    /* relevant only when Mode is Start (1).*/
+
     uint8  thresholds[NOISE_HIST_LEN];/* An array of eight 8 bit thresholds. The FW */
-                                      /* takes noise measurements, once every */
-                                      /* SampleIntervalUSec interval. If the measured */
-                                      /* noise level is between the threshold[X] and */
-                                      /* threshold[X 1], then the FW increments the */
-                                      /* noise histogram counter[X]. */
-                                      /* The counters are read via the */
-                                      /* ACXNoiseHistogramResults IE. This parameter is */
-                                      /* relevant only when Mode is Start (1).*/
+    /* takes noise measurements, once every */
+    /* SampleIntervalUSec interval. If the measured */
+    /* noise level is between the threshold[X] and */
+    /* threshold[X 1], then the FW increments the */
+    /* noise histogram counter[X]. */
+    /* The counters are read via the */
+    /* ACXNoiseHistogramResults IE. This parameter is */
+    /* relevant only when Mode is Start (1).*/
 } NoiseHistRequest_t;
 
 
@@ -1031,37 +1031,37 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_MEASUREMENT
-    Desc:     This command instructs the WiLink device to begin a basic channel 
-              load measurement on the specified channel. When the measurement 
-              process actually starts running the WilLink device will raise the 
+    Desc:     This command instructs the WiLink device to begin a basic channel
+              load measurement on the specified channel. When the measurement
+              process actually starts running the WilLink device will raise the
               Measurement Started event. When the measurement process completes as
               a result of the end of the measurement duration or a STOP_MEASUREMENT
-              command, the WilLink device will raise a Measurement Complete event. 
+              command, the WilLink device will raise a Measurement Complete event.
     Params:   MeasurementParameters_t - see below.
 
 ******************************************************************************/
-typedef struct 
+typedef struct
 {
     ACXRxConfigStruct rxFilter; /* This field is the Rx filter configuration for the */
-                                /* device while the measurement process is running. */
-                                /* When the process ends the previous Rx filter */
-                                /* configuration is reset. The filter configuration is*/
-                                /* composed of two 32 bit registers. When they are set*/
-                                /* to 0xFFFFFFFF the Rx filter configuration is not*/
-                                /* changed.*/
-    
+    /* device while the measurement process is running. */
+    /* When the process ends the previous Rx filter */
+    /* configuration is reset. The filter configuration is*/
+    /* composed of two 32 bit registers. When they are set*/
+    /* to 0xFFFFFFFF the Rx filter configuration is not*/
+    /* changed.*/
+
     uint32 duration;            /* Specifies the measurement process duration in */
-                                /* microseconds. The value of 0 means infinite duration*/
-                                /* in which only a STOP_MEASUREMENT command can*/
-                                /* stop the measurement process.*/
-    
+    /* microseconds. The value of 0 means infinite duration*/
+    /* in which only a STOP_MEASUREMENT command can*/
+    /* stop the measurement process.*/
+
     Channel_e channel;          /* Channel number on which the measurement is performed,*/
-                                /* valid range 0-255 (1-14 for 802.11b).*/
-    
+    /* valid range 0-255 (1-14 for 802.11b).*/
+
     RadioBand_e band;           /* Specifies the band to which the channel belongs. */
-                                /* 0 - 2.4GHz */
-                                /* 1 - 5GHz , */
-                                /* 0xFF - Current band.*/
+    /* 0 - 2.4GHz */
+    /* 1 - 5GHz , */
+    /* 0xFF - Current band.*/
 
     uint8 scanTag;              /* results tag */
 
@@ -1071,10 +1071,10 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_STOP_MEASUREMENT
-    Desc:     This command instructs the WiLink to terminate any measurement in 
-              progress. After processing this command, the WiLink returns to its 
-              previous state (the state before the measurement was started) and 
-              generates the Measurment Complete event. 
+    Desc:     This command instructs the WiLink to terminate any measurement in
+              progress. After processing this command, the WiLink returns to its
+              previous state (the state before the measurement was started) and
+              generates the Measurment Complete event.
     Params:   None.
 
 ******************************************************************************/
@@ -1083,14 +1083,14 @@ typedef struct
 
     ID:       CMD_DISCONNECT
     Desc:     This command instructs the WiLink device to stop all BSS or IBSS activity.
-              The device will cancel all of its TSF dependent events and activities. 
-              Power Save dependent activities are an exception to this, therefore 
-              the host must exit Power Save mode by issuing the SET_PS_MODE command 
+              The device will cancel all of its TSF dependent events and activities.
+              Power Save dependent activities are an exception to this, therefore
+              the host must exit Power Save mode by issuing the SET_PS_MODE command
               before calling this command. When this command is complete the Disconnect
-              Complete event is raised to the host and the WiLink device is allowed 
-              to enter the configured low power state. 
+              Complete event is raised to the host and the WiLink device is allowed
+              to enter the configured low power state.
     Params:   DisconnectParameters_t - see below.
-    
+
 ******************************************************************************/
 
 typedef enum
@@ -1112,7 +1112,7 @@ typedef struct
 {
     ACXRxConfigStruct rxFilter;
     uint16 disconnectReason;
-    DisconnectType_e   disconnectType; 
+    DisconnectType_e   disconnectType;
     uint8 padding[1];  /* for alignment to 32 bits boundry */
 } DisconnectParameters_t;
 
@@ -1122,10 +1122,10 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_SET_PS_MODE
-    Desc:     This command turns ON/OFF Power save protocol on the WiLink. 
-              After HW configuration, FW sends Null data packet to the AP with Power 
-              Management bit set accordingly to the field "Mode" of this command 
-              structure. After processing this command, the FW generates the 
+    Desc:     This command turns ON/OFF Power save protocol on the WiLink.
+              After HW configuration, FW sends Null data packet to the AP with Power
+              Management bit set accordingly to the field "Mode" of this command
+              structure. After processing this command, the FW generates the
               PS_COMPLETE event.
     Params:   PSModeParameters_t - see below.
 
@@ -1147,10 +1147,10 @@ typedef StationPSMode_enum StationPowerSaveMode_e;
 typedef struct
 {
     StationPowerSaveMode_e mode;         /* This field specifies the future Power save*/
-                                         /* protocol mode of the system. */
-                                         /* When set, Power save protocol is enabled. */
-                                         /* When cleared, Power save protocol is */
-                                         /* disabled (refer to StationPSMode_enum).*/
+    /* protocol mode of the system. */
+    /* When set, Power save protocol is enabled. */
+    /* When cleared, Power save protocol is */
+    /* disabled (refer to StationPSMode_enum).*/
     uint8 padding[3];                    /* for alignment to 32 bits boundry */
 } PSModeParameters_t;
 
@@ -1159,7 +1159,7 @@ typedef struct
     ID:       CMD_CHANNEL_SWITCH
     Desc:     This command instructs the WiLink to switch serving channel at the given
               time. Once the channel switch is performed, the Channel Switch Complete
-              event is raised to the host.  
+              event is raised to the host.
     Params:   ChannelSwitchParameters_t - see below.
 
 ******************************************************************************/
@@ -1168,32 +1168,32 @@ typedef struct
     Channel_e channel;  /* The new serving channel.*/
     uint8 switchTime;   /* Relative time of the serving channel switch in TBTT units.*/
     Bool_e txSuspend;   /* 1: Suspend TX till switch time; */
-                        /* 0: Do not suspend TX*/
+    /* 0: Do not suspend TX*/
     Bool_e flush;       /* 1: Flush TX at switch time; */
-                        /* 0: Do not flush*/
-    
+    /* 0: Do not flush*/
+
 } ChannelSwitchParameters_t;
 
 /******************************************************************************
 
     ID:       CMD_STOP_CHANNEL_SWICTH
-    Desc:     This command instructs the WiLink device to cancel performing a 
-              pending channel switch event command. 
+    Desc:     This command instructs the WiLink device to cancel performing a
+              pending channel switch event command.
     Params:   None.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_AP_DISCOVERY
-    Desc:     This command instructs the WiLink device to perform an AP discovery 
-              measurement on a multiple channels channel. This command can only be issued after 
+    Desc:     This command instructs the WiLink device to perform an AP discovery
+              measurement on a multiple channels channel. This command can only be issued after
               a measurement process has been started by the WiLink device as a result
-              of a previous Measurement command. The Measurement command specifies the 
-              channel on which the AP discovery is performed. Once the "AP discovery" 
-              measurement is completed either by a STOP_AP_DISCOVERY command or when 
-              the duration has expired, it will send an "AP discovery complete event" 
-              to the host.  
+              of a previous Measurement command. The Measurement command specifies the
+              channel on which the AP discovery is performed. Once the "AP discovery"
+              measurement is completed either by a STOP_AP_DISCOVERY command or when
+              the duration has expired, it will send an "AP discovery complete event"
+              to the host.
     Params:   ApDiscoveryParameters_t - see below.
 
 ******************************************************************************/
@@ -1201,11 +1201,11 @@ typedef struct
 
 {
     uint8         txPowerAttenuation; /* TX power level to be used per channel scanned. */
-                                      /* If 0, leave normal TX power level for this */
-                                      /* channel. Range: 0 - 20.5 [dB].*/ 
+    /* If 0, leave normal TX power level for this */
+    /* channel. Range: 0 - 20.5 [dB].*/
     Channel_e     channel;            /* Channel number to scan, valid range 0-255 */
-  
-    uint16        padding;     
+
+    uint16        padding;
 
 } ApDiscoveryChannelParmeters_t;
 
@@ -1213,36 +1213,36 @@ typedef struct
 
 typedef struct
 {
-    BasicScanParameters_t         basicScanParams; 
+    BasicScanParameters_t         basicScanParams;
     BasicScanChannelParameters_t  channelParamsBandGeneral;
     ApDiscoveryChannelParmeters_t channelParamsBandBG[SCAN_MAX_NUM_OF_CHANNELS];
-	ApDiscoveryChannelParmeters_t channelParamsBandA[SCAN_MAX_NUM_OF_CHANNELS];
-	EHwRateBitFiled               txdRateSetBG;
+    ApDiscoveryChannelParmeters_t channelParamsBandA[SCAN_MAX_NUM_OF_CHANNELS];
+    EHwRateBitFiled               txdRateSetBG;
     EHwRateBitFiled               txdRateSetA;
     uint8                         numOfChannelsBandBG;
     uint8                         numOfChannelsBandA;
-    uint16                        padding;         
+    uint16                        padding;
 } ApDiscoveryParameters_t;
 
 
 /******************************************************************************
 
     ID:       CMD_STOP_AP_DISCOVERY
-    Desc:     This command instructs the WiLink to terminate the AP Discovery 
-              measurement in progress. After processing this command, the WiLink 
+    Desc:     This command instructs the WiLink to terminate the AP Discovery
+              measurement in progress. After processing this command, the WiLink
               returns to its previous state  and generates the AP Discovery Complete
-              Event. 
+              Event.
     Params:   None.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_SPS_SCAN
-    Desc:     This command instructs the WiLink to perform a scheduled passive 
-              scan for BSS/IBSSs. The WiLink monitors the specified channel(s) 
+    Desc:     This command instructs the WiLink to perform a scheduled passive
+              scan for BSS/IBSSs. The WiLink monitors the specified channel(s)
               for beacons. The WiLink sends Scheduled Scan Complete event to notify
-              the host when it has completed a scan. 
+              the host when it has completed a scan.
     Params:   InfoElement_t - see below.
 
 ******************************************************************************/
@@ -1250,29 +1250,29 @@ typedef struct
 typedef struct
 {
     ACXRxConfigStruct rxCfg;         /* Rx filter to be used for each channel scan. */
-                                     /* The BSSID filter enable will be set (by the scan*/
-                                     /* process) to ON for a specific channel if the*/
-                                     /* BSSID of this channel is a unicast address. */
-                                     /* Otherwise it will be set to OFF (Refer to */
-                                     /* ACXRxConfigStruct).*/
-    
+    /* The BSSID filter enable will be set (by the scan*/
+    /* process) to ON for a specific channel if the*/
+    /* BSSID of this channel is a unicast address. */
+    /* Otherwise it will be set to OFF (Refer to */
+    /* ACXRxConfigStruct).*/
+
     uint32            scanCmdTime_h; /* This filed is the latest 32 MSBits of TSF known*/
-                                     /* at the time the SPS command was issued. When the*/
-                                     /* scan process is about to begin, this value is */
-                                     /* used to determine if the AP has performed a */
-                                     /* recovery by comparing this value to the current*/
-                                     /* TSF. (An AP that has performed a recovery should*/
-                                     /* have a lower TSF then the one that was saved).*/
-    
+    /* at the time the SPS command was issued. When the*/
+    /* scan process is about to begin, this value is */
+    /* used to determine if the AP has performed a */
+    /* recovery by comparing this value to the current*/
+    /* TSF. (An AP that has performed a recovery should*/
+    /* have a lower TSF then the one that was saved).*/
+
     uint32            scanCmdTime_l; /* This filed is the latest 32 LSBits of TSF known*/
-                                     /* at the time the SPS command was issued. */
+    /* at the time the SPS command was issued. */
 
     uint16            scanOptions;   /* This bitwise field indicates the scan options. */
-                                     /* 0 - ACTIVE, 1 - PASSIVE.*/
-    
+    /* 0 - ACTIVE, 1 - PASSIVE.*/
+
     uint8             numChannels;   /* Number of scan channels in the list (minimum */
-                                     /* (minimumis 1, maximum is 30).*/
-    
+    /* (minimumis 1, maximum is 30).*/
+
     RadioBand_e       band;          /* Band to scan */
     uint8             scanTag;       /* results tag */
 } ScheduledGeneralParameters_t;
@@ -1282,28 +1282,28 @@ typedef struct
 typedef struct
 {
     uint32 scanStartTime;      /* Duration in microseconds of the scan on this channel */
-                               /* (Scan could be aborted before this duration in case of*/
-                               /* early termination condition met on the channel). */
-    
+    /* (Scan could be aborted before this duration in case of*/
+    /* early termination condition met on the channel). */
+
     uint32 scanMaxDuration;    /* Lower 4 bytes of TSF time in microseconds when the */
-                               /* scan should start listening on the desired channel. */
+    /* scan should start listening on the desired channel. */
 
     uint32 bssIdL;             /* 32 LSBits of BSSID of the AP to scan for. If scanning */
-                               /* on this  channel any BSSID, this field shall be set */
-                               /* to broadcast BSSID. */
-    
+    /* on this  channel any BSSID, this field shall be set */
+    /* to broadcast BSSID. */
+
     uint16 bssIdH;             /* 16 MSBits of BSSID of the AP to scan for. */
 
     ETCondCount_t ETCondCount; /* bit 0-3: Early Termination count - This field */
-                               /*          defines the maximum number of beacons*/
-                               /*          or probe responses or both (according*/
-                               /*          to condition) to collect before ending*/
-                               /*          a scan.*/
-    
-                               /* Bit 4-5: Early Termination Condition (refer */
-                               /*          to ETCondition_enum).*/
+    /*          defines the maximum number of beacons*/
+    /*          or probe responses or both (according*/
+    /*          to condition) to collect before ending*/
+    /*          a scan.*/
+
+    /* Bit 4-5: Early Termination Condition (refer */
+    /*          to ETCondition_enum).*/
     Channel_e     channel;     /* Channel number to scan, valid range 0-255 */
-                               /* (1-14 for 802.11b).*/
+    /* (1-14 for 802.11b).*/
 } ScheduledChannelParameters_t;
 
 
@@ -1317,10 +1317,10 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_STOP_SPS_SCAN
-    Desc:     This command instructs the WiLink to terminate a currently running 
-              SPS or a pending SPS.. After processing this command, the WiLink 
-              returns to its previous state and generates the Scheduled Scan 
-              Complete Event. 
+    Desc:     This command instructs the WiLink to terminate a currently running
+              SPS or a pending SPS.. After processing this command, the WiLink
+              returns to its previous state and generates the Scheduled Scan
+              Complete Event.
     Params:   None.
 
 ******************************************************************************/
@@ -1328,16 +1328,16 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_HEALTH_CHECK
-    Desc:     This command instructs the WiLink to raise a MAC status event 
-              which contains the current FCS Error counter. 
+    Desc:     This command instructs the WiLink to raise a MAC status event
+              which contains the current FCS Error counter.
     Params:   None.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
 
     ID:       CMD_DEBUG
-    Desc:      
+    Desc:
     Params:   debugCommnad_t - see below.
 
 ******************************************************************************/
@@ -1353,10 +1353,10 @@ typedef struct
 /******************************************************************************
 
     ID:       CMD_CONNECTION_SCAN_CFG
-    Desc:     This command configures the periodic connection scan feature 
+    Desc:     This command configures the periodic connection scan feature
     Params:   ConnectionScanParameters_t followed by active and passive channel
               lists (variable size structure)
-    
+
 ******************************************************************************/
 
 typedef enum
@@ -1407,7 +1407,7 @@ typedef struct
     uint8        channel;             /* channel number (channel_e) */
     uint8        txPowerLevelDbm;    /* TX power level in dbm */
     uint8        channelFlags;        /* BIT 0: DFS channel */
-                                      /* BIT 1: DFS enabled (to be included in active scan) */
+    /* BIT 1: DFS enabled (to be included in active scan) */
     uint8        padding[3];
 } ConnScanChannelInfo_t;
 
@@ -1439,7 +1439,7 @@ typedef struct
     Desc:     This command configures the SSID filter list to be used in the
               periodic connection scan
     Params:   None.
-    
+
 ******************************************************************************/
 
 #define CONN_SCAN_MAX_NUMBER_OF_SSID_ENTRIES        (8)
@@ -1460,7 +1460,7 @@ typedef ScanSsidType_enum ScanSsidType_e;
 typedef struct
 {
     ScanSsidType_e      ssidType;
-    uint8               ssidLength; 
+    uint8               ssidLength;
     uint8               ssid[32];
 } ConnScanSSID_t;
 
@@ -1478,7 +1478,7 @@ typedef struct
     Desc:     This command instructs the WiLink to start a periodic scan
               process (either connection-scan or discovery)
     Params:   None.
-    
+
 ******************************************************************************/
 
 typedef struct
@@ -1493,7 +1493,7 @@ typedef struct
     Desc:     This command instructs the WiLink to stop a periodic scan
               process (either connection-scan or discovery)
     Params:   None.
-    
+
 ******************************************************************************/
 
 /******************************************************************************
@@ -1501,7 +1501,7 @@ typedef struct
     ID:       CMD_SET_STATUS
     Desc:     This command instructs the station state
     Params:   None.
-    
+
 ******************************************************************************/
 
 #define STA_STATE_CONNECTED 1
@@ -1510,7 +1510,7 @@ typedef struct
 {
     uint8   staState;
     uint8   pad[3];
-} SetStaState_t; 
+} SetStaState_t;
 
 /* PLT public definitions*/
 #define TEST_CONTINUOUS 0x04       /* transmit frames contimuously */

@@ -267,7 +267,7 @@ void sendDataPacket (TI_HANDLE hOs)
 	else
 	{
         os_printf("\n sendDataPacket() : pPktBuf returned as NULL from txCtrl_AllocPacketBuffer() ");
-	}
+    }
 
     /* Send Ether packet to TxCtrl */
     txCtrl_XmitData (tmp_hTxCtrl, pPktCtrlBlk);
@@ -291,7 +291,7 @@ void sendMgmtPacket(TI_HANDLE hOs)
 
     for (i = 0; i < packetLength; i++)
     {
-	aMsg[i] = i;
+        aMsg[i] = i;
     }
 
     mlmeBuilder_sendFrame(tmp_hMlme, eMsgType, aMsg, packetLength, 0);

@@ -270,12 +270,12 @@ typedef union
  */ 
 typedef struct
 {
-    TSsid                  desiredSsid;    		/**< The SSID to search (optional) 												*/
+    TSsid                  desiredSsid;    		/**< The SSID to search (optional) 												        */
     EScanType              scanType;            /**< Desired scan type (normal - active or passive, SPS, triggered - active or passive)	*/
-    ERadioBand             band;             	/**< Band to scan (A / BG) 														*/
-    TI_UINT8               probeReqNumber;     	/**< Number of probe requests to send on each channel (for active scan) 		*/
-    ERateMask              probeRequestRate;    /**< The rate at which to send the probe requests 								*/
-    TI_UINT8               Tid;                 /**< Time at which to trigger the scan (for triggered scan)						*/
+    ERadioBand             band;             	/**< Band to scan (A / BG) 														        */
+    TI_UINT8               probeReqNumber;     	/**< Number of probe requests to send on each channel (for active scan) 		        */
+    ERateMask              probeRequestRate;    /**< The rate at which to send the probe requests 								        */
+    TI_UINT8               Tid;                 /**< Time at which to trigger the scan (for triggered scan)						        */
     TI_UINT64              latestTSFValue;      /**< For SPS scan: the latest TSF at which a frame was received. Used to detect 
 												* TSF error (AP recovery). 
 												*/
@@ -285,6 +285,7 @@ typedef struct
     TI_UINT8               numOfChannels;       /**< Number of channels to scan 														*/
     TScanChannelEntry      channelEntry[ MAX_NUMBER_OF_CHANNELS_PER_SCAN ];	/**< Channel data array, actual size according to the above field. */
     EScanClient            eScanClient;         /**< Defines the scan initiator                                                         */
+
 
 } TScanParams;
 

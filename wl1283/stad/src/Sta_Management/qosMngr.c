@@ -76,6 +76,10 @@ const TI_UINT32 WMEQosMateTid[MAX_NUM_OF_802_1d_TAGS] = { 3, 2, 1, 0, 5, 4, 7, 6
 
 #define FIXED_NOMINAL_MSDU_SIZE_MASK 0x8000
 
+#ifdef XCC_MODULE_INCLUDED
+#define VOICE_SERVICE_INTERVAL 20000
+#define VOICE_INACTIVITY_INTERVAL 10000000
+#endif
 
 /********************************************************************************/
 /*						Internal functions prototypes.							*/
@@ -296,6 +300,7 @@ TI_STATUS qosMngr_SetDefaults (TI_HANDLE hQosMngr, QosMngrInitParams_t *pQosMngr
                                     pQosMngr->hTimer,
                                     pQosMngr->hTWD,
                                     pQosMngr->hTxCtrl,
+                                    pQosMngr->hRoamMng,
                                     &pQosMngrInitParams->trafficAdmCtrlInitParams);
 	if(status != TI_OK)
 		return TI_NOK;
@@ -859,7 +864,6 @@ TI_STATUS qosMngr_getParams(TI_HANDLE  hQosMngr,paramInfo_t *pParamInfo)
 			pTspecParams->uAPSDFlag = pConfiguredParams->UPSDFlag;
 			pTspecParams->uMediumTime = pConfiguredParams->mediumTime;
 			pTspecParams->uTid = pConfiguredParams->tid;
-
 		}
 		else
 		{
@@ -2610,7 +2614,6 @@ TI_STATUS qosMngr_sendUnexpectedTSPECResponseEvent(TI_HANDLE	hQosMngr,
 	addtsReasonCode.uMinimumPHYRate = pTspecInfo->minimumPHYRate;
 	addtsReasonCode.uSurplusBandwidthAllowance = pTspecInfo->surplausBwAllowance;
 	addtsReasonCode.uMediumTime = pTspecInfo->mediumTime;
-
     addtsReasonCode.uReasonCode = pTspecInfo->statusCode + TSPEC_RESPONSE_UNEXPECTED;
 		
 	/* send event */
@@ -2821,7 +2824,6 @@ TI_STATUS qosMngr_setAdmissionInfo(TI_HANDLE    hQosMngr,
         addtsReasonCode.uMinimumPHYRate = 0;
         addtsReasonCode.uSurplusBandwidthAllowance = 0;
         addtsReasonCode.uMediumTime = 0;
-
         EvHandlerSendEvent (pQosMngr->hEvHandler, 
                             IPC_EVENT_TSPEC_STATUS, 
                             (TI_UINT8*)&addtsReasonCode, 
@@ -2906,7 +2908,6 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames:  
 		    addtsReasonCode.uMinimumPHYRate = 0;
 		    addtsReasonCode.uSurplusBandwidthAllowance = 0;
 		    addtsReasonCode.uMediumTime = 0;
-            
             EvHandlerSendEvent(pQosMngr->hEvHandler, IPC_EVENT_TSPEC_STATUS, (TI_UINT8*)(&addtsReasonCode), sizeof(OS_802_11_QOS_TSPEC_PARAMS));
 		}
 		else
@@ -3063,8 +3064,17 @@ static void qosMngr_storeTspecCandidateParams (tspecInfo_t *pCandidateParams, OS
 	pCandidateParams->minimumPHYRate = pTSPECParams->uMinimumPHYRate;
 	pCandidateParams->streamDirection = pTSPECParams->eDirection;
 	pCandidateParams->mediumTime = 0;
-	pCandidateParams->uMinimumServiceInterval = 0;
-	pCandidateParams->uMaximumServiceInterval = 0;
+    pCandidateParams->uMinimumServiceInterval = 0;
+    pCandidateParams->uMaximumServiceInterval = 0;
+    pCandidateParams->uInactivityInterval = 0;
+#ifdef XCC_MODULE_INCLUDED
+    if (pCandidateParams->AC == QOS_AC_VO)
+    {
+        pCandidateParams->uMinimumServiceInterval = VOICE_SERVICE_INTERVAL;
+        pCandidateParams->uMaximumServiceInterval = VOICE_SERVICE_INTERVAL;
+	pCandidateParams->uInactivityInterval = VOICE_INACTIVITY_INTERVAL;
+    }
+#endif
 }
 
 

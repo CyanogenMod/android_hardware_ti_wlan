@@ -80,8 +80,11 @@ void scanCncnSmApp1Shot_ScrRequest (TI_HANDLE hScanCncnClient)
     case SCR_CRS_PEND:
         /* send a reject event to the SM */
         TRACE1(pScanCncnClient->hReport, REPORT_SEVERITY_INFORMATION , "scanCncnSmApp1Shot_ScrRequest: SCR pending, pend reason: %d.\n", eScrPendReason);
-/*        pScanCncnClient->eScanResult = SCAN_CRS_SCAN_FAILED;
-        genSM_Event (pScanCncnClient->hGenSM, SCAN_CNCN_SM_EVENT_REJECT, hScanCncnClient);*/
+        if (eScrPendReason == SCR_PR_NONE)
+        {
+            pScanCncnClient->eScanResult = SCAN_CRS_SCAN_FAILED;
+            genSM_Event (pScanCncnClient->hGenSM, SCAN_CNCN_SM_EVENT_REJECT, hScanCncnClient);
+        }
         break;
 
     case SCR_CRS_RUN:
@@ -203,8 +206,11 @@ void scanCncnSmAppP_ScrRequest (TI_HANDLE hScanCncnClient)
     case SCR_CRS_PEND:
         /* send a reject event to the SM */
         TRACE1(pScanCncnClient->hReport, REPORT_SEVERITY_INFORMATION , "scanCncnSmAppP_ScrRequest: SCR pending, pend reason: %d.\n", eScrPendReason);
-        pScanCncnClient->eScanResult = SCAN_CRS_SCAN_FAILED;
-        genSM_Event (pScanCncnClient->hGenSM, SCAN_CNCN_SM_EVENT_REJECT, hScanCncnClient);
+        if (eScrPendReason == SCR_PR_NONE)
+        {
+            pScanCncnClient->eScanResult = SCAN_CRS_SCAN_FAILED;
+            genSM_Event (pScanCncnClient->hGenSM, SCAN_CNCN_SM_EVENT_REJECT, hScanCncnClient);
+        }
         break;
 
     case SCR_CRS_RUN:
@@ -715,7 +721,7 @@ static TI_STATUS scanCncnSm_Scan (TI_HANDLE hScanCncnClient, TScanParams *pScanP
                     (TI_HANDLE)pScanCncn,
                     SCAN_GUARD_TIME_MS, 
                     TI_FALSE);
-    
+
 
     /* call the TWD start scan */
     tStatus = TWD_Scan (pScanCncnClient->hTWD, pScanParams, eScanTag, bHighPriority,

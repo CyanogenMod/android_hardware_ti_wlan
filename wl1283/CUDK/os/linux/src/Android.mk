@@ -35,7 +35,7 @@ endif
 
 DK_DEFINES = 
 ifeq ($(WPA_ENTERPRISE), y)
-DK_DEFINES += -D WPA_ENTERPRISE
+        DK_DEFINES += -D WPA_ENTERPRISE
 endif
 
 ifeq ($(BUILD_SUPPL), y)
@@ -46,7 +46,9 @@ DK_DEFINES += -DCONFIG_WPS
 endif
 endif
 
-LOCAL_CFLAGS += \
+
+
+LOCAL_CFLAGS+= \
 	-Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(DK_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -fno-common #-pipe
 
 LOCAL_SRC_FILES:= \
@@ -59,14 +61,14 @@ LOCAL_SRC_FILES:= \
 	osapi.c
 
 LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/../inc \
-	$(LOCAL_PATH)/../../common/inc \
-	$(LOCAL_PATH)/$(WILINK_ROOT)/stad/Export_Inc \
-	$(LOCAL_PATH)/$(WILINK_ROOT)/stad/src/Sta_Management \
-	$(LOCAL_PATH)/$(WILINK_ROOT)/stad/src/Application \
-	$(LOCAL_PATH)/$(WILINK_ROOT)/utils \
-	$(LOCAL_PATH)/$(WILINK_ROOT)/Txn \
-	$(LOCAL_PATH)/$(WILINK_ROOT)/TWD/TWDriver \
+        $(LOCAL_PATH)/../inc \
+        $(LOCAL_PATH)/../../common/inc \
+        $(LOCAL_PATH)/$(WILINK_ROOT)/stad/Export_Inc \
+        $(LOCAL_PATH)/$(WILINK_ROOT)/stad/src/Sta_Management \
+        $(LOCAL_PATH)/$(WILINK_ROOT)/stad/src/Application \
+        $(LOCAL_PATH)/$(WILINK_ROOT)/utils \
+        $(LOCAL_PATH)/$(WILINK_ROOT)/Txn \
+        $(LOCAL_PATH)/$(WILINK_ROOT)/TWD/TWDriver \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/TWD/FirmwareApi \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/TWD/FW_Transfer/Export_Inc \
 	$(LOCAL_PATH)/$(WILINK_ROOT)/TWD/TwIf \
@@ -77,6 +79,6 @@ LOCAL_C_INCLUDES := \
 	$(WPA_SUPPL_DIR_INCLUDE)
 
 LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE := libtiOsLib
+LOCAL_MODULE:=libtiOsLib
 
 include $(BUILD_STATIC_LIBRARY)

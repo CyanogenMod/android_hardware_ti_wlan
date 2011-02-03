@@ -179,6 +179,7 @@ void roamingMgrDebugFunction(TI_HANDLE hRoamingMngr,
 
             /* upon this call the scanMngr_reportImmediateScanResults() should be invoked and the BssList should be printed */
             roamingMngr_startImmediateScan(hRoamingMngr, pChannels);
+
             os_memoryFree(pRoamingMngr->hOs, pChannels, sizeof(channelList_t));
         }
        
@@ -251,6 +252,7 @@ void roamingMgrDebugFunction(TI_HANDLE hRoamingMngr,
             }
 
             scanMngr_startContinuousScanByApp(pRoamingMngr->hScanMngr, pChannels);
+
             os_memoryFree(pRoamingMngr->hOs, pChannels, sizeof(channelList_t));
         }
         

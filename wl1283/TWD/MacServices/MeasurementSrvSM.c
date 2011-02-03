@@ -76,18 +76,32 @@ TI_STATUS measurementSRVSM_init( TI_HANDLE hMeasurementSRV )
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"START_FAILURE"*/
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"ALL_TYPES_COMPLETE"*/
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"STOP_COMPLETE"*/
-            {MSR_SRV_STATE_IDLE, measurementSRVSRVSM_dummyStop}                           /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_IDLE, measurementSRVSRVSM_dummyStop},                          /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_IDLE, actionUnexpected}                                        /*AP_DISCOVERY*/
         },
 
         /* next state and actions for WAIT_FOR_MEASURE_START state */
         {    
-            {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"MESSURE_START_REQUEST"*/
-            {MSR_SRV_STATE_MEASURE_IN_PROGRESS, measurementSRVSM_startMeasureTypes},      /*"START_SUCCESS"*/
+            {MSR_SRV_STATE_WAIT_FOR_AP_DISCOVERY_START, measurementSRVSM_waitApDiscovery},  /*"MESSURE_START_REQUEST"*/
+            {MSR_SRV_STATE_MEASURE_IN_PROGRESS, measurementSRVSM_startMeasureTypesSuccess}, /*"START_SUCCESS"*/
             {MSR_SRV_STATE_IDLE, measurementSRVSM_measureStartFailure},                   /*"START_FAILURE"*/
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"ALL_TYPES_COMPLETE"*/
             {MSR_SRV_STATE_IDLE, measurementSRVSM_completeMeasure},                       /*"STOP_COMPLETE"*/
-            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSM_stopFromWaitForMeasureStart}
+            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSM_stopFromWaitForMeasureStart},
                                                                                           /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_WAIT_FOR_MEASURE_START, actionUnexpected}                      /*AP_DISCOVERY*/
+        },
+
+
+        /* next state and actions for MSR_SRV_STATE_WAIT_FOR_AP_DISCOVERY_START state */
+        {
+            {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"MESSURE_START_REQUEST"*/
+            {MSR_SRV_STATE_MEASURE_IN_PROGRESS, measurementSRVSM_startMeasureTypesSuccess}, /*"START_SUCCESS"*/
+            {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"START_FAILURE"*/
+            {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"ALL_TYPES_COMPLETE"*/
+            {MSR_SRV_STATE_IDLE, measurementSRVSM_completeMeasure},                       /*"STOP_COMPLETE"*/
+            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSM_stopFromWaitForMeasureStart}, /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_MEASURE_IN_PROGRESS, measurementSRVSM_startApDiscovery}        /*AP_DISCOVERY*/
         },
 
         /* next state and actions for MEASURE_IN_PROGRESS state */
@@ -97,8 +111,10 @@ TI_STATUS measurementSRVSM_init( TI_HANDLE hMeasurementSRV )
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"START_FAILURE"*/
             {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSM_requestMeasureStop},   /*"ALL_TYPES_COMPLETE"*/
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"STOP_COMPLETE"*/
-            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSM_stopFromMeasureInProgress}
+            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSM_stopFromMeasureInProgress},
                                                                                           /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_MEASURE_IN_PROGRESS, measurementSRVSM_apDiscoveryStopComplete} /*AP_DISCOVERY*/
+
         },
 
         /* next state and actions for WAIT_FOR_MEASURE_STOP state */
@@ -108,7 +124,8 @@ TI_STATUS measurementSRVSM_init( TI_HANDLE hMeasurementSRV )
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"START_FAILURE"*/
             {MSR_SRV_STATE_IDLE, actionUnexpected},                                       /*"ALL_TYPES_COMPLETE"*/
             {MSR_SRV_STATE_IDLE, measurementSRVSM_completeMeasure},                       /*"STOP_COMPLETE"*/
-            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSRVSM_dummyStop}          /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, measurementSRVSRVSM_dummyStop},         /*"MEASURE_STOP_REQUEST"*/
+            {MSR_SRV_STATE_WAIT_FOR_MEASURE_STOP, actionUnexpected}                                        /*AP_DISCOVERY_STOP_COMPLETE*/
         }
     };
 
@@ -305,225 +322,143 @@ TI_STATUS measurementSRVSM_requestMeasureStart( TI_HANDLE hMeasurementSRV )
 
 /**
  * \\n
- * \date 08-November-2005\n
- * \brief Handle a START_SUCCESS event by starting different measure types and setting timers.\n
+ * \brief Handle measurement start success if all measurements
+ *        failed send ALL_TYPE_COMPLETE event to stop measure command to the FW.\n
  *
  * Function Scope \e Public.\n
  * \param hMeasurementSrv - handle to the Measurement SRV object.\n
  * \return always TI_OK.\n
  */
-TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
+TI_STATUS measurementSRVSM_startMeasureTypesSuccess( TI_HANDLE hMeasurementSRV )
 {
-    measurementSRV_t      *pMeasurementSRV = (measurementSRV_t*)hMeasurementSRV;
-    TI_UINT8                 requestIndex, rangeIndex;
-    TI_INT8                  rangeUpperBound;
-    TTwdParamInfo         tTwdParam;
-    TI_STATUS             status;
-    TNoiseHistogram       pNoiseHistParams;
-    TApDiscoveryParams    pApDiscoveryParams;
-    TI_INT32              i=0 ;
-    TI_UINT32             currentTime = os_timeStampMs( pMeasurementSRV->hOS );
-    
-    /* check if request time has expired (note: timer wrap-around is also handled)*/
-    if ( (pMeasurementSRV->requestRecptionTimeStampMs + pMeasurementSRV->timeToRequestExpiryMs)
-                    < currentTime )
-    {
-        
-
-        TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": request time has expired, request expiry time:%d, current time:%d\n", pMeasurementSRV->requestRecptionTimeStampMs + pMeasurementSRV->timeToRequestExpiryMs, currentTime);
-
-        /* mark that all measurement types has failed */
-        for ( i = 0; i < pMeasurementSRV->msrRequest.numberOfTypes; i++ )
-        {
-            pMeasurementSRV->msrReply.msrTypes[ i ].status = MSR_REJECT_MAX_DELAY_PASSED;
-        }
-
-        /* send a measurement complete event */
-        measurementSRVSM_SMEvent( hMeasurementSRV, &(pMeasurementSRV->SMState),
-                                  MSR_SRV_EVENT_ALL_TYPES_COMPLETE );
-        
-        return TI_OK;
-    }
-
-    /* Going over all request types that should be executed in parallel 
-    to start their timers and execute the measurement */
-    for ( requestIndex = 0; requestIndex < pMeasurementSRV->msrRequest.numberOfTypes ; requestIndex++ )
-    {      
-        switch (pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType)
-        {
-        case MSR_TYPE_XCC_CCA_LOAD_MEASUREMENT:    
-            /* Clearing the Medium Occupancy Register */
-            tTwdParam.paramType = TWD_MEDIUM_OCCUPANCY_PARAM_ID;
-            tTwdParam.content.interogateCmdCBParams.fCb = (void *)MacServices_measurementSRV_dummyChannelLoadParamCB;
-            tTwdParam.content.interogateCmdCBParams.hCb = hMeasurementSRV;
-            tTwdParam.content.interogateCmdCBParams.pCb = 
-                    (TI_UINT8*)&pMeasurementSRV->mediumOccupancyResults;
-            status = cmdBld_GetParam (pMeasurementSRV->hCmdBld, &tTwdParam);
-            if( TI_OK == status  )
-            {
-                TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": Medium Usage has been nullified, starting timer.\n");
-
-                /* Start Timer */
-                tmr_StartTimer (pMeasurementSRV->hRequestTimer[requestIndex],
-                                MacServices_measurementSRV_requestTimerExpired,
-                                (TI_HANDLE)pMeasurementSRV,
-                                pMeasurementSRV->msrRequest.msrTypes[requestIndex].duration, 
-                                TI_FALSE);
-                pMeasurementSRV->bRequestTimerRunning[requestIndex] = TI_TRUE;
-            }
-            else
-            {
-                TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": TWD_GetParam (for channel load) returned status %d\n", status);
-            }
-
-            break;
-        
-        case MSR_TYPE_XCC_NOISE_HISTOGRAM_MEASUREMENT:
-            /* Set Noise Histogram Cmd Params */
-            pNoiseHistParams.cmd = START_NOISE_HIST;
-            pNoiseHistParams.sampleInterval = DEF_SAMPLE_INTERVAL;
-            os_memoryZero( pMeasurementSRV->hOS, &(pNoiseHistParams.ranges[0]), MEASUREMENT_NOISE_HISTOGRAM_NUM_OF_RANGES );
-        
-            /* Set Ranges */
-            /* (-87) - First Range's Upper Bound */
-            rangeUpperBound = -87;
-
-            /* Previously we converted from RxLevel to dBm - now this isn't necessary */
-            /* rangeUpperBound = TWD_convertRSSIToRxLevel( pMeasurementSRV->hTWD, -87); */
-
-            for(rangeIndex = 0; rangeIndex < MEASUREMENT_NOISE_HISTOGRAM_NUM_OF_RANGES -1; rangeIndex++)
-            {
-                if(rangeUpperBound > 0)
-                {
-                    pNoiseHistParams.ranges[rangeIndex] = 0;
-                }
-                else
-                {               
-                    pNoiseHistParams.ranges[rangeIndex] = rangeUpperBound;
-                }         
-                rangeUpperBound += 5; 
-            }
-            pNoiseHistParams.ranges[rangeIndex] = 0xFE;
-
-            /* Print for Debug */
-            TRACE8(pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ":Noise histogram Measurement Ranges:\n%d %d %d %d %d %d %d %d\n", (TI_INT8) pNoiseHistParams.ranges[0], (TI_INT8) pNoiseHistParams.ranges[1], (TI_INT8) pNoiseHistParams.ranges[2], (TI_INT8) pNoiseHistParams.ranges[3], (TI_INT8) pNoiseHistParams.ranges[4], (TI_INT8) pNoiseHistParams.ranges[5], (TI_INT8) pNoiseHistParams.ranges[6], (TI_INT8) pNoiseHistParams.ranges[7]);
-
-            /* Send a Start command to the FW */
-            status = cmdBld_CmdNoiseHistogram (pMeasurementSRV->hCmdBld, &pNoiseHistParams, NULL, NULL);
-
-            if ( TI_OK == status )
-            {
-                /* Print for Debug */
-                TRACE0( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": Sent noise histogram command. Starting timer\n");
-
-                /* Start Timer */
-                tmr_StartTimer (pMeasurementSRV->hRequestTimer[requestIndex],
-                                MacServices_measurementSRV_requestTimerExpired,
-                                (TI_HANDLE)pMeasurementSRV,
-                                pMeasurementSRV->msrRequest.msrTypes[requestIndex].duration, 
-                                TI_FALSE);
-                pMeasurementSRV->bRequestTimerRunning[requestIndex] = TI_TRUE;
-            }
-            else
-            {
-                TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": TWD_NoiseHistogramCmd returned status %d\n", status);
-            }
-            break;
-
-        case MSR_TYPE_RRM_BEACON_MEASUREMENT:
-        case MSR_TYPE_XCC_BEACON_MEASUREMENT:
-
-            /* set all parameters in the AP discovery command */
-            pApDiscoveryParams.txdRateSetBandBG = HW_BIT_RATE_1MBPS;
-            pApDiscoveryParams.txdRateSetBandA = HW_BIT_RATE_6MBPS;
-            
-            pApDiscoveryParams.ConfigOptions = RX_CONFIG_OPTION_FOR_MEASUREMENT;
-            pApDiscoveryParams.FilterOptions = RX_FILTER_OPTION_DEF_PRSP_BCN;
-            pApDiscoveryParams.scanOptions = 0;
- 
-            
-            pApDiscoveryParams.ssid.len = pMeasurementSRV->msrRequest.msrTypes[requestIndex].ssid.len;
-            os_memoryCopy(pMeasurementSRV->hOS, pApDiscoveryParams.ssid.str, 
-                          pMeasurementSRV->msrRequest.msrTypes[requestIndex].ssid.str,
-                          pMeasurementSRV->msrRequest.msrTypes[requestIndex].ssid.len);
-            
-
-            pApDiscoveryParams.scanDuration = pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].duration*1000;
-            
-            if (MSR_TYPE_RRM_BEACON_MEASUREMENT == pMeasurementSRV->msrRequest.msrTypes[requestIndex].msrType) 
-            {
-                pApDiscoveryParams.numOfProbRqst = 3;
-                pApDiscoveryParams.ConfigOptions = RX_CONFIG_OPTION_FOR_SCAN;
-                
-            }
-            else /* MSR_TYPE_XCC_BEACON_MEASUREMENT */
-            {
-                pApDiscoveryParams.numOfProbRqst = 1;
-            }
-           
-            
-            for ( i = 0; i < pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandBG.uActualNumOfChannels; i++ )
-            {
-                pApDiscoveryParams.channelListBandBG.channelList[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandBG.channelList[i];
-                pApDiscoveryParams.channelListBandBG.txPowerDbm[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandBG.txPowerDbm[i];
-            }
-
-            pApDiscoveryParams.channelListBandBG.uActualNumOfChannels = i;
-
-            for ( i = 0; i < pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandA.uActualNumOfChannels; i++ )
-            {
-                pApDiscoveryParams.channelListBandA.channelList[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandA.channelList[i];
-                pApDiscoveryParams.channelListBandA.txPowerDbm[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandA.txPowerDbm[i];
-            }
-
-            pApDiscoveryParams.channelListBandA.uActualNumOfChannels = i;
-
-            
-            /* band determined at the initiate measurement command not at that structure */
-
-            /* scan mode go into the scan option field */
-            if ( MSR_SCAN_MODE_PASSIVE == pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].scanMode )
-            {
-                pApDiscoveryParams.scanOptions |= SCAN_PASSIVE;
-            }
-
-
-            /* Send AP Discovery command */
-            status = cmdBld_CmdApDiscovery (pMeasurementSRV->hCmdBld, &pApDiscoveryParams, NULL, NULL);
-
-            if ( TI_OK == status )
-            {
-                TRACE7( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": AP discovery command sent. Params:\n scanDuration=%d, scanOptions=%d, numOfProbRqst=%d, txdRateSetBG=%d, txdRateSetA=%d, configOptions=%d, filterOptions=%d\n Starting timer...\n", pApDiscoveryParams.scanDuration, pApDiscoveryParams.scanOptions, pApDiscoveryParams.numOfProbRqst, pApDiscoveryParams.txdRateSetBandBG, pApDiscoveryParams.txdRateSetBandA,pApDiscoveryParams.ConfigOptions, pApDiscoveryParams.FilterOptions);
-                /* Start Timer */
-                tmr_StartTimer (pMeasurementSRV->hRequestTimer[requestIndex],
-                                MacServices_measurementSRV_requestTimerExpired,
-                                (TI_HANDLE)pMeasurementSRV,
-                                (pMeasurementSRV->msrRequest.msrTypes[requestIndex].duration * 1024)/1000,
-                                TI_FALSE);
-                pMeasurementSRV->bRequestTimerRunning[ requestIndex ] = TI_TRUE;
-            }
-            else
-            {
-                TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": TWD_ApDiscoveryCmd returned status %d\n", status);
-            }
-            break;
-
-        case MSR_TYPE_BASIC_MEASUREMENT: /* not supported in current implemntation */
-        case MSR_TYPE_FRAME_MEASUREMENT: /* not supported in current implemntation */
-        default:
-            TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": Measurement type %d is not supported\n", pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType);
-            break;
-        }        
-    }
-
-    /* if no measurement types are running, sen al types complete event.
+    measurementSRV_t* pMeasurementSRV = (measurementSRV_t*)hMeasurementSRV;
+    /* if no measurement types are running, send al types complete event.
        This can happen if all types failed to start */
     if ( TI_TRUE == measurementSRVIsMeasurementComplete( hMeasurementSRV ))
     {
         /* send the event */
-        measurementSRVSM_SMEvent( hMeasurementSRV, &(pMeasurementSRV->SMState), 
+        measurementSRVSM_SMEvent( hMeasurementSRV, &(pMeasurementSRV->SMState),
                                   MSR_SRV_EVENT_ALL_TYPES_COMPLETE );
     }
+
+    return TI_OK;
+}
+
+/**
+ * \\n
+ * \brief Handle ap discovery measurement start request
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_waitApDiscovery(TI_HANDLE hMeasurementSRV)
+{
+    measurementSRV_t* pMeasurementSRV = (measurementSRV_t*)hMeasurementSRV;
+    TApDiscoveryParams    pApDiscoveryParams;
+    TI_UINT32 i = 0;
+    TI_UINT32 requestIndex = pMeasurementSRV->uApDiscoveryRequestIndex;
+    TI_STATUS status;
+
+    /* set all parameters in the AP discovery command */
+    pApDiscoveryParams.txdRateSetBandBG = HW_BIT_RATE_1MBPS;
+    pApDiscoveryParams.txdRateSetBandA = HW_BIT_RATE_6MBPS;
+
+    pApDiscoveryParams.ConfigOptions = RX_CONFIG_OPTION_FOR_MEASUREMENT;
+    pApDiscoveryParams.FilterOptions = RX_FILTER_OPTION_DEF_PRSP_BCN;
+    pApDiscoveryParams.scanOptions = 0;
+
+
+    pApDiscoveryParams.ssid.len = pMeasurementSRV->msrRequest.msrTypes[requestIndex].ssid.len;
+    os_memoryCopy(pMeasurementSRV->hOS, pApDiscoveryParams.ssid.str,
+            pMeasurementSRV->msrRequest.msrTypes[requestIndex].ssid.str,
+            pMeasurementSRV->msrRequest.msrTypes[requestIndex].ssid.len);
+
+
+    pApDiscoveryParams.scanDuration = pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].duration*1000;
+
+    if (MSR_TYPE_RRM_BEACON_MEASUREMENT == pMeasurementSRV->msrRequest.msrTypes[requestIndex].msrType)
+    {
+        pApDiscoveryParams.numOfProbRqst = 3;
+        pApDiscoveryParams.ConfigOptions = RX_CONFIG_OPTION_FOR_SCAN;
+
+    }
+    else /* MSR_TYPE_XCC_BEACON_MEASUREMENT */
+    {
+        pApDiscoveryParams.numOfProbRqst = 1;
+    }
+
+
+    for ( i = 0; i < pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandBG.uActualNumOfChannels; i++ )
+    {
+        pApDiscoveryParams.channelListBandBG.channelList[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandBG.channelList[i];
+        pApDiscoveryParams.channelListBandBG.txPowerDbm[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandBG.txPowerDbm[i];
+    }
+
+    pApDiscoveryParams.channelListBandBG.uActualNumOfChannels = i;
+
+    for ( i = 0; i < pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandA.uActualNumOfChannels; i++ )
+    {
+        pApDiscoveryParams.channelListBandA.channelList[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandA.channelList[i];
+        pApDiscoveryParams.channelListBandA.txPowerDbm[i] = pMeasurementSRV->msrRequest.msrTypes[requestIndex].channelListBandA.txPowerDbm[i];
+    }
+
+    pApDiscoveryParams.channelListBandA.uActualNumOfChannels = i;
+
+
+    /* band determined at the initiate measurement command not at that structure */
+
+    /* scan mode go into the scan option field */
+    if ( MSR_SCAN_MODE_PASSIVE == pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].scanMode )
+    {
+        pApDiscoveryParams.scanOptions |= SCAN_PASSIVE;
+    }
+
+
+    /* Send AP Discovery command */
+    status = cmdBld_CmdApDiscovery (pMeasurementSRV->hCmdBld, &pApDiscoveryParams, NULL, NULL);
+
+    if ( TI_OK != status )
+    {
+        tmr_StartTimer(pMeasurementSRV->hApDiscoveryTimer,
+                       MacServices_measurementSRV_startStopTimerExpired,
+                       hMeasurementSRV,
+                       MSR_FW_GUARD_TIME_START,
+                       TI_FALSE);
+    }
+    else
+    {
+        TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_ERROR, ": TWD_ApDiscoveryCmd returned status %d\n", status);
+    }
+
+    return TI_OK;
+}
+
+/**
+ * \\n
+ * \brief Handle ap discovery measurement start request
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_startApDiscovery(TI_HANDLE hMeasurementSRV)
+{
+
+    measurementSRV_t* pMeasurementSRV = (measurementSRV_t*)hMeasurementSRV;
+    TI_UINT32 requestIndex = pMeasurementSRV->uApDiscoveryRequestIndex;
+
+    /* stop Ap Discovery event timer */
+    tmr_StopTimer(pMeasurementSRV->hApDiscoveryTimer);
+
+    /* Start Timer */
+    tmr_StartTimer (pMeasurementSRV->hRequestTimer[requestIndex],
+                    MacServices_measurementSRV_requestTimerExpired,
+                    (TI_HANDLE)pMeasurementSRV,
+                    (pMeasurementSRV->msrRequest.msrTypes[requestIndex].duration * 1024)/1000,
+                    TI_FALSE);
+
+    pMeasurementSRV->bRequestTimerRunning[ requestIndex ] = TI_TRUE;
 
     return TI_OK;
 }
@@ -737,6 +672,36 @@ TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV 
     return TI_OK; 
 }
 
+/**
+ * \\n
+ * \date 08-November-2005\n
+ * \brief handle AP_DISCOVERY event received from firmware after AP_DISCOVERY_STOP command\n
+ *
+ * Function Scope \e Public.\n
+ * \param hMeasurementSrv - handle to the Measurement SRV object.\n
+ * \return always TI_OK.\n
+ */
+TI_STATUS measurementSRVSM_apDiscoveryStopComplete(TI_HANDLE hMeasurementSRV)
+{
+    measurementSRV_t* pMeasurementSRV = (measurementSRV_t*)hMeasurementSRV;
+    TI_UINT32 requestIndex = pMeasurementSRV->uApDiscoveryRequestIndex;
+
+    /* stop Ap Discovery event timer */
+    tmr_StopTimer(pMeasurementSRV->hApDiscoveryTimer);
+
+    pMeasurementSRV->bRequestTimerRunning[ requestIndex ] = TI_FALSE;
+    pMeasurementSRV->uApDiscoveryRequestIndex = INVALID_MSR_INDEX;
+
+    /* if no measurement are running and no CBs are pending, send ALL TYPES COMPLETE event */
+    if ( TI_TRUE == measurementSRVIsMeasurementComplete( hMeasurementSRV ))
+    {
+        /* send the event */
+        return measurementSRVSM_SMEvent( hMeasurementSRV, &(pMeasurementSRV->SMState),
+                MSR_SRV_EVENT_ALL_TYPES_COMPLETE );
+    }
+
+    return TI_OK;
+}
 /**
  * \\n
  * \date 08-November-2005\n

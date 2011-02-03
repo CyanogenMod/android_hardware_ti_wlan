@@ -488,15 +488,15 @@ TI_STATUS sme_SetParam (TI_HANDLE hSme, paramInfo_t *pParam)
             sme_SmEvent (pSme->hSmeSm, SME_SM_EVENT_DISCONNECT, hSme);
 
             /* When in IBSS mode the STA will work in auto mode */
-		if (BSS_INDEPENDENT == pSme->eBssType)
-		{
-			pSme->hScanResultTable = pSme->hSmeScanResultTable;
-		}
-		else /* In BSS infrastructure set the scanResultTable according to the eConnectMode */
-		{
+            if (BSS_INDEPENDENT == pSme->eBssType)
+            {
+                pSme->hScanResultTable = pSme->hSmeScanResultTable;
+            }
+            else /* In BSS infrastructure set the scanResultTable according to the eConnectMode */
+            {
 		if (CONNECT_MODE_AUTO == pSme->eConnectMode)
             	{
-			pSme->hScanResultTable = pSme->hSmeScanResultTable;
+                    pSme->hScanResultTable = pSme->hSmeScanResultTable;
                 }
                 else if (CONNECT_MODE_MANUAL == pSme->eConnectMode)
                 {

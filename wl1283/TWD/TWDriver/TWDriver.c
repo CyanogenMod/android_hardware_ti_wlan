@@ -32,10 +32,10 @@
  */
 
 
-/** \file  TWDriver.c 
+/** \file  TWDriver.c
  *  \brief TI WLAN Hardware Access Driver
  *
- *  \see   TWDriver.h 
+ *  \see   TWDriver.h
  */
 
 #define __FILE_ID__  FILE_ID_117
@@ -105,9 +105,9 @@ TI_HANDLE TWD_Create (TI_HANDLE hOs)
 
     /* Create the measurement server modules */
     pTWD->hMeasurementSRV = MacServices_measurementSRV_create(hOs);
-	if (pTWD->hMeasurementSRV == NULL)
+    if (pTWD->hMeasurementSRV == NULL)
     {
-		TRACE0(pTWD->hReport, REPORT_SEVERITY_CONSOLE, "TWD MacServices_measurementSRV_create failed!!!\n");
+        TRACE0(pTWD->hReport, REPORT_SEVERITY_CONSOLE, "TWD MacServices_measurementSRV_create failed!!!\n");
         WLAN_OS_REPORT(("TWD MacServices_measurementSRV_create failed!!!\n"));
         TWD_Destroy ((TI_HANDLE)pTWD);
         return NULL;
@@ -123,7 +123,7 @@ TI_HANDLE TWD_Create (TI_HANDLE hOs)
         return NULL;
     }
 
-    /* 
+    /*
      * Create the FW-Transfer modules:
      */
 
@@ -202,7 +202,7 @@ TI_HANDLE TWD_Create (TI_HANDLE hOs)
     }
 
 
-    /* 
+    /*
      * Create the Data-Services modules:
      */
 
@@ -227,7 +227,7 @@ TI_HANDLE TWD_Create (TI_HANDLE hOs)
     pTWD->hHwInit = hwInit_Create (hOs);
     if (pTWD->hHwInit == NULL)
     {
-        TRACE0(pTWD->hReport, REPORT_SEVERITY_CONSOLE,"wInit_Create failed!\n"); 
+        TRACE0(pTWD->hReport, REPORT_SEVERITY_CONSOLE,"wInit_Create failed!\n");
         WLAN_OS_REPORT (("wInit_Create failed!\n"));
         TWD_Destroy ((TI_HANDLE)pTWD);
         return NULL;
@@ -241,9 +241,9 @@ TI_HANDLE TWD_Create (TI_HANDLE hOs)
 TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
 {
     TTwd *pTWD = (TTwd *)hTWD;
-    
+
     WLAN_INIT_REPORT(("TWD_Destroy: called\n"));
-    if (pTWD == NULL) 
+    if (pTWD == NULL)
     {
         return TI_NOK;
     }
@@ -261,7 +261,7 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
         pTWD->hCmdBld = NULL;
     }
     WLAN_INIT_REPORT(("TWD_Destroy: Command Builder released\n"));
-    
+
     /* Free the measurement server */
     if (pTWD->hMeasurementSRV != NULL)
     {
@@ -269,7 +269,7 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
         pTWD->hMeasurementSRV = NULL;
     }
     WLAN_INIT_REPORT(("TWD_Destroy: Measurement Server released\n"));
-    
+
     /*
      * Free the Ctrl modules
      */
@@ -279,7 +279,7 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
         pTWD->hCmdQueue = NULL;
     }
 
-    /* 
+    /*
      * Free the FW-Transfer modules:
      */
     if (pTWD->hTxXfer != NULL)
@@ -300,7 +300,7 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
         pTWD->hRxXfer = NULL;
     }
 
-    if (pTWD->hEventMbox != NULL) 
+    if (pTWD->hEventMbox != NULL)
     {
         eventMbox_Destroy (pTWD->hEventMbox);
         pTWD->hEventMbox = NULL;
@@ -329,10 +329,10 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
     if (pTWD->hRxQueue != NULL)
     {
         RxQueue_Destroy (pTWD->hRxQueue);
-		pTWD->hRxQueue = NULL;
+        pTWD->hRxQueue = NULL;
     }
 
-    /* 
+    /*
      * Free the Data-Services modules:
      */
 
@@ -347,7 +347,7 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
         txHwQueue_Destroy (pTWD->hTxHwQueue);
         pTWD->hTxHwQueue = NULL;
     }
-    
+
     if (pTWD->hHwInit != NULL)
     {
         hwInit_Destroy (pTWD->hHwInit);
@@ -355,25 +355,25 @@ TI_STATUS TWD_Destroy (TI_HANDLE hTWD)
     }
 
     os_memoryFree (pTWD->hOs, (TI_HANDLE)pTWD, sizeof(TTwd));
-    
+
     WLAN_INIT_REPORT(("TWD_Destroy pTNETW_Driver released!!!\n"));
-    
+
     return TI_OK;
 }
 
 
 /**
  * \brief HW Init Callback
- * 
+ *
  * \param  hTWD         - TWD module object handle
- * \return void 
- * 
+ * \return void
+ *
  * \par Description
  * Static CB function
  * Called during TWD Module Init by hwInit_Init in order to complete the HW Configuration init
- * 
+ *
  * \sa     TWD_InitHw
- */ 
+ */
 static void TWD_InitHwCb (TI_HANDLE hTWD)
 {
     TTwd *pTWD = (TTwd *)hTWD;
@@ -384,27 +384,27 @@ static void TWD_InitHwCb (TI_HANDLE hTWD)
 
 #ifndef TNETW1283
     {
-	TFwInfo* pHwInfo;
+        TFwInfo* pHwInfo;
 
-		pHwInfo = TWD_GetFWInfo(pTWD);
-		txXfer_SetHwInfo(pTWD->hTxXfer, pHwInfo );
-		rxXfer_SetHwInfo(pTWD->hRxXfer, pHwInfo );
+        pHwInfo = TWD_GetFWInfo(pTWD);
+        txXfer_SetHwInfo(pTWD->hTxXfer, pHwInfo );
+        rxXfer_SetHwInfo(pTWD->hRxXfer, pHwInfo );
     }
 #endif
 }
 
-void TWD_Init (TI_HANDLE    hTWD, 
-			   TI_HANDLE 	hReport, 
-               TI_HANDLE 	hUser, 
-			   TI_HANDLE 	hTimer, 
-			   TI_HANDLE 	hContext, 
-			   TI_HANDLE 	hTxnQ, 
-               TTwdCallback fInitHwCb, 
-               TTwdCallback fInitFwCb, 
+void TWD_Init (TI_HANDLE    hTWD,
+               TI_HANDLE 	hReport,
+               TI_HANDLE 	hUser,
+               TI_HANDLE 	hTimer,
+               TI_HANDLE 	hContext,
+               TI_HANDLE 	hTxnQ,
+               TTwdCallback fInitHwCb,
+               TTwdCallback fInitFwCb,
                TTwdCallback fConfigFwCb,
-			   TTwdCallback	fStopCb,
-			   TTwdCallback fInitFailCb)
-{ 
+               TTwdCallback	fStopCb,
+               TTwdCallback fInitFailCb)
+{
     TTwd *pTWD 				= (TTwd *)hTWD;
     pTWD->bInitSuccess 		= TI_FALSE;
     pTWD->bRecoveryEnabled 	= TI_FALSE;
@@ -426,28 +426,28 @@ void TWD_Init (TI_HANDLE    hTWD,
 
     eventMbox_Config (pTWD->hEventMbox, pTWD->hTwIf, pTWD->hReport, pTWD->hFwEvent, pTWD->hCmdBld);
 
-    cmdQueue_Init (pTWD->hCmdQueue, 
-                     pTWD->hCmdMbox, 
-                     pTWD->hReport, 
-                     pTWD->hTwIf,
-                     pTWD->hTimer);
+    cmdQueue_Init (pTWD->hCmdQueue,
+                   pTWD->hCmdMbox,
+                   pTWD->hReport,
+                   pTWD->hTwIf,
+                   pTWD->hTimer);
 
-    /* Configure Command Builder */ 
-    cmdBld_Config (pTWD->hCmdBld, 
-                   pTWD->hReport, 
-                   (void *)TWD_FinalizeDownload, 
-                   hTWD, 
-                   pTWD->hEventMbox, 
+    /* Configure Command Builder */
+    cmdBld_Config (pTWD->hCmdBld,
+                   pTWD->hReport,
+                   (void *)TWD_FinalizeDownload,
+                   hTWD,
+                   pTWD->hEventMbox,
                    pTWD->hCmdQueue,
                    pTWD->hTwIf,
                    pTWD->hTxHwQueue);
 
     hwInit_Init (pTWD->hHwInit,
-                 pTWD->hReport, 
-                 pTWD->hTimer, 
-                 hTWD, 
-	             hTWD, 
-		         (TFinalizeCb)TWD_FinalizeDownload, 
+                 pTWD->hReport,
+                 pTWD->hTimer,
+                 hTWD,
+                 hTWD,
+                 (TFinalizeCb)TWD_FinalizeDownload,
                  TWD_InitHwCb);
 
     /*
@@ -466,10 +466,10 @@ void TWD_Init (TI_HANDLE    hTWD,
 #endif /* TI_DBG */
 
     /* Initialize the measurement server */
-    MacServices_measurementSRV_init (pTWD->hMeasurementSRV, 
-                                     pTWD->hReport, 
-                                     pTWD->hCmdBld, 
-                                     pTWD->hEventMbox, 
+    MacServices_measurementSRV_init (pTWD->hMeasurementSRV,
+                                     pTWD->hReport,
+                                     pTWD->hCmdBld,
+                                     pTWD->hEventMbox,
                                      pTWD->hTimer);
 
     /*
@@ -479,20 +479,20 @@ void TWD_Init (TI_HANDLE    hTWD,
     txHwQueue_Init (pTWD->hTxHwQueue, pTWD->hReport);
 
     /* Initialize the TwIf module */
-    twIf_Init (pTWD->hTwIf, 
-               pTWD->hReport, 
-               pTWD->hContext, 
-               pTWD->hTimer, 
-               pTWD->hTxnQ, 
-               (TRecoveryCb)TWD_StopComplete, 
+    twIf_Init (pTWD->hTwIf,
+               pTWD->hReport,
+               pTWD->hContext,
+               pTWD->hTimer,
+               pTWD->hTxnQ,
+               (TRecoveryCb)TWD_StopComplete,
                hTWD);
 }
 
- TI_STATUS TWD_InitHw (TI_HANDLE hTWD, 
-					   TI_UINT8  *pbuf, 
-					   TI_UINT32 length,
-                       TI_UINT32 uRxDmaBufLen,
-                       TI_UINT32 uTxDmaBufLen)
+TI_STATUS TWD_InitHw (TI_HANDLE hTWD,
+                      TI_UINT8  *pbuf,
+                      TI_UINT32 length,
+                      TI_UINT32 uRxDmaBufLen,
+                      TI_UINT32 uTxDmaBufLen)
 {
     TTwd *pTWD = (TTwd *)hTWD;
     TI_STATUS eStatus;
@@ -505,10 +505,10 @@ void TWD_Init (TI_HANDLE    hTWD,
 
     hwInit_SetNvsImage (pTWD->hHwInit, pbuf, length);
 
-    /* 
-     * Update the TwIf that the HW is awake 
+    /*
+     * Update the TwIf that the HW is awake
      * This will protect the initialization process from going to sleep
-     * After the firmware initializations completed (TWD_EnableExternalEvents), the sleep will be enabled 
+     * After the firmware initializations completed (TWD_EnableExternalEvents), the sleep will be enabled
      */
     twIf_Awake (pTWD->hTwIf);
     twIf_HwAvailable (pTWD->hTwIf);
@@ -526,28 +526,28 @@ void TWD_Init (TI_HANDLE    hTWD,
 
 TI_STATUS TWD_BusOpen (TI_HANDLE hTWD, void* pParams)
 {
-	TTwd *pTWD = (TTwd *)hTWD;
-	TI_STATUS uStatus;
-	
+    TTwd *pTWD = (TTwd *)hTWD;
+    TI_STATUS uStatus;
+
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_BusOpen: called\n");
 
     /*uStatus = TNETWIF_Open(pTWD->hTNETWIF, pParams);*/
     uStatus = TI_OK;
 
-	return uStatus;	
+    return uStatus;
 }
 
 TI_STATUS TWD_BusClose (TI_HANDLE hTWD)
 {
-	TTwd *pTWD = (TTwd *)hTWD;
-	TI_STATUS uStatus;
+    TTwd *pTWD = (TTwd *)hTWD;
+    TI_STATUS uStatus;
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_BusClose: called\n");
 
-	/*uStatus = TNETWIF_Close(pTWD->hTNETWIF);*/
+    /*uStatus = TNETWIF_Close(pTWD->hTNETWIF);*/
     uStatus = TI_OK;
 
-	return uStatus;	
+    return uStatus;
 }
 
 TI_STATUS TWD_InitFw (TI_HANDLE hTWD, TFileInfo *pFileInfo)
@@ -561,10 +561,10 @@ TI_STATUS TWD_InitFw (TI_HANDLE hTWD, TFileInfo *pFileInfo)
         return (TI_NOK);
     }
 
-	TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_InitFw: called\n");
+    TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_InitFw: called\n");
 
     hwInit_SetFwImage (pTWD->hHwInit, pFileInfo);
-    
+
     /* This will initiate the download to the FW */
     status = hwInit_LoadFw(pTWD->hHwInit);
 
@@ -580,25 +580,25 @@ TI_STATUS TWD_InitFw (TI_HANDLE hTWD, TFileInfo *pFileInfo)
 
 /**
  * \brief  Propagate interrogate results
- * 
+ *
  * \param  hTWD         - TWD module object handle
  * \param  status       - callback status
  * \return TI_OK on success or TI_NOK on failure
- * 
+ *
  * \par Description
  * Static CB function
  * Propagate interrogate results between TX and RX modules
  * Called by TWD_ConfigFw
- * 
+ *
  * \sa
- */ 
+ */
 static TI_STATUS TWD_ConfigFwCb (TI_HANDLE hTWD, TI_STATUS status)
 {
     TTwd        *pTWD = (TTwd *)hTWD;
     TDmaParams  *pDmaParams = &DB_DMA(pTWD->hCmdBld);
 
-    /* 
-     * Store the addresses of the cyclic buffer (Rx/Tx) 
+    /*
+     * Store the addresses of the cyclic buffer (Rx/Tx)
      * and the path status and control (Tx/Rx) in the corresponding modules
      */
     txResult_setHwInfo (pTWD->hTxResult, pDmaParams);
@@ -615,12 +615,12 @@ static TI_STATUS TWD_ConfigFwCb (TI_HANDLE hTWD, TI_STATUS status)
     cmdQueue_EndReconfig(pTWD->hCmdQueue);
 
     /* If the configure complete function was registered, we call it here - end of TWD_Configure stage */
-    if (pTWD->fConfigFwCb) 
+    if (pTWD->fConfigFwCb)
     {
         TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_ConfigFwCb: call TWD_OWNER_SELF_CONFIG CB. In std drvMain_ConfigFwCb()\n");
 
         pTWD->fConfigFwCb (pTWD->hUser, TI_OK);
-    }   
+    }
 
     return TI_OK;
 }
@@ -634,12 +634,12 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     TKeepAliveList      		*pKlvParams = &DB_KLV(pTWD->hCmdBld);
     IniFileRadioParam   		*pRadioParams = DB_RADIO(pTWD->hCmdBld);
 #ifndef TNETW1283
-	IniFileExtendedRadioParam   *pExtRadioParams = DB_EXT_RADIO(pTWD->hCmdBld);
+    IniFileExtendedRadioParam   *pExtRadioParams = DB_EXT_RADIO(pTWD->hCmdBld);
 #endif
     IniFileGeneralParam 		*pGenParams = &DB_GEN(pTWD->hCmdBld);
-	TRateMngParams      		*pRateMngParams = &DB_RM(pTWD->hCmdBld);
+    TRateMngParams      		*pRateMngParams = &DB_RM(pTWD->hCmdBld);
     TDmaParams          		*pDmaParams = &DB_DMA(pTWD->hCmdBld);
-	TPsParams				    *pPsParams = &DB_PS(pTWD->hCmdBld);
+    TPsParams				    *pPsParams = &DB_PS(pTWD->hCmdBld);
 
     TI_UINT32            k, uIndex;
     int iParam;
@@ -660,40 +660,40 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     pWlanParams->LinkMeasTemplateSize       = pInitParams->tGeneral.LinkMeasReportTemplateSize;
     pWlanParams->bIsLinkMeasRequestEnabled  = pInitParams->tGeneral.bIsLinkMeasRequestEnabled;
 
-    
+
     /* Beacon broadcast options */
     pWlanParams->BcnBrcOptions.BeaconRxTimeout      = pInitParams->tGeneral.BeaconRxTimeout;
     pWlanParams->BcnBrcOptions.BroadcastRxTimeout   = pInitParams->tGeneral.BroadcastRxTimeout;
     pWlanParams->BcnBrcOptions.RxBroadcastInPs      = pInitParams->tGeneral.RxBroadcastInPs;
     pWlanParams->ConsecutivePsPollDeliveryFailureThreshold = pInitParams->tGeneral.ConsecutivePsPollDeliveryFailureThreshold;
-    
+
     pWlanParams->RxDisableBroadcast         = pInitParams->tGeneral.halCtrlRxDisableBroadcast;
     pWlanParams->calibrationChannel2_4      = pInitParams->tGeneral.halCtrlCalibrationChannel2_4;
     pWlanParams->calibrationChannel5_0      = pInitParams->tGeneral.halCtrlCalibrationChannel5_0;
 
-    
+
     /* Not used but need by Palau */
     pWlanParams->RtsThreshold               = pInitParams->tGeneral.halCtrlRtsThreshold;
-    pWlanParams->CtsToSelf                  = CTS_TO_SELF_DISABLE; 
-    
+    pWlanParams->CtsToSelf                  = CTS_TO_SELF_DISABLE;
+
     pWlanParams->WiFiWmmPS                  = pInitParams->tGeneral.WiFiWmmPS;
-    
-    pWlanParams->MaxTxMsduLifetime          = pInitParams->tGeneral.halCtrlMaxTxMsduLifetime;  
-    pWlanParams->MaxRxMsduLifetime          = pInitParams->tGeneral.halCtrlMaxRxMsduLifetime;  
-    
-    pWlanParams->rxTimeOut.psPoll           = pInitParams->tGeneral.rxTimeOut.psPoll;  
-    pWlanParams->rxTimeOut.UPSD             = pInitParams->tGeneral.rxTimeOut.UPSD;  
-    
+
+    pWlanParams->MaxTxMsduLifetime          = pInitParams->tGeneral.halCtrlMaxTxMsduLifetime;
+    pWlanParams->MaxRxMsduLifetime          = pInitParams->tGeneral.halCtrlMaxRxMsduLifetime;
+
+    pWlanParams->rxTimeOut.psPoll           = pInitParams->tGeneral.rxTimeOut.psPoll;
+    pWlanParams->rxTimeOut.UPSD             = pInitParams->tGeneral.rxTimeOut.UPSD;
+
     /* RSSI/SNR Weights for Average calculations */
     pWlanParams->tRssiSnrWeights.rssiBeaconAverageWeight = pInitParams->tGeneral.uRssiBeaconAverageWeight;
     pWlanParams->tRssiSnrWeights.rssiPacketAverageWeight = pInitParams->tGeneral.uRssiPacketAverageWeight;
     pWlanParams->tRssiSnrWeights.snrBeaconAverageWeight  = pInitParams->tGeneral.uSnrBeaconAverageWeight ;
     pWlanParams->tRssiSnrWeights.snrPacketAverageWeight  = pInitParams->tGeneral.uSnrPacketAverageWeight ;
-    
+
     /* PM config params */
     pWlanParams->uHostClkSettlingTime       = pInitParams->tGeneral.uHostClkSettlingTime;
     pWlanParams->uHostFastWakeupSupport     = pInitParams->tGeneral.uHostFastWakeupSupport;
-    
+
 #ifdef TNETW1283
     pWlanParams->TcxoRefClk             = pInitParams->tGeneral.TcxoRefClk;
     pWlanParams->TcxoSettlingTime       = pInitParams->tGeneral.TcxoSettlingTime;
@@ -705,21 +705,21 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     /* No used */
     pWlanParams->FragmentThreshold          = pInitParams->tGeneral.halCtrlFragThreshold;
     pWlanParams->ListenInterval             = (TI_UINT8)pInitParams->tGeneral.halCtrlListenInterval;
-    pWlanParams->RateFallback               = pInitParams->tGeneral.halCtrlRateFallbackRetry;        
-    pWlanParams->MacClock                   = pInitParams->tGeneral.halCtrlMacClock;     
+    pWlanParams->RateFallback               = pInitParams->tGeneral.halCtrlRateFallbackRetry;
+    pWlanParams->MacClock                   = pInitParams->tGeneral.halCtrlMacClock;
     pWlanParams->ArmClock                   = pInitParams->tGeneral.halCtrlArmClock;
 
-	pWlanParams->ch14TelecCca = pInitParams->tGeneral.halCtrlCh14TelecCca;
+    pWlanParams->ch14TelecCca = pInitParams->tGeneral.halCtrlCh14TelecCca;
 
 
     /* Data interrupts pacing */
-    pWlanParams->TxCompletePacingThreshold  = pInitParams->tGeneral.TxCompletePacingThreshold; 
-    pWlanParams->TxCompletePacingTimeout    = pInitParams->tGeneral.TxCompletePacingTimeout;  
-    pWlanParams->RxIntrPacingThreshold      = pInitParams->tGeneral.RxIntrPacingThreshold;     
-    pWlanParams->RxIntrPacingTimeout        = pInitParams->tGeneral.RxIntrPacingTimeout;      
+    pWlanParams->TxCompletePacingThreshold  = pInitParams->tGeneral.TxCompletePacingThreshold;
+    pWlanParams->TxCompletePacingTimeout    = pInitParams->tGeneral.TxCompletePacingTimeout;
+    pWlanParams->RxIntrPacingThreshold      = pInitParams->tGeneral.RxIntrPacingThreshold;
+    pWlanParams->RxIntrPacingTimeout        = pInitParams->tGeneral.RxIntrPacingTimeout;
 
     /* Split Scan Timeout*/
-	pWlanParams->uSlicedScanTimeOut = pInitParams->tGeneral.uSplitScanTimeOut;
+    pWlanParams->uSlicedScanTimeOut = pInitParams->tGeneral.uSplitScanTimeOut;
 
 
     /* Number of Rx mem-blocks to allocate in FW */
@@ -732,24 +732,24 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
 
     /* GenFwCmd */
     for (uIndex=0; uIndex<GEN_FW_CMD_SIZE; uIndex++)
-        pWlanParams->GenFwCmd[uIndex]      = pInitParams->tGeneral.GenFwCmd[uIndex];     
+        pWlanParams->GenFwCmd[uIndex]      = pInitParams->tGeneral.GenFwCmd[uIndex];
     /* HostIfCfgBitmap */
     pWlanParams->HostIfCfgBitmap        = pInitParams->tGeneral.uHostIfCfgBitmap;
 
     /* Configure ARP IP */
     pWlanParams->arpFilterType    = pInitParams->tArpIpFilter.filterType;
     IP_COPY (pWlanParams->arp_IP_addr, pInitParams->tArpIpFilter.addr);
-    
+
     /* Configure address group */
     pWlanParams->numGroupAddrs = pInitParams->tMacAddrFilter.numOfMacAddresses;
     pWlanParams->isMacAddrFilteringnabled = pInitParams->tMacAddrFilter.isFilterEnabled;
-    
+
     for (k = 0; k < pWlanParams->numGroupAddrs; k++)
     {
-        MAC_COPY (pWlanParams->aGroupAddr[k], pInitParams->tMacAddrFilter.macAddrTable[k]); 
+        MAC_COPY (pWlanParams->aGroupAddr[k], pInitParams->tMacAddrFilter.macAddrTable[k]);
     }
 
-  
+
     /* CoexActivity Table */
     TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_SetDefaults: coex numOfElements %d\n", pInitParams->tGeneral.halCoexActivityTable.numOfElements);
 
@@ -773,7 +773,7 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
         {
             /* new entry */
             saveIndex = pWlanParams->tWlanParamsCoexActivityTable.numOfElements;
-            pWlanParams->tWlanParamsCoexActivityTable.numOfElements++; 
+            pWlanParams->tWlanParamsCoexActivityTable.numOfElements++;
         }
         else
         {
@@ -805,87 +805,97 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     /* Configure the rxXfer module */
     rxXfer_Config (pTWD->hRxXfer, pInitParams);
 
-    /* 
+    /*
      * 802.11n
      */
     pWlanParams->tTwdHtCapabilities.b11nEnable =            pInitParams->tGeneral.b11nEnable;
-    
+
     /* Configure HT capabilities setting */
-    pWlanParams->tTwdHtCapabilities.uChannelWidth = CHANNEL_WIDTH_20MHZ;                  
+    pWlanParams->tTwdHtCapabilities.uChannelWidth = CHANNEL_WIDTH_20MHZ;
     pWlanParams->tTwdHtCapabilities.uRxSTBC       = RXSTBC_SUPPORTED_ONE_SPATIAL_STREAM;
-    pWlanParams->tTwdHtCapabilities.uMaxAMSDU     = MAX_MSDU_3839_OCTETS;                         
+    pWlanParams->tTwdHtCapabilities.uMaxAMSDU     = MAX_MSDU_3839_OCTETS;
     pWlanParams->tTwdHtCapabilities.uMaxAMPDU     = pInitParams->tGeneral.uMaxAMPDU;
 
 
 
     pWlanParams->tTwdHtCapabilities.uAMPDUSpacing =         AMPDU_SPC_8_MICROSECONDS;
     pWlanParams->tTwdHtCapabilities.aRxMCS[0] =             (MCS_SUPPORT_MCS_0 |
-                                                             MCS_SUPPORT_MCS_1 |
-                                                             MCS_SUPPORT_MCS_2 |
-                                                             MCS_SUPPORT_MCS_3 |
-                                                             MCS_SUPPORT_MCS_4 |
-                                                             MCS_SUPPORT_MCS_5 |
-                                                             MCS_SUPPORT_MCS_6 |
-                                                             MCS_SUPPORT_MCS_7);
+            MCS_SUPPORT_MCS_1 |
+            MCS_SUPPORT_MCS_2 |
+            MCS_SUPPORT_MCS_3 |
+            MCS_SUPPORT_MCS_4 |
+            MCS_SUPPORT_MCS_5 |
+            MCS_SUPPORT_MCS_6 |
+            MCS_SUPPORT_MCS_7);
     os_memoryZero (pTWD->hOs, pWlanParams->tTwdHtCapabilities.aRxMCS + 1, RX_TX_MCS_BITMASK_SIZE - 1);
     pWlanParams->tTwdHtCapabilities.aTxMCS[0]  =             (MCS_SUPPORT_MCS_0 |
-                                                              MCS_SUPPORT_MCS_1 |
-                                                              MCS_SUPPORT_MCS_2 |
-                                                              MCS_SUPPORT_MCS_3 |
-                                                              MCS_SUPPORT_MCS_4 |
-                                                              MCS_SUPPORT_MCS_5 |
-                                                              MCS_SUPPORT_MCS_6 |
-                                                              MCS_SUPPORT_MCS_7);
+            MCS_SUPPORT_MCS_1 |
+            MCS_SUPPORT_MCS_2 |
+            MCS_SUPPORT_MCS_3 |
+            MCS_SUPPORT_MCS_4 |
+            MCS_SUPPORT_MCS_5 |
+            MCS_SUPPORT_MCS_6 |
+            MCS_SUPPORT_MCS_7);
     os_memoryZero (pTWD->hOs, pWlanParams->tTwdHtCapabilities.aTxMCS + 1, RX_TX_MCS_BITMASK_SIZE - 1);
-    pWlanParams->tTwdHtCapabilities.uRxMaxDataRate =         MCS_HIGHEST_SUPPORTED_RECEPTION_DATA_RATE_IN_MBIT_S;          
+    pWlanParams->tTwdHtCapabilities.uRxMaxDataRate =         MCS_HIGHEST_SUPPORTED_RECEPTION_DATA_RATE_IN_MBIT_S;
     pWlanParams->tTwdHtCapabilities.uPCOTransTime =          PCO_TRANS_TIME_NO_TRANSITION;
     pWlanParams->tTwdHtCapabilities.uHTCapabilitiesBitMask = (CAP_BIT_MASK_GREENFIELD_FRAME_FORMAT |
-                                                              CAP_BIT_MASK_SHORT_GI_FOR_20MHZ_PACKETS);
-    pWlanParams->tTwdHtCapabilities.uMCSFeedback =           MCS_FEEDBACK_NO; 
+            CAP_BIT_MASK_SHORT_GI_FOR_20MHZ_PACKETS);
+    pWlanParams->tTwdHtCapabilities.uMCSFeedback =           MCS_FEEDBACK_NO;
 
     os_memoryCopy(pTWD->hOs, (void*)pRadioParams, (void*)&pInitParams->tIniFileRadioParams, sizeof(IniFileRadioParam) * NUMBER_OF_FEM_TYPES_E);
 #ifndef TNETW1283
-	os_memoryCopy(pTWD->hOs, (void*)pExtRadioParams, (void*)&pInitParams->tIniFileExtRadioParams, sizeof(IniFileExtendedRadioParam) * NUMBER_OF_FEM_TYPES_E);
+    os_memoryCopy(pTWD->hOs, (void*)pExtRadioParams, (void*)&pInitParams->tIniFileExtRadioParams, sizeof(IniFileExtendedRadioParam) * NUMBER_OF_FEM_TYPES_E);
 #endif
     os_memoryCopy(pTWD->hOs, (void*)pGenParams, (void*)&pInitParams->tPlatformGenParams, sizeof(IniFileGeneralParam));
 
     /* Configure Power Save Params*/
-	os_memoryCopy(pTWD->hOs, (void*)pPsParams, (void*)&pInitParams->tIniFilePsParams, sizeof(TPsParams));
-    
-    
+    os_memoryCopy(pTWD->hOs, (void*)pPsParams, (void*)&pInitParams->tIniFilePsParams, sizeof(TPsParams));
+
+
     os_memoryCopy (pTWD->hOs,
                    (void*)&(pWlanParams->tFmCoexParams),
                    (void*)&(pInitParams->tGeneral.tFmCoexParams),
                    sizeof(TFmCoexParams));
 
-	/* Rate management params */
-	pRateMngParams->rateMngParams.InverseCuriosityFactor = pInitParams->tRateMngParams.InverseCuriosityFactor;
-	pRateMngParams->rateMngParams.MaxPer = pInitParams->tRateMngParams.MaxPer;
-	pRateMngParams->rateMngParams.PerAdd = pInitParams->tRateMngParams.PerAdd;
-	pRateMngParams->rateMngParams.PerAddShift = pInitParams->tRateMngParams.PerAddShift;
-	pRateMngParams->rateMngParams.PerAlphaShift = pInitParams->tRateMngParams.PerAlphaShift;
-	pRateMngParams->rateMngParams.PerBeta1Shift = pInitParams->tRateMngParams.PerBeta1Shift;
-	pRateMngParams->rateMngParams.PerBeta2Shift = pInitParams->tRateMngParams.PerBeta2Shift;
-	pRateMngParams->rateMngParams.PerTh1 = pInitParams->tRateMngParams.PerTh1;
-	pRateMngParams->rateMngParams.PerTh2 = pInitParams->tRateMngParams.PerTh2;
-	pRateMngParams->rateMngParams.RateCheckDown = pInitParams->tRateMngParams.RateCheckDown;
-	pRateMngParams->rateMngParams.RateCheckUp = pInitParams->tRateMngParams.RateCheckUp;
-	pRateMngParams->rateMngParams.RateRetryScore = pInitParams->tRateMngParams.RateRetryScore;
-	pRateMngParams->rateMngParams.TxFailHighTh = pInitParams->tRateMngParams.TxFailHighTh;
-	pRateMngParams->rateMngParams.TxFailLowTh = pInitParams->tRateMngParams.TxFailLowTh;
+    /* Rate management params */
+    pRateMngParams->rateMngParams.InverseCuriosityFactor = pInitParams->tRateMngParams.InverseCuriosityFactor;
+    pRateMngParams->rateMngParams.MaxPer = pInitParams->tRateMngParams.MaxPer;
+    pRateMngParams->rateMngParams.PerAdd = pInitParams->tRateMngParams.PerAdd;
+    pRateMngParams->rateMngParams.PerAddShift = pInitParams->tRateMngParams.PerAddShift;
+    pRateMngParams->rateMngParams.PerAlphaShift = pInitParams->tRateMngParams.PerAlphaShift;
+    pRateMngParams->rateMngParams.PerBeta1Shift = pInitParams->tRateMngParams.PerBeta1Shift;
+    pRateMngParams->rateMngParams.PerBeta2Shift = pInitParams->tRateMngParams.PerBeta2Shift;
+    pRateMngParams->rateMngParams.PerTh1 = pInitParams->tRateMngParams.PerTh1;
+    pRateMngParams->rateMngParams.PerTh2 = pInitParams->tRateMngParams.PerTh2;
+    pRateMngParams->rateMngParams.RateCheckDown = pInitParams->tRateMngParams.RateCheckDown;
+    pRateMngParams->rateMngParams.RateCheckUp = pInitParams->tRateMngParams.RateCheckUp;
+    pRateMngParams->rateMngParams.RateRetryScore = pInitParams->tRateMngParams.RateRetryScore;
+    pRateMngParams->rateMngParams.TxFailHighTh = pInitParams->tRateMngParams.TxFailHighTh;
+    pRateMngParams->rateMngParams.TxFailLowTh = pInitParams->tRateMngParams.TxFailLowTh;
 
-	/* RATE_MNG_MAX_RETRY_POLICY_PARAMS_LEN */
-	for (uIndex = 0; uIndex < 13; uIndex++)
-	{
+    /* RATE_MNG_MAX_RETRY_POLICY_PARAMS_LEN */
+    for (uIndex = 0; uIndex < 13; uIndex++)
+    {
         pRateMngParams->rateMngParams.RateRetryPolicy[uIndex] = pInitParams->tRateMngParams.RateRetryPolicy[uIndex];
-	}
+    }
 
-	/* DCO Itrim params */
+    /* DCO Itrim params */
     pWlanParams->dcoItrimEnabled = pInitParams->tDcoItrimParams.enable;
     pWlanParams->dcoItrimModerationTimeoutUsec = pInitParams->tDcoItrimParams.moderationTimeoutUsec;
 
     return TI_OK;
 }
+
+#ifdef TNETW1283
+/* FW uses TWD_DBG_EVENT to indicate assert condition in FW SW*/
+/* Under this condition host driver will start recovery process as WD expiration event*/
+static void fwAssertCb(TI_HANDLE hTWD)
+{
+    WLAN_OS_REPORT(("fwAssertCb: Call TWD_WdExpireEvent!!!\n"));
+    TWD_WdExpireEvent (hTWD);
+}
+#endif
 
 TI_STATUS TWD_ConfigFw (TI_HANDLE hTWD)
 {
@@ -900,6 +910,14 @@ TI_STATUS TWD_ConfigFw (TI_HANDLE hTWD)
     {
         return TI_NOK;
     }
+#ifdef TNETW1283
+    /* Enable Assert Event ( Quattro WD workaround )*/
+    TWD_RegisterEvent (hTWD,
+                       TWD_DBG_EVENT,
+                       (void *)fwAssertCb,
+                       hTWD);
+    TWD_EnableEvent (hTWD, TWD_DBG_EVENT);
+#endif
 
     return TI_OK;
 }
@@ -909,10 +927,10 @@ void TWD_FinalizeDownload (TI_HANDLE hTWD)
     TTwd *pTWD = (TTwd *)hTWD;
 
 
-	if ( pTWD == NULL )
-	{
-		return;
-	}
+    if ( pTWD == NULL )
+    {
+        return;
+    }
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT , "TWD_FinalizeDownload: called\n");
 
@@ -921,7 +939,7 @@ void TWD_FinalizeDownload (TI_HANDLE hTWD)
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INIT, "Before sending the Init Complet callback !!!!!\n");
 
     /* Sign that init has succeeded */
-    pTWD->bInitSuccess = TI_TRUE;    
+    pTWD->bInitSuccess = TI_TRUE;
 
     /* Call user application configuration callback */
     if (pTWD->fInitFwCb)
@@ -938,13 +956,13 @@ void TWD_FinalizeOnFailure (TI_HANDLE hTWD)
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_FinalizeOnFailure: called\n");
 
-	/* Call the upper layer callback for init failure case */
-    if (pTWD->fInitFailCb) 
+    /* Call the upper layer callback for init failure case */
+    if (pTWD->fInitFailCb)
     {
         TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_FinalizeOnFailure: call fInitFailCb CB. In std drvMain_InitFailCb()\n");
 
         pTWD->fInitFailCb (pTWD->hUser, TI_OK);
-    }   
+    }
 }
 
 TI_STATUS TWD_CheckMailboxCb (TI_HANDLE hTWD, TI_UINT16 uMboxStatus, void *pItrParamBuf)
@@ -973,22 +991,22 @@ extern  void *gBusTxn_ErrorHndle;
 
 /**
  * \brief Registers TWD Module Callbacks
- * 
+ *
  * \param  hTWD         - TWD module object handle
  * \param  uCallBackID  - Registered Callback ID
  * \param  fCb 	        - Pointer to Input Registered CB function
  * \param  hCb 	        - Handle to Input Registered CB parameters
- * \return void 
- * 
+ * \return void
+ *
  * \par Description
  * Static CB function
  * This CB Registers TWD CB functions for future use:
  * CB which handles failure to the CMD Queue, MAC Service and TwIf
  * CB which handles Command Complete for the CMD Queue
  * Called by TWD_RegisterCb
- * 
+ *
  * \sa TWD_RegisterCb
- */ 
+ */
 static void TWD_RegisterOwnCb (TI_HANDLE hTWD, TI_UINT32 uCallBackID, void *fCb, TI_HANDLE hCb)
 {
     TTwd *pTWD = (TTwd *)hTWD;
@@ -1007,7 +1025,7 @@ static void TWD_RegisterOwnCb (TI_HANDLE hTWD, TI_UINT32 uCallBackID, void *fCb,
 
         /* Forward the Health-Moitor callback to the MAC-Services modules */
         MacServices_measurementSRV_registerFailureEventCB (pTWD->hMeasurementSRV, fCb, hCb);
-        
+
         /* Forward the Health-Moitor callback to the TwIf for bus errors */
         twIf_RegisterErrCb (pTWD->hTwIf, fCb, hCb);
 
@@ -1030,15 +1048,15 @@ TI_STATUS TWD_RegisterCb (TI_HANDLE hTWD, TI_UINT32 event, TTwdCB *fCb, void *pD
     TI_UINT32 uModuleId    = event & TWD_CB_MODULE_OWNER_MASK;
     TI_UINT32 uCallbackId  = event & TWD_CB_TYPE_MASK;
 
-	if ((fCb == NULL) || (pData == NULL))
-	{
-TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_Register_CB: Invalid NULL Parameter\n");
+    if ((fCb == NULL) || (pData == NULL))
+    {
+        TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_Register_CB: Invalid NULL Parameter\n");
 
-	}
+    }
 
     TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_Register_CB: (Value = 0x%x)\n", event);
 
-   /* First detect which module is the owner */
+    /* First detect which module is the owner */
 
     switch (uModuleId)
     {
@@ -1071,8 +1089,8 @@ TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_Register_CB: Invalid NULL Para
         TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_Register_CB: TWD_OWNER_SELF\n");
         TWD_RegisterOwnCb (hTWD, uCallbackId, fCb, pData);
         break;
- 
-    case TWD_OWNER_SELF_CONFIG:    
+
+    case TWD_OWNER_SELF_CONFIG:
         TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_Register_CB: TWD_OWNER_SELF_CONFIG\n");
         pTWD->fConfigFwCb  = (TTwdCallback)fCb;
         break;
@@ -1096,7 +1114,7 @@ TI_STATUS TWD_ExitFromInitMode (TI_HANDLE hTWD)
     /* Enable Mailbox */
     cmdQueue_EnableMbox (pTWD->hCmdQueue);
 
-    return TI_OK; 
+    return TI_OK;
 }
 
 
@@ -1107,34 +1125,34 @@ TI_STATUS TWD_PrintTxInfo (TI_HANDLE hTWD, ETwdPrintInfoType ePrintInfo)
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_PrintTxInfo: called\n");
 
-    switch (ePrintInfo) 
+    switch (ePrintInfo)
     {
-        case TWD_PRINT_TX_CTRL_BLK_TBL:
-            txCtrlBlk_PrintTable (pTWD->hTxCtrlBlk);
-            break;
+    case TWD_PRINT_TX_CTRL_BLK_TBL:
+        txCtrlBlk_PrintTable (pTWD->hTxCtrlBlk);
+        break;
 
-        case TWD_PRINT_TX_HW_QUEUE_INFO:
-            txHwQueue_PrintInfo (pTWD->hTxHwQueue);
-            break;
+    case TWD_PRINT_TX_HW_QUEUE_INFO:
+        txHwQueue_PrintInfo (pTWD->hTxHwQueue);
+        break;
 
-        case TWD_PRINT_TX_XFER_INFO:
-            txXfer_PrintStats (pTWD->hTxXfer);
-            break;
+    case TWD_PRINT_TX_XFER_INFO:
+        txXfer_PrintStats (pTWD->hTxXfer);
+        break;
 
-        case TWD_PRINT_TX_RESULT_INFO:
-            txResult_PrintInfo (pTWD->hTxResult);
-            break;
+    case TWD_PRINT_TX_RESULT_INFO:
+        txResult_PrintInfo (pTWD->hTxResult);
+        break;
 
-        case TWD_CLEAR_TX_RESULT_INFO:
-            txResult_ClearInfo (pTWD->hTxResult);
-            break;
+    case TWD_CLEAR_TX_RESULT_INFO:
+        txResult_ClearInfo (pTWD->hTxResult);
+        break;
 
-        case TWD_CLEAR_TX_XFER_INFO:
-            txXfer_ClearStats (pTWD->hTxXfer);
-            break;
+    case TWD_CLEAR_TX_XFER_INFO:
+        txXfer_ClearStats (pTWD->hTxXfer);
+        break;
 
-        default:
-            TRACE1(pTWD->hReport, REPORT_SEVERITY_ERROR, ": invalid print info request code: %d\n", ePrintInfo);
+    default:
+        TRACE1(pTWD->hReport, REPORT_SEVERITY_ERROR, ": invalid print info request code: %d\n", ePrintInfo);
     }
 
     return TI_OK;
@@ -1199,10 +1217,10 @@ void TWD_StopComplete (TI_HANDLE hTWD)
 
 
     /* reinit last ELP mode flag in recovery */
-    cmdBld_Restart(pTWD->hCmdBld); 
+    cmdBld_Restart(pTWD->hCmdBld);
 
     /* Call upper layer callback */
-    if (pTWD->fStopCb) 
+    if (pTWD->fStopCb)
     {
         TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_StopComplete: call fStopCb CB. In std drvMain_TwdStopCb()\n");
 
@@ -1219,7 +1237,7 @@ TI_STATUS TWD_Stop (TI_HANDLE hTWD)
 
     fwEvent_Stop (pTWD->hFwEvent);
 
-   
+
     /* close all BA sessions */
     TWD_CloseAllBaSessions(hTWD);
 
@@ -1228,15 +1246,15 @@ TI_STATUS TWD_Stop (TI_HANDLE hTWD)
     cmdQueue_DisableMbox (pTWD->hCmdQueue);
     eventMbox_Stop (pTWD->hEventMbox);
     MacServices_measurementSRV_restart (pTWD->hMeasurementSRV);
-    
+
     status = twIf_Restart(pTWD->hTwIf);
-    
+
     /* Call user stop callback */
-    if (status != TXN_STATUS_PENDING) 
+    if (status != TXN_STATUS_PENDING)
     {
         TWD_StopComplete (hTWD);
     }
-  
+
     return TI_OK;
 }
 
@@ -1249,8 +1267,8 @@ void TWD_EnableExternalEvents (TI_HANDLE hTWD)
     /* unmasking the interrupt before going to sleep */
     fwEvent_EnableExternalEvents (pTWD->hFwEvent);
 
-    /* 
-     * Enable sleep after all firmware initializations completed 
+    /*
+     * Enable sleep after all firmware initializations completed
      * The awake was in the TWD_initHw phase
      */
     twIf_Sleep (pTWD->hTwIf);
@@ -1275,40 +1293,40 @@ TI_UINT32 TWD_GetMaxNumberOfCommandsInQueue (TI_HANDLE hTWD)
 }
 
 TI_STATUS TWD_SetPsMode (TI_HANDLE hTWD, E80211PsMode ePsMode,
-						 TI_HANDLE hPowerSaveResponseCb, TPowerSaveResponseCb fPowerSaveResponseCb)
+                         TI_HANDLE hPowerSaveResponseCb, TPowerSaveResponseCb fPowerSaveResponseCb)
 {
     TTwd *pTWD = (TTwd *)hTWD;
     TI_BOOL psEnable = TI_FALSE;
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_SetPsMode: called\n");
 
-	switch (ePsMode)
-	{
-		case POWER_SAVE_OFF:
-			psEnable = TI_FALSE;
-			break;
-		case POWER_SAVE_ON:
-			psEnable = TI_TRUE;
-			break;
-		case POWER_SAVE_KEEP_CURRENT:
-			return TI_OK;
-		default:
-			TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "Wrong PS value configuration!\n");
-			return TI_NOK;
-	}
+    switch (ePsMode)
+    {
+    case POWER_SAVE_OFF:
+        psEnable = TI_FALSE;
+        break;
+    case POWER_SAVE_ON:
+        psEnable = TI_TRUE;
+        break;
+    case POWER_SAVE_KEEP_CURRENT:
+        return TI_OK;
+    default:
+        TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "Wrong PS value configuration!\n");
+        return TI_NOK;
+    }
 
 
-	if (cmdBld_CmdSetPsMode (pTWD->hCmdBld, psEnable, fPowerSaveResponseCb, hPowerSaveResponseCb) != TI_OK)
+    if (cmdBld_CmdSetPsMode (pTWD->hCmdBld, psEnable, fPowerSaveResponseCb, hPowerSaveResponseCb) != TI_OK)
     {
         TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "Error in configuring Power Save paramters!\n");
-		return TI_NOK;
+        return TI_NOK;
     }
 
     return TI_OK;
 }
 
 
-TI_STATUS TWD_StartMeasurement (TI_HANDLE                   hTWD, 
+TI_STATUS TWD_StartMeasurement (TI_HANDLE                   hTWD,
                                 TMeasurementRequest        *pMsrRequest,
                                 TI_UINT32                   uTimeToRequestExpiryMs,
                                 TCmdResponseCb              fResponseCb,
@@ -1319,14 +1337,14 @@ TI_STATUS TWD_StartMeasurement (TI_HANDLE                   hTWD,
     TTwd *pTWD = (TTwd *)hTWD;
 
     TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_StartMeasurement: called. uTimeToRequestExpiryMs=%d \n", uTimeToRequestExpiryMs);
-    
-    return MacServices_measurementSRV_startMeasurement (pTWD->hMeasurementSRV, 
-                                                        pMsrRequest,
-                                                        uTimeToRequestExpiryMs,
-                                                        fResponseCb,
-                                                        hResponseCb,
-                                                        fCompleteCb,
-                                                        hCompleteCb);
+
+    return MacServices_measurementSRV_startMeasurement (pTWD->hMeasurementSRV,
+            pMsrRequest,
+            uTimeToRequestExpiryMs,
+            fResponseCb,
+            hResponseCb,
+            fCompleteCb,
+            hCompleteCb);
 }
 
 TI_STATUS TWD_StopMeasurement (TI_HANDLE       	hTWD,
@@ -1339,18 +1357,18 @@ TI_STATUS TWD_StopMeasurement (TI_HANDLE       	hTWD,
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_StopMeasurement: called\n");
 
     return MacServices_measurementSRV_stopMeasurement (pTWD->hMeasurementSRV,
-                                                       bSendNullData,
-                                                       fResponseCb,
-                                                       hResponseCb);
+            bSendNullData,
+            fResponseCb,
+            hResponseCb);
 }
 
 
-TI_STATUS TWD_Scan (TI_HANDLE       hTWD, 
+TI_STATUS TWD_Scan (TI_HANDLE       hTWD,
                     TScanParams    	*pScanParams,
-                    EScanResultTag 	eScanTag, 
+                    EScanResultTag 	eScanTag,
                     TI_BOOL        	bHighPriority,
-                    TI_BOOL        	bForceScan, 
-                    TCmdResponseCb 	fResponseCb, 
+                    TI_BOOL        	bForceScan,
+                    TCmdResponseCb 	fResponseCb,
                     TI_HANDLE      	hResponseCb)
 {
     TTwd *pTWD = (TTwd *)hTWD;
@@ -1359,23 +1377,23 @@ TI_STATUS TWD_Scan (TI_HANDLE       hTWD,
 
     if ( SCAN_TYPE_SPS == pScanParams->scanType )
     {
-		return cmdBld_CmdStartSPSScan (pTWD->hCmdBld, pScanParams, eScanTag, fResponseCb, hResponseCb);
-	}
+        return cmdBld_CmdStartSPSScan (pTWD->hCmdBld, pScanParams, eScanTag, fResponseCb, hResponseCb);
+    }
     else
     {
-		return cmdBld_CmdStartScan (pTWD->hCmdBld, pScanParams, eScanTag, bHighPriority,
-									bForceScan, fResponseCb, hResponseCb);
+        return cmdBld_CmdStartScan (pTWD->hCmdBld, pScanParams, eScanTag, bHighPriority,
+                                    bForceScan, fResponseCb, hResponseCb);
     }
 }
 
-TI_STATUS TWD_StopScan (TI_HANDLE       hTWD, 
+TI_STATUS TWD_StopScan (TI_HANDLE       hTWD,
                         EScanResultTag  eScanTag,
                         EScanType 		eScanType,
-                        TCmdResponseCb  fScanCommandResponseCb, 
+                        TCmdResponseCb  fScanCommandResponseCb,
                         TI_HANDLE       hCb)
 {
     TTwd *pTWD = (TTwd *)hTWD;
-	
+
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_StopScan: called\n");
 
@@ -1390,23 +1408,23 @@ TI_STATUS TWD_StopScan (TI_HANDLE       hTWD,
 }
 
 TI_STATUS TWD_StartConnectionScan (TI_HANDLE              hTWD,
-                                 TPeriodicScanParams    *pPeriodicScanParams,
-                                 EScanResultTag         eScanTag,
-                                 TI_UINT32              uPassiveScanDfsDwellTimeMs,
-                                 TCmdResponseCb         fResponseCb, 
-                                 TI_HANDLE              hResponseCb)
+                                   TPeriodicScanParams    *pPeriodicScanParams,
+                                   EScanResultTag         eScanTag,
+                                   TI_UINT32              uPassiveScanDfsDwellTimeMs,
+                                   TCmdResponseCb         fResponseCb,
+                                   TI_HANDLE              hResponseCb)
 {
     TTwd *pTWD = (TTwd *)hTWD;
 
     TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_StartConnectionScan: called\n");
 
-    return cmdBld_StartPeriodicScan (pTWD->hCmdBld, pPeriodicScanParams, eScanTag, uPassiveScanDfsDwellTimeMs, 
+    return cmdBld_StartPeriodicScan (pTWD->hCmdBld, pPeriodicScanParams, eScanTag, uPassiveScanDfsDwellTimeMs,
                                      (void*)fResponseCb, hResponseCb);
 }
 
 TI_STATUS TWD_StopPeriodicScan  (TI_HANDLE              hTWD,
                                  EScanResultTag         eScanTag,
-                                 TCmdResponseCb         fResponseCb, 
+                                 TCmdResponseCb         fResponseCb,
                                  TI_HANDLE              hResponseCb)
 {
     TTwd *pTWD = (TTwd *)hTWD;
@@ -1419,86 +1437,86 @@ TI_STATUS TWD_StopPeriodicScan  (TI_HANDLE              hTWD,
 TI_STATUS TWD_readMem (TI_HANDLE hTWD, TFwDebugParams* pMemDebug, void* fCb, TI_HANDLE hCb)
 {
     if (hTWD == NULL || pMemDebug == NULL)
-	{
-		return (TI_NOK);
-	}
+    {
+        return (TI_NOK);
+    }
 
-	TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_readMem: called\n");
+    TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_readMem: called\n");
 
-	if (fwDbg_ReadAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length,pMemDebug->UBuf.buf8,(TFwDubCallback)fCb,hCb) == TI_NOK)
-	{
+    if (fwDbg_ReadAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length,pMemDebug->UBuf.buf8,(TFwDubCallback)fCb,hCb) == TI_NOK)
+    {
         TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_CONSOLE ,"TWD_readMem Error: fwDbg_handleCommand failed\n");
-		WLAN_OS_REPORT(("TWD_readMem Error: fwDbg_handleCommand failed\n"));	
-		return TI_NOK;
-	}
+        WLAN_OS_REPORT(("TWD_readMem Error: fwDbg_handleCommand failed\n"));
+        return TI_NOK;
+    }
 
-	return (TI_OK);
+    return (TI_OK);
 }
 
 TI_STATUS TWD_writeMem (TI_HANDLE hTWD, TFwDebugParams* pMemDebug, void* fCb, TI_HANDLE hCb)
 {
     if (hTWD == NULL || pMemDebug == NULL)
-	{
-		return (TI_NOK);
-	}
+    {
+        return (TI_NOK);
+    }
 
-	TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_writeMem: called\n");
+    TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_writeMem: called\n");
 
-	if (fwDbg_WriteAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length,pMemDebug->UBuf.buf8,(TFwDubCallback)fCb,hCb) == TI_NOK)
-	{
+    if (fwDbg_WriteAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length,pMemDebug->UBuf.buf8,(TFwDubCallback)fCb,hCb) == TI_NOK)
+    {
         TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_CONSOLE ,"TWD_writeMem Error: fwDbg_handleCommand failed\n");
-		WLAN_OS_REPORT(("TWD_writeMem Error: fwDbg_handleCommand failed\n"));	
-		return TI_NOK;
-	}
+        WLAN_OS_REPORT(("TWD_writeMem Error: fwDbg_handleCommand failed\n"));
+        return TI_NOK;
+    }
 
-	return(TI_OK);
+    return(TI_OK);
 }
 
 TI_BOOL TWD_isValidMemoryAddr (TI_HANDLE hTWD, TFwDebugParams* pMemDebug)
 {
-	if (hTWD == NULL || pMemDebug == NULL)
-	{
-		return TI_FALSE;
-	}
+    if (hTWD == NULL || pMemDebug == NULL)
+    {
+        return TI_FALSE;
+    }
 
-	TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_isValidMemoryAddr: called\n");
+    TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_isValidMemoryAddr: called\n");
 
-	return fwDbg_isValidMemoryAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length);
+    return fwDbg_isValidMemoryAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length);
 }
 
 TI_BOOL TWD_isValidRegAddr (TI_HANDLE hTWD, TFwDebugParams* pMemDebug)
 {
     if (hTWD == NULL || pMemDebug == NULL )
-	{
-		return TI_FALSE;
-	}
+    {
+        return TI_FALSE;
+    }
 
-	TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_isValidRegAddr: called\n");
+    TRACE0(((TTwd *)hTWD)->hReport, REPORT_SEVERITY_INFORMATION , "TWD_isValidRegAddr: called\n");
 
-	return fwDbg_isValidRegAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length);
+    return fwDbg_isValidRegAddr(((TTwd *)hTWD)->hFwDbg,pMemDebug->addr,pMemDebug->length);
 }
 
 /**
  * \brief Set Template Frame
- * 
+ *
  * \param hTWD 				- TWD module object handle
  * \param pMib      		- Pointer to Input MIB Structure
- * \return TI_OK on success or TI_NOK on failure 
- * 
+ * \return TI_OK on success or TI_NOK on failure
+ *
  * \par Description
  * Static function
- * Configure/Interrogate/Modulate the Frame Rate if needed (according to Templete Type) 
+ * Configure/Interrogate/Modulate the Frame Rate if needed (according to Templete Type)
  * and then write the MIB TemplateFrame to the FW
  *
  * \sa
- */ 
+ */
 static TI_STATUS TWD_WriteMibTemplateFrame (TI_HANDLE hTWD, TMib* pMib)
 {
     TTwd  *pTWD = (TTwd *)hTWD;
     TSetTemplate  tSetTemplate;
     TI_UINT32  uRateMask = RATE_TO_MASK(pMib->aData.TemplateFrame.Rate);
 
-    /* 
+    /*
      * Construct the template MIB element
      */
     switch(pMib->aData.TemplateFrame.FrameType)
@@ -1506,33 +1524,33 @@ static TI_STATUS TWD_WriteMibTemplateFrame (TI_HANDLE hTWD, TMib* pMib)
     case TEMPLATE_TYPE_BEACON:
         tSetTemplate.type = BEACON_TEMPLATE;
         break;
-        
+
     case TEMPLATE_TYPE_PROBE_REQUEST:
         tSetTemplate.type = PROBE_REQUEST_TEMPLATE;
         tSetTemplate.eBand = RADIO_BAND_2_4_GHZ; /* needed for GWSI, if so band must also be passed to choose correct template (G or A) */
         break;
-        
+
     case TEMPLATE_TYPE_NULL_FRAME:
         tSetTemplate.type = NULL_DATA_TEMPLATE;
         break;
-        
+
     case TEMPLATE_TYPE_PROBE_RESPONSE:
         tSetTemplate.type = PROBE_RESPONSE_TEMPLATE;
         break;
-        
+
     case TEMPLATE_TYPE_QOS_NULL_FRAME:
         tSetTemplate.type = QOS_NULL_DATA_TEMPLATE;
         break;
-        
+
     case TEMPLATE_TYPE_PS_POLL:
         tSetTemplate.type = PS_POLL_TEMPLATE;
         break;
-        
+
     default:
         TRACE1(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_WriteMibTemplateFrame - ERROR - template is not supported, %d\n", pMib->aData.TemplateFrame.FrameType);
         return PARAM_NOT_SUPPORTED;
     }
-    
+
     tSetTemplate.len = pMib->aData.TemplateFrame.Length;
     tSetTemplate.ptr = (TI_UINT8 *) &(pMib->aData.TemplateFrame.Data);
     tSetTemplate.uRateMask = uRateMask;
@@ -1542,17 +1560,17 @@ static TI_STATUS TWD_WriteMibTemplateFrame (TI_HANDLE hTWD, TMib* pMib)
 
 /**
  * \brief Set Beacon Filter IE Table
- * 
+ *
  * \param hTWD 				- TWD module object handle
  * \param pMib      		- Pointer to Input MIB Structure
- * \return TI_OK on success or TI_NOK on failure 
- * 
+ * \return TI_OK on success or TI_NOK on failure
+ *
  * \par Description
  * Static function
  * Configure the MIB Beacon Filter IE table
  *
  * \sa
- */ 
+ */
 static TI_STATUS TWD_WriteMibBeaconFilterIETable (TI_HANDLE hTWD, TMib *pMib)
 {
     TTwd  *pTWD = (TTwd *)hTWD;
@@ -1569,35 +1587,35 @@ static TI_STATUS TWD_WriteMibBeaconFilterIETable (TI_HANDLE hTWD, TMib *pMib)
     {
         if (IETable[IETableLen] == 0xdd)
         {
-             IETableLen += 8;
-             numOf221IE++;
+            IETableLen += 8;
+            numOf221IE++;
         }
         else
         {
             IETableLen += 2;
         }
     }
-    
+
     TRACE4(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_WriteMibBeaconFilterIETable: IETable=0x%x Num Of IE=%d ( including %d 221 ) - Table Len=%d\n", IETable, numOfIEs, numOf221IE, IETableLen);
-    
+
     return TWD_CfgBeaconFilterTable (hTWD, numOfIEs, IETable, IETableLen);
 }
 
 /**
  * \brief Set Tx Rate Policy
- * 
+ *
  * \param hTWD 				- TWD module object handle
  * \param pMib      		- Pointer to Input MIB Structure
- * \return TI_OK on success or TI_NOK on failure 
- * 
+ * \return TI_OK on success or TI_NOK on failure
+ *
  * \par Description
  * Static function
  * Coordinates between legacy TxRatePolicy implementation and the MIB format:
- * Converts the pGwsi_txRatePolicy back to command builder commands. 
+ * Converts the pGwsi_txRatePolicy back to command builder commands.
  * Activates the TWD_set function.
  *
  * \sa
- */ 
+ */
 static TI_STATUS TWD_WriteMibTxRatePolicy (TI_HANDLE hTWD, TMib* pMib)
 {
     TTwd   *pTWD = (TTwd *)hTWD;
@@ -1606,7 +1624,7 @@ static TI_STATUS TWD_WriteMibTxRatePolicy (TI_HANDLE hTWD, TMib* pMib)
     if (NULL == pMib)
     {
         TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "ERROR: TWD_WriteMibTxRatePolicy pMib=NULL !!!");
-		return TI_NOK;
+        return TI_NOK;
     }
 #endif /* TI_DBG */
 
@@ -1616,15 +1634,15 @@ static TI_STATUS TWD_WriteMibTxRatePolicy (TI_HANDLE hTWD, TMib* pMib)
 TI_STATUS TWD_WriteMib (TI_HANDLE hTWD, TMib *pMib)
 {
     TTwd *pTWD = (TTwd *)hTWD;
-   
+
 #ifdef TI_DBG
     TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_WriteMib :pMib %p:\n",pMib);
-    
+
     TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_WriteMib :aMib %x:\n",pMib->aMib);
 
     TRACE_INFO_HEX(pTWD->hReport, (TI_UINT8*)pMib, TI_MIN (sizeof(TMib), pMib->Length));
 #endif /* TI_DBG */
-    
+
     if (NULL == pMib)
     {
         TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_WriteMib :pMib = NULL !!\n");
@@ -1632,92 +1650,92 @@ TI_STATUS TWD_WriteMib (TI_HANDLE hTWD, TMib *pMib)
     }
 
     switch (pMib->aMib)
-    {   
+    {
     case MIB_dot11MaxReceiveLifetime:
         return cmdBld_CfgRxMsduLifeTime (pTWD->hCmdBld, pMib->aData.MaxReceiveLifeTime * 1024, (void *)NULL, (void *)NULL);
-        
+
     case MIB_ctsToSelf:
         return cmdBld_CfgCtsProtection (pTWD->hCmdBld, (TI_UINT8)pMib->aData.CTSToSelfEnable, (void *)NULL, (TI_HANDLE)NULL);
-        
-    case MIB_dot11GroupAddressesTable: 
+
+    case MIB_dot11GroupAddressesTable:
+    {
+        if (NULL == pMib->aData.GroupAddressTable.aGroupTable)
         {
-            if (NULL == pMib->aData.GroupAddressTable.aGroupTable)
-            {
-                TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_WriteMib(MIB_dot11GroupAddressesTable) :GroupTable = NULL !!\n");
-                return PARAM_VALUE_NOT_VALID;
-            }
-            
-            return TWD_CfgGroupAddressTable (hTWD, 
-                                             pMib->aData.GroupAddressTable.nNumberOfAddresses,
-                                             pMib->aData.GroupAddressTable.aGroupTable,
-                                             pMib->aData.GroupAddressTable.bFilteringEnable);
+            TRACE0(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_WriteMib(MIB_dot11GroupAddressesTable) :GroupTable = NULL !!\n");
+            return PARAM_VALUE_NOT_VALID;
         }
-        
+
+        return TWD_CfgGroupAddressTable (hTWD,
+                                         pMib->aData.GroupAddressTable.nNumberOfAddresses,
+                                         pMib->aData.GroupAddressTable.aGroupTable,
+                                         pMib->aData.GroupAddressTable.bFilteringEnable);
+    }
+
     case MIB_arpIpAddressesTable:
-        {
-            TIpAddr IpAddress;
+    {
+        TIpAddr IpAddress;
 
-            IP_COPY (IpAddress, pMib->aData.ArpIpAddressesTable.addr);
+        IP_COPY (IpAddress, pMib->aData.ArpIpAddressesTable.addr);
 
-            TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_WriteMib(MIB_arpIpAddressesTable) IpAddress:\n");
-            TRACE_INFO_HEX(pTWD->hReport, (TI_UINT8*)&IpAddress, 4);
+        TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD_WriteMib(MIB_arpIpAddressesTable) IpAddress:\n");
+        TRACE_INFO_HEX(pTWD->hReport, (TI_UINT8*)&IpAddress, 4);
 
-            return cmdBld_CfgArpIpAddrTable (pTWD->hCmdBld, 
-                                             IpAddress,
-                                             (TI_BOOL)pMib->aData.ArpIpAddressesTable.FilteringEnable,
-                                             IP_VER_4, 
-                                             NULL, 
-                                             NULL);
-        }
-        
+        return cmdBld_CfgArpIpAddrTable (pTWD->hCmdBld,
+                                         IpAddress,
+                                         (TI_BOOL)pMib->aData.ArpIpAddressesTable.FilteringEnable,
+                                         IP_VER_4,
+                                         NULL,
+                                         NULL);
+    }
+
     case MIB_templateFrame:
         return TWD_WriteMibTemplateFrame (hTWD, pMib);
-        
+
     case MIB_beaconFilterIETable:
         return TWD_WriteMibBeaconFilterIETable (hTWD, pMib);
-        
+
     case MIB_rxFilter:
+    {
+        TI_UINT32  uRxFilter = 0;
+        TI_UINT8   uMibRxFilter = pMib->aData.RxFilter;
+
+        if (uMibRxFilter & MIB_RX_FILTER_PROMISCOUS_SET)
         {
-            TI_UINT32  uRxFilter = 0;
-            TI_UINT8   uMibRxFilter = pMib->aData.RxFilter;
-            
-            if (uMibRxFilter & MIB_RX_FILTER_PROMISCOUS_SET)
-            {
-                TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n TWD_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ANY_DEST_MAC\n");
-                uRxFilter = RX_CFG_ENABLE_ANY_DEST_MAC;
-            }
-            else
-            {
-                uRxFilter = RX_CFG_ENABLE_ONLY_MY_DEST_MAC;
-                TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n halCtrl_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ONLY_MY_DEST_MAC\n");
-            }
-            
-            if ((uMibRxFilter & MIB_RX_FILTER_BSSID_SET) != 0)
-            {
-                uRxFilter = uRxFilter | RX_CFG_ENABLE_ONLY_MY_BSSID;
-                TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n halCtrl_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ONLY_MY_BSSID\n");
-            }
-            else
-            {
-                uRxFilter = uRxFilter | RX_CFG_ENABLE_ANY_BSSID;
-                TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n halCtrl_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ANY_BSSID\n");
-            }
-            
-            /*
-             * Activates the TWD_setRxFilters function 
-             */
-            return TWD_CfgRx (hTWD, uRxFilter, RX_FILTER_OPTION_DEF);
+            TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n TWD_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ANY_DEST_MAC\n");
+            uRxFilter = RX_CFG_ENABLE_ANY_DEST_MAC;
         }
+        else
+        {
+            uRxFilter = RX_CFG_ENABLE_ONLY_MY_DEST_MAC;
+            TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n halCtrl_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ONLY_MY_DEST_MAC\n");
+        }
+
+        if ((uMibRxFilter & MIB_RX_FILTER_BSSID_SET) != 0)
+        {
+            uRxFilter = uRxFilter | RX_CFG_ENABLE_ONLY_MY_BSSID;
+            TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n halCtrl_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ONLY_MY_BSSID\n");
+        }
+        else
+        {
+            uRxFilter = uRxFilter | RX_CFG_ENABLE_ANY_BSSID;
+            TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "\n halCtrl_WriteMib MIB_rxFilter - RX_CFG_ENABLE_ANY_BSSID\n");
+        }
+
+        /*
+         * Activates the TWD_setRxFilters function
+         */
+        return TWD_CfgRx (hTWD, uRxFilter, RX_FILTER_OPTION_DEF);
+    }
 
     case MIB_txRatePolicy:
         return TWD_WriteMibTxRatePolicy (hTWD, pMib);
 
     default:
         TRACE1(pTWD->hReport, REPORT_SEVERITY_ERROR, "TWD_WriteMib - ERROR - MIB element not supported, %d\n", pMib->aMib);
-        
+
         return TI_NOK;
-        
-    } /* switch */   
+
+    } /* switch */
 }
 
 TI_STATUS TWD_ReadMib (TI_HANDLE hTWD, TI_HANDLE hCb, void* fCb, void* pCb)
@@ -1766,31 +1784,31 @@ void TWD_GetTwdHtCapabilities (TI_HANDLE hTWD, TTwdHtCapabilities **pTwdHtCapabi
     *pTwdHtCapabilities = &(pWlanParams->tTwdHtCapabilities);
 }
 
-/** 
+/**
  *  \brief TWD get FEM type
- *  * 
+ *  *
  * \param  Handle        	- handle to object
- * \return uint8 
- * 
+ * \return uint8
+ *
  * \par Description
- * The function return the Front end module that was read frm FW register * 
+ * The function return the Front end module that was read frm FW register *
  * \sa
- */ 
+ */
 TI_UINT8 TWD_GetFEMType (TI_HANDLE hTWD)
 {
-  TTwd        *pTWD        = (TTwd *)hTWD;
-  IniFileGeneralParam *pGenParams = &DB_GEN(pTWD->hCmdBld);
+    TTwd        *pTWD        = (TTwd *)hTWD;
+    IniFileGeneralParam *pGenParams = &DB_GEN(pTWD->hCmdBld);
 
-  return pGenParams->TXBiPFEMManufacturer;
+    return pGenParams->TXBiPFEMManufacturer;
 
 }
 
 
 void TWD_FinalizePolarityRead(TI_HANDLE hTWD)
 {
-  TTwd *pTWD = (TTwd *)hTWD;
+    TTwd *pTWD = (TTwd *)hTWD;
 
-  (*pTWD->fInitHwCb) (pTWD->hUser, TI_OK);
+    (*pTWD->fInitHwCb) (pTWD->hUser, TI_OK);
 }
 
 /*

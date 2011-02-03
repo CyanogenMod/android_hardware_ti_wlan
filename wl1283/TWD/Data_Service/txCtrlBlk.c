@@ -35,10 +35,10 @@
 /****************************************************************************
  *
  *   MODULE:  txCtrlBlk.c
- *   
- *   PURPOSE: Maintains active packets Tx attributes table (including descriptor). 
- * 
- *	 DESCRIPTION:  
+ *
+ *   PURPOSE: Maintains active packets Tx attributes table (including descriptor).
+ *
+ *	 DESCRIPTION:
  *   ============
  *		This module allocates and frees table entry for each packet in the Tx
  *		process (from sendPkt by upper driver until Tx-complete).
@@ -56,14 +56,14 @@
 /* The TxCtrlBlk module object - contains the control-block table. */
 typedef struct
 {
-	TI_HANDLE   hOs;
-	TI_HANDLE   hReport;
-	TI_HANDLE   hContext;
+    TI_HANDLE   hOs;
+    TI_HANDLE   hReport;
+    TI_HANDLE   hContext;
 
-	TTxCtrlBlk  aTxCtrlBlkTbl[CTRL_BLK_ENTRIES_NUM]; /* The table of control-block entries. */
+    TTxCtrlBlk  aTxCtrlBlkTbl[CTRL_BLK_ENTRIES_NUM]; /* The table of control-block entries. */
 
 #ifdef TI_DBG  /* Just for debug. */
-	TI_UINT32	uNumUsedEntries;  
+    TI_UINT32	uNumUsedEntries;
 #endif
 
 } TTxCtrlBlkObj;
@@ -72,49 +72,49 @@ typedef struct
 /****************************************************************************
  *                      txCtrlBlk_Create()
  ****************************************************************************
- * DESCRIPTION:	Create the Tx control block table object 
- * 
+ * DESCRIPTION:	Create the Tx control block table object
+ *
  * INPUTS:	hOs
- * 
+ *
  * OUTPUT:	None
- * 
+ *
  * RETURNS:	The Created object
  ****************************************************************************/
 TI_HANDLE txCtrlBlk_Create (TI_HANDLE hOs)
 {
-	TTxCtrlBlkObj *pTxCtrlBlk;
+    TTxCtrlBlkObj *pTxCtrlBlk;
 
-	pTxCtrlBlk = os_memoryAlloc (hOs, sizeof(TTxCtrlBlkObj));
-	if (pTxCtrlBlk == NULL)
-		return NULL;
+    pTxCtrlBlk = os_memoryAlloc (hOs, sizeof(TTxCtrlBlkObj));
+    if (pTxCtrlBlk == NULL)
+        return NULL;
 
-	os_memoryZero (hOs, pTxCtrlBlk, sizeof(TTxCtrlBlkObj));
+    os_memoryZero (hOs, pTxCtrlBlk, sizeof(TTxCtrlBlkObj));
 
-	pTxCtrlBlk->hOs = hOs;
+    pTxCtrlBlk->hOs = hOs;
 
-	return( (TI_HANDLE)pTxCtrlBlk );
+    return( (TI_HANDLE)pTxCtrlBlk );
 }
 
 
 /****************************************************************************
  *                      txCtrlBlk_Destroy()
  ****************************************************************************
- * DESCRIPTION:	Destroy the Tx control block table object 
- * 
+ * DESCRIPTION:	Destroy the Tx control block table object
+ *
  * INPUTS:	hTxCtrlBlk - The object to free
- * 
+ *
  * OUTPUT:	None
- * 
+ *
  * RETURNS:	TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS txCtrlBlk_Destroy (TI_HANDLE hTxCtrlBlk)
 {
-	TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
+    TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
 
-	if (pTxCtrlBlk)
-		os_memoryFree(pTxCtrlBlk->hOs, pTxCtrlBlk, sizeof(TTxCtrlBlkObj));
+    if (pTxCtrlBlk)
+        os_memoryFree(pTxCtrlBlk->hOs, pTxCtrlBlk, sizeof(TTxCtrlBlkObj));
 
-	return TI_OK;
+    return TI_OK;
 }
 
 
@@ -125,42 +125,42 @@ TI_STATUS txCtrlBlk_Destroy (TI_HANDLE hTxCtrlBlk)
  ****************************************************************************/
 TI_STATUS txCtrlBlk_Init (TI_HANDLE hTxCtrlBlk, TI_HANDLE hReport, TI_HANDLE hContext)
 {
-	TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
-	TTxnStruct    *pTxn;
-	TI_UINT8       entry;
+    TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
+    TTxnStruct    *pTxn;
+    TI_UINT8       entry;
 
-	pTxCtrlBlk->hReport  = hReport;
-	pTxCtrlBlk->hContext = hContext;
-	
-	/* For all entries, write the entry index in the descriptor and the next entry address
-		 in the next free entery pointer. Init also some other fields. */
-	for(entry = 0; entry < CTRL_BLK_ENTRIES_NUM; entry++)
-	{
-		pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.descID = entry;
-		pTxCtrlBlk->aTxCtrlBlkTbl[entry].pNextFreeEntry       = &(pTxCtrlBlk->aTxCtrlBlkTbl[entry + 1]);
-		pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.aid    = 1;  /* The value for infrastructure BSS */
-		pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.reserved  = 0;
+    pTxCtrlBlk->hReport  = hReport;
+    pTxCtrlBlk->hContext = hContext;
+
+    /* For all entries, write the entry index in the descriptor and the next entry address
+	in the next free entery pointer. Init also some other fields. */
+    for(entry = 0; entry < CTRL_BLK_ENTRIES_NUM; entry++)
+    {
+        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.descID = entry;
+        pTxCtrlBlk->aTxCtrlBlkTbl[entry].pNextFreeEntry       = &(pTxCtrlBlk->aTxCtrlBlkTbl[entry + 1]);
+        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.aid    = 1;  /* The value for infrastructure BSS */
+        pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.reserved  = 0;
 
         /* Prepare the Txn fields to the host-slave register (fixed address) */
         pTxn = &(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxnStruct);
         TXN_PARAM_SET(pTxn, TXN_LOW_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_WRITE, TXN_FIXED_ADDR)
-	}
+    }
 
-	/* Write null in the next-free index of the last entry. */
-	pTxCtrlBlk->aTxCtrlBlkTbl[CTRL_BLK_ENTRIES_NUM - 1].pNextFreeEntry = NULL;
+    /* Write null in the next-free index of the last entry. */
+    pTxCtrlBlk->aTxCtrlBlkTbl[CTRL_BLK_ENTRIES_NUM - 1].pNextFreeEntry = NULL;
 
-  #ifdef TI_DBG
-	pTxCtrlBlk->uNumUsedEntries = 0;
-  #endif
+#ifdef TI_DBG
+    pTxCtrlBlk->uNumUsedEntries = 0;
+#endif
 
-	return TI_OK;
+    return TI_OK;
 }
 
 
 /****************************************************************************
  *					txCtrlBlk_Alloc()
  ****************************************************************************
- * DESCRIPTION:	 
+ * DESCRIPTION:
 	Allocate a free control-block entry for the current Tx packet's parameters
 	  (including the descriptor structure).
 	Note that entry 0 in the list is never allocated and points to the
@@ -168,11 +168,11 @@ TI_STATUS txCtrlBlk_Init (TI_HANDLE hTxCtrlBlk, TI_HANDLE hReport, TI_HANDLE hCo
  ****************************************************************************/
 TTxCtrlBlk *txCtrlBlk_Alloc (TI_HANDLE hTxCtrlBlk)
 {
-	TTxCtrlBlkObj   *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
-	TTxCtrlBlk      *pCurrentEntry; /* The pointer of the new entry allocated for the packet. */
-	TTxCtrlBlk      *pFirstFreeEntry; /* The first entry just points to the first free entry. */ 
+    TTxCtrlBlkObj   *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
+    TTxCtrlBlk      *pCurrentEntry; /* The pointer of the new entry allocated for the packet. */
+    TTxCtrlBlk      *pFirstFreeEntry; /* The first entry just points to the first free entry. */
 
-	pFirstFreeEntry = &(pTxCtrlBlk->aTxCtrlBlkTbl[0]); 
+    pFirstFreeEntry = &(pTxCtrlBlk->aTxCtrlBlkTbl[0]);
 
     /* Protect block allocation from preemption (may be called from external context) */
     context_EnterCriticalSection (pTxCtrlBlk->hContext);
@@ -180,63 +180,63 @@ TTxCtrlBlk *txCtrlBlk_Alloc (TI_HANDLE hTxCtrlBlk)
     pCurrentEntry = pFirstFreeEntry->pNextFreeEntry; /* Get free entry. */
 
 #ifdef TI_DBG
-	/* If no free entries, print error (not expected to happen) and return NULL. */
-	if (pCurrentEntry->pNextFreeEntry == NULL)
-	{
-TRACE1(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_alloc():  No free entry,  UsedEntries=%d\n", pTxCtrlBlk->uNumUsedEntries);
+    /* If no free entries, print error (not expected to happen) and return NULL. */
+    if (pCurrentEntry->pNextFreeEntry == NULL)
+    {
+        TRACE1(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_alloc():  No free entry,  UsedEntries=%d\n", pTxCtrlBlk->uNumUsedEntries);
         context_LeaveCriticalSection (pTxCtrlBlk->hContext);
-		return NULL;
-	}
-	pTxCtrlBlk->uNumUsedEntries++;
+        return NULL;
+    }
+    pTxCtrlBlk->uNumUsedEntries++;
 #endif
 
-	/* Link the first entry to the next free entry. */
-	pFirstFreeEntry->pNextFreeEntry = pCurrentEntry->pNextFreeEntry;
+    /* Link the first entry to the next free entry. */
+    pFirstFreeEntry->pNextFreeEntry = pCurrentEntry->pNextFreeEntry;
 
     context_LeaveCriticalSection (pTxCtrlBlk->hContext);
-	
-	/* Clear the next-free-entry index just as an indication that our entry is not free. */
-	pCurrentEntry->pNextFreeEntry = 0;
+
+    /* Clear the next-free-entry index just as an indication that our entry is not free. */
+    pCurrentEntry->pNextFreeEntry = 0;
 
     pCurrentEntry->tTxPktParams.uFlags = 0;
     pCurrentEntry->tTxPktParams.uHeadroomSize = 0;
 
-	return pCurrentEntry;
+    return pCurrentEntry;
 }
 
 
 /****************************************************************************
  *					txCtrlBlk_Free()
  ****************************************************************************
- * DESCRIPTION:	
+ * DESCRIPTION:
 	Link the freed entry after entry 0, so now it is the first free entry to
 	  be allocated.
  ****************************************************************************/
 void txCtrlBlk_Free (TI_HANDLE hTxCtrlBlk, TTxCtrlBlk *pCurrentEntry)
 {
-	TTxCtrlBlkObj   *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
-	TTxCtrlBlk *pFirstFreeEntry = &(pTxCtrlBlk->aTxCtrlBlkTbl[0]);
+    TTxCtrlBlkObj   *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
+    TTxCtrlBlk *pFirstFreeEntry = &(pTxCtrlBlk->aTxCtrlBlkTbl[0]);
 
-	if (!pTxCtrlBlk)
+    if (!pTxCtrlBlk)
     {
-		return;
-	}
+        return;
+    }
 #ifdef TI_DBG
-	/* If the pointed entry is already free, print error and exit (not expected to happen). */
-	if (pCurrentEntry->pNextFreeEntry != 0)
-	{
-TRACE2(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_free(): Entry %d alredy free, UsedEntries=%d\n", 			pCurrentEntry->tTxDescriptor.descID, pTxCtrlBlk->uNumUsedEntries);
-		return;
-	}
-	pTxCtrlBlk->uNumUsedEntries--;
+    /* If the pointed entry is already free, print error and exit (not expected to happen). */
+    if (pCurrentEntry->pNextFreeEntry != 0)
+    {
+        TRACE2(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_free(): Entry %d alredy free, UsedEntries=%d\n", 			pCurrentEntry->tTxDescriptor.descID, pTxCtrlBlk->uNumUsedEntries);
+        return;
+    }
+    pTxCtrlBlk->uNumUsedEntries--;
 #endif
 
     /* Protect block freeing from preemption (may be called from external context) */
     context_EnterCriticalSection (pTxCtrlBlk->hContext);
 
-	/* Link the freed entry between entry 0 and the next free entry. */
-	pCurrentEntry->pNextFreeEntry   = pFirstFreeEntry->pNextFreeEntry;
-	pFirstFreeEntry->pNextFreeEntry = pCurrentEntry;
+    /* Link the freed entry between entry 0 and the next free entry. */
+    pCurrentEntry->pNextFreeEntry   = pFirstFreeEntry->pNextFreeEntry;
+    pFirstFreeEntry->pNextFreeEntry = pCurrentEntry;
 
     context_LeaveCriticalSection (pTxCtrlBlk->hContext);
 }
@@ -245,14 +245,14 @@ TRACE2(pTxCtrlBlk->hReport, REPORT_SEVERITY_ERROR, "txCtrlBlk_free(): Entry %d a
 /****************************************************************************
  *					txCtrlBlk_GetPointer()
  ****************************************************************************
- * DESCRIPTION:	 
+ * DESCRIPTION:
 	Return a pointer to the control block entry of the requested packet.
 	Used upon tx-complete to retrieve info after getting the descId from the FW.
  ****************************************************************************/
 TTxCtrlBlk *txCtrlBlk_GetPointer (TI_HANDLE hTxCtrlBlk, TI_UINT8 descId)
 {
-	TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
-	return ( &(pTxCtrlBlk->aTxCtrlBlkTbl[descId]) );
+    TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
+    return ( &(pTxCtrlBlk->aTxCtrlBlkTbl[descId]) );
 }
 
 
@@ -265,8 +265,8 @@ TTxCtrlBlk *txCtrlBlk_GetPointer (TI_HANDLE hTxCtrlBlk, TI_UINT8 descId)
 void txCtrlBlk_PrintTable (TI_HANDLE hTxCtrlBlk)
 {
 #ifdef REPORT_LOG
-	TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
-	TI_UINT8 entry;
+    TTxCtrlBlkObj *pTxCtrlBlk = (TTxCtrlBlkObj *)hTxCtrlBlk;
+    TI_UINT8 entry;
 
     WLAN_OS_REPORT((" Tx-Control-Block Information,  UsedEntries=%d\n", pTxCtrlBlk->uNumUsedEntries));
     WLAN_OS_REPORT(("==============================================\n"));

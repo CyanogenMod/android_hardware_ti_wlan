@@ -622,9 +622,8 @@ TI_STATUS conn_reportRsnStatus(TI_HANDLE hConn, mgmtStatus_e status)
 /***********************************************************************
  *                        conn_timeout									
  ***********************************************************************
-DESCRIPTION:	Called by the OS abstraction layer when the self timer expired 
-				Valid only if the current connection type is self
-				This function calls the self connection SM with timeout event
+DESCRIPTION:	Called by the OS abstraction layer when the conn timer expired
+				This function calls the connection SM with a DISCONN_COMPLETE event
                                                                                                    
 INPUT:      hConn	-	Connection handle.
             bTwdInitOccured -   Indicates if TWDriver recovery occured since timer started 
@@ -642,7 +641,7 @@ void conn_timeout (TI_HANDLE hConn, TI_BOOL bTwdInitOccured)
 	{
 	case CONNECTION_IBSS:
 	case CONNECTION_SELF:
-		conn_ibssSMEvent(&pConn->state, CONN_IBSS_DISCONNECT, pConn);
+		conn_ibssSMEvent(&pConn->state, CONN_IBSS_DISCONN_COMPLETE, pConn);
 		break;
 
 	case CONNECTION_INFRA:
@@ -661,6 +660,32 @@ void conn_timeout (TI_HANDLE hConn, TI_BOOL bTwdInitOccured)
 	return;
 }
 
+/***********************************************************************
+ *                        conn_selfTimeout
+ ***********************************************************************
+DESCRIPTION:    Called by the OS abstraction layer when the self timer expired
+                Valid only if the current connection type is self
+                This function calls the self connection SM with disconnect event
+
+INPUT:      hConn   -   Connection handle.
+            bTwdInitOccured -   Indicates if TWDriver recovery occured since timer started
+
+OUTPUT:
+
+RETURN:     TI_OK on success, TI_NOK otherwise
+
+************************************************************************/
+void conn_selfTimeout (TI_HANDLE hConn, TI_BOOL bTwdInitOccured)
+{
+    conn_t *pConn = (conn_t *)hConn;
+
+    /* this timeout CB should be called only in self ibss connection */
+    if (pConn->currentConnType == CONNECTION_SELF)
+    {
+        conn_ibssSMEvent(&pConn->state, CONN_IBSS_DISCONNECT, pConn);
+    }
+    return;
+}
 
 /***********************************************************************
  *                        conn_join									

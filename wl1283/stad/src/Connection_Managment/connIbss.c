@@ -418,7 +418,11 @@ static TI_STATUS selfWait_to_waitToDisconnCmplt (void *pData)
 
 	/* Update TxMgmtQueue SM to close Tx path. */
 	txMgmtQ_SetConnState (pConn->hTxMgmtQ, TX_CONN_STATE_CLOSE);
-    
+
+    /* Start the disconnect complete time out timer.
+       Disconect Complete event, which stops the timer. */
+    tmr_StartTimer (pConn->hConnTimer, conn_timeout, (TI_HANDLE)pConn, DISCONNECT_TIMEOUT_MSEC, TI_FALSE);
+
     TWD_CmdFwDisconnect (pConn->hTWD, DISCONNECT_IMMEDIATE, STATUS_UNSPECIFIED);
 
     return TI_OK;
@@ -522,7 +526,7 @@ static TI_STATUS idle_to_selfWait (void *pData)
     randomTime = os_timeStampMs (pConn->hOs) & 0x1FFF;
 
     tmr_StartTimer (pConn->hConnTimer,
-                    conn_timeout,
+                    conn_selfTimeout,
                     (TI_HANDLE)pConn,
                     pConn->timeout + randomTime,
                     TI_FALSE);

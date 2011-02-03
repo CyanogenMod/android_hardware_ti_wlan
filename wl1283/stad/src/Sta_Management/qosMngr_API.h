@@ -77,6 +77,7 @@ typedef struct
     TI_UINT8            statusCode;
 	TI_UINT32			uMinimumServiceInterval;
 	TI_UINT32			uMaximumServiceInterval;
+	TI_UINT32           uInactivityInterval;
 }tspecInfo_t;
 
 typedef enum 

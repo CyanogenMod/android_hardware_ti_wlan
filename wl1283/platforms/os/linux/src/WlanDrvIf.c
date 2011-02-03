@@ -85,7 +85,7 @@
 #include "SdioDrv.h"
 
 /* save driver handle just for module cleanup */
-static TWlanDrvIfObj *pDrvStaticHandle;  
+static TWlanDrvIfObj *pDrvStaticHandle;
 
 #define OS_SPECIFIC_RAM_ALLOC_LIMIT			(0xFFFFFFFF)	/* assume OS never reach that limit */
 
@@ -418,8 +418,10 @@ static void wlanDrvIf_DriverTask(struct work_struct *work)
     {
 	os_wake_lock_timeout(drv);
     }
+
 	os_wake_unlock(drv);
-#ifdef STACK_PROFILE
+
+    #ifdef STACK_PROFILE
     curr2 = check_stack_stop(&base2, 0);
     if (base2 == base1)
     {
@@ -457,7 +459,7 @@ static void wlanDrvIf_DriverTask(struct work_struct *work)
  */ 
 int wlanDrvIf_LoadFiles (TWlanDrvIfObj *drv, TLoaderFilesData *pInitFiles)
 {
-    if (!pInitFiles)
+	if (!pInitFiles)
     {
         ti_dprintf (TIWLAN_LOG_ERROR, "No Init Files!\n");
         return -EINVAL;
@@ -694,14 +696,14 @@ int wlanDrvIf_Open (struct net_device *dev)
     return 0;
 }
 
-
-
 int wlanDrvIf_Release (struct net_device *dev)
 {
     /* Disable network interface queue */
     netif_stop_queue (dev);
+
     return 0;
 }
+
 /** 
  * \fn     wlanDrvIf_SetupNetif
  * \brief  Setup driver network interface
@@ -837,7 +839,7 @@ static int wlanDrvIf_Create (void)
 
 	drv->tiwlan_wq = create_freezeable_workqueue(DRIVERWQ_NAME);
 	if (!drv->tiwlan_wq)
-	{
+    {
 		ti_dprintf (TIWLAN_LOG_ERROR, "wlanDrvIf_Create(): Failed to create workQ!\n");
 		rc = -EINVAL;
 		goto drv_create_end_1;
@@ -915,20 +917,20 @@ static int wlanDrvIf_Create (void)
 drv_create_end_5:
 	/* Destroy all driver modules */
 	if (drv->tCommon.hDrvMain)
-	{
+    {
 		drvMain_Destroy (drv->tCommon.hDrvMain);
 	}
 
 drv_create_end_4:
 	if (drv->wl_sock)
-	{
+    {
 		sock_release (drv->wl_sock->sk_socket);
 	}
 
 drv_create_end_3:
 	/* Release the driver network interface */
 	if (drv->netdev)
-	{
+    {
 		unregister_netdev (drv->netdev);
 		free_netdev (drv->netdev);
 	}
@@ -939,7 +941,9 @@ drv_create_end_2:
 	wake_lock_destroy (&drv->wl_rxwake);
 #endif
 	if (drv->tiwlan_wq)
+    {
 		destroy_workqueue(drv->tiwlan_wq);
+    }
 
 drv_create_end_1:
 	kfree (drv);
@@ -965,8 +969,10 @@ drv_create_end_1:
  */ 
 static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
 {
-	if(!drv)
+    if(!drv)
+    {
         return;
+    }
 
     /* Move the driver to Off power-state */
     wlanDrvIf_KExecPrivCmd(drv, (ti_private_cmd_t){
@@ -974,14 +980,14 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
 		.in_buffer = NULL,
 		.out_buffer = NULL});
 	if (drv->tiwlan_wq)
-	{
+    {
 		cancel_work_sync (&drv->tWork);
 		flush_workqueue(drv->tiwlan_wq);
 	}
 
     /* Release the driver network interface and stop driver */
     if (drv->netdev)
-	{
+    {
         netif_stop_queue  (drv->netdev);
         if (drv->tCommon.eDriverState != DRV_STATE_IDLE)
         {
@@ -995,13 +1001,14 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
     if (drv->tCommon.hDrvMain)
     {
         drvMain_Destroy (drv->tCommon.hDrvMain);
-	}
+    }
 
     /* close the ipc_kernel socket*/
     if (drv && drv->wl_sock) 
     {
         sock_release (drv->wl_sock->sk_socket);
     }
+
     /* Release the driver interrupt (or polling timer) */
 #ifdef PRIODIC_INTERRUPT
     os_timerDestroy (drv, drv->hPollTimer);
@@ -1012,7 +1019,9 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
     }
 #endif
 	if (drv->tiwlan_wq)
+    {
 		destroy_workqueue(drv->tiwlan_wq);
+    }
 
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_destroy (&drv->wl_wifi);
@@ -1066,17 +1075,18 @@ static void wlanDrvIf_Destroy (TWlanDrvIfObj *drv)
  * \return Init: 0 - OK, else - failure.   Exit: void
  * \sa     wlanDrvIf_Create, wlanDrvIf_Destroy
  */ 
+
 static int __init wlanDrvIf_ModuleInit (void)
 {
     printk(KERN_INFO "TIWLAN: driver init\n");
-    sdioDrv_init();
+	sdioDrv_init();
     return wlanDrvIf_Create ();
 }
 
 static void __exit wlanDrvIf_ModuleExit (void)
 {
     wlanDrvIf_Destroy (pDrvStaticHandle);
-    sdioDrv_exit();
+	sdioDrv_exit();
     printk (KERN_INFO "TI WLAN: driver unloaded\n");
 }
 
@@ -1255,7 +1265,8 @@ TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl)
 	case DRV_STATE_STOPING:
 	case DRV_STATE_STOPPED:
 	case DRV_STATE_IDLE:
-		bEnabled = (uIoctl==SIOCIWFIRSTPRIV); /* to allow DRIVER_INIT_PARAM command. see wlanDrvIf_IsCmdEnabled() */
+		/* to allow DRIVER_INIT_PARAM, DRIVER_STATUS and DRIVER_START command. see wlanDrvIf_IsCmdEnabled() */
+		bEnabled = (uIoctl==SIOCIWFIRSTPRIV);
 		break;
 	}
 
@@ -1304,11 +1315,11 @@ TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd)
 		break;
 	case DRV_STATE_STOPPED:
 		bEnabled = ( (uCmd == DRIVER_START_PARAM)
-				|| (uCmd == DRIVER_STATUS_PARAM) );
+				  || (uCmd == DRIVER_STATUS_PARAM) );
 		break;
 	case DRV_STATE_IDLE:
-		bEnabled = ((uCmd == DRIVER_INIT_PARAM) /* used by tiwlan_loader */
-				|| (uCmd == DRIVER_STATUS_PARAM) );
+		bEnabled = ( (uCmd == DRIVER_INIT_PARAM) /* used by tiwlan_loader */
+				  || (uCmd == DRIVER_STATUS_PARAM) );
 		break;
 	}
 
