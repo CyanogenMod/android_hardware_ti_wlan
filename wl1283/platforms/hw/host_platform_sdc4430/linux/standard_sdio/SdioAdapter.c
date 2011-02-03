@@ -211,7 +211,10 @@ ETxnStatus sdioAdapt_TransactBytes (unsigned int  uFuncId,
     int iStatus;
 
     if (bMore ==1)
+    {
+        sdioDrv_cancel_inact_timer();
         sdioDrv_ClaimHost(SDIO_WLAN_FUNC);
+    }
     /* Call read or write bytes Sync method */
     if (bDirection) 
     {
@@ -222,7 +225,9 @@ ETxnStatus sdioAdapt_TransactBytes (unsigned int  uFuncId,
         iStatus = sdioDrv_WriteSyncBytes (uFuncId, uHwAddr, pHostAddr, uLength, bMore);
     }
     if (bMore ==0)
-        sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
+    {
+        sdioDrv_start_inact_timer();
+    }
 
     /* If failed return ERROR, if succeeded return COMPLETE */
     if (iStatus) 

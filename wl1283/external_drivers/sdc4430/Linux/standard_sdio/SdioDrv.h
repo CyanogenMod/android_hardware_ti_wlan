@@ -60,18 +60,21 @@
 #define CCCR_BUS_INTERFACE_CONTOROL         0x07
 #define CCCR_CARD_CAPABILITY	            0x08
 #define CCCR_COMMON_CIS_POINTER             0x09 /*0x09-0x0B*/
-#define CCCR_FNO_BLOCK_SIZE	                0x10 /*0x10-0x11*/
+#define CCCR_FNO_BLOCK_SIZE                 0x10 /*0x10-0x11*/
 #define FN0_CCCR_REG_32                     0x64
 
 /* Protocol defined constants */
          
-#define SD_IO_GO_IDLE_STATE		  		    0  
-#define SD_IO_SEND_RELATIVE_ADDR	  	    3 
-#define SDIO_CMD5			  			    5
-#define SD_IO_SELECT_CARD		  		    7 
+#define SD_IO_GO_IDLE_STATE                 0  
+#define SD_IO_SEND_RELATIVE_ADDR            3 
+#define SDIO_CMD5                           5
+#define SD_IO_SELECT_CARD                   7 
 
 #define VDD_VOLTAGE_WINDOW                  0xffffc0
 #define ELP_CTRL_REG_ADDR                   0x1fffc
+
+#define OMAP_MPU_OPP_1GHZ                   1008000000
+#define OMAP_MPU_OPP_300MHZ                 300000000
 
 /********************************************************************/
 /*	SDIO driver functions prototypes                                */
@@ -133,6 +136,8 @@ int sdioDrv_SetBlockSize(unsigned int uFunc, unsigned int blksz);
 void sdioDrv_Register_Notification(void (*notify_sdio_ready)(void));
 void sdioDrv_ReleaseHost(unsigned int uFunc);
 void sdioDrv_ClaimHost(unsigned int uFunc);
+void sdioDrv_start_inact_timer(void);
+void sdioDrv_cancel_inact_timer(void);
 
 int sdioDrv_init(void);
 void sdioDrv_exit(void);
