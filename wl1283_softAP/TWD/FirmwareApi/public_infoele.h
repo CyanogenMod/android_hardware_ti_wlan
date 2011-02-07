@@ -66,7 +66,8 @@ typedef enum
     ACX_FEATURE_CFG             = 0x0015,
     ACX_TID_CFG                 = 0x001A,
     ACX_PS_RX_STREAMING         = 0x001B, 
-    ACX_BEACON_FILTER_OPT       = 0x001F,
+    ACX_STA_BEACON_FILTER_OPT   = 0x001F,
+    ACX_AP_BEACON_FILTER_OPT    = 0x0020,
     ACX_NOISE_HIST              = 0x0021,
     ACX_HDK_VERSION             = 0x0022, /* ???*/
     ACX_PD_THRESHOLD            = 0x0023,
@@ -604,8 +605,27 @@ typedef struct
                                    /* When set to 0 and the filter is enabled, beacons */
                                    /* without the unicast TIM bit set are dropped.*/
     uint8  padding[2];             /* alignment to 32bits boundry   */
-} ACXBeaconFilterOptions_t;
+} ACXStaBeaconFilterOptions_t;
 
+/******************************************************************************
+
+    Name:   ACX_AP_BEACON_FILTER_OPT
+    Desc:   This information element enables the host to activate beacon filtering
+            in AP Mode.
+            When activated, the host is not notified about beacons (unless there
+            is a scan).
+    Type:   Filtering Configuration
+    Access: Write Only
+    Length: 1
+
+******************************************************************************/
+typedef struct
+{
+    INFO_ELE_HDR
+    uint8  enable;                 /* 1 - filter enabled (don't notify host about beacons)
+                                      0 - filter disabled (notify host about beacons) */
+    uint8  padding[3];             /* alignment to 32bits boundary */
+} ACXApBeaconFilterOptions_t;
 
 /******************************************************************************
 

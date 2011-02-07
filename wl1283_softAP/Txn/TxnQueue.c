@@ -31,28 +31,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- 
-/** \file   TxnQueue.c 
- *  \brief  The transaction-queue module. 
+
+/** \file   TxnQueue.c
+ *  \brief  The transaction-queue module.
  *
  * The Transaction Queue encapsulates the bus access from a functional driver (WLAN, BT).
- * This TI proprietary module presents the same interface and same behavior for different 
- *     bus configuration: SDIO (multi or single function) or SPI and for different modes 
- *     of operation: Synchronous, a-synchronous or combination of both. 
- * It will also be used over the RS232 interface (using wUART protocol) which is applicable 
+ * This TI proprietary module presents the same interface and same behavior for different
+ *     bus configuration: SDIO (multi or single function) or SPI and for different modes
+ *     of operation: Synchronous, a-synchronous or combination of both.
+ * It will also be used over the RS232 interface (using wUART protocol) which is applicable
  *     for RS applications (on PC).
- * 
+ *
  * The TxnQ module provides the following requirements:
- *     Inter process protection on queue's internal database and synchronization between 
+ *     Inter process protection on queue's internal database and synchronization between
  *         functional drivers that share the bus.
- *     Support multiple queues per function, handled by priority. 
- *     Support the TTxnStruct API (as the Bus Driver) with the ability to manage commands 
- *         queuing of multiple functions on top of the Bus Driver. 
- *     The TxnQ (as well as the layers above it) is agnostic to the bus driver used beneath it 
- *         (SDIO, WSPI or wUART), since all bus drivers introduce the same API and hide bus details. 
+ *     Support multiple queues per function, handled by priority.
+ *     Support the TTxnStruct API (as the Bus Driver) with the ability to manage commands
+ *         queuing of multiple functions on top of the Bus Driver.
+ *     The TxnQ (as well as the layers above it) is agnostic to the bus driver used beneath it
+ *         (SDIO, WSPI or wUART), since all bus drivers introduce the same API and hide bus details.
  *     The TxnQ has no OS dependencies. It supports access from multiple OS threads.
- * Note: It is assumed that any transaction forwarded to the TxnQ has enough resources in HW. 
- * 
+ * Note: It is assumed that any transaction forwarded to the TxnQ has enough resources in HW.
+ *
  *  \see    TxnQueue.h
  */
 
@@ -84,18 +84,18 @@
 typedef enum
 {
     FUNC_STATE_NONE,              /* Function not registered */
-	FUNC_STATE_STOPPED,           /* Queues are stopped */
-	FUNC_STATE_RUNNING,           /* Queues are running */
-	FUNC_STATE_RESTART            /* Wait for current Txn to finish before restarting queues */
+    FUNC_STATE_STOPPED,           /* Queues are stopped */
+    FUNC_STATE_RUNNING,           /* Queues are running */
+    FUNC_STATE_RESTART            /* Wait for current Txn to finish before restarting queues */
 } EFuncState;
 
 /* The functional drivers registered to TxnQ */
-typedef struct 
+typedef struct
 {
     EFuncState      eState;             /* Function crrent state */
     TI_UINT32       uNumPrios;          /* Number of queues (priorities) for this function */
-	TTxnQueueDoneCb fTxnQueueDoneCb;    /* The CB called by the TxnQueue upon full transaction completion. */
-	TI_HANDLE       hCbHandle;          /* The callback handle */
+    TTxnQueueDoneCb fTxnQueueDoneCb;    /* The CB called by the TxnQueue upon full transaction completion. */
+    TI_HANDLE       hCbHandle;          /* The callback handle */
     TTxnStruct *    pSingleStep;        /* A single step transaction waiting to be sent */
 
 } TFuncInfo;
@@ -104,10 +104,10 @@ typedef struct
 /* The TxnQueue module Object */
 typedef struct _TTxnQObj
 {
-    TI_HANDLE	    hOs;		   	 
+    TI_HANDLE	    hOs;
     TI_HANDLE	    hReport;
     TI_HANDLE	    hContext;
-	TI_HANDLE	    hBusDrv;
+    TI_HANDLE	    hBusDrv;
 
     TFuncInfo       aFuncInfo[MAX_FUNCTIONS];  /* Registered functional drivers - see above */
     TI_HANDLE       aTxnQueues[MAX_FUNCTIONS][MAX_PRIORITY];  /* Handle of the Transactions-Queue */
@@ -155,11 +155,11 @@ TI_HANDLE txnQ_Create (TI_HANDLE hOs)
     hTxnQ = os_memoryAlloc(hOs, sizeof(TTxnQObj));
     if (hTxnQ == NULL)
         return NULL;
-    
+
     pTxnQ = (TTxnQObj *)hTxnQ;
 
     os_memoryZero(hOs, hTxnQ, sizeof(TTxnQObj));
-    
+
     pTxnQ->hOs             = hOs;
     pTxnQ->pCurrTxn        = NULL;
     pTxnQ->uMinFuncId      = MAX_FUNCTIONS; /* Start at maximum and save minimal value in txnQ_Open */
@@ -176,7 +176,7 @@ TI_HANDLE txnQ_Create (TI_HANDLE hOs)
         pTxnQ->aFuncInfo[i].fTxnQueueDoneCb = NULL;
         pTxnQ->aFuncInfo[i].hCbHandle       = NULL;
     }
-    
+
     /* Create the Bus-Driver module */
     pTxnQ->hBusDrv = busDrv_Create (hOs);
     if (pTxnQ->hBusDrv == NULL)
@@ -195,15 +195,15 @@ TI_STATUS txnQ_Destroy (TI_HANDLE hTxnQ)
 
     if (pTxnQ)
     {
-        if (pTxnQ->hBusDrv) 
+        if (pTxnQ->hBusDrv)
         {
             busDrv_Destroy (pTxnQ->hBusDrv);
         }
-        if (pTxnQ->hTxnDoneQueue) 
+        if (pTxnQ->hTxnDoneQueue)
         {
             que_Destroy (pTxnQ->hTxnDoneQueue);
         }
-        os_memoryFree (pTxnQ->hOs, pTxnQ, sizeof(TTxnQObj));     
+        os_memoryFree (pTxnQ->hOs, pTxnQ, sizeof(TTxnQObj));
     }
     return TI_OK;
 }
@@ -218,7 +218,7 @@ void txnQ_Init (TI_HANDLE hTxnQ, TI_HANDLE hOs, TI_HANDLE hReport, TI_HANDLE hCo
     pTxnQ->hContext        = hContext;
 
     /* Create the TxnDone queue. */
-    uNodeHeaderOffset = TI_FIELD_OFFSET(TTxnStruct, tTxnQNode); 
+    uNodeHeaderOffset = TI_FIELD_OFFSET(TTxnStruct, tTxnQNode);
     pTxnQ->hTxnDoneQueue = que_Create (pTxnQ->hOs, pTxnQ->hReport, TXN_DONE_QUE_SIZE, uNodeHeaderOffset);
     if (pTxnQ->hTxnDoneQueue == NULL)
     {
@@ -228,10 +228,10 @@ void txnQ_Init (TI_HANDLE hTxnQ, TI_HANDLE hOs, TI_HANDLE hReport, TI_HANDLE hCo
     busDrv_Init (pTxnQ->hBusDrv, hReport);
 }
 
-TI_STATUS txnQ_ConnectBus (TI_HANDLE  hTxnQ, 
-                           TBusDrvCfg *pBusDrvCfg, 
-                           TTxnDoneCb fConnectCb, 
-                           TI_HANDLE  hConnectCb, 
+TI_STATUS txnQ_ConnectBus (TI_HANDLE  hTxnQ,
+                           TBusDrvCfg *pBusDrvCfg,
+                           TTxnDoneCb fConnectCb,
+                           TI_HANDLE  hConnectCb,
                            TI_UINT32  *pRxDmaBufLen,
                            TI_UINT32  *pTxDmaBufLen)
 {
@@ -252,9 +252,9 @@ TI_STATUS txnQ_DisconnectBus (TI_HANDLE hTxnQ)
     return busDrv_DisconnectBus (pTxnQ->hBusDrv);
 }
 
-TI_STATUS txnQ_Open (TI_HANDLE       hTxnQ, 
-                     TI_UINT32       uFuncId, 
-                     TI_UINT32       uNumPrios, 
+TI_STATUS txnQ_Open (TI_HANDLE       hTxnQ,
+                     TI_UINT32       uFuncId,
+                     TI_UINT32       uNumPrios,
                      TTxnQueueDoneCb fTxnQueueDoneCb,
                      TI_HANDLE       hCbHandle)
 {
@@ -262,7 +262,7 @@ TI_STATUS txnQ_Open (TI_HANDLE       hTxnQ,
     TI_UINT32     uNodeHeaderOffset;
     TI_UINT32     i;
 
-    if (uFuncId >= MAX_FUNCTIONS  ||  uNumPrios > MAX_PRIORITY) 
+    if (uFuncId >= MAX_FUNCTIONS  ||  uNumPrios > MAX_PRIORITY)
     {
         TRACE2(pTxnQ->hReport, REPORT_SEVERITY_ERROR, ": Invalid Params!  uFuncId = %d, uNumPrios = %d\n", uFuncId, uNumPrios);
         return TI_NOK;
@@ -275,9 +275,9 @@ TI_STATUS txnQ_Open (TI_HANDLE       hTxnQ,
     pTxnQ->aFuncInfo[uFuncId].fTxnQueueDoneCb = fTxnQueueDoneCb;
     pTxnQ->aFuncInfo[uFuncId].hCbHandle       = hCbHandle;
     pTxnQ->aFuncInfo[uFuncId].eState          = FUNC_STATE_STOPPED;
-    
+
     /* Create the functional driver's queues. */
-    uNodeHeaderOffset = TI_FIELD_OFFSET(TTxnStruct, tTxnQNode); 
+    uNodeHeaderOffset = TI_FIELD_OFFSET(TTxnStruct, tTxnQNode);
     for (i = 0; i < uNumPrios; i++)
     {
         pTxnQ->aTxnQueues[uFuncId][i] = que_Create (pTxnQ->hOs, pTxnQ->hReport, TXN_QUE_SIZE, uNodeHeaderOffset);
@@ -290,11 +290,11 @@ TI_STATUS txnQ_Open (TI_HANDLE       hTxnQ,
     }
 
     /* Update functions actual range (to optimize Txn selection loops - see txnQ_SelectTxn) */
-    if (uFuncId < pTxnQ->uMinFuncId) 
+    if (uFuncId < pTxnQ->uMinFuncId)
     {
         pTxnQ->uMinFuncId = uFuncId;
     }
-    if (uFuncId > pTxnQ->uMaxFuncId) 
+    if (uFuncId > pTxnQ->uMaxFuncId)
     {
         pTxnQ->uMaxFuncId = uFuncId;
     }
@@ -324,19 +324,19 @@ void txnQ_Close (TI_HANDLE  hTxnQ, TI_UINT32 uFuncId)
     pTxnQ->aFuncInfo[uFuncId].fTxnQueueDoneCb = NULL;
     pTxnQ->aFuncInfo[uFuncId].hCbHandle       = NULL;
     pTxnQ->aFuncInfo[uFuncId].eState          = FUNC_STATE_NONE;
-    
+
     /* Update functions actual range (to optimize Txn selection loops - see txnQ_SelectTxn) */
-    pTxnQ->uMinFuncId      = MAX_FUNCTIONS; 
-    pTxnQ->uMaxFuncId      = 0;             
-    for (i = 0; i < MAX_FUNCTIONS; i++) 
+    pTxnQ->uMinFuncId      = MAX_FUNCTIONS;
+    pTxnQ->uMaxFuncId      = 0;
+    for (i = 0; i < MAX_FUNCTIONS; i++)
     {
-        if (pTxnQ->aFuncInfo[i].eState != FUNC_STATE_NONE) 
+        if (pTxnQ->aFuncInfo[i].eState != FUNC_STATE_NONE)
         {
-            if (i < pTxnQ->uMinFuncId) 
+            if (i < pTxnQ->uMinFuncId)
             {
                 pTxnQ->uMinFuncId = i;
             }
-            if (i > pTxnQ->uMaxFuncId) 
+            if (i > pTxnQ->uMaxFuncId)
             {
                 pTxnQ->uMaxFuncId = i;
             }
@@ -357,7 +357,7 @@ ETxnStatus txnQ_Restart (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
     context_EnterCriticalSection (pTxnQ->hContext);
 
     /* If a Txn from the calling function is in progress, set state to RESTART return PENDING */
-    if (pTxnQ->pCurrTxn) 
+    if (pTxnQ->pCurrTxn)
     {
         if (TXN_PARAM_GET_FUNC_ID(pTxnQ->pCurrTxn) == uFuncId)
         {
@@ -387,7 +387,7 @@ void txnQ_Run (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
 
 #ifdef TI_DBG
     TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_Run()\n");
-    if (pTxnQ->aFuncInfo[uFuncId].eState != FUNC_STATE_STOPPED) 
+    if (pTxnQ->aFuncInfo[uFuncId].eState != FUNC_STATE_STOPPED)
     {
         TRACE2(pTxnQ->hReport, REPORT_SEVERITY_WARNING, "txnQ_Run(): Called while func %d state is %d!\n", uFuncId, pTxnQ->aFuncInfo[uFuncId].eState);
     }
@@ -397,7 +397,7 @@ void txnQ_Run (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
     pTxnQ->aFuncInfo[uFuncId].eState = FUNC_STATE_RUNNING;
 
     /* Send queued transactions as possible */
-    txnQ_RunScheduler (pTxnQ, NULL); 
+    txnQ_RunScheduler (pTxnQ, NULL);
 }
 
 void txnQ_Stop (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
@@ -406,7 +406,7 @@ void txnQ_Stop (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
 
 #ifdef TI_DBG
     TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_Stop()\n");
-    if (pTxnQ->aFuncInfo[uFuncId].eState != FUNC_STATE_RUNNING) 
+    if (pTxnQ->aFuncInfo[uFuncId].eState != FUNC_STATE_RUNNING)
     {
         TRACE2(pTxnQ->hReport, REPORT_SEVERITY_ERROR, "txnQ_Stop(): Called while func %d state is %d!\n", uFuncId, pTxnQ->aFuncInfo[uFuncId].eState);
     }
@@ -422,12 +422,12 @@ ETxnStatus txnQ_Transact (TI_HANDLE hTxnQ, TTxnStruct *pTxn)
     TI_UINT32    uFuncId = TXN_PARAM_GET_FUNC_ID(pTxn);
     ETxnStatus   rc;
 
-    if (TXN_PARAM_GET_SINGLE_STEP(pTxn)) 
+    if (TXN_PARAM_GET_SINGLE_STEP(pTxn))
     {
         pTxnQ->aFuncInfo[uFuncId].pSingleStep = pTxn;
         TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_Transact(): Single step Txn\n");
     }
-    else 
+    else
     {
         TI_STATUS eStatus;
         TI_HANDLE hQueue = pTxnQ->aTxnQueues[uFuncId][TXN_PARAM_GET_PRIORITY(pTxn)];
@@ -443,24 +443,24 @@ ETxnStatus txnQ_Transact (TI_HANDLE hTxnQ, TTxnStruct *pTxn)
     }
 
     /* Send queued transactions as possible */
-    rc = txnQ_RunScheduler (pTxnQ, pTxn); 
+    rc = txnQ_RunScheduler (pTxnQ, pTxn);
 
     return rc;
 }
 
 
-/** 
+/**
  * \fn     txnQ_ConnectCB
  * \brief  Pending Connection completion CB
- * 
+ *
  *  txnQ_ConnectBus CB
- * 
- * \note   
+ *
+ * \note
  * \param  hTxnQ - The module's object
- * \param  pTxn  - The completed transaction object 
+ * \param  pTxn  - The completed transaction object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void txnQ_ConnectCB (TI_HANDLE hTxnQ, void *hTxn)
 {
     TTxnQObj   *pTxnQ   = (TTxnQObj*)hTxnQ;
@@ -470,19 +470,19 @@ static void txnQ_ConnectCB (TI_HANDLE hTxnQ, void *hTxn)
 }
 
 
-/** 
+/**
  * \fn     txnQ_TxnDoneCb
  * \brief  Pending Transaction completion CB
- * 
+ *
  * Called back by bus-driver upon pending transaction completion in TxnDone context (external!).
  * Enqueue completed transaction in TxnDone queue and call scheduler to send queued transactions.
- * 
- * \note   
+ *
+ * \note
  * \param  hTxnQ - The module's object
- * \param  pTxn  - The completed transaction object 
+ * \param  pTxn  - The completed transaction object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void txnQ_TxnDoneCb (TI_HANDLE hTxnQ, void *hTxn)
 {
     TTxnQObj   *pTxnQ   = (TTxnQObj*)hTxnQ;
@@ -491,14 +491,14 @@ static void txnQ_TxnDoneCb (TI_HANDLE hTxnQ, void *hTxn)
 
 #ifdef TI_DBG
     TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_TxnDoneCb()\n");
-    if (pTxn != pTxnQ->pCurrTxn) 
+    if (pTxn != pTxnQ->pCurrTxn)
     {
         TRACE2(pTxnQ->hReport, REPORT_SEVERITY_ERROR, "txnQ_TxnDoneCb(): CB returned pTxn 0x%x  while pCurrTxn is 0x%x !!\n", pTxn, pTxnQ->pCurrTxn);
     }
 #endif
 
     /* If the function of the completed Txn is waiting for restart */
-    if (pTxnQ->aFuncInfo[uFuncId].eState == FUNC_STATE_RESTART) 
+    if (pTxnQ->aFuncInfo[uFuncId].eState == FUNC_STATE_RESTART)
     {
         TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_TxnDoneCb(): Handling restart\n");
 
@@ -511,7 +511,7 @@ static void txnQ_TxnDoneCb (TI_HANDLE hTxnQ, void *hTxn)
     }
 
     /* In the normal case (no restart), enqueue completed transaction in TxnDone queue */
-    else 
+    else
     {
         TI_STATUS eStatus;
 
@@ -528,29 +528,29 @@ static void txnQ_TxnDoneCb (TI_HANDLE hTxnQ, void *hTxn)
     pTxnQ->pCurrTxn = NULL;
 
     /* Send queued transactions as possible (TRUE indicates we are in external context) */
-    txnQ_RunScheduler (pTxnQ, NULL); 
+    txnQ_RunScheduler (pTxnQ, NULL);
 }
 
 
-/** 
+/**
  * \fn     txnQ_RunScheduler
  * \brief  Send queued transactions
- * 
+ *
  * Run the scheduler, which issues transactions as long as possible.
  * Since this function is called from either internal or external (TxnDone) context,
  *   it handles reentry by setting a bSchedulerPend flag, and running the scheduler again
  *   when its current iteration is finished.
- * 
- * \note   
+ *
+ * \note
  * \param  pTxnQ     - The module's object
  * \param  pInputTxn - The transaction inserted in the current context (NULL if none)
  * \return COMPLETE if pCurrTxn completed in this context, PENDING if not, ERROR if failed
- * \sa     
- */ 
+ * \sa
+ */
 static ETxnStatus txnQ_RunScheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
 {
-    TI_BOOL bFirstIteration;  
-	ETxnStatus eStatus = TXN_STATUS_NONE;
+    TI_BOOL bFirstIteration;
+    ETxnStatus eStatus = TXN_STATUS_NONE;
 
     TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_RunScheduler()\n");
 
@@ -570,22 +570,22 @@ static ETxnStatus txnQ_RunScheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
 
     context_LeaveCriticalSection (pTxnQ->hContext);
 
-    bFirstIteration = TI_TRUE;  
+    bFirstIteration = TI_TRUE;
 
-    /* 
-     * Run the scheduler while it has work to do 
+    /*
+     * Run the scheduler while it has work to do
      */
     while (1)
     {
         /* If first scheduler iteration, save its return code to return the original Txn result */
-        if (bFirstIteration) 
+        if (bFirstIteration)
         {
             eStatus = txnQ_Scheduler (pTxnQ, pInputTxn);
             bFirstIteration = TI_FALSE;
         }
         /* This is for handling pending calls when the scheduler was busy (see above) */
-        else 
-        {    
+        else
+        {
             TRACE0(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_RunScheduler(): Handle pending scheduler call\n");
             txnQ_Scheduler (pTxnQ, NULL);
         }
@@ -593,7 +593,7 @@ static ETxnStatus txnQ_RunScheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
         context_EnterCriticalSection (pTxnQ->hContext);
 
         /* If no pending calls, clear the busy flag and return the original caller Txn status */
-        if (!pTxnQ->bSchedulerPend) 
+        if (!pTxnQ->bSchedulerPend)
         {
             pTxnQ->bSchedulerBusy = TI_FALSE;
             context_LeaveCriticalSection (pTxnQ->hContext);
@@ -606,32 +606,33 @@ static ETxnStatus txnQ_RunScheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
 }
 
 
-/** 
+/**
  * \fn     txnQ_Scheduler
  * \brief  Send queued transactions
- * 
+ *
  * Issue transactions as long as they are available and the bus is not occupied.
  * Call CBs of completed transactions, except completion of pInputTxn (covered by the return value).
  * Note that this function is called from either internal or external (TxnDone) context.
  * However, the txnQ_RunScheduler which calls it, prevents scheduler reentry.
- * 
- * \note   
+ *
+ * \note
  * \param  pTxnQ     - The module's object
  * \param  pInputTxn - The transaction inserted in the current context (NULL if none)
  * \return COMPLETE if pInputTxn completed in this context, PENDING if not, ERROR if failed
  * \sa     txnQ_RunScheduler
- */ 
+ */
 static ETxnStatus txnQ_Scheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
 {
-    ETxnStatus eInputTxnStatus;  
+    ETxnStatus eInputTxnStatus;
 
     /* Use as return value the status of the input transaction (PENDING unless sent and completed here) */
-    eInputTxnStatus = TXN_STATUS_PENDING;  
+    eInputTxnStatus = TXN_STATUS_PENDING;
 
     /* if a previous transaction is in progress, return PENDING */
     if (pTxnQ->pCurrTxn)
     {
         TRACE1(pTxnQ->hReport, REPORT_SEVERITY_INFORMATION, "txnQ_Scheduler(): pCurrTxn isn't null (0x%x) so exit\n", pTxnQ->pCurrTxn);
+
         return TXN_STATUS_PENDING;
     }
 
@@ -685,7 +686,7 @@ static ETxnStatus txnQ_Scheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
         }
 
         /* If pending Exit loop! */
-        else 
+        else
         {
             break;
         }
@@ -720,18 +721,18 @@ static ETxnStatus txnQ_Scheduler (TTxnQObj *pTxnQ, TTxnStruct *pInputTxn)
 }
 
 
-/** 
+/**
  * \fn     txnQ_SelectTxn
  * \brief  Select transaction to send
- * 
+ *
  * Called from txnQ_RunScheduler() which is protected in critical section.
  * Select the next enabled transaction by priority.
- * 
- * \note   
+ *
+ * \note
  * \param  pTxnQ - The module's object
  * \return The selected transaction to send (NULL if none available)
- * \sa     
- */ 
+ * \sa
+ */
 static TTxnStruct *txnQ_SelectTxn (TTxnQObj *pTxnQ)
 {
     TTxnStruct *pSelectedTxn;
@@ -746,10 +747,10 @@ static TTxnStruct *txnQ_SelectTxn (TTxnQObj *pTxnQ)
         if (pSelectedTxn != NULL)
         {
             /* If aggregation ended, reset the aggregation-queue pointer */
-            if (TXN_PARAM_GET_AGGREGATE(pSelectedTxn) == TXN_AGGREGATE_OFF) 
+            if (TXN_PARAM_GET_AGGREGATE(pSelectedTxn) == TXN_AGGREGATE_OFF)
             {
                 if ((TXN_PARAM_GET_FIXED_ADDR(pSelectedTxn) != TXN_FIXED_ADDR) ||
-                    (TXN_PARAM_GET_DIRECTION(pSelectedTxn)  != TXN_DIRECTION_WRITE))
+                        (TXN_PARAM_GET_DIRECTION(pSelectedTxn)  != TXN_DIRECTION_WRITE))
                 {
                     TRACE2(pTxnQ->hReport, REPORT_SEVERITY_ERROR, "txnQ_SelectTxn: Mixed transaction during aggregation, HwAddr=0x%x, TxnParams=0x%x\n", pSelectedTxn->uHwAddr, pSelectedTxn->uTxnParams);
                 }
@@ -780,7 +781,7 @@ static TTxnStruct *txnQ_SelectTxn (TTxnQObj *pTxnQ)
         {
             /* If function running and uses this priority */
             if (pTxnQ->aFuncInfo[uFunc].eState == FUNC_STATE_RUNNING  &&
-                pTxnQ->aFuncInfo[uFunc].uNumPrios > uPrio)
+                    pTxnQ->aFuncInfo[uFunc].uNumPrios > uPrio)
             {
                 /* Dequeue Txn from current func and priority queue, and if not NULL return it */
                 pSelectedTxn = (TTxnStruct *) que_Dequeue (pTxnQ->aTxnQueues[uFunc][uPrio]);
@@ -788,7 +789,7 @@ static TTxnStruct *txnQ_SelectTxn (TTxnQObj *pTxnQ)
                 {
 #ifdef TI_DBG
                     /* If aggregation begins, save the aggregation-queue pointer to ensure continuity */
-                    if (TXN_PARAM_GET_AGGREGATE(pSelectedTxn) == TXN_AGGREGATE_ON) 
+                    if (TXN_PARAM_GET_AGGREGATE(pSelectedTxn) == TXN_AGGREGATE_ON)
                     {
                         pTxnQ->pAggregQueue = pTxnQ->aTxnQueues[uFunc][uPrio];
                     }
@@ -824,9 +825,9 @@ void txnQ_ClearQueues (TI_HANDLE hTxnQ, TI_UINT32 uFuncId)
 
             /* If NULL Txn (queue empty), exit while loop */
 
-            /* 
-             * Drop on Restart 
-             * do not call fTxnQueueDoneCb (hCbHandle, pTxn) callback 
+            /*
+             * Drop on Restart
+             * do not call fTxnQueueDoneCb (hCbHandle, pTxn) callback
              */
         }
         while (pTxn != NULL);

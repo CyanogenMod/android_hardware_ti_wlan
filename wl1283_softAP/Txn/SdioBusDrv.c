@@ -31,12 +31,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- 
-/** \file   SdioBusDrv.c 
- *  \brief  The SDIO bus driver upper layer. Platform independent. 
- *          Uses the SdioAdapter API. 
+
+/** \file   SdioBusDrv.c
+ *  \brief  The SDIO bus driver upper layer. Platform independent.
+ *          Uses the SdioAdapter API.
  *          Introduces a generic bus-independent API upwards.
- *  
+ *
  *  \see    BusDrv.h, SdioAdapter.h, SdioAdapter.c
  */
 
@@ -61,7 +61,7 @@
  * Types
  ************************************************************************/
 
-/* A single SDIO bus transaction which is a part of a complete transaction (TTxnStruct) */ 
+/* A single SDIO bus transaction which is a part of a complete transaction (TTxnStruct) */
 typedef struct
 {
     TI_BOOL          bBlkMode;           /* If TRUE this is a block-mode SDIO transaction */
@@ -69,17 +69,17 @@ typedef struct
     TI_UINT32        uHwAddr;            /* The device address to write to or read from */
     void *           pHostAddr;          /* The host buffer address to write from or read into */
     TI_BOOL          bMore;              /* If TRUE, indicates the lower driver to keep awake for more transactions */
-} TTxnPart; 
+} TTxnPart;
 
 
 /* The busDrv module Object */
 typedef struct _TBusDrvObj
 {
-    TI_HANDLE	     hOs;		   	 
+    TI_HANDLE	     hOs;
     TI_HANDLE	     hReport;
 
-	TBusDrvTxnDoneCb fTxnDoneCb;         /* The callback to call upon full transaction completion. */
-	TI_HANDLE        hCbHandle;          /* The callback handle */
+    TBusDrvTxnDoneCb fTxnDoneCb;         /* The callback to call upon full transaction completion. */
+    TI_HANDLE        hCbHandle;          /* The callback handle */
     TTxnStruct *     pCurrTxn;           /* The transaction currently being processed */
     ETxnStatus       eCurrTxnStatus;     /* COMPLETE, PENDING or ERROR */
     TTxnPart         aTxnParts[MAX_TXN_PARTS]; /* The actual bus transactions of current transaction */
@@ -104,7 +104,7 @@ typedef struct _TBusDrvObj
 static TI_BOOL  busDrv_PrepareTxnParts  (TBusDrvObj *pBusDrv, TTxnStruct *pTxn);
 static void     busDrv_SendTxnParts     (TBusDrvObj *pBusDrv);
 static void     busDrv_TxnDoneCb        (TI_HANDLE hBusDrv, TI_INT32 status);
- 
+
 
 
 /************************************************************************
@@ -113,17 +113,17 @@ static void     busDrv_TxnDoneCb        (TI_HANDLE hBusDrv, TI_INT32 status);
  *
  ************************************************************************/
 
-/** 
- * \fn     busDrv_Create 
+/**
+ * \fn     busDrv_Create
  * \brief  Create the module
- * 
+ *
  * Create and clear the bus driver's object, and the SDIO-adapter.
- * 
- * \note   
+ *
+ * \note
  * \param  hOs - Handle to Os Abstraction Layer
- * \return Handle of the allocated object, NULL if allocation failed 
+ * \return Handle of the allocated object, NULL if allocation failed
  * \sa     busDrv_Destroy
- */ 
+ */
 TI_HANDLE busDrv_Create (TI_HANDLE hOs)
 {
     TI_HANDLE   hBusDrv;
@@ -134,52 +134,52 @@ TI_HANDLE busDrv_Create (TI_HANDLE hOs)
     {
         return NULL;
     }
-    
+
     pBusDrv = (TBusDrvObj *)hBusDrv;
 
     os_memoryZero(hOs, hBusDrv, sizeof(TBusDrvObj));
-    
+
     pBusDrv->hOs = hOs;
 
     return pBusDrv;
 }
 
 
-/** 
+/**
  * \fn     busDrv_Destroy
- * \brief  Destroy the module. 
- * 
+ * \brief  Destroy the module.
+ *
  * Close SDIO lower bus driver and free the module's object.
- * 
- * \note   
+ *
+ * \note
  * \param  The module's object
- * \return TI_OK on success or TI_NOK on failure 
+ * \return TI_OK on success or TI_NOK on failure
  * \sa     busDrv_Create
- */ 
+ */
 TI_STATUS busDrv_Destroy (TI_HANDLE hBusDrv)
 {
     TBusDrvObj *pBusDrv = (TBusDrvObj*)hBusDrv;
 
     if (pBusDrv)
     {
-        os_memoryFree (pBusDrv->hOs, pBusDrv, sizeof(TBusDrvObj));     
+        os_memoryFree (pBusDrv->hOs, pBusDrv, sizeof(TBusDrvObj));
     }
     return TI_OK;
 }
 
 
-/** 
+/**
  * \fn     busDrv_Init
- * \brief  Init bus driver 
- * 
+ * \brief  Init bus driver
+ *
  * Init module parameters.
 
- * \note   
+ * \note
  * \param  hBusDrv - The module's handle
  * \param  hReport - report module handle
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 void busDrv_Init (TI_HANDLE hBusDrv, TI_HANDLE hReport)
 {
     TBusDrvObj *pBusDrv = (TBusDrvObj*) hBusDrv;
@@ -188,27 +188,27 @@ void busDrv_Init (TI_HANDLE hBusDrv, TI_HANDLE hReport)
 }
 
 
-/** 
+/**
  * \fn     busDrv_ConnectBus
  * \brief  Configure bus driver
- * 
+ *
  * Called by TxnQ.
- * Configure the bus driver with its connection configuration (such as baud-rate, bus width etc) 
- *     and establish the physical connection. 
- * Done once upon init (and not per functional driver startup). 
- * 
- * \note   
+ * Configure the bus driver with its connection configuration (such as baud-rate, bus width etc)
+ *     and establish the physical connection.
+ * Done once upon init (and not per functional driver startup).
+ *
+ * \note
  * \param  hBusDrv    - The module's object
- * \param  pBusDrvCfg - A union used for per-bus specific configuration. 
+ * \param  pBusDrvCfg - A union used for per-bus specific configuration.
  * \param  fCbFunc    - CB function for Async transaction completion (after all txn parts are completed).
  * \param  hCbArg     - The CB function handle
  * \param  fConnectCbFunc - The CB function for the connect bus competion (if returned Pending)
  * \param  pRxDmaBufLen - The Rx DMA buffer length in bytes (needed as a limit of the Tx/Rx aggregation length)
  * \param  pTxDmaBufLen - The Tx DMA buffer length in bytes (needed as a limit of the Tx/Rx aggregation length)
  * \return TI_OK / TI_NOK
- * \sa     
- */ 
-TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv, 
+ * \sa
+ */
+TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv,
                              TBusDrvCfg       *pBusDrvCfg,
                              TBusDrvTxnDoneCb fCbFunc,
                              TI_HANDLE        hCbArg,
@@ -230,17 +230,17 @@ TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv,
     pBusDrv->uCurrTxnPartsNum = 0;
     pBusDrv->uCurrTxnPartsCountSync = 0;
     pBusDrv->uTxnLength = 0;
-	
-    /* 
+
+    /*
      * Configure the SDIO driver parameters and handle SDIO enumeration.
      *
-     * Note: The DMA-able buffer address to use for write transactions is provided from the 
+     * Note: The DMA-able buffer address to use for write transactions is provided from the
      *           SDIO driver into pBusDrv->pDmaBuffer.
      */
 
     iStatus = sdioAdapt_ConnectBus ((void *)busDrv_TxnDoneCb,
-                                    hBusDrv, 
-                                    pBusDrv->uBlkSizeShift, 
+                                    hBusDrv,
+                                    pBusDrv->uBlkSizeShift,
                                     pBusDrvCfg->tSdioCfg.uBusDrvThreadPriority,
                                     &pBusDrv->pRxDmaBuf,
                                     &pBusDrv->uRxDmaBufLen,
@@ -256,11 +256,11 @@ TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv,
         return TI_NOK;
     }
 
-    if (iStatus == 0) 
+    if (iStatus == 0)
     {
         return TI_OK;
     }
-    else 
+    else
     {
         TRACE2(pBusDrv->hReport, REPORT_SEVERITY_ERROR, "busDrv_ConnectBus: Status = 0x%x, BlkSize = %d\n", iStatus, pBusDrv->uBlkSize);
         return TI_NOK;
@@ -268,17 +268,17 @@ TI_STATUS busDrv_ConnectBus (TI_HANDLE        hBusDrv,
 }
 
 
-/** 
+/**
  * \fn     busDrv_DisconnectBus
  * \brief  Disconnect SDIO driver
- * 
+ *
  * Called by TxnQ. Disconnect the SDIO driver.
- *  
- * \note   
+ *
+ * \note
  * \param  hBusDrv - The module's object
  * \return TI_OK / TI_NOK
- * \sa     
- */ 
+ * \sa
+ */
 TI_STATUS busDrv_DisconnectBus (TI_HANDLE hBusDrv)
 {
     TBusDrvObj *pBusDrv = (TBusDrvObj*)hBusDrv;
@@ -290,20 +290,20 @@ TI_STATUS busDrv_DisconnectBus (TI_HANDLE hBusDrv)
 }
 
 
-/** 
+/**
  * \fn     busDrv_Transact
- * \brief  Process transaction 
- * 
+ * \brief  Process transaction
+ *
  * Called by the TxnQ module to initiate a new transaction.
  * Prepare the transaction parts (lower layer single transactions),
  *      and send them one by one to the lower layer.
- * 
+ *
  * \note   It's assumed that this function is called only when idle (i.e. previous Txn is done).
  * \param  hBusDrv - The module's object
- * \param  pTxn    - The transaction object 
+ * \param  pTxn    - The transaction object
  * \return COMPLETE if Txn completed in this context, PENDING if not, ERROR if failed
  * \sa     busDrv_PrepareTxnParts, busDrv_SendTxnParts
- */ 
+ */
 ETxnStatus busDrv_Transact (TI_HANDLE hBusDrv, TTxnStruct *pTxn)
 {
     TBusDrvObj *pBusDrv = (TBusDrvObj*)hBusDrv;
@@ -339,22 +339,22 @@ ETxnStatus busDrv_Transact (TI_HANDLE hBusDrv, TTxnStruct *pTxn)
 }
 
 
-/** 
+/**
  * \fn     busDrv_PrepareTxnParts
  * \brief  Prepare write or read transaction parts
- * 
+ *
  * Called by busDrv_Transact().
  * Prepares the actual sequence of SDIO bus transactions in a table.
- * Use a DMA-able buffer for the bus transaction, so all data is copied 
- *     to it from the host buffer(s) before write transactions, 
+ * Use a DMA-able buffer for the bus transaction, so all data is copied
+ *     to it from the host buffer(s) before write transactions,
  *     or copied from it to the host buffers after read transactions.
- * 
- * \note   
+ *
+ * \note
  * \param  pBusDrv - The module's object
- * \param  pTxn    - The transaction object 
+ * \param  pTxn    - The transaction object
  * \return TRUE if we are in the middle of a Tx aggregation
- * \sa     busDrv_Transact, busDrv_SendTxnParts, 
- */ 
+ * \sa     busDrv_Transact, busDrv_SendTxnParts,
+ */
 static TI_BOOL busDrv_PrepareTxnParts (TBusDrvObj *pBusDrv, TTxnStruct *pTxn)
 {
     TI_UINT32 uPartNum     = 0;
@@ -367,7 +367,7 @@ static TI_BOOL busDrv_PrepareTxnParts (TBusDrvObj *pBusDrv, TTxnStruct *pTxn)
     TI_UINT32 uRemainderLen;
 
     /* Go over the transaction buffers */
-    for (uBufNum = 0; uBufNum < MAX_XFER_BUFS; uBufNum++) 
+    for (uBufNum = 0; uBufNum < MAX_XFER_BUFS; uBufNum++)
     {
         uBufLen = pTxn->aLen[uBufNum];
 
@@ -378,7 +378,7 @@ static TI_BOOL busDrv_PrepareTxnParts (TBusDrvObj *pBusDrv, TTxnStruct *pTxn)
         }
 
         /* For write transaction, copy the data to the DMA buffer */
-        if (bWrite) 
+        if (bWrite)
         {
             os_memoryCopy (pBusDrv->hOs, pHostBuf + pBusDrv->uTxnLength, pTxn->aBuf[uBufNum], uBufLen);
         }
@@ -393,7 +393,7 @@ static TI_BOOL busDrv_PrepareTxnParts (TBusDrvObj *pBusDrv, TTxnStruct *pTxn)
         TRACE6(pBusDrv->hReport, REPORT_SEVERITY_INFORMATION, "busDrv_PrepareTxnParts: In aggregation so exit, uTxnLength=%d, bWrite=%d, Len0=%d, Len1=%d, Len2=%d, Len3=%d\n", pBusDrv->uTxnLength, bWrite, pTxn->aLen[0], pTxn->aLen[1], pTxn->aLen[2], pTxn->aLen[3]);
         return TI_TRUE;
     }
-    
+
     /* If current buffer has a remainder, prepare its transaction part */
     uRemainderLen = pBusDrv->uTxnLength & pBusDrv->uBlkSizeMask;
     if (uRemainderLen > 0)
@@ -466,20 +466,20 @@ static TI_BOOL busDrv_PrepareTxnParts (TBusDrvObj *pBusDrv, TTxnStruct *pTxn)
 }
 
 
-/** 
+/**
  * \fn     busDrv_SendTxnParts
  * \brief  Send prepared transaction parts
- * 
+ *
  * Called first by busDrv_Transact(), and also from TxnDone CB after Async completion.
  * Sends the prepared transaction parts in a loop.
  * If a transaction part is Async, the loop continues later in the TxnDone ISR context.
  * When all parts are done, the upper layer TxnDone CB is called.
- * 
- * \note   
+ *
+ * \note
  * \param  pBusDrv - The module's object
  * \return void
  * \sa     busDrv_Transact, busDrv_PrepareTxnParts
- */ 
+ */
 static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
 {
     ETxnStatus  eStatus;
@@ -493,10 +493,10 @@ static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
         pBusDrv->uCurrTxnPartsCount++;
 
         /* Assume pending to be ready in case we are preempted by the TxnDon CB !! */
-        pBusDrv->eCurrTxnStatus = TXN_STATUS_PENDING;   
+        pBusDrv->eCurrTxnStatus = TXN_STATUS_PENDING;
 
         /* If single step, send ELP byte */
-        if (TXN_PARAM_GET_SINGLE_STEP(pTxn)) 
+        if (TXN_PARAM_GET_SINGLE_STEP(pTxn))
         {
             /* Overwrite the function id with function 0 - for ELP register !!!! */
             eStatus = sdioAdapt_TransactBytes (TXN_FUNC_ID_CTRL,
@@ -536,7 +536,7 @@ static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
         /* If pending TxnDone (Async), continue this loop in the next TxnDone interrupt */
         if (eStatus == TXN_STATUS_PENDING)
         {
-            return; 
+            return;
         }
 
         /* Update current transaction status to deduce if it is all finished in the original context (Sync) or not. */
@@ -551,7 +551,7 @@ static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
             {
                 pBusDrv->fTxnDoneCb (pBusDrv->hCbHandle, pTxn);
             }
-        	return;
+            return;
         }
     }
 
@@ -559,27 +559,27 @@ static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
     TRACE3(pBusDrv->hReport, REPORT_SEVERITY_INFORMATION, "busDrv_SendTxnParts: Txn finished successfully, Status = %d, PartsCount = %d, SyncCount = %d\n", pBusDrv->eCurrTxnStatus, pBusDrv->uCurrTxnPartsCount, pBusDrv->uCurrTxnPartsCountSync);
 
     /* For read transaction, copy the data from the DMA-able buffer to the host buffer(s) */
-    if (TXN_PARAM_GET_DIRECTION(pTxn) == TXN_DIRECTION_READ) 
+    if (TXN_PARAM_GET_DIRECTION(pTxn) == TXN_DIRECTION_READ)
     {
         TI_UINT32 uBufNum;
         TI_UINT32 uBufLen;
         TI_UINT8 *pDmaBuf = pBusDrv->pRxDmaBuf; /* After the read transaction the data is in the Rx DMA buffer */
 
-        for (uBufNum = 0; uBufNum < MAX_XFER_BUFS; uBufNum++) 
+        for (uBufNum = 0; uBufNum < MAX_XFER_BUFS; uBufNum++)
         {
             uBufLen = pTxn->aLen[uBufNum];
-    
+
             /* If no more buffers, exit the loop */
             if (uBufLen == 0)
             {
                 break;
             }
-    
+
             os_memoryCopy (pBusDrv->hOs, pTxn->aBuf[uBufNum], pDmaBuf, uBufLen);
             pDmaBuf += uBufLen;
         }
     }
-    
+
     /* Set status OK in Txn struct, and call TxnDone CB if not fully sync */
     if (pBusDrv->uCurrTxnPartsCountSync != pBusDrv->uCurrTxnPartsCount)
     {
@@ -588,19 +588,19 @@ static void busDrv_SendTxnParts (TBusDrvObj *pBusDrv)
 }
 
 
-/** 
+/**
  * \fn     busDrv_TxnDoneCb
  * \brief  Continue async transaction processing (CB)
- * 
+ *
  * Called back by the lower (BSP) bus-driver upon Async transaction completion (TxnDone ISR).
  * Call busDrv_SendTxnParts to continue sending the remained transaction parts.
- * 
- * \note   
+ *
+ * \note
  * \param  hBusDrv - The module's object
  * \param  status  - The last transaction result - 0 = OK, else Error
  * \return void
  * \sa     busDrv_SendTxnParts
- */ 
+ */
 static void busDrv_TxnDoneCb (TI_HANDLE hBusDrv, int iStatus)
 {
     TBusDrvObj *pBusDrv = (TBusDrvObj*)hBusDrv;

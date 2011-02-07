@@ -246,6 +246,10 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
                                    CON_LAST_PARM };
               Console_AddToken(pTiCon->hConsole, h1, (PS8)"hosTapd command",  (PS8)"HosTapd command", (FuncToken_t) CuCmd_ApRoleSendCmdToHostapd, aaa );
         }
+        {
+		ConParm_t aaa[]  = { { (PS8)"Pass beacons to driver", CON_PARM_RANGE, 0, 1, 1 }, CON_LAST_PARM };
+		Console_AddToken(pTiCon->hConsole, h1, (PS8)"wants_Beacons",  (PS8)"whether FW should pass beacons to driver", (FuncToken_t) CuCmd_ApRoleCfgWantsBeacons, aaa );
+        }
 	}
 
 

@@ -87,17 +87,17 @@ extern void enable_irq(unsigned int);
 
 /****************************************************************************************
  *                                                                                      *
- *                      OS Report API                                                   *       
+ *                      OS Report API                                                   *
  *                                                                                      *
  ****************************************************************************************/
 static void SendLoggerData (TI_HANDLE OsContext, TI_UINT8 *pMsg, TI_UINT16 len)
-{    
+{
     TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
 
     if (len > 0)
     {
         EvHandlerSendEvent(drv->tCommon.hEvHandler, IPC_EVENT_LOGGER, pMsg, len);
-    }   
+    }
 }
 
 void os_setDebugOutputToLogger(TI_BOOL value)
@@ -132,15 +132,15 @@ void os_unregisterLoggerEvent(TI_HANDLE hOs, TI_HANDLE hLoggerEventId)
 }
 
 /****************************************************************************************
- *                        os_setDebugMode()                                 
+ *                        os_setDebugMode()
  ****************************************************************************************
-DESCRIPTION:    Set the Debug Mode 
+DESCRIPTION:    Set the Debug Mode
 
-INPUT:            
+INPUT:
 
-RETURN:         None   
+RETURN:         None
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_setDebugMode(TI_BOOL enable)
 {
@@ -149,27 +149,27 @@ void os_setDebugMode(TI_BOOL enable)
 
 
 /****************************************************************************************
- *                        os_printf()                                 
+ *                        os_printf()
  ****************************************************************************************
-DESCRIPTION:    Print formatted output. 
+DESCRIPTION:    Print formatted output.
 
 INPUT:          format -  Specifies the string, to be printed
 
-RETURN:         None   
+RETURN:         None
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_printf(const char *format ,...)
 {
-   static int from_new_line = 1;        /* Used to save the last message EOL */
-   va_list ap;
-   static char msg[MAX_MESSAGE_SIZE];
-   char *p_msg = msg;                   /* Pointer to the message */
-   TI_UINT16 message_len;                   
-   TI_UINT32 sec = 0;
-   TI_UINT32 uSec = 0;
-   os_memoryZero(NULL,msg, MAX_MESSAGE_SIZE);
-   
+    static int from_new_line = 1;        /* Used to save the last message EOL */
+    va_list ap;
+    static char msg[MAX_MESSAGE_SIZE];
+    char *p_msg = msg;                   /* Pointer to the message */
+    TI_UINT16 message_len;
+    TI_UINT32 sec = 0;
+    TI_UINT32 uSec = 0;
+    os_memoryZero(NULL,msg, MAX_MESSAGE_SIZE);
+
     /* Format the message and keep the message length */
     va_start(ap,format);
     message_len = vsnprintf(&msg[0], sizeof(msg) -1 , format, ap);
@@ -205,7 +205,7 @@ void os_printf(const char *format ,...)
  ****************************************************************************************/
 
 /****************************************************************************************
- *                        os_timerCreate()                                 
+ *                        os_timerCreate()
  ****************************************************************************************
 DESCRIPTION:    This function creates and initializes an OS timer object associated with a
                 caller's pRoutine function.
@@ -217,7 +217,7 @@ ARGUMENTS:      OsContext   - The OS handle
 RETURN:         A handle of the created OS timer.
 
 NOTES:          1) The user's callback is called directly from OS timer context when expired.
-                2) In some OSs, it may be needed to use an intermediate callback in the 
+                2) In some OSs, it may be needed to use an intermediate callback in the
                    osapi layer (use os_timerHandlr for that).
 
 *****************************************************************************************/
@@ -236,15 +236,15 @@ TI_HANDLE os_timerCreate (TI_HANDLE OsContext, fTimerFunction pRoutine, TI_HANDL
 
 
 /****************************************************************************************
- *                        os_timerDestroy()                                 
+ *                        os_timerDestroy()
  ****************************************************************************************
 DESCRIPTION:    This function destroys the OS timer object.
 
-ARGUMENTS:      
+ARGUMENTS:
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_timerDestroy (TI_HANDLE OsContext, TI_HANDLE TimerHandle)
 {
@@ -254,15 +254,15 @@ void os_timerDestroy (TI_HANDLE OsContext, TI_HANDLE TimerHandle)
 
 
 /****************************************************************************************
- *                        os_timerStart()                                 
+ *                        os_timerStart()
  ****************************************************************************************
 DESCRIPTION:    This function start the timer object.
 
-ARGUMENTS:      
+ARGUMENTS:
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_timerStart (TI_HANDLE OsContext, TI_HANDLE TimerHandle, TI_UINT32 DelayMs)
 {
@@ -273,15 +273,15 @@ void os_timerStart (TI_HANDLE OsContext, TI_HANDLE TimerHandle, TI_UINT32 DelayM
 
 
 /****************************************************************************************
- *                        os_stopTimer()                                 
+ *                        os_stopTimer()
  ****************************************************************************************
 DESCRIPTION:    This function stop the timer object.
 
-ARGUMENTS:      
+ARGUMENTS:
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_timerStop (TI_HANDLE OsContext, TI_HANDLE TimerHandle)
 {
@@ -290,15 +290,15 @@ void os_timerStop (TI_HANDLE OsContext, TI_HANDLE TimerHandle)
 
 
 /****************************************************************************************
- *                        os_periodicIntrTimerStart()                                 
+ *                        os_periodicIntrTimerStart()
  ****************************************************************************************
-DESCRIPTION:    This function starts the periodic interrupt mechanism. This mode is used 
+DESCRIPTION:    This function starts the periodic interrupt mechanism. This mode is used
                 when interrupts that usually received from the Fw is now masked, and we are
                 checking for any need of Fw handling in time periods.
 
-ARGUMENTS:      
+ARGUMENTS:
 
-RETURN:         
+RETURN:
 
 NOTES:          Power level of the CHIP should be always awake in this mode (no ELP)
 *****************************************************************************************/
@@ -313,27 +313,27 @@ void os_periodicIntrTimerStart (TI_HANDLE OsContext)
 
 
 /****************************************************************************************
- *                        os_timeStampMs()                                 
+ *                        os_timeStampMs()
  ****************************************************************************************
 DESCRIPTION:    This function returns the number of milliseconds that have elapsed since
                 the system was booted.
 
 ARGUMENTS:      OsContext - our adapter context.
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 TI_UINT32 os_timeStampMs (TI_HANDLE OsContext)
 {
-   struct timeval tv;
-   do_gettimeofday(&tv);
-   return tv.tv_sec*1000 + tv.tv_usec/1000;
+    struct timeval tv;
+    do_gettimeofday(&tv);
+    return tv.tv_sec*1000 + tv.tv_usec/1000;
 }
 
 
 /****************************************************************************************
- *                        os_timeStampUs()                                 
+ *                        os_timeStampUs()
  ****************************************************************************************
 DESCRIPTION:    This function returns the number of microseconds that have elapsed since
                 the system was booted.
@@ -341,29 +341,29 @@ DESCRIPTION:    This function returns the number of microseconds that have elaps
 ARGUMENTS:      OsContext - our adapter context.
                 Note that sometimes this function will be called with NULL(!!!) as argument!
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 TI_UINT32 os_timeStampUs (TI_HANDLE OsContext)
 {
-   struct timeval tv;
-   do_gettimeofday(&tv);
-   return tv.tv_sec*1000000 + tv.tv_usec;
+    struct timeval tv;
+    do_gettimeofday(&tv);
+    return tv.tv_sec*1000000 + tv.tv_usec;
 }
 
 
 /****************************************************************************************
- *                        os_StalluSec()                                 
+ *                        os_StalluSec()
  ****************************************************************************************
 DESCRIPTION:    This function make delay in microseconds.
 
 ARGUMENTS:      OsContext - our adapter context.
                 uSec - delay time in microseconds
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_StalluSec (TI_HANDLE OsContext, TI_UINT32 uSec)
 {
@@ -381,9 +381,9 @@ void os_StalluSec (TI_HANDLE OsContext, TI_UINT32 uSec)
 
 
 /****************************************************************************************
- *                        os_protectCreate()                                 
+ *                        os_protectCreate()
  ****************************************************************************************
-DESCRIPTION:    
+DESCRIPTION:
 
 ARGUMENTS:      OsContext - our adapter context.
 
@@ -391,7 +391,7 @@ RETURN:         A handle of the created mutex/spinlock.
                 TI_HANDLE_INVALID if there is insufficient memory available or problems
                 initializing the mutex
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 TI_HANDLE os_protectCreate (TI_HANDLE OsContext)
 {
@@ -400,15 +400,15 @@ TI_HANDLE os_protectCreate (TI_HANDLE OsContext)
 
 
 /****************************************************************************************
- *                        os_protectDestroy()                                 
+ *                        os_protectDestroy()
  ****************************************************************************************
-DESCRIPTION:        
+DESCRIPTION:
 
 ARGUMENTS:      OsContext - our adapter context.
 
 RETURN:         None - This had better work since there is not a return value to the user
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_protectDestroy (TI_HANDLE OsContext, TI_HANDLE ProtectCtx)
 {
@@ -416,15 +416,15 @@ void os_protectDestroy (TI_HANDLE OsContext, TI_HANDLE ProtectCtx)
 
 
 /****************************************************************************************
- *                        os_protectLock()                                 
+ *                        os_protectLock()
  ****************************************************************************************
-DESCRIPTION:        
+DESCRIPTION:
 
 ARGUMENTS:      OsContext - our adapter context.
 
 RETURN:         None - This had better work since there is not a return value to the user
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_protectLock (TI_HANDLE OsContext, TI_HANDLE ProtectContext)
 {
@@ -435,98 +435,101 @@ void os_protectLock (TI_HANDLE OsContext, TI_HANDLE ProtectContext)
 
 
 /****************************************************************************************
- *                        os_protectUnlock()                                 
+ *                        os_protectUnlock()
  ****************************************************************************************
-DESCRIPTION:        
+DESCRIPTION:
 
 ARGUMENTS:      OsContext - our adapter context.
 
 RETURN:         None - This had better work since there is not a return value to the user
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 void os_protectUnlock (TI_HANDLE OsContext, TI_HANDLE ProtectContext)
 {
     TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
-    
+
     spin_unlock_irqrestore (&drv->lock, drv->flags);
 }
 /****************************************************************************************
- *                        os_receivePacket()                                 
+ *                        os_receivePacket()
  ****************************************************************************************
-DESCRIPTION:        
+DESCRIPTION:
 
-ARGUMENTS:      
+ARGUMENTS:
 
-RETURN:         
+RETURN:
 
-NOTES:          
+NOTES:
 *****************************************************************************************/
 
 TI_BOOL os_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacket, TI_UINT16 Length)
 {
-   TWlanDrvIfObj  *drv     = (TWlanDrvIfObj *)OsContext;
-   unsigned char  *pdata   = (unsigned char *)((TI_UINT32)pPacket & ~(TI_UINT32)0x3);
-   rx_head_t      *rx_head = (rx_head_t *)(pdata -  WSPI_PAD_BYTES - RX_HEAD_LEN_ALIGNED);
-   struct sk_buff *skb     = rx_head->skb;
+    TWlanDrvIfObj  *drv     = (TWlanDrvIfObj *)OsContext;
+    unsigned char  *pdata   = (unsigned char *)((TI_UINT32)pPacket & ~(TI_UINT32)0x3);
+    rx_head_t      *rx_head = (rx_head_t *)(pdata -  WSPI_PAD_BYTES - RX_HEAD_LEN_ALIGNED);
+    struct sk_buff *skb     = rx_head->skb;
 
 #ifdef TI_DBG
-   if ((TI_UINT32)pPacket & 0x3)
-   {
-     if ((TI_UINT32)pPacket - (TI_UINT32)skb->data != 2)
-     {
-       printk("os_receivePacket() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pPacket);
-     }
-   }
-   else
-   {
-     if ((TI_UINT32)skb->data != (TI_UINT32)pPacket)
-     {
-       printk("os_receivePacket() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pPacket);
-     }
-   }
-   if (Length != RX_ETH_PKT_LEN(pPacket))
-   {
-     printk("os_receivePacket() Length=%d !=  RX_ETH_PKT_LEN(pPacket)=%d!!!\n",(int)Length, RX_ETH_PKT_LEN(pPacket));
-   }
+    if ((TI_UINT32)pPacket & 0x3)
+    {
+        if ((TI_UINT32)pPacket - (TI_UINT32)skb->data != 2)
+        {
+            printk("os_receivePacket() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pPacket);
+        }
+    }
+    else
+    {
+        if ((TI_UINT32)skb->data != (TI_UINT32)pPacket)
+        {
+            printk("os_receivePacket() address error skb=0x%x skb->data=0x%x pPacket=0x%x !!!\n",(int)skb, (int)skb->data, (int)pPacket);
+        }
+    }
+    if (Length != RX_ETH_PKT_LEN(pPacket))
+    {
+        printk("os_receivePacket() Length=%d !=  RX_ETH_PKT_LEN(pPacket)=%d!!!\n",(int)Length, RX_ETH_PKT_LEN(pPacket));
+    }
 
 #endif
-/*
-   printk("-->> os_receivePacket() pPacket=0x%x Length=%d skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
-          (int)pPacket, (int)Length, (int)skb, (int)skb->data, (int)skb->head, (int)skb->len);
-*/
-   skb->data = RX_ETH_PKT_DATA(pPacket);
-   skb_put(skb, RX_ETH_PKT_LEN(pPacket));
-/*
-   printk("-->> os_receivePacket() skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
-          (int)skb, (int)skb->data, (int)skb->head, (int)skb->len);
-*/
-   ti_nodprintf(TIWLAN_LOG_INFO, "os_receivePacket - Received EAPOL len-%d\n", WBUF_LEN(pWbuf));
-
-   skb->dev       = drv->netdev;
-   skb->protocol  = eth_type_trans(skb, drv->netdev);
-   skb->ip_summed = CHECKSUM_NONE;
-
-   drv->stats.rx_packets++;
-   drv->stats.rx_bytes += skb->len;
-
-   /* Send the skb to the TCP stack. 
-    * it responsibly of the Linux kernel to free the skb
+    /*
+       printk("-->> os_receivePacket() pPacket=0x%x Length=%d skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
+              (int)pPacket, (int)Length, (int)skb, (int)skb->data, (int)skb->head, (int)skb->len);
     */
-   {
-       CL_TRACE_START_L1();
+    skb->data = RX_ETH_PKT_DATA(pPacket);
+    skb_put(skb, RX_ETH_PKT_LEN(pPacket));
+    /*
+       printk("-->> os_receivePacket() skb=0x%x skb->data=0x%x skb->head=0x%x skb->len=%d\n",
+              (int)skb, (int)skb->data, (int)skb->head, (int)skb->len);
+    */
+    ti_nodprintf(TIWLAN_LOG_INFO, "os_receivePacket - Received EAPOL len-%d\n", WBUF_LEN(pWbuf));
 
-       netif_rx_ni(skb);
+    skb->dev       = drv->netdev;
+    skb->protocol  = eth_type_trans(skb, drv->netdev);
+    skb->ip_summed = CHECKSUM_NONE;
 
-       /* Note: Don't change this trace (needed to exclude OS processing from Rx CPU utilization) */
-       CL_TRACE_END_L1("tiwlan_drv.ko", "OS", "RX", "");
-   }
+    drv->stats.rx_packets++;
+    drv->stats.rx_bytes += skb->len;
 
-   return TI_TRUE;
+    /* Send the skb to the TCP stack.
+     * it responsibly of the Linux kernel to free the skb
+     */
+    {
+        CL_TRACE_START_L1();
+
+       /* Prevent system suspend one more second after WLAN task completion (in case of more Rx packets) */
+       os_wake_lock_timeout_enable(drv);
+
+        netif_rx_ni(skb);
+
+        /* Note: Don't change this trace (needed to exclude OS processing from Rx CPU utilization) */
+        CL_TRACE_END_L1("tiwlan_drv.ko", "OS", "RX", "");
+    }
+
+    return TI_TRUE;
 }
 
 /*-----------------------------------------------------------------------------
-  
+
 Routine Name:  os_timerHandlr
 
 Routine Description:
@@ -568,26 +571,26 @@ TI_INT32 os_IndicateEvent (TI_HANDLE OsContext, IPC_EV_DATA* pData)
     /*TI_UINT8 AuthBuf[sizeof(TI_UINT32) + sizeof(OS_802_11_AUTHENTICATION_REQUEST)];*/
 
     ti_nodprintf(TIWLAN_LOG_INFO, "\n  os_ConnectionStatus Event 0x%08x \n", CsStatus->Event);
-   
+
     switch(pInParam->uEventType)
     {
-        case IPC_EVENT_ASSOCIATED:
-            if (drv->netdev != NULL)
-                netif_carrier_on(drv->netdev);
-            break;
+    case IPC_EVENT_ASSOCIATED:
+        if (drv->netdev != NULL)
+            netif_carrier_on(drv->netdev);
+        break;
 
-       case IPC_EVENT_DISASSOCIATED:
-            if (drv->netdev != NULL)
-                netif_carrier_off(drv->netdev);
-            break;
+    case IPC_EVENT_DISASSOCIATED:
+        if (drv->netdev != NULL)
+            netif_carrier_off(drv->netdev);
+        break;
 
-      case IPC_EVENT_LINK_SPEED:
-            drv->tCommon.uLinkSpeed = (*(TI_UINT32*)pData->uBuffer * 10000) / 2;
-            ti_nodprintf(TIWLAN_LOG_INFO, "\n  Link Speed = 0x%08x \n",drv->tCommon.uLinkSpeed);
-            break;
-   }
+    case IPC_EVENT_LINK_SPEED:
+        drv->tCommon.uLinkSpeed = (*(TI_UINT32*)pData->uBuffer * 10000) / 2;
+        ti_nodprintf(TIWLAN_LOG_INFO, "\n  Link Speed = 0x%08x \n",drv->tCommon.uLinkSpeed);
+        break;
+    }
 
-   return TI_OK;
+    return TI_OK;
 }
 
 
@@ -609,7 +612,7 @@ void os_enableIrq (TI_HANDLE OsContext)
 /*-----------------------------------------------------------------------------
 Routine Name:  os_InterruptServiced
 
-Routine Description: Called when IRQ line is not asserted any more 
+Routine Description: Called when IRQ line is not asserted any more
                     (i.e. we can enable IRQ in Level sensitive platform)
 
 Arguments:  OsContext - handle to OS context
@@ -621,6 +624,129 @@ void os_InterruptServiced (TI_HANDLE OsContext)
     /* To be implemented with Level IRQ */
 }
 
+/*-----------------------------------------------------------------------------
+Routine Name:  os_wake_lock_timeout
+
+Routine Description: Prevents system suspend for 1 sec if previously enabled
+                       by call to os_wake_lock_timeout.
+
+Arguments:     OsContext - handle to OS context
+
+Return Value:  1 if lock was enabled, 0 if not
+-----------------------------------------------------------------------------*/
+int os_wake_lock_timeout (TI_HANDLE OsContext)
+{
+	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+	unsigned long flags;
+	int ret = 0;
+
+	if (drv)
+    {
+		spin_lock_irqsave(&drv->lock, flags);
+		ret = drv->wl_packet;
+		if (drv->wl_packet)
+        {
+			drv->wl_packet = 0;
+#ifdef CONFIG_HAS_WAKELOCK
+            wake_lock_timeout(&drv->wl_rxwake, HZ);
+#endif
+		}
+		spin_unlock_irqrestore(&drv->lock, flags);
+	}
+	/* printk("%s: %d\n", __func__, ret); */
+	return ret;
+}
+
+/*-----------------------------------------------------------------------------
+Routine Name:  os_wake_lock_timeout_enable
+
+Routine Description: Enables prevention of system suspend for 1 sec in next call to os_wake_lock_timeout_enable
+
+Arguments:     OsContext - handle to OS context
+
+Return Value:  1 if lock was enabled, 0 if not
+-----------------------------------------------------------------------------*/
+int os_wake_lock_timeout_enable (TI_HANDLE OsContext)
+{
+	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+	unsigned long flags;
+	int ret = 0;
+
+	if (drv)
+    {
+		spin_lock_irqsave(&drv->lock, flags);
+		ret = drv->wl_packet = 1;
+		spin_unlock_irqrestore(&drv->lock, flags);
+	}
+	return ret;
+}
+
+/*-----------------------------------------------------------------------------
+Routine Name:  os_wake_lock
+
+Routine Description: Called to prevent system from suspend
+
+Arguments:     OsContext - handle to OS context
+
+Return Value:  wake_lock counter
+-----------------------------------------------------------------------------*/
+int os_wake_lock (TI_HANDLE OsContext)
+{
+	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+	int ret = 0;
+	unsigned long flags;
+
+	if (drv)
+    {
+		spin_lock_irqsave(&drv->lock, flags);
+#ifdef CONFIG_HAS_WAKELOCK
+		if (!drv->wl_count)
+        {
+			wake_lock(&drv->wl_wifi);
+        }
+#endif
+		drv->wl_count++;
+		ret = drv->wl_count;
+		spin_unlock_irqrestore(&drv->lock, flags);
+	}
+	/* printk("%s: %d\n", __func__, ret); */
+	return ret;
+}
+
+/*-----------------------------------------------------------------------------
+Routine Name:  os_wake_unlock
+
+Routine Description: Called to allow system to suspend
+
+Arguments:     OsContext - handle to OS context
+
+Return Value:  wake_lock counter
+-----------------------------------------------------------------------------*/
+int os_wake_unlock (TI_HANDLE OsContext)
+{
+	TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
+	int ret = 0;
+	unsigned long flags;
+
+	if (drv)
+    {
+		spin_lock_irqsave(&drv->lock, flags);
+		if (drv->wl_count)
+        {
+			drv->wl_count--;
+#ifdef CONFIG_HAS_WAKELOCK
+			if (!drv->wl_count)
+            {
+				wake_unlock(&drv->wl_wifi);
+            }
+#endif
+			ret = drv->wl_count;
+		}
+		spin_unlock_irqrestore(&drv->lock, flags);
+	}
+	/* printk("%s: %d\n", __func__, ret); */
+	return ret;
+}
 
 /*-----------------------------------------------------------------------------
 Routine Name:  os_RequestSchedule
@@ -631,20 +757,21 @@ Arguments:
 
 Return Value:  TI_OK
 -----------------------------------------------------------------------------*/
-int os_RequestSchedule (TI_HANDLE OsContext)
+int os_RequestSchedule (TI_HANDLE OsContext, TI_BOOL *pContextSwitchRequired)
 {
     TWlanDrvIfObj *drv = (TWlanDrvIfObj *)OsContext;
 
-   /* Note: The performance trace below doesn't inclose the schedule itself because the rescheduling  
-    *         can occur immediately and call os_RequestSchedule again which will confuse the trace tools
-    */
-   CL_TRACE_START_L3();
-   CL_TRACE_END_L3("tiwlan_drv.ko", "OS", "TASK", "");
+   *pContextSwitchRequired = TI_TRUE;
+    /* Note: The performance trace below doesn't inclose the schedule itself because the rescheduling
+     *         can occur immediately and call os_RequestSchedule again which will confuse the trace tools
+     */
+    CL_TRACE_START_L3();
+    CL_TRACE_END_L3("tiwlan_drv.ko", "OS", "TASK", "");
 
-   if (!queue_work (drv->pWorkQueue, &drv->tWork))
-   {
+    if (!queue_work (drv->pWorkQueue, &drv->tWork))
+    {
         return TI_NOK;
-   }
+    }
 
     return TI_OK;
 }
@@ -661,10 +788,10 @@ Return Value: TI_OK
 -----------------------------------------------------------------------------*/
 void *os_SignalObjectCreate (TI_HANDLE OsContext)
 {
-   struct completion *myPtr;
-   myPtr = os_memoryAlloc(OsContext, sizeof(struct completion));
-   init_completion (myPtr);
-   return (myPtr);
+    struct completion *myPtr;
+    myPtr = os_memoryAlloc(OsContext, sizeof(struct completion));
+    init_completion (myPtr);
+    return (myPtr);
 }
 
 
@@ -726,17 +853,17 @@ int os_SignalObjectFree (TI_HANDLE OsContext, void *signalObject)
 }
 
 
-/** 
+/**
  * \fn     os_Trace
  * \brief  Prepare and send trace message to the logger.
- * 
+ *
  * \param  OsContext    - The OS handle
  * \param  uLevel       - Severity level of the trace message
  * \param  uFileId      - Source file ID of the trace message
  * \param  uLineNum     - Line number of the trace message
  * \param  uParamsNum   - Number of parameters in the trace message
  * \param  ...          - The trace message parameters
- * 
+ *
  * \return void
  */
 void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT32 uLineNum, TI_UINT32 uParamsNum, ...)
@@ -783,17 +910,17 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
     }
 
     /* Set msg length and format according to the biggest parameter value (8/16/32 bits) */
-    if (uMaxParamValue > UINT16_MAX_VAL)        
+    if (uMaxParamValue > UINT16_MAX_VAL)
     {
         pMsgHdr->uFormat = TRACE_FORMAT_32_BITS_PARAMS;
         uMsgLen += uParamsNum * sizeof(TI_UINT32);
     }
-    else if (uMaxParamValue > UINT8_MAX_VAL)    
+    else if (uMaxParamValue > UINT8_MAX_VAL)
     {
         pMsgHdr->uFormat = TRACE_FORMAT_16_BITS_PARAMS;
         uMsgLen += uParamsNum * sizeof(TI_UINT16);
     }
-    else                            
+    else
     {
         pMsgHdr->uFormat = TRACE_FORMAT_8_BITS_PARAMS;
         uMsgLen += uParamsNum;
@@ -832,7 +959,7 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
         default:
             va_end(list);
             return;
-        }     
+        }
     }
 
     va_end(list);
@@ -843,14 +970,14 @@ void os_Trace (TI_HANDLE OsContext, TI_UINT32 uLevel, TI_UINT32 uFileId, TI_UINT
 
 /*--------------------------------------------------------------------------------------*/
 
-/** 
+/**
  * \fn     os_SetDrvThreadPriority
  * \brief  Called upon init to set WLAN driver thread priority.
  *         Currently not supported in Linux.
- * 
+ *
  * \param  OsContext              - The OS handle
  * \param  uWlanDrvThreadPriority - The WLAN driver thread priority
- * \return 
+ * \return
  */
 void os_SetDrvThreadPriority (TI_HANDLE OsContext, TI_UINT32 uWlanDrvThreadPriority)
 {

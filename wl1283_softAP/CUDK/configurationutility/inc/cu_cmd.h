@@ -245,7 +245,7 @@ VOID CuCmd_ApRoleSetSSIDType(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ApRoleSetBeconInterval(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ApRoleSetDTIMInterval(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ApRoleSetSSID(THandle hCuCmd, ConParm_t parm[], U16 nParms);
-
+VOID CuCmd_ApRoleCfgWantsBeacons(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 
 VOID CuCmd_SetGenericCmdToFW(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_ApRolePrintDb(THandle hCuCmd, ConParm_t parm[], U16 nParms);

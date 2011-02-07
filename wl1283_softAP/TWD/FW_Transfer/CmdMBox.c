@@ -56,13 +56,13 @@
 
 /*
  * \brief	Handle cmdMbox timeout.
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return TI_OK
- * 
+ *
  * \par Description
  * Call fErrorCb() to handle the error.
- * 
+ *
  * \sa cmdMbox_SendCommand
  */
 static void cmdMbox_TimeOut (TI_HANDLE hCmdMbox, TI_BOOL bTwdInitOccured);
@@ -70,13 +70,13 @@ static void cmdMbox_ConfigHwCb (TI_HANDLE hCmdMbox, TTxnStruct *pTxn);
 
 /*
  * \brief	Create the mailbox object
- * 
+ *
  * \param  hOs  - OS module object handle
  * \return Handle to the created object
- * 
+ *
  * \par Description
  * Calling this function creates a CmdMbox object
- * 
+ *
  * \sa cmdMbox_Destroy
  */
 TI_HANDLE cmdMbox_Create (TI_HANDLE hOs)
@@ -100,13 +100,13 @@ TI_HANDLE cmdMbox_Create (TI_HANDLE hOs)
 
 /*
  * \brief	Destroys the mailbox object
- * 
+ *
  * \param  hCmdMbox  - The object to free
  * \return TI_OK
- * 
+ *
  * \par Description
  * Calling this function destroys a CmdMbox object
- * 
+ *
  * \sa cmdMbox_Create
  */
 TI_STATUS cmdMbox_Destroy (TI_HANDLE hCmdMbox)
@@ -128,7 +128,7 @@ TI_STATUS cmdMbox_Destroy (TI_HANDLE hCmdMbox)
 
 /*
  * \brief	Configure the CmdMbox object
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \param  hReport  - Handle to report module
  * \param  hTwIf  - Handle to TwIf
@@ -136,17 +136,17 @@ TI_STATUS cmdMbox_Destroy (TI_HANDLE hCmdMbox)
  * \param  hCmdQueue  - Handle to CmdQueue
  * \param  fErrorCb  - Handle to error handling function
  * \return TI_OK on success or TI_NOK on failure
- * 
+ *
  * \par Description
- * 
+ *
  * \sa
  */
 TI_STATUS cmdMbox_Init (TI_HANDLE hCmdMbox,
-                          TI_HANDLE             hReport, 
+                        TI_HANDLE             hReport,
                         TI_HANDLE hTwIf,
-                          TI_HANDLE             hTimer, 
+                        TI_HANDLE             hTimer,
                         TI_HANDLE hCmdQueue,
-                          TCmdMboxErrorCb       fErrorCb)
+                        TCmdMboxErrorCb       fErrorCb)
 {
     TCmdMbox   *pCmdMbox = (TCmdMbox *)hCmdMbox;
 
@@ -161,13 +161,15 @@ TI_STATUS cmdMbox_Init (TI_HANDLE hCmdMbox,
     pCmdMbox->bCmdInProgress = TI_FALSE;
     pCmdMbox->fErrorCb = fErrorCb;
 
-	/* allocate OS timer memory */
+    pCmdMbox->uWaitTimeout = CMDMBOX_WAIT_TIMEOUT_DEF;
+
+    /* allocate OS timer memory */
     pCmdMbox->hCmdMboxTimer = tmr_CreateTimer (hTimer);
-	if (pCmdMbox->hCmdMboxTimer == NULL)
-	{
+    if (pCmdMbox->hCmdMboxTimer == NULL)
+    {
         TRACE0(pCmdMbox->hReport, REPORT_SEVERITY_ERROR, "cmdMbox_Init(): Failed to create hCmdMboxTimer!\n");
-		return TI_NOK;
-	}
+        return TI_NOK;
+    }
 
     return TI_OK;
 }
@@ -175,24 +177,24 @@ TI_STATUS cmdMbox_Init (TI_HANDLE hCmdMbox,
 
 /*
  * \brief	Send the Command to the Mailbox
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
- * \param  cmdType  - 
+ * \param  cmdType  -
  * \param  pParamsBuf  - The buffer that will be written to the mailbox
  * \param  uWriteLen  - Length of data to write to the mailbox
  * \param  uReadLen  - Length of data to read from the mailbox (when the result is received)
  * \return TI_PENDING
- * 
+ *
  * \par Description
  * Copy the buffer given to a local struct, update the write & read lengths
  * and send to the FW's mailbox.
- *             
+ *
  *       ------------------------------------------------------
  *      | CmdMbox Header | Cmd Header    | Command parameters |
  *      ------------------------------------------------------
  *      | ID   | Status  | Type | Length | Command parameters |
  *      ------------------------------------------------------
- *       16bit   16bit    16bit   16bit     
+ *       16bit   16bit    16bit   16bit
  *
  * \sa cmdMbox_CommandComplete
  */
@@ -242,11 +244,10 @@ TI_STATUS cmdMbox_SendCommand       (TI_HANDLE hCmdMbox, Command_e cmdType, TI_U
     BUILD_TTxnStruct(pRegTxn, ACX_REG_INTERRUPT_TRIG, &(pCmdMbox->aRegTxn[0].uRegister), REGISTER_SIZE, NULL, NULL)
 
     /* start the CmdMbox timer */
-    tmr_StartTimer (pCmdMbox->hCmdMboxTimer, cmdMbox_TimeOut, hCmdMbox, CMDMBOX_WAIT_TIMEOUT, TI_FALSE);
+    tmr_StartTimer (pCmdMbox->hCmdMboxTimer, cmdMbox_TimeOut, hCmdMbox, pCmdMbox->uWaitTimeout, TI_FALSE);
 
     /* Send the FW trigger */
     twIf_Transact(pCmdMbox->hTwIf, pRegTxn);
-
 
     return TXN_STATUS_PENDING;
 }
@@ -254,14 +255,14 @@ TI_STATUS cmdMbox_SendCommand       (TI_HANDLE hCmdMbox, Command_e cmdType, TI_U
 
 /*
  * \brief	Read the command's result
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return void
- * 
+ *
  * \par Description
  * This function is called from FwEvent module uppon receiving command complete interrupt.
  * It issues a read transaction from the mailbox with a CB.
- * 
+ *
  * \sa cmdMbox_SendCommand, cmdMbox_TransferComplete
  */
 ETxnStatus cmdMbox_CommandComplete (TI_HANDLE hCmdMbox)
@@ -293,15 +294,15 @@ ETxnStatus cmdMbox_CommandComplete (TI_HANDLE hCmdMbox)
 
 /*
  * \brief	Calls the cmdQueue_ResultReceived.
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return TI_OK
- * 
+ *
  * \par Description
  * This function is called from cmdMbox_CommandComplete on a sync read, or from TwIf as a CB on an async read.
- * It calls cmdQueue_ResultReceived to continue the result handling procces & switch the bCmdInProgress flag to TI_FALSE, 
+ * It calls cmdQueue_ResultReceived to continue the result handling procces & switch the bCmdInProgress flag to TI_FALSE,
  * meaning other commands can be sent to the FW.
- * 
+ *
  * \sa cmdMbox_SendCommand, cmdMbox_TransferComplete
  */
 TI_STATUS cmdMbox_TransferComplete(TI_HANDLE hCmdMbox)
@@ -312,20 +313,20 @@ TI_STATUS cmdMbox_TransferComplete(TI_HANDLE hCmdMbox)
     pCmdMbox->bCmdInProgress = TI_FALSE;
 
     cmdQueue_ResultReceived(pCmdMbox->hCmdQueue);
-    
+
     return TI_OK;
 }
 
 
 /*
  * \brief	Handle cmdMbox timeout.
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return TI_OK
- * 
+ *
  * \par Description
  * Call fErrorCb() to handle the error.
- * 
+ *
  * \sa cmdMbox_SendCommand
  */
 static void cmdMbox_TimeOut (TI_HANDLE hCmdMbox, TI_BOOL bTwdInitOccured)
@@ -338,9 +339,9 @@ static void cmdMbox_TimeOut (TI_HANDLE hCmdMbox, TI_BOOL bTwdInitOccured)
     /* Call error CB */
     if (pCmdMbox->fErrorCb != NULL)
     {
-        pCmdMbox->fErrorCb (pCmdMbox->hCmdQueue, 
-                            (TI_UINT32)pCmd->cmdID, 
-                            CMD_STATUS_TIMEOUT, 
+        pCmdMbox->fErrorCb (pCmdMbox->hCmdQueue,
+                            (TI_UINT32)pCmd->cmdID,
+                            CMD_STATUS_TIMEOUT,
                             (void *)pCmd->parameters);
     }
 }
@@ -348,15 +349,15 @@ static void cmdMbox_TimeOut (TI_HANDLE hCmdMbox, TI_BOOL bTwdInitOccured)
 
 /*
  * \brief	configure the mailbox address.
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \param  fCb  - Pointer to the CB
  * \param  hCb  - Cb's handle
  * \return TI_OK or TI_PENDING
- * 
+ *
  * \par Description
  * Called from HwInit to read the command mailbox address.
- * 
+ *
  * \sa
  */
 TI_STATUS cmdMbox_ConfigHw (TI_HANDLE hCmdMbox, fnotify_t fCb, TI_HANDLE hCb)
@@ -383,12 +384,12 @@ TI_STATUS cmdMbox_ConfigHw (TI_HANDLE hCmdMbox, fnotify_t fCb, TI_HANDLE hCb)
 
 /*
  * \brief	Cb to cmdMbox_ConfigHw
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return TI_OK
- * 
+ *
  * \par Description
- * 
+ *
  * \sa
  */
 static void cmdMbox_ConfigHwCb (TI_HANDLE hCmdMbox, TTxnStruct *pTxn)
@@ -404,12 +405,12 @@ static void cmdMbox_ConfigHwCb (TI_HANDLE hCmdMbox, TTxnStruct *pTxn)
 
 /*
  * \brief	Restart the module upon driver stop or restart
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return TI_OK
- * 
+ *
  * \par Description
- * 
+ *
  * \sa
  */
 TI_STATUS cmdMbox_Restart (TI_HANDLE hCmdMbox)
@@ -428,12 +429,12 @@ TI_STATUS cmdMbox_Restart (TI_HANDLE hCmdMbox)
 
 /*
  * \brief	Return the latest command status
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return TI_OK or TI_NOK
- * 
+ *
  * \par Description
- * 
+ *
  * \sa
  */
 TI_STATUS cmdMbox_GetStatus (TI_HANDLE hCmdMbox, CommandStatus_e *cmdStatus)
@@ -450,12 +451,12 @@ TI_STATUS cmdMbox_GetStatus (TI_HANDLE hCmdMbox, CommandStatus_e *cmdStatus)
 
 /*
  * \brief	Return the MBox address
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \return MBox address
- * 
+ *
  * \par Description
- * 
+ *
  * \sa
  */
 TI_UINT32 cmdMbox_GetMboxAddress (TI_HANDLE hCmdMbox)
@@ -468,14 +469,14 @@ TI_UINT32 cmdMbox_GetMboxAddress (TI_HANDLE hCmdMbox)
 
 /*
  * \brief	Return the Command parameters buffer
- * 
+ *
  * \param  hCmdMbox  - Handle to CmdMbox
  * \param  pParamBuf  - Holds the returned buffer
  * \return
- * 
+ *
  * \par Description
  * Copying the command's data to pParamBuf
- * 
+ *
  * \sa
  */
 void cmdMbox_GetCmdParams (TI_HANDLE hCmdMbox, TI_UINT8* pParamBuf)
@@ -483,18 +484,52 @@ void cmdMbox_GetCmdParams (TI_HANDLE hCmdMbox, TI_UINT8* pParamBuf)
     TCmdMbox *pCmdMbox = (TCmdMbox *)hCmdMbox;
     Command_t  *pCmd = (Command_t*)&pCmdMbox->aCmdTxn[1].tCmdMbox;
 
-    /* 
+    /*
      * Copy the results to the caller buffer:
-     * We need to copy only the data without the cmdMbox header, 
-     * otherwise we will overflow the pParambuf 
+     * We need to copy only the data without the cmdMbox header,
+     * otherwise we will overflow the pParambuf
      */
     os_memoryCopy (pCmdMbox->hOs,
                    (void *)pParamBuf,
                    (void *)pCmd->parameters,
                    pCmdMbox->uReadLen - CMDMBOX_HEADER_LEN);
 
+
 }
 
+/*
+ * \brief	Prepares this module for suspend (called when the driver starts
+ * 			the suspend process)
+ *
+ * \param	tConfig	TWD specific suspend-configuration
+ *
+ * \return	TI_OK
+ */
+TI_STATUS cmdMbox_PrepareSuspend(TI_HANDLE hCmdMbox, TTwdSuspendConfig *tConfig)
+{
+	TCmdMbox *pCmdMbox = (TCmdMbox *) hCmdMbox;
+
+	TRACE1(pCmdMbox->hReport, REPORT_SEVERITY_INFORMATION, "cmdMbox_PrepareSuspend: setting mailbox timeout to %d ms\n", tConfig->uCmdMboxTimeout);
+	pCmdMbox->uWaitTimeout = tConfig->uCmdMboxTimeout;
+
+	return TI_OK;
+}
+
+/*
+ * \brief	Wraps up the suspend process (from this modules side). Called
+ * 			when the driver finishes the suspend process.
+ *
+ * \return	TI_OK
+ */
+TI_STATUS cmdMbox_CompleteSuspend(TI_HANDLE hCmdMbox)
+{
+	TCmdMbox *pCmdMbox = (TCmdMbox *) hCmdMbox;
+
+	TRACE1(pCmdMbox->hReport, REPORT_SEVERITY_INFORMATION, "cmdMbox_CompleteSuspend: setting mailbox timeout to %d ms\n", CMDMBOX_WAIT_TIMEOUT_DEF);
+	pCmdMbox->uWaitTimeout = CMDMBOX_WAIT_TIMEOUT_DEF;
+
+	return TI_OK;
+}
 
 #ifdef TI_DBG
 

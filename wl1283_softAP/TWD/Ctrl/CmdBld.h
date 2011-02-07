@@ -114,6 +114,7 @@ TI_STATUS cmdBld_CfgRx                  (TI_HANDLE hCmdBld, TI_UINT32 uRxConfigO
 TI_STATUS cmdBld_CfgPreamble            (TI_HANDLE hCmdBld, Preamble_e ePreamble, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgPacketDetectionThreshold (TI_HANDLE hCmdBld, TI_UINT32 threshold, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgBeaconFilterOpt     (TI_HANDLE hCmdBld, TI_UINT8 uBeaconFilteringStatus, TI_UINT8 uNumOfBeaconsToBuffer, void *fCb, TI_HANDLE hCb);
+TI_STATUS cmdBld_CfgApBeaconFilter      (TI_HANDLE hCmdBld, TI_BOOL bEnable,void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgBeaconFilterTable   (TI_HANDLE hCmdBld, TI_UINT8 uNumberOfIEs, TI_UINT8 *pIETable, TI_UINT8 uIeTableSize, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgWakeUpCondition     (TI_HANDLE hCmdBld, TPowerMgmtConfig *pPMConfig, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgBcnBrcOptions       (TI_HANDLE hCmdBld, TPowerMgmtConfig *pPMConfig, void *fCb, TI_HANDLE hCb);

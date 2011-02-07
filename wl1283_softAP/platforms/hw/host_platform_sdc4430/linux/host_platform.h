@@ -60,10 +60,6 @@ hPlatform_initInterrupt(
 	void* handle_add
 	);
 
-void*
-hPlatform_hwGetRegistersAddr(
-    TI_HANDLE OsContext
-    );
 
 void*
 hPlatform_hwGetMemoryAddr(
@@ -78,4 +74,5 @@ void hPlatform_Wlan_Hardware_DeInit(void);
 int  hPlatform_DevicePowerOff(void);
 int  hPlatform_DevicePowerOffSetLongerDelay(void);
 int  hPlatform_DevicePowerOn(void);
+void hPlatform_SetupPm(int (*suspend_cb)(void*), int (*resume_cb)(void*) , void* susres_ctx);
 #endif /* __HOST_PLATFORM_SDIO__H__ */

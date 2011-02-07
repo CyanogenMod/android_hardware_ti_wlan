@@ -1499,6 +1499,8 @@ typedef enum
 
 	ROLE_AP_GET_LINK_COUNTERS               		=   GET_BIT | ROLE_AP_MODULE_PARAM | 0x0A,
 
+	ROLE_AP_WANTS_BEACONS_PARAM                     =   SET_BIT | ROLE_AP_MODULE_PARAM | 0x0B,               /* Whether FW should pass incoming beacons to driver */
+	ROLE_AP_SUSPEND_STATE_PARAM                     =   GET_BIT | ASYNC_PARAM | ROLE_AP_MODULE_PARAM | 0x0C, /* The suspend-state the AP is in (TI_TRUE - suspended; TI_FALSE - not suspended) */
 
 /* ********************************************************************************************/
 

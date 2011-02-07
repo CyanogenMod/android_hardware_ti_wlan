@@ -1358,6 +1358,14 @@ IP&Port classification table  */
 #define ROLE_AP_BEACON_TX_TIMEOUT_MIN		0
 #define ROLE_AP_BEACON_TX_TIMEOUT_MAX		255
 
+#define ROLE_AP_WANTS_RX_BEACON_DEF		0
+#define ROLE_AP_WANTS_RX_BEACON_MIN		0
+#define ROLE_AP_WANTS_RX_BEACON_MAX		1
+
+/* Command Mailbox timeout period (during a suspend/resume command) */
+#define SUSPEND_CFG_CMD_TIMEOUT_MIN	0
+#define SUSPEND_CFG_CMD_TIMEOUT_MAX	3000	/* in Linux, the kernel panics if it fails to suspend the system within 3 seconds */
+#define SUSPEND_CFG_CMD_TIMEOUT_DEF	500
 
 
 /* Configurable Scan Rate */

@@ -74,7 +74,6 @@
 
 #define ti_nodprintf(log, fmt, args...)
 
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29)
 #define NETDEV_SET_PRIVATE(dev, drv)    dev->priv = drv
 #define NETDEV_GET_PRIVATE(dev)         dev->priv
@@ -84,12 +83,12 @@
 #endif
 
 
-typedef enum 
+typedef enum
 {
-   TIWLAN_LOG_ERROR,
-   TIWLAN_LOG_INFO,
-   TIWLAN_LOG_OTHER,
-   TIWLAN_LOG_DUMMY
+    TIWLAN_LOG_ERROR,
+    TIWLAN_LOG_INFO,
+    TIWLAN_LOG_OTHER,
+    TIWLAN_LOG_DUMMY
 } EWlanDrvIfLog;
 
 /*
@@ -103,12 +102,12 @@ typedef struct
 
 
 /* Driver object */
-typedef struct 
+typedef struct
 {
     TWlanDrvIfCommon         tCommon;   /* The driver object common part */
 
     int                      irq;       /* The OS IRQ handle */
-    unsigned long            irq_flags; /* The IRQ flags */
+	unsigned long 			 irq_flags; /* The IRQ flags */
     struct workqueue_struct *pWorkQueue;/* The OS work queue */
     struct work_struct       tWork;     /* The OS work handle. */
     spinlock_t               lock;      /* The OS spinlock handle. */
@@ -118,61 +117,69 @@ typedef struct
     struct sock             *wl_sock;   /* The OS socket used for sending it the driver events */
     struct net_device       *netdev;    /* The OS handle for the driver interface. */
 
+    int                      wl_packet; /* Remember to stay awake */
+    int                      wl_count;  /* Wifi wakelock counter */
+#ifdef CONFIG_HAS_WAKELOCK
+    struct wake_lock         wl_wifi;   /* Wifi wakelock */
+    struct wake_lock         wl_rxwake; /* Wifi rx wakelock */
+#endif
+
     NDIS_HANDLE		         ConfigHandle;/* Temp - For Windows compatibility */
 
+    TI_BOOL                  bSuspendInProgress; /* true if driver currently suspending/suspended; false if suspend not started or already resumed */
 } TWlanDrvIfObj, *TWlanDrvIfObjPtr;
 
 
 #define NETDEV(drv) (((TWlanDrvIfObj*)(drv))->netdev)
 
-/** 
+/**
  * \fn     wlanDrvIf_StopTx
  * \brief  block Tx thread until wlanDrvIf_ResumeTx called .
- * 
+ *
  * This routine is called whenever we need to stop the network stack to send us pakets since one of our Q's is full.
  *
- * \note   
+ * \note
  * \param  hOs           - The driver object handle
-* \return 
+* \return
  * \sa     wlanDrvIf_StopTx
- */ 
+ */
 void wlanDrvIf_StopTx (TI_HANDLE hOs);
 
-/** 
+/**
  * \fn     wlanDrvIf_EnableTx
  * \brief  Resume Tx thread .
- * 
+ *
  * This routine is called when driver is ready to accept Tx
  * packets from network device
  *
- * \note   
+ * \note
  * \param  hOs - The driver object handle
  * \return
  * \sa wlanDrvIf_ResumeTx
- */ 
+ */
 void wlanDrvIf_EnableTx (TI_HANDLE hOs);
 
-/** 
+/**
  * \fn     wlanDrvIf_DisableTx
  * \brief  Resume Tx thread .
- * 
+ *
  * This routine is called when driver wills to stop Tx from
  * network device
  *
- * \note   
+ * \note
  * \param  hOs - The driver object handle
  * \return
  * \sa wlanDrvIf_StopTx
- */ 
+ */
 void wlanDrvIf_DisableTx (TI_HANDLE hOs);
 
 /* Module Function Definition */
-/** 
- * \fn     wlanDrvIf_receivePacket 
- * \brief  Receive packet to network stack and make Intra BSS Bridge decision for AP 
- * 
- * Module's object set param API 
- * 
+/**
+ * \fn     wlanDrvIf_receivePacket
+ * \brief  Receive packet to network stack and make Intra BSS Bridge decision for AP
+ *
+ * Module's object set param API
+ *
  * \note
  * \param   TI_HANDLE OsContext - Handle to OS context (WlanDrv)
  * \param   void * pRxDesc      - pointer to Rx Descriptor
@@ -182,6 +189,6 @@ void wlanDrvIf_DisableTx (TI_HANDLE hOs);
  *
  * \return  TI_OK if success , otherwise - TI_NOK
  * \sa      cmdDispathcer CB
- */ 
+ */
 extern TI_BOOL wlanDrvIf_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacket, TI_UINT16 Length, TIntraBssBridge *pIntraBssBridgeDecision);
 #endif /* WLAN_DRV_IF_H*/

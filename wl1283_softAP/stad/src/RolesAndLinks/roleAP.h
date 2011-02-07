@@ -344,5 +344,6 @@ TI_STATUS roleAp_getApState(TI_HANDLE hRoleAP, TI_UINT32 *pState);
 TI_STATUS RoleAp_DrvResetNotifyUpperLayers(TI_HANDLE hRoleAP);
 
 void roleAP_reportMicFailure(TI_HANDLE hRoleAP,TI_UINT8* pMac);
+
 #endif /*  _ROLE_AP_API_H_*/
 

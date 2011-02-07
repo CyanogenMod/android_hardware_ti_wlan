@@ -32,10 +32,10 @@
  */
 
 
-/** \file  CmdBldCmdIE.c 
+/** \file  CmdBldCmdIE.c
  *  \brief Command builder. Command information elements
  *
- *  \see   CmdBldCmdIE.h 
+ *  \see   CmdBldCmdIE.h
  */
 #define __FILE_ID__  FILE_ID_94
 #include "osApi.h"
@@ -61,34 +61,34 @@
  * PER_TX_STOP   = Stops the TX test in progress (FCC or TELEC).
  * ReadRegister  = Read a register value.
  * WriteRegister = Sets a register value.
-* 
+*
 * Rx PER test
 * ========
 * PerRxStart       = Start or resume the PER measurement. This function will put the device in promiscuous mode, and resume counters update.
 * PerRxStop        = Stop Rx PER measurements. This function stop counters update and make it is safe to read the PER test result.
 * PerRxGetResults  = Get the last Rx PER test results.
-* PerRxClear       = Clear the Rx PER test results. 
+* PerRxClear       = Clear the Rx PER test results.
  */
 
 enum
 {
-/* 0 */   TEST_MOD_QPSK,
-/* 1 */   TEST_MOD_CCK,
-/* 2 */   TEST_MOD_PBCC,
-          TEST_MOD_NUMOF
+    /* 0 */   TEST_MOD_QPSK,
+    /* 1 */   TEST_MOD_CCK,
+    /* 2 */   TEST_MOD_PBCC,
+    TEST_MOD_NUMOF
 };
 
 enum
 {
-/* 0 */   TEST_MOD_LONG_PREAMBLE,
-/* 1 */   TEST_MOD_SHORT_PREAMBLE
+    /* 0 */   TEST_MOD_LONG_PREAMBLE,
+    /* 1 */   TEST_MOD_SHORT_PREAMBLE
 };
 
 enum
 {
-/* 0 */   TEST_BAND_2_4GHZ,
-/* 1 */   TEST_BAND_5GHZ,
-/* 2 */   TEST_BAND_4_9GHZ
+    /* 0 */   TEST_BAND_2_4GHZ,
+    /* 1 */   TEST_BAND_5GHZ,
+    /* 2 */   TEST_BAND_4_9GHZ
 };
 
 
@@ -123,11 +123,11 @@ enum
  *                      cmdBld_CmdIeStartBss()
  ****************************************************************************
  * DESCRIPTION: Construct the StartBss command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCompleteCb, TI_HANDLE hCb)
@@ -140,8 +140,8 @@ TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCom
     TI_UINT8 *BssId;
     TI_UINT8 *cmdBssId;
     EHwRateBitFiled HwBasicRatesBitmap;
-    TI_UINT32 i; 
-    
+    TI_UINT32 i;
+
     os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(StartJoinRequest_t));
 
     /*
@@ -150,17 +150,17 @@ TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCom
     pCmd->rxFilter.ConfigOptions = ENDIAN_HANDLE_LONG (DB_WLAN(hCmdBld).RxConfigOption);
     pCmd->rxFilter.FilterOptions = ENDIAN_HANDLE_LONG (DB_WLAN(hCmdBld).RxFilterOption);
     pCmd->beaconInterval = ENDIAN_HANDLE_WORD (DB_BSS(hCmdBld).BeaconInterval);
-    pCmd->dtimInterval = DB_BSS(hCmdBld).DtimInterval; 
+    pCmd->dtimInterval = DB_BSS(hCmdBld).DtimInterval;
     pCmd->channelNumber = DB_BSS(hCmdBld).RadioChannel;
     pCmd->bssType = BssType;
     /* Add radio band */
     pCmd->bssType |= DB_WLAN(hCmdBld).RadioBand << 4;
     /* Bits 0-2: Tx-Session-Count. bit 7: indicates if to flush the Tx queues */
-    pCmd->ctrl = pBssInfoParams->Ctrl; 
-    
+    pCmd->ctrl = pBssInfoParams->Ctrl;
+
     /*
      * BasicRateSet
-     * The wlan hardware uses pHwMboxCmd field to determine the rate at which to transmit 
+     * The wlan hardware uses pHwMboxCmd field to determine the rate at which to transmit
      * control frame responses (such as ACK or CTS frames)
      */
     cmdBld_ConvertAppRatesBitmap (pBssInfoParams->BasicRateSet, 0, &HwBasicRatesBitmap);
@@ -172,17 +172,17 @@ TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCom
     for (i = 0; i < MAC_ADDR_LEN; i++)
         cmdBssId[i] = BssId[MAC_ADDR_LEN - 1 - i];
 
-    /* SSID string */ 
+    /* SSID string */
     pCmd->ssidLength = pSsid->len;
     os_memoryCopy (pCmdBld->hOs, (void *)pCmd->ssidStr, (void *)pSsid->str, pSsid->len);
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_START_JOIN, 
-                             (TI_CHAR *)pCmd, 
-                             sizeof(*pCmd), 
-                             fJoinCompleteCb, 
-                             hCb, 
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_START_JOIN,
+                                 (TI_CHAR *)pCmd,
+                                 sizeof(*pCmd),
+                                 fJoinCompleteCb,
+                                 hCb,
+                                 NULL);
 }
 
 
@@ -190,11 +190,11 @@ TI_STATUS cmdBld_CmdIeStartBss (TI_HANDLE hCmdBld, BSS_e BssType, void *fJoinCom
  *                      cmdBld_CmdIeEnableRx()
  ****************************************************************************
  * DESCRIPTION: Construct the EnableRx command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeEnableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
@@ -221,13 +221,13 @@ TI_STATUS cmdBld_CmdIeEnableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
  *                      cmdBld_CmdIeEnableTx()
  ****************************************************************************
  * DESCRIPTION: Construct the EnableTx command fileds and send it to the mailbox
- *              Note: This Enable_TX command is used also for changing the serving 
+ *              Note: This Enable_TX command is used also for changing the serving
  *              channel.
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeEnableTx (TI_HANDLE hCmdBld, TI_UINT8 channel, void *fCb, TI_HANDLE hCb)
@@ -253,11 +253,11 @@ TI_STATUS cmdBld_CmdIeEnableTx (TI_HANDLE hCmdBld, TI_UINT8 channel, void *fCb, 
  *                      cmdBld_CmdIeDisableRx()
  ****************************************************************************
  * DESCRIPTION: Construct the DisableRx command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeDisableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
@@ -271,11 +271,11 @@ TI_STATUS cmdBld_CmdIeDisableRx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
  *                      cmdBld_CmdIeDisableTx()
  ****************************************************************************
  * DESCRIPTION: Construct the DisableTx command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeDisableTx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
@@ -290,20 +290,20 @@ TI_STATUS cmdBld_CmdIeDisableTx (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
  ****************************************************************************
  * DESCRIPTION: Generic function which sets the Fw with a template frame according
  *              to the given template type.
- * 
+ *
  * INPUTS: templateType - CMD_BEACON, CMD_PROBE_REQ, CMD_PROBE_RESP etc.
- * 
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
-TI_STATUS cmdBld_CmdIeConfigureTemplateFrame (TI_HANDLE         hCmdBld, 
-                                              TTemplateParams  *pTemplate, 
-                                              TI_UINT16         uFrameSize, 
-                                              TemplateType_e    eTemplateType, 
-                                              TI_UINT8          uIndex, 
-                                              void *            fCb, 
-                                              TI_HANDLE         hCb)
+TI_STATUS cmdBld_CmdIeConfigureTemplateFrame (TI_HANDLE         hCmdBld,
+        TTemplateParams  *pTemplate,
+        TI_UINT16         uFrameSize,
+        TemplateType_e    eTemplateType,
+        TI_UINT8          uIndex,
+        void *            fCb,
+        TI_HANDLE         hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
     PktTemplate_t AcxCmd_PktTemplate;
@@ -321,7 +321,7 @@ TI_STATUS cmdBld_CmdIeConfigureTemplateFrame (TI_HANDLE         hCmdBld,
         /* Truncate length to the template size limit */
         uFrameSize = MAX_TEMPLATES_SIZE;
     }
-    
+
     /* if pTemplate is NULL than it means that we just want to reserve place in Fw, and there is no need to copy */
     if (pTemplate != NULL)
     {
@@ -335,19 +335,19 @@ TI_STATUS cmdBld_CmdIeConfigureTemplateFrame (TI_HANDLE         hCmdBld,
     pCmd->templateTxAttribute.longRetryLimit  = 2;
 
 #ifdef TI_DBG
-    if (pCmdBld->uDbgTemplatesRateMask != 0) 
+    if (pCmdBld->uDbgTemplatesRateMask != 0)
     {
         pCmd->templateTxAttribute.enabledRates = pCmdBld->uDbgTemplatesRateMask;
     }
 #endif
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_SET_TEMPLATE, 
-                             (TI_CHAR *)pCmd, 
-                             sizeof (PktTemplate_t),
-                             fCb,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_SET_TEMPLATE,
+                                 (TI_CHAR *)pCmd,
+                                 sizeof (PktTemplate_t),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 
@@ -355,30 +355,30 @@ TI_STATUS cmdBld_CmdIeConfigureTemplateFrame (TI_HANDLE         hCmdBld,
  *                      cmdBld_CmdIeSetKey()
  ****************************************************************************
  * DESCRIPTION: Construct the SetKey command fileds and send it to the mailbox
- * 
- * INPUTS: 
+ *
+ * INPUTS:
  *      Action      - add/remove key
  *      MacAddr     - relevant only for mapping keys
  *      KeySize     - key size
  *      KeyType     - default/mapping/TKIP
  *      KeyId       - relevant only for default keys
  *      Key         - key data
- * 
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
-TI_STATUS cmdBld_CmdIeSetKey (TI_HANDLE hCmdBld, 
-                              TI_UINT32 action, 
+TI_STATUS cmdBld_CmdIeSetKey (TI_HANDLE hCmdBld,
+                              TI_UINT32 action,
                               TI_UINT8  hlid,
                               TI_UINT8  lidkeytype,
-                              TI_UINT32 uKeySize, 
-                              TI_UINT32 uKeyType, 
-                              TI_UINT32 uKeyId, 
-                              TI_UINT8  *pKey, 
-                              TI_UINT32 uSecuritySeqNumLow, 
+                              TI_UINT32 uKeySize,
+                              TI_UINT32 uKeyType,
+                              TI_UINT32 uKeyId,
+                              TI_UINT8  *pKey,
+                              TI_UINT32 uSecuritySeqNumLow,
                               TI_UINT32 uSecuritySeqNumHigh,
-                              void      *fCb, 
+                              void      *fCb,
                               TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
@@ -391,36 +391,36 @@ TI_STATUS cmdBld_CmdIeSetKey (TI_HANDLE hCmdBld,
     {
         os_memoryCopy (pCmdBld->hOs, (void *)pCmd->key, (void *)pKey, MAX_KEY_SIZE);
     }
-    else 
+    else
     {
         os_memoryCopy (pCmdBld->hOs, (void *)pCmd->key, (void *)pKey, uKeySize);
     }
 
-   
+
     pCmd->hlid  = hlid;
     pCmd->lidKeyType = lidkeytype;
     pCmd->action = ENDIAN_HANDLE_WORD((TI_UINT16)action);
     pCmd->keySize = (TI_UINT8)uKeySize;
     pCmd->type = (TI_UINT8)uKeyType;
     pCmd->keyId = (TI_UINT8)uKeyId;
-    
-    /* 
+
+    /*
      * Preserve TKIP/AES security sequence number after recovery.
-     * Note that our STA Tx is currently using only one sequence-counter 
-     * for all ACs (unlike the Rx which is separated per AC).  
+     * Note that our STA Tx is currently using only one sequence-counter
+     * for all ACs (unlike the Rx which is separated per AC).
      */
     pCmd->AcSeqNum16[0] = ENDIAN_HANDLE_WORD((TI_UINT16)uSecuritySeqNumLow);
     pCmd->AcSeqNum16[1] = 0;
     pCmd->AcSeqNum16[2] = 0;
     pCmd->AcSeqNum16[3] = 0;
-    
+
     pCmd->AcSeqNum32[0] = ENDIAN_HANDLE_LONG(uSecuritySeqNumHigh);
     pCmd->AcSeqNum32[1] = 0;
     pCmd->AcSeqNum32[2] = 0;
     pCmd->AcSeqNum32[3] = 0;
 
     //TRACE6(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION, "Addr: %02x:%02x:%02x:%02x:%02x:%02x\n", pCmd->addr[0],pCmd->addr[1],pCmd->addr[2],pCmd->addr[3],pCmd->addr[4],pCmd->addr[5]);
-            
+
     //TRACE7(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION, "Action=%x,keySize=0x%x,type=%x, id=%x, AcSeqNum16[0]=%x, AcSeqNum32[0]=%x\n", pCmd->action,pCmd->keySize, pCmd->type,pCmd->id,dProfile,pCmd->AcSeqNum16[0],pCmd->AcSeqNum32[0] );
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_SET_KEYS, (char *)pCmd, sizeof(*pCmd), fCb, hCb, NULL);
@@ -431,11 +431,11 @@ TI_STATUS cmdBld_CmdIeSetKey (TI_HANDLE hCmdBld,
  *                      cmdBld_CmdIeStartScan ()
  ****************************************************************************
  * DESCRIPTION: Send SCAN Command
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeStartScan (TI_HANDLE hCmdBld, ScanParameters_t* pScanParams, void *fScanResponseCb, TI_HANDLE hCb)
@@ -443,36 +443,36 @@ TI_STATUS cmdBld_CmdIeStartScan (TI_HANDLE hCmdBld, ScanParameters_t* pScanParam
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
-                             CMD_SCAN, 
-                             (TI_CHAR *)pScanParams,  
-                             sizeof(ScanParameters_t),
-                             fScanResponseCb, 
-                             hCb, 
-                             NULL);
+                                 CMD_SCAN,
+                                 (TI_CHAR *)pScanParams,
+                                 sizeof(ScanParameters_t),
+                                 fScanResponseCb,
+                                 hCb,
+                                 NULL);
 }
 
 /****************************************************************************
  *                      cmdBld_CmdIeStartSPSScan ()
  ****************************************************************************
  * DESCRIPTION: Send SPS SCAN Command
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeStartSPSScan (TI_HANDLE hCmdBld, ScheduledScanParameters_t* pScanParams, void* fScanResponseCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_SPS_SCAN, 
-                             (TI_CHAR *)pScanParams, 
-                             sizeof(ScheduledScanParameters_t),
-                             fScanResponseCb, 
-                             hCb, 
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_SPS_SCAN,
+                                 (TI_CHAR *)pScanParams,
+                                 sizeof(ScheduledScanParameters_t),
+                                 fScanResponseCb,
+                                 hCb,
+                                 NULL);
 }
 
 
@@ -480,12 +480,12 @@ TI_STATUS cmdBld_CmdIeStartSPSScan (TI_HANDLE hCmdBld, ScheduledScanParameters_t
  *                      cmdBld_CmdIeStopScan ()
  ****************************************************************************
  * DESCRIPTION: Construct the STOP_SCAN command fields and send it to the
- *              mailbox 
- * 
- * INPUTS: None 
- * 
+ *              mailbox
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeStopScan (TI_HANDLE hCmdBld, void *fScanResponseCb, TI_HANDLE hCb)
@@ -502,12 +502,12 @@ TI_STATUS cmdBld_CmdIeStopScan (TI_HANDLE hCmdBld, void *fScanResponseCb, TI_HAN
  *                      cmdBld_CmdIeStopSPSScan ()
  ****************************************************************************
  * DESCRIPTION: Construct the STOP_SPS_SCAN command fields and send it to the
- *              mailbox 
- * 
- * INPUTS: None 
- * 
+ *              mailbox
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeStopSPSScan (TI_HANDLE hCmdBld, void* fScanResponseCB, TI_HANDLE hCb)
@@ -526,130 +526,130 @@ TI_STATUS cmdBld_CmdIeSetSplitScanTimeOut (TI_HANDLE hCmdBld, TI_UINT32 uTimeOut
     enhancedTriggerTO_t Cmd_enhancedTrigger;
     enhancedTriggerTO_t *pCmd = &Cmd_enhancedTrigger;
 
-TRACE1(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION, "cmdBld_CmdIeSetSplitScanTimeOut: uTimeOut=%d -------------- \n", uTimeOut);
+    TRACE1(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION, "cmdBld_CmdIeSetSplitScanTimeOut: uTimeOut=%d -------------- \n", uTimeOut);
 
     pCmd->slicedScanTimeOut = uTimeOut;
 
     return cmdQueue_SendCommand(pCmdBld->hCmdQueue, CMD_TRIGGER_SCAN_TO, (char *)pCmd, sizeof(*pCmd), fCB, hCb, NULL);
 }
 
-/** 
- * \fn     cmdBld_CmdIeScanSsidList 
- * \brief  Sets SSID list for periodic scan 
- * 
- * Sets SSID list for periodic scan 
- * 
+/**
+ * \fn     cmdBld_CmdIeScanSsidList
+ * \brief  Sets SSID list for periodic scan
+ *
+ * Sets SSID list for periodic scan
+ *
  * \param  hCmdBld - handle to command builder object
  * \param  pSsidList - command data
  * \param  fScanResponseCB - command complete function callback
  * \param  hCb - command complete callback handle
- * \return TI_OK on success, any other code on error 
+ * \return TI_OK on success, any other code on error
  * \sa     cmdBld_CmdIePeriodicScanParams, cmdBld_CmdIeStartPeriodicScan, cmdBld_CmdIeStopPeriodicScan
- */ 
+ */
 TI_STATUS cmdBld_CmdIeScanSsidList (TI_HANDLE hCmdBld, ConnScanSSIDList_t *pSsidList,
                                     void* fScanResponseCB, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
-                             CMD_CONNECTION_SCAN_SSID_CFG, 
-                             (char *)pSsidList,  
-                             sizeof(ConnScanSSIDList_t),
-                             fScanResponseCB, 
-                             hCb, 
-                             NULL);
+                                 CMD_CONNECTION_SCAN_SSID_CFG,
+                                 (char *)pSsidList,
+                                 sizeof(ConnScanSSIDList_t),
+                                 fScanResponseCB,
+                                 hCb,
+                                 NULL);
 }
 
-/** 
- * \fn     cmdBld_CmdIePeriodicScanParams 
- * \brief  Sets periodic scan parameters 
- * 
+/**
+ * \fn     cmdBld_CmdIePeriodicScanParams
+ * \brief  Sets periodic scan parameters
+ *
  * Sets periodic scan parameters
- * 
+ *
  * \param  hCmdBld - handle to command builder object
  * \param  pPeriodicScanParams - command data
  * \param  fScanResponseCB - command complete function callback
  * \param  hCb - command complete callback handle
- * \return TI_OK on success, any other code on error 
+ * \return TI_OK on success, any other code on error
  * \sa     cmdBld_CmdIeScanSsidList, cmdBld_CmdIeStartPeriodicScan, cmdBld_CmdIeStopPeriodicScan
- */ 
+ */
 TI_STATUS cmdBld_CmdIePeriodicScanParams (TI_HANDLE hCmdBld, ConnScanParameters_t *pPeriodicScanParams,
-                                          void* fScanResponseCB, TI_HANDLE hCb)
+        void* fScanResponseCB, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
-                             CMD_CONNECTION_SCAN_CFG, 
-                             (char *)pPeriodicScanParams,  
-                             sizeof(ConnScanParameters_t),
-                             fScanResponseCB, 
-                             hCb, 
-                             NULL);
+                                 CMD_CONNECTION_SCAN_CFG,
+                                 (char *)pPeriodicScanParams,
+                                 sizeof(ConnScanParameters_t),
+                                 fScanResponseCB,
+                                 hCb,
+                                 NULL);
 }
 
-/** 
- * \fn     cmdBld_CmdIeStartPeriodicScan 
+/**
+ * \fn     cmdBld_CmdIeStartPeriodicScan
  * \brief  Starts a periodic scan operation
- * 
+ *
  * Starts a periodic scan operation
- * 
+ *
  * \param  hCmdBld - handle to command builder object
  * \param  pPeriodicScanStart - command data
  * \param  fScanResponseCB - command complete function callback
  * \param  hCb - command complete callback handle
- * \return TI_OK on success, any other code on error 
+ * \return TI_OK on success, any other code on error
  * \sa     cmdBld_CmdIeScanSsidList,  cmdBld_CmdIePeriodicScanParams, cmdBld_CmdIeStopPeriodicScan
- */ 
+ */
 TI_STATUS cmdBld_CmdIeStartPeriodicScan (TI_HANDLE hCmdBld, PeriodicScanTag* pPeriodicScanStart,
-                                         void* fScanResponseCB, TI_HANDLE hCb)
+        void* fScanResponseCB, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
-                             CMD_START_PERIODIC_SCAN, 
-                             pPeriodicScanStart, sizeof (PeriodicScanTag),
-                             fScanResponseCB, 
-                             hCb, 
-                             NULL);
+                                 CMD_START_PERIODIC_SCAN,
+                                 pPeriodicScanStart, sizeof (PeriodicScanTag),
+                                 fScanResponseCB,
+                                 hCb,
+                                 NULL);
 }
 
-/** 
+/**
  * \fn     cmdBld_CmdIeStopPeriodicScan
- * \brief  Stops an on-going periodic scan operation 
- * 
+ * \brief  Stops an on-going periodic scan operation
+ *
  * Stops an on-going periodic scan operation
- * 
+ *
  * \param  hCmdBld - handle to command builder object
  * \param  fScanResponseCB - command complete function callback
  * \param  hCb - command complete callback handle
- * \return TI_OK on success, any other code on error 
+ * \return TI_OK on success, any other code on error
  * \sa     cmdBld_CmdIeScanSsidList, cmdBld_CmdIePeriodicScanParams, cmdBld_CmdIeStartPeriodicScan
- */ 
-TI_STATUS cmdBld_CmdIeStopPeriodicScan (TI_HANDLE hCmdBld, 
-                                        PeriodicScanTag* pPeriodicScanStop, 
-                                        void* fScanResponseCB, 
+ */
+TI_STATUS cmdBld_CmdIeStopPeriodicScan (TI_HANDLE hCmdBld,
+                                        PeriodicScanTag* pPeriodicScanStop,
+                                        void* fScanResponseCB,
                                         TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
     return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
-                             CMD_STOP_PERIODIC_SCAN, 
-                             pPeriodicScanStop, 
-                             sizeof(pPeriodicScanStop),
-                             fScanResponseCB, 
-                             hCb, 
-                             NULL);
+                                 CMD_STOP_PERIODIC_SCAN,
+                                 pPeriodicScanStop,
+                                 sizeof(pPeriodicScanStop),
+                                 fScanResponseCB,
+                                 hCb,
+                                 NULL);
 }
 
 /****************************************************************************
  *                      cmdBld_CmdIeNoiseHistogram ()
  ****************************************************************************
  * DESCRIPTION: Send NOISE_HISTOGRAM Command
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeNoiseHistogram (TI_HANDLE hCmdBld, TNoiseHistogram *pNoiseHistParams, void *fCb, TI_HANDLE hCb)
@@ -672,13 +672,13 @@ TI_STATUS cmdBld_CmdIeNoiseHistogram (TI_HANDLE hCmdBld, TNoiseHistogram *pNoise
 /****************************************************************************
  *                      cmdBld_CmdIeSetPsMode()
  ****************************************************************************
- * DESCRIPTION: send Command for Power Management configuration 
+ * DESCRIPTION: send Command for Power Management configuration
  *              to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeSetPsMode (TI_HANDLE hCmdBld, TPowerSaveParams* powerSaveParams, void *fCb, TI_HANDLE hCb)
@@ -697,7 +697,7 @@ TI_STATUS cmdBld_CmdIeSetPsMode (TI_HANDLE hCmdBld, TPowerSaveParams* powerSaveP
     {
         pCmd->mode = 0;
     }
-    
+
     pCmd->hangOverPeriod            = powerSaveParams->hangOverPeriod;
     pCmd->needToSendNullData        = powerSaveParams->needToSendNullData;
     pCmd->rateToTransmitNullData    = ENDIAN_HANDLE_LONG(powerSaveParams->NullPktRateModulation);
@@ -711,11 +711,11 @@ TI_STATUS cmdBld_CmdIeSetPsMode (TI_HANDLE hCmdBld, TPowerSaveParams* powerSaveP
  *                      cmdBld_CmdIeSwitchChannel ()
  ****************************************************************************
  * DESCRIPTION: Send CMD_SWITCH_CHANNEL Command
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeSwitchChannel (TI_HANDLE hCmdBld, TSwitchChannelParams *pSwitchChannelCmd, void *fCb, TI_HANDLE hCb)
@@ -739,11 +739,11 @@ TI_STATUS cmdBld_CmdIeSwitchChannel (TI_HANDLE hCmdBld, TSwitchChannelParams *pS
  *                      cmdBld_CmdIeSwitchChannelCancel ()
  ****************************************************************************
  * DESCRIPTION: Send CMD_SWITCH_CHANNEL_CANCEL Command
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeSwitchChannelCancel (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
@@ -758,48 +758,48 @@ TI_STATUS cmdBld_CmdIeSwitchChannelCancel (TI_HANDLE hCmdBld, void *fCb, TI_HAND
  *                      cmdBld_CmdIeFwDisconnect()
  ****************************************************************************
  * DESCRIPTION: Construct the Disconnect command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeFwDisconnect (TI_HANDLE hCmdBld, TI_UINT32 uConfigOptions, TI_UINT32 uFilterOptions, DisconnectType_e uDisconType, TI_UINT16 uDisconReason, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
     DisconnectParameters_t AcxCmd_Disconnect;
-    
+
     AcxCmd_Disconnect.rxFilter.ConfigOptions = ENDIAN_HANDLE_LONG(uConfigOptions);
     AcxCmd_Disconnect.rxFilter.FilterOptions = ENDIAN_HANDLE_LONG(uFilterOptions);
     AcxCmd_Disconnect.disconnectReason = ENDIAN_HANDLE_LONG(uDisconReason);
     AcxCmd_Disconnect.disconnectType = uDisconType;
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_DISCONNECT, 
-                             (void *)&AcxCmd_Disconnect, 
-                             sizeof(AcxCmd_Disconnect),
-                             fCb,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_DISCONNECT,
+                                 (void *)&AcxCmd_Disconnect,
+                                 sizeof(AcxCmd_Disconnect),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 
 /****************************************************************************
  *                      cmdBld_CmdIeMeasurement()
  ****************************************************************************
- * DESCRIPTION: send Command for measurement configuration 
+ * DESCRIPTION: send Command for measurement configuration
  *              to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
-TI_STATUS cmdBld_CmdIeMeasurement (TI_HANDLE          hCmdBld, 
+TI_STATUS cmdBld_CmdIeMeasurement (TI_HANDLE          hCmdBld,
                                    TMeasurementParams *pMeasurementParams,
-                                   void               *fMeasureResponseCb, 
+                                   void               *fMeasureResponseCb,
                                    TI_HANDLE          hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
@@ -807,7 +807,7 @@ TI_STATUS cmdBld_CmdIeMeasurement (TI_HANDLE          hCmdBld,
     MeasurementParameters_t *pCmd = &Cmd_MeasurementParam;
 
     os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
-    
+
     pCmd->band =                    pMeasurementParams->band;
     pCmd->channel =                 pMeasurementParams->channel;
     pCmd->duration =                ENDIAN_HANDLE_LONG(pMeasurementParams->duration);
@@ -815,51 +815,51 @@ TI_STATUS cmdBld_CmdIeMeasurement (TI_HANDLE          hCmdBld,
     pCmd->rxFilter.FilterOptions =  ENDIAN_HANDLE_LONG(pMeasurementParams->FilterOptions);
     pCmd->scanTag =                 (TI_UINT8)pMeasurementParams->eTag;
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_MEASUREMENT, 
-                             (TI_CHAR *)pCmd, 
-                             sizeof(*pCmd),
-                             fMeasureResponseCb, 
-                             hCb, 
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_MEASUREMENT,
+                                 (TI_CHAR *)pCmd,
+                                 sizeof(*pCmd),
+                                 fMeasureResponseCb,
+                                 hCb,
+                                 NULL);
 }
 
 
 /****************************************************************************
  *                      cmdBld_CmdIeMeasurementStop()
  ****************************************************************************
- * DESCRIPTION: send Command for stoping measurement  
- * 
- * INPUTS: None 
- * 
+ * DESCRIPTION: send Command for stoping measurement
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeMeasurementStop (TI_HANDLE hCmdBld, void* fMeasureResponseCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_STOP_MEASUREMENT, 
-                             0, 
-                             0,
-                             fMeasureResponseCb, 
-                             hCb, 
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_STOP_MEASUREMENT,
+                                 0,
+                                 0,
+                                 fMeasureResponseCb,
+                                 hCb,
+                                 NULL);
 }
 
 
 /****************************************************************************
  *                      cmdBld_CmdIeApDiscovery()
  ****************************************************************************
- * DESCRIPTION: send Command for AP Discovery 
+ * DESCRIPTION: send Command for AP Discovery
  *              to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeApDiscovery (TI_HANDLE hCmdBld, TApDiscoveryParams *pApDiscoveryParams, void *fCb, TI_HANDLE hCb)
@@ -869,7 +869,7 @@ TI_STATUS cmdBld_CmdIeApDiscovery (TI_HANDLE hCmdBld, TApDiscoveryParams *pApDis
     ApDiscoveryParameters_t *pCmd = &Cmd_ApDiscovery;
 
     os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
-    
+
     pCmd->txPowerAttenuation = pApDiscoveryParams->txPowerDbm;
     pCmd->numOfProbRqst = pApDiscoveryParams->numOfProbRqst;
     pCmd->scanDuration  =  ENDIAN_HANDLE_LONG(pApDiscoveryParams->scanDuration);
@@ -878,13 +878,13 @@ TI_STATUS cmdBld_CmdIeApDiscovery (TI_HANDLE hCmdBld, TApDiscoveryParams *pApDis
     pCmd->rxFilter.ConfigOptions =  ENDIAN_HANDLE_LONG(pApDiscoveryParams->ConfigOptions);
     pCmd->rxFilter.FilterOptions =  ENDIAN_HANDLE_LONG(pApDiscoveryParams->FilterOptions);
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_AP_DISCOVERY, 
-                             (void *)pCmd, 
-                             sizeof(*pCmd),
-                             fCb,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_AP_DISCOVERY,
+                                 (void *)pCmd,
+                                 sizeof(*pCmd),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 
@@ -892,11 +892,11 @@ TI_STATUS cmdBld_CmdIeApDiscovery (TI_HANDLE hCmdBld, TApDiscoveryParams *pApDis
  *                      cmdBld_CmdIeApDiscoveryStop()
  ****************************************************************************
  * DESCRIPTION: send Command for stoping AP Discovery
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeApDiscoveryStop (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
@@ -910,12 +910,12 @@ TI_STATUS cmdBld_CmdIeApDiscoveryStop (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE h
 /****************************************************************************
  *                      cmdBld_CmdIeHealthCheck()
  ****************************************************************************
- * DESCRIPTION: 
- * 
- * INPUTS:  
- * 
- * OUTPUT:  
- * 
+ * DESCRIPTION:
+ *
+ * INPUTS:
+ *
+ * OUTPUT:
+ *
  * RETURNS:
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeHealthCheck (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
@@ -929,38 +929,38 @@ TI_STATUS cmdBld_CmdIeHealthCheck (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
  *                      cmdBld_CmdIeSetStaState()
  ****************************************************************************
  * DESCRIPTION: Construct the Disconnect command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeSetStaState (TI_HANDLE hCmdBld, TI_UINT8 staState, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
     SetStaState_t AcxCmd_SetStaState;
-    
+
     AcxCmd_SetStaState.staState = staState;
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_SET_STA_STATE, 
-                             (void *)&AcxCmd_SetStaState, 
-                             sizeof(AcxCmd_SetStaState),
-                             fCb,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_SET_STA_STATE,
+                                 (void *)&AcxCmd_SetStaState,
+                                 sizeof(AcxCmd_SetStaState),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 /****************************************************************************
  *                      cmdBld_CmdIeBssStart()
  ****************************************************************************
  * DESCRIPTION: Construct the Bss Start command fileds and send it to the mailbox
- * 
- * INPUTS: None 
- * 
+ *
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 
@@ -982,7 +982,7 @@ TI_STATUS cmdBld_CmdIeBssStart (TI_HANDLE hCmdBld, BssStartCmd_t *pBssStartParam
     pCmd->broadcastHLID     = pBssStartParams->broadcastHLID;
     pCmd->globalHLID        = pBssStartParams->globalHLID;
     pCmd->basicRateSet      = ENDIAN_HANDLE_LONG(pBssStartParams->basicRateSet);
-	pCmd->beaconExpiry		= pBssStartParams->beaconExpiry;
+    pCmd->beaconExpiry		= pBssStartParams->beaconExpiry;
 
     os_memoryCopy(pCmdBld->hOs, &pCmd->ssid, &pBssStartParams->ssid, sizeof(SSID_t));
     os_memoryCopy(pCmdBld->hOs, pCmd->bssid, pBssStartParams->bssid, MAC_ADDR_LEN);
@@ -991,22 +991,22 @@ TI_STATUS cmdBld_CmdIeBssStart (TI_HANDLE hCmdBld, BssStartCmd_t *pBssStartParam
     tmpSsid[pBssStartParams->ssid.ssidLength]= '\0';
 
     WLAN_OS_REPORT(("\n%s: ------------------------------------------->\n", __FUNCTION__));
-    WLAN_OS_REPORT(("ssid=%s len=%d bssid=%02X:%02X:%02X:%02X:%02X:%02X Indx=%d\n", tmpSsid, pCmd->ssid.ssidLength, 
+    WLAN_OS_REPORT(("ssid=%s len=%d bssid=%02X:%02X:%02X:%02X:%02X:%02X Indx=%d\n", tmpSsid, pCmd->ssid.ssidLength,
                     pCmd->bssid[0],pCmd->bssid[1],pCmd->bssid[2],pCmd->bssid[3],pCmd->bssid[4],pCmd->bssid[5], pCmd->bssIndex));
-    WLAN_OS_REPORT(("beacon=%d dtim=%d aging=%d chan=%d band=%d\n", 
+    WLAN_OS_REPORT(("beacon=%d dtim=%d aging=%d chan=%d band=%d\n",
                     pCmd->beaconInterval, pCmd->dtimInterval, pCmd->agingPeriod, pCmd->channelNumber, pCmd->band));
     WLAN_OS_REPORT(("brdcstHLID=%d globalHLID=%d ssidType=%d basicRates=0x%04x beacon expiry=%d\n",
-                    pCmd->broadcastHLID, pCmd->globalHLID, pCmd->ssid.ssidType, (TI_UINT32)pCmd->basicRateSet, pCmd->beaconExpiry));    
+                    pCmd->broadcastHLID, pCmd->globalHLID, pCmd->ssid.ssidType, (TI_UINT32)pCmd->basicRateSet, pCmd->beaconExpiry));
     WLAN_OS_REPORT(("%s: <--------------------------------------------\n", __FUNCTION__));
 
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_BSS_START, 
-                             (void *)pCmd, 
-                             sizeof(*pCmd),
-                             fCB,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_BSS_START,
+                                 (void *)pCmd,
+                                 sizeof(*pCmd),
+                                 fCB,
+                                 hCb,
+                                 NULL);
 }
 
 /****************************************************************************
@@ -1025,13 +1025,13 @@ TI_STATUS cmdBld_CmdIeBssStop (TI_HANDLE hCmdBld, TI_UINT8 bssIdx, void *fCb, TI
 
     WLAN_OS_REPORT(("\n <<<<<<<<<<<<<< Send cmdBld_CmdIeBssStop (index=%d) >>>>>>>>>>>>>>>>>>> \n", pCmd->bssIndex));
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_BSS_STOP, 
-                             (void *)pCmd, 
-                             sizeof(*pCmd),
-                             fCb,
-                             hCb,
-                             NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_BSS_STOP,
+                                 (void *)pCmd,
+                                 sizeof(*pCmd),
+                                 fCb,
+                                 hCb,
+                                 NULL);
 }
 
 
@@ -1055,11 +1055,11 @@ TI_STATUS cmdBld_CmdIeBssStop (TI_HANDLE hCmdBld, TI_UINT8 bssIdx, void *fCb, TI
 /****************************************************************************
  *                      cmdBld_BitIeTestCmd()
  ****************************************************************************
- * DESCRIPTION:   
- * INPUTS: None 
- * 
+ * DESCRIPTION:
+ * INPUTS: None
+ *
  * OUTPUT:  None
- * 
+ *
  * RETURNS: TI_OK or TI_NOK
  ****************************************************************************/
 TI_STATUS cmdBld_CmdIeTest (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb, TTestCmd* pTestCmd)
@@ -1070,178 +1070,178 @@ TI_STATUS cmdBld_CmdIeTest (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb, TTestCm
 
     if (NULL == pTestCmd)
     {
-         TRACE0(pCmdBld->hReport, REPORT_SEVERITY_ERROR, " pTestCmd_Buf = NULL!!!\n");
-         return TI_NOK;
+        TRACE0(pCmdBld->hReport, REPORT_SEVERITY_ERROR, " pTestCmd_Buf = NULL!!!\n");
+        return TI_NOK;
     }
 
     if ( (TestCmdID_enum)pTestCmd->testCmdId < MAX_TEST_CMD_ID )
     {
-        bIsCBfuncNecessary = TI_TRUE; 
+        bIsCBfuncNecessary = TI_TRUE;
     }
     else
     {
         TRACE1(pCmdBld->hReport, REPORT_SEVERITY_WARNING, " Unsupported testCmdId (%d)\n", pTestCmd->testCmdId);
     }
 
-    if (bIsCBfuncNecessary && fCb == NULL) 
+    if (bIsCBfuncNecessary && fCb == NULL)
     {
         return TI_OK;
     }
-    
+
     switch( pTestCmd->testCmdId )
     {
-        case TEST_CMD_PD_BUFFER_CAL:
-            paramLength = sizeof(TTestCmdPdBufferCal);
-            break;
+    case TEST_CMD_PD_BUFFER_CAL:
+        paramLength = sizeof(TTestCmdPdBufferCal);
+        break;
 
-        case TEST_CMD_P2G_CAL:
-            paramLength = sizeof(TTestCmdP2GCal);
-            break;
+    case TEST_CMD_P2G_CAL:
+        paramLength = sizeof(TTestCmdP2GCal);
+        break;
 
-        case TEST_CMD_RX_STAT_GET:
-            paramLength = sizeof(RadioRxStatistics);
-            break;
+    case TEST_CMD_RX_STAT_GET:
+        paramLength = sizeof(RadioRxStatistics);
+        break;
 
         /* packet */
-        case TEST_CMD_FCC:
-            paramLength = sizeof(TPacketParam);
-            break;
+    case TEST_CMD_FCC:
+        paramLength = sizeof(TPacketParam);
+        break;
 
         /* tone */
-        case TEST_CMD_TELEC:
-            paramLength = sizeof(TToneParam);
-            break;
+    case TEST_CMD_TELEC:
+        paramLength = sizeof(TToneParam);
+        break;
 
-        case TEST_CMD_PLT_TEMPLATE:
-            paramLength = sizeof(TTxTemplate);
-            break;
+    case TEST_CMD_PLT_TEMPLATE:
+        paramLength = sizeof(TTxTemplate);
+        break;
 
         /* channel tune */
-        case TEST_CMD_CHANNEL_TUNE:
-            paramLength = sizeof(TTestCmdChannel);
-            break;
+    case TEST_CMD_CHANNEL_TUNE:
+        paramLength = sizeof(TTestCmdChannel);
+        break;
 
-        case TEST_CMD_GET_FW_VERSIONS:
-            paramLength = sizeof(TFWVerisons);
-            break;
+    case TEST_CMD_GET_FW_VERSIONS:
+        paramLength = sizeof(TFWVerisons);
+        break;
 
-        case TEST_CMD_INI_FILE_RADIO_PARAM:
-            paramLength = sizeof(IniFileRadioParam);
-            break;
-          
-        case TEST_CMD_INI_FILE_GENERAL_PARAM:
-            paramLength = sizeof(IniFileGeneralParam);
-            break;
-          
-        case TEST_CMD_PLT_GAIN_ADJUST:
-            paramLength = sizeof(uint32);
-            break;
+    case TEST_CMD_INI_FILE_RADIO_PARAM:
+        paramLength = sizeof(IniFileRadioParam);
+        break;
 
-        case TEST_CMD_RUN_CALIBRATION_TYPE:
-            paramLength = sizeof(TTestCmdRunCalibration);
-            break;
+    case TEST_CMD_INI_FILE_GENERAL_PARAM:
+        paramLength = sizeof(IniFileGeneralParam);
+        break;
 
-        case TEST_CMD_TX_GAIN_ADJUST:
-            paramLength = sizeof(TTxGainAdjust);
-            break;
-        case TEST_CMD_TEST_TONE:
-            paramLength = sizeof(TestToneParams_t);
-            break;
+    case TEST_CMD_PLT_GAIN_ADJUST:
+        paramLength = sizeof(uint32);
+        break;
 
-        case TEST_CMD_SET_EFUSE:
-            paramLength = sizeof(EfuseParameters_t);
-            break;
-        case TEST_CMD_GET_EFUSE:
-            paramLength = sizeof(EfuseParameters_t);
-            break;
+    case TEST_CMD_RUN_CALIBRATION_TYPE:
+        paramLength = sizeof(TTestCmdRunCalibration);
+        break;
 
-        case TEST_CMD_RX_PLT_CAL:
-            paramLength = sizeof(RadioRxPltCal);
-            break;
-            
-        case TEST_CMD_UPDATE_PD_REFERENCE_POINT:
-            paramLength = sizeof(TTestCmdUpdateReferncePoint);
-            break;
+    case TEST_CMD_TX_GAIN_ADJUST:
+        paramLength = sizeof(TTxGainAdjust);
+        break;
+    case TEST_CMD_TEST_TONE:
+        paramLength = sizeof(TestToneParams_t);
+        break;
 
-        case TEST_CMD_UPDATE_PD_BUFFER_ERRORS:
-            paramLength = sizeof(TTestCmdPdBufferErrors);
-            break;
-            
-        case TEST_CMD_POWER_MODE:
-            paramLength = sizeof(TTestCmdPowerMode);
-            break;
+    case TEST_CMD_SET_EFUSE:
+        paramLength = sizeof(EfuseParameters_t);
+        break;
+    case TEST_CMD_GET_EFUSE:
+        paramLength = sizeof(EfuseParameters_t);
+        break;
 
-        case TEST_CMD_STOP_TX:
-        case TEST_CMD_RX_STAT_STOP:
-        case TEST_CMD_RX_STAT_START:
-        case TEST_CMD_RX_STAT_RESET:
-        case TEST_CMD_RX_PLT_ENTER:
-        case TEST_CMD_RX_PLT_EXIT:
-            paramLength = 0;
-            break;
+    case TEST_CMD_RX_PLT_CAL:
+        paramLength = sizeof(RadioRxPltCal);
+        break;
 
-        default:
-            paramLength = sizeof(pTestCmd->testCmd_u);
+    case TEST_CMD_UPDATE_PD_REFERENCE_POINT:
+        paramLength = sizeof(TTestCmdUpdateReferncePoint);
+        break;
+
+    case TEST_CMD_UPDATE_PD_BUFFER_ERRORS:
+        paramLength = sizeof(TTestCmdPdBufferErrors);
+        break;
+
+    case TEST_CMD_POWER_MODE:
+        paramLength = sizeof(TTestCmdPowerMode);
+        break;
+
+    case TEST_CMD_STOP_TX:
+    case TEST_CMD_RX_STAT_STOP:
+    case TEST_CMD_RX_STAT_START:
+    case TEST_CMD_RX_STAT_RESET:
+    case TEST_CMD_RX_PLT_ENTER:
+    case TEST_CMD_RX_PLT_EXIT:
+        paramLength = 0;
+        break;
+
+    default:
+        paramLength = sizeof(pTestCmd->testCmd_u);
     }
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, 
-                             CMD_TEST, 
-                             (void *)pTestCmd, 
-                             paramLength + RESEARVED_SIZE_FOR_RESPONSE,
-                             fCb, 
-                             hCb, 
-                             (void*)pTestCmd);    
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue,
+                                 CMD_TEST,
+                                 (void *)pTestCmd,
+                                 paramLength + RESEARVED_SIZE_FOR_RESPONSE,
+                                 fCb,
+                                 hCb,
+                                 (void*)pTestCmd);
 }
 
 /* \fn cmdBld_CmdIeAddSta
- * 
+ *
  * \brief Build and send CMD_ADD_STA to the FW via Cmd Mailbox
- */ 
+ */
 TI_STATUS cmdBld_CmdIeAddSta (TI_HANDLE hCmdBld, TTwdAddStaParams *addStaParams, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
-	AddStation_t	cmdAddSta;
-	AddStation_t	*pCmd = &cmdAddSta;
+    AddStation_t	cmdAddSta;
+    AddStation_t	*pCmd = &cmdAddSta;
 
-	os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
+    os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
 
-	pCmd->BSSIndex = addStaParams->uBssIndex;
-	pCmd->HLID = addStaParams->uHlid;
+    pCmd->BSSIndex = addStaParams->uBssIndex;
+    pCmd->HLID = addStaParams->uHlid;
     pCmd->AID  = addStaParams->uAid;
-	os_memoryCopy(pCmdBld->hOs,pCmd->macAddress, addStaParams->aMacAddr, MAC_ADDR_SIZE);
-	pCmd->WMM  = addStaParams->bWme;
-	pCmd->SPLen = addStaParams->uSPLen;
-	os_memoryCopy(pCmdBld->hOs,pCmd->PSDType, addStaParams->aPSDType, sizeof(pCmd->PSDType));
-	pCmd->supportedRates = addStaParams->uSupRates;
+    os_memoryCopy(pCmdBld->hOs,pCmd->macAddress, addStaParams->aMacAddr, MAC_ADDR_SIZE);
+    pCmd->WMM  = addStaParams->bWme;
+    pCmd->SPLen = addStaParams->uSPLen;
+    os_memoryCopy(pCmdBld->hOs,pCmd->PSDType, addStaParams->aPSDType, sizeof(pCmd->PSDType));
+    pCmd->supportedRates = addStaParams->uSupRates;
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_ADD_STA, (void *)pCmd, 
-								 sizeof(*pCmd), fCb, hCb, NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_ADD_STA, (void *)pCmd,
+                                 sizeof(*pCmd), fCb, hCb, NULL);
 }
 
 /* \fn cmdBld_CmdIeRemSta
  *
- * \brief Build and send CMD_REMOVE_STA to the FW via Cmd Mailbox 	
- */ 
+ * \brief Build and send CMD_REMOVE_STA to the FW via Cmd Mailbox
+ */
 TI_STATUS cmdBld_CmdIeRemSta (TI_HANDLE hCmdBld, TI_UINT8 uHlid, TI_UINT8 uReasonOpcode,
-							  TI_BOOL bSendDeauth, void *fCb, TI_HANDLE hCb)
+                              TI_BOOL bSendDeauth, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
-	RemoveStation_t	cmdRemSta;
-	RemoveStation_t	*pCmd = &cmdRemSta;
+    RemoveStation_t	cmdRemSta;
+    RemoveStation_t	*pCmd = &cmdRemSta;
 
-	os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
+    os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
 
-	pCmd->HLID = uHlid;
+    pCmd->HLID = uHlid;
     pCmd->reasonOpcode   = uReasonOpcode;
-	pCmd->sendDeauthFlag = bSendDeauth;
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_REMOVE_STA, (void *)pCmd, 
-								 sizeof(*pCmd), fCb, hCb, NULL);
+    pCmd->sendDeauthFlag = bSendDeauth;
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_REMOVE_STA, (void *)pCmd,
+                                 sizeof(*pCmd), fCb, hCb, NULL);
 }
 
 /* \fn cmdBld_CmdIeNop
  *
- * \brief Send CMD_NOP to TWD command queue 	
- */ 
+ * \brief Send CMD_NOP to TWD command queue
+ */
 TI_STATUS cmdBld_CmdIeNop (TI_HANDLE hCmdBld, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;

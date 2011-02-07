@@ -952,12 +952,17 @@ void cmdQueue_PrintHistory (TI_HANDLE hCmdQueue, TI_UINT32 uNumOfCmd)
     
     for (uCurrentCmdIndex = 0; uCurrentCmdIndex < uNumOfCmd; uCurrentCmdIndex++)
     {
+	TI_UINT16 uIeId;
+
         pHead  =  &pCmdQueue->aCmdQueue[first];
 
-        WLAN_OS_REPORT(("Cmd index %d CmdType = %s %s, Len = %d, Place in Queue = %d \n",
+        uIeId = (((pHead->cmdType == CMD_INTERROGATE)||(pHead->cmdType == CMD_CONFIGURE)) ? *(TI_UINT16 *)pHead->aParamsBuf : 0);
+        WLAN_OS_REPORT(("Cmd index %d CmdType = %s (%d) %s (%d), Len = %d, Place in Queue = %d \n",
                         uCurrentCmdIndex, 
                         cmdQueue_GetCmdString(pHead->cmdType),
-                        cmdQueue_GetIEString(pHead->cmdType, (((pHead->cmdType == CMD_INTERROGATE)||(pHead->cmdType == CMD_CONFIGURE)) ? *(TI_UINT16 *)pHead->aParamsBuf : 0)),
+                        pHead->cmdType,
+                        cmdQueue_GetIEString(pHead->cmdType, uIeId),
+                        uIeId,
                         pHead->uParamsLen, 
                         first));
 
@@ -993,22 +998,22 @@ static char* cmdQueue_GetCmdString (TI_INT32 MboxCmdType)
     		case 0: return "CMD_RESET";
     		case 1: return "CMD_INTERROGATE"; 
     	 	case 2: return "CMD_CONFIGURE";
-    	    	case 3: return "CMD_ENABLE_RX";
+		case 3: return "CMD_ENABLE_RX";
     		case 4: return "CMD_ENABLE_TX";
     		case 5: return "CMD_DISABLE_RX";
-    	    	case 6: return "CMD_DISABLE_TX";	
+		case 6: return "CMD_DISABLE_TX";
     		case 8: return "CMD_SCAN";
     		case 9: return "CMD_STOP_SCAN";	
-    	    	case 10: return "CMD_VBM";
+		case 10: return "CMD_VBM";
     		case 11: return "CMD_START_JOIN";	
     		case 12: return "CMD_SET_KEYS";	
     		case 13: return "CMD_READ_MEMORY";	
-    	    	case 14: return "CMD_WRITE_MEMORY";
+		case 14: return "CMD_WRITE_MEMORY";
             case 19: return "CMD_SET_TEMPLATE";
     		case 23: return "CMD_TEST";		
     		case 27: return "CMD_ENABLE_RX_PATH";
     		case 28: return "CMD_NOISE_HIST";	
-    	    	case 29: return "CMD_RX_RESET";	
+		case 29: return "CMD_RX_RESET";
     		case 32: return "CMD_LNA_CONTROL";	
     		case 33: return "CMD_SET_BCN_MODE";	
     		case 34: return "CMD_MEASUREMENT";	
@@ -1059,7 +1064,8 @@ static char * cmdQueue_GetIEString (TI_INT32 MboxCmdType, TI_UINT16 Id)
         case ACX_STATISTICS: 				return " (ACX_STATISTICS) ";
         case ACX_FEATURE_CFG: 				return " (ACX_FEATURE_CFG) ";                    
         case ACX_TID_CFG: 					return " (ACX_TID_CFG) ";                    
-        case ACX_BEACON_FILTER_OPT: 		return " (ACX_BEACON_FILTER_OPT) ";             			      											  
+        case ACX_STA_BEACON_FILTER_OPT: 	return " (ACX_STA_BEACON_FILTER_OPT) ";
+        case ACX_AP_BEACON_FILTER_OPT:	 	return " (ACX_AP_BEACON_FILTER_OPT) ";
         case ACX_NOISE_HIST: 				return " (ACX_NOISE_HIST)";           
         case ACX_PD_THRESHOLD: 				return " (ACX_PD_THRESHOLD) ";                 
         case ACX_TX_CONFIG_OPT: 			return " (ACX_TX_CONFIG_OPT) ";
@@ -1097,8 +1103,8 @@ static char * cmdQueue_GetIEString (TI_INT32 MboxCmdType, TI_UINT16 Id)
         case DOT11_RX_MSDU_LIFE_TIME: 		return " (DOT11_RX_MSDU_LIFE_TIME) ";
         case DOT11_CUR_TX_PWR:   			return " (DOT11_CUR_TX_PWR) ";
         case DOT11_RTS_THRESHOLD: 			return " (DOT11_RTS_THRESHOLD) ";
-        case DOT11_GROUP_ADDRESS_TBL: 		return " (DOT11_GROUP_ADDRESS_TBL) ";  
-               
+        case DOT11_GROUP_ADDRESS_TBL: 		return " (DOT11_GROUP_ADDRESS_TBL) ";
+
         default:	return " *** Error No Such IE **** ";
         }
     }

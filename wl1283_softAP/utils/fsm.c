@@ -69,7 +69,7 @@
 *
 * fsm_Init  - Initialize the FSM structure
 *
-* \b Description: 
+* \b Description:
 *
 * Init The FSM structure. If matrix argument is NULL, allocate memory for
 * new matrix.
@@ -84,50 +84,50 @@
 *
 * \b RETURNS:
 *
-*  TI_OK on success, TI_NOK on failure 
+*  TI_OK on success, TI_NOK on failure
 *
 * \sa fsm_Event
 */
 TI_STATUS fsm_Create(TI_HANDLE				hOs,
-				fsm_stateMachine_t		**pFsm,
-				TI_UINT8					MaxNoOfStates,
-				TI_UINT8					MaxNoOfEvents)
+                     fsm_stateMachine_t		**pFsm,
+                     TI_UINT8					MaxNoOfStates,
+                     TI_UINT8					MaxNoOfEvents)
 {
-	/* check for perliminary conditions */
-	if ((pFsm == NULL) || (MaxNoOfStates == 0) || (MaxNoOfEvents == 0))
-	{
-		return TI_NOK;
-	}
+    /* check for perliminary conditions */
+    if ((pFsm == NULL) || (MaxNoOfStates == 0) || (MaxNoOfEvents == 0))
+    {
+        return TI_NOK;
+    }
 
-	/* allocate memory for FSM context */
-	*pFsm = (fsm_stateMachine_t *)os_memoryAlloc(hOs, sizeof(fsm_stateMachine_t));
-	if (*pFsm == NULL)
-	{
-		return TI_NOK;
-	}
+    /* allocate memory for FSM context */
+    *pFsm = (fsm_stateMachine_t *)os_memoryAlloc(hOs, sizeof(fsm_stateMachine_t));
+    if (*pFsm == NULL)
+    {
+        return TI_NOK;
+    }
     os_memoryZero(hOs, (*pFsm), sizeof(fsm_stateMachine_t));
 
-	/* allocate memory for FSM matrix */
-	(*pFsm)->stateEventMatrix = (fsm_Matrix_t)os_memoryAlloc(hOs, MaxNoOfStates * MaxNoOfEvents * sizeof(fsm_actionCell_t));
-	if ((*pFsm)->stateEventMatrix == NULL)
-	{
-		os_memoryFree(hOs, *pFsm, sizeof(fsm_stateMachine_t));
-		return TI_NOK;
-	}
+    /* allocate memory for FSM matrix */
+    (*pFsm)->stateEventMatrix = (fsm_Matrix_t)os_memoryAlloc(hOs, MaxNoOfStates * MaxNoOfEvents * sizeof(fsm_actionCell_t));
+    if ((*pFsm)->stateEventMatrix == NULL)
+    {
+        os_memoryFree(hOs, *pFsm, sizeof(fsm_stateMachine_t));
+        return TI_NOK;
+    }
     os_memoryZero(hOs, (*pFsm)->stateEventMatrix,
                   (MaxNoOfStates * MaxNoOfEvents * sizeof(fsm_actionCell_t)));
-	/* update pFsm structure with parameters */
-	(*pFsm)->MaxNoOfStates = MaxNoOfStates;
-	(*pFsm)->MaxNoOfEvents = MaxNoOfEvents;
+    /* update pFsm structure with parameters */
+    (*pFsm)->MaxNoOfStates = MaxNoOfStates;
+    (*pFsm)->MaxNoOfEvents = MaxNoOfEvents;
 
-	return(TI_OK);
+    return(TI_OK);
 }
 
 /**
 *
 * fsm_Unload  - free all memory allocated to FSM structure
 *
-* \b Description: 
+* \b Description:
 *
 * Unload the FSM structure.
 *
@@ -141,37 +141,37 @@ TI_STATUS fsm_Create(TI_HANDLE				hOs,
 *
 * \b RETURNS:
 *
-*  TI_OK on success, TI_NOK on failure 
+*  TI_OK on success, TI_NOK on failure
 *
 * \sa fsm_Event
 */
 TI_STATUS fsm_Unload(TI_HANDLE				hOs,
-				fsm_stateMachine_t		*pFsm)
+                     fsm_stateMachine_t		*pFsm)
 {
-	/* check for perliminary conditions */
-	if (pFsm == NULL)
-	{
-		return TI_NOK;
-	}
+    /* check for perliminary conditions */
+    if (pFsm == NULL)
+    {
+        return TI_NOK;
+    }
 
-	/* free memory of FSM matrix */
-	if (pFsm->stateEventMatrix != NULL)
-	{
-		os_memoryFree(hOs, pFsm->stateEventMatrix,
-					  pFsm->MaxNoOfStates * pFsm->MaxNoOfEvents * sizeof(fsm_actionCell_t));
-	}
+    /* free memory of FSM matrix */
+    if (pFsm->stateEventMatrix != NULL)
+    {
+        os_memoryFree(hOs, pFsm->stateEventMatrix,
+                      pFsm->MaxNoOfStates * pFsm->MaxNoOfEvents * sizeof(fsm_actionCell_t));
+    }
 
-	/* free memory for FSM context (no need to check for null) */
-	os_memoryFree(hOs, pFsm, sizeof(fsm_stateMachine_t));
+    /* free memory for FSM context (no need to check for null) */
+    os_memoryFree(hOs, pFsm, sizeof(fsm_stateMachine_t));
 
-	return(TI_OK);
+    return(TI_OK);
 }
 
 /**
 *
 * fsm_Init  - Initialize the FSM structure
 *
-* \b Description: 
+* \b Description:
 *
 * Init The FSM structure. If matrix argument is NULL, allocate memory for
 * new matrix.
@@ -186,46 +186,46 @@ TI_STATUS fsm_Unload(TI_HANDLE				hOs,
 *
 * \b RETURNS:
 *
-*  TI_OK on success, TI_NOK on failure 
+*  TI_OK on success, TI_NOK on failure
 *
 * \sa fsm_Event
 */
 TI_STATUS fsm_Config(fsm_stateMachine_t	*pFsm,
-				  fsm_Matrix_t			pMatrix,
-				  TI_UINT8					ActiveNoOfStates,
-				  TI_UINT8					ActiveNoOfEvents,
-				  fsm_eventActivation_t	transFunc,
-				  TI_HANDLE				hOs)
+                     fsm_Matrix_t			pMatrix,
+                     TI_UINT8					ActiveNoOfStates,
+                     TI_UINT8					ActiveNoOfEvents,
+                     fsm_eventActivation_t	transFunc,
+                     TI_HANDLE				hOs)
 {
-	/* check for perliminary conditions */
-	if ((pFsm == NULL) ||
-		(pMatrix == NULL))
-	{
-		return TI_NOK;
-	}
+    /* check for perliminary conditions */
+    if ((pFsm == NULL) ||
+            (pMatrix == NULL))
+    {
+        return TI_NOK;
+    }
 
-	if ((ActiveNoOfStates > pFsm->MaxNoOfStates) || 
-		(ActiveNoOfEvents > pFsm->MaxNoOfEvents))
-	{
-		return TI_NOK;
-	}
+    if ((ActiveNoOfStates > pFsm->MaxNoOfStates) ||
+            (ActiveNoOfEvents > pFsm->MaxNoOfEvents))
+    {
+        return TI_NOK;
+    }
 
-	/* copy matrix to FSM context */
-	os_memoryCopy(hOs, (void *)pFsm->stateEventMatrix, (void *)pMatrix,
-				  ActiveNoOfStates * ActiveNoOfEvents * sizeof(fsm_actionCell_t));
+    /* copy matrix to FSM context */
+    os_memoryCopy(hOs, (void *)pFsm->stateEventMatrix, (void *)pMatrix,
+                  ActiveNoOfStates * ActiveNoOfEvents * sizeof(fsm_actionCell_t));
 
-	/* update pFsm structure with parameters */
-	pFsm->ActiveNoOfStates = ActiveNoOfStates;
-	pFsm->ActiveNoOfEvents = ActiveNoOfEvents;
-	pFsm->transitionFunc = transFunc;
-	return(TI_OK);
+    /* update pFsm structure with parameters */
+    pFsm->ActiveNoOfStates = ActiveNoOfStates;
+    pFsm->ActiveNoOfEvents = ActiveNoOfEvents;
+    pFsm->transitionFunc = transFunc;
+    return(TI_OK);
 }
 
 /**
 *
 * fsm_Event  - perform event transition in the matrix
 *
-* \b Description: 
+* \b Description:
 *
 * Perform event transition in the matrix
 *
@@ -238,7 +238,7 @@ TI_STATUS fsm_Config(fsm_stateMachine_t	*pFsm,
 *
 * \b RETURNS:
 *
-*  TI_OK on success, TI_NOK on failure 
+*  TI_OK on success, TI_NOK on failure
 *
 * \sa fsm_Init
 */
@@ -247,33 +247,33 @@ TI_STATUS fsm_Event (fsm_stateMachine_t  *pFsm,
                      TI_UINT8            event,
                      void                *pData)
 {
-	TI_UINT8    oldState;
-	TI_STATUS   status;
+    TI_UINT8    oldState;
+    TI_STATUS   status;
 
-	/* check for FSM existance */
-	if (pFsm == NULL)
-	{
-		return TI_NOK;
-	}
+    /* check for FSM existance */
+    if (pFsm == NULL)
+    {
+        return TI_NOK;
+    }
 
-	/* boundary check */
-	if ((*currentState >= pFsm->ActiveNoOfStates) || (event >= pFsm->ActiveNoOfEvents))
-	{
-		return TI_NOK;
-	}
-	
-	oldState = *currentState;
-	/* update current state */
-	*currentState = pFsm->stateEventMatrix[(*currentState * pFsm->ActiveNoOfEvents) + event].nextState;
+    /* boundary check */
+    if ((*currentState >= pFsm->ActiveNoOfStates) || (event >= pFsm->ActiveNoOfEvents))
+    {
+        return TI_NOK;
+    }
+
+    oldState = *currentState;
+    /* update current state */
+    *currentState = pFsm->stateEventMatrix[(*currentState * pFsm->ActiveNoOfEvents) + event].nextState;
 
     /* activate transition function */
-    if ((*pFsm->stateEventMatrix[(oldState * pFsm->ActiveNoOfEvents) + event].actionFunc) == NULL) 
+    if ((*pFsm->stateEventMatrix[(oldState * pFsm->ActiveNoOfEvents) + event].actionFunc) == NULL)
     {
         return TI_NOK;
     }
     status = (*pFsm->stateEventMatrix[(oldState * pFsm->ActiveNoOfEvents) + event].actionFunc)(pData);
 
-	return status;
+    return status;
 }
 
 
@@ -281,7 +281,7 @@ TI_STATUS fsm_Event (fsm_stateMachine_t  *pFsm,
 *
 * fsm_GetNextState  - Retrun the next state for a given current state and an event.
 *
-* \b Description: 
+* \b Description:
 *
 * Retrun the next state for a given current state and an event.
 *
@@ -294,28 +294,28 @@ TI_STATUS fsm_Event (fsm_stateMachine_t  *pFsm,
 *
 * \b RETURNS:
 *
-*  TI_OK on success, TI_NOK on failure 
+*  TI_OK on success, TI_NOK on failure
 *
-* \sa 
+* \sa
 */
 TI_STATUS fsm_GetNextState(fsm_stateMachine_t		*pFsm,
-						TI_UINT8					currentState,
-						TI_UINT8					event,
-						TI_UINT8					*nextState)
+                           TI_UINT8					currentState,
+                           TI_UINT8					event,
+                           TI_UINT8					*nextState)
 {
-	if (pFsm != NULL)
-	{
-		if ((currentState < pFsm->ActiveNoOfStates) && (event < pFsm->ActiveNoOfEvents))
-		{
-			*nextState = pFsm->stateEventMatrix[(currentState * pFsm->ActiveNoOfEvents) + event].nextState;
-			return(TI_OK);
-		}
-	}
-	
-	return(TI_NOK);
+    if (pFsm != NULL)
+    {
+        if ((currentState < pFsm->ActiveNoOfStates) && (event < pFsm->ActiveNoOfEvents))
+        {
+            *nextState = pFsm->stateEventMatrix[(currentState * pFsm->ActiveNoOfEvents) + event].nextState;
+            return(TI_OK);
+        }
+    }
+
+    return(TI_NOK);
 }
 
 TI_STATUS action_nop(void *pData)
 {
-	return TI_OK;
+    return TI_OK;
 }

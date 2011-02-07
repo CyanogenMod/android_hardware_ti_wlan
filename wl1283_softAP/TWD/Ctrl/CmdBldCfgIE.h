@@ -54,6 +54,7 @@ TI_STATUS cmdBld_CfgIeSleepAuth                	(TI_HANDLE hCmdBld, EPowerPolicy
 TI_STATUS cmdBld_CfgIeWakeUpCondition          	(TI_HANDLE hCmdBld, TPowerMgmtConfig *pPMConfig, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeFeatureConfig            	(TI_HANDLE hCmdBld, TI_UINT32 uOptions, TI_UINT32 uDataFlowOptions, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeBeaconFilterOpt          	(TI_HANDLE hCmdBld, TI_UINT8 beaconFilteringStatus, TI_UINT8 numOfBeaconsToBuffer, void *fCb, TI_HANDLE hCb);
+TI_STATUS cmdBld_CfgIeApBeaconFilter            (TI_HANDLE hCmdBld, TI_BOOL bEnable, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeBeaconFilterTable        	(TI_HANDLE hCmdBld, TI_UINT8 numberOfIEs, TI_UINT8* pIETable, TI_UINT8 IETableSize, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeArpIpFilter              	(TI_HANDLE hCmdBld, TIpAddr tIpAddr, EArpFilterType filterType, void *fCb, TI_HANDLE hCb); 
 TI_STATUS cmdBld_CfgIeGroupAdressTable         	(TI_HANDLE hCmdBld, TI_UINT8 numGroupAddrs, TMacAddr *pGroupAddr, TI_BOOL bEnabled, void *fCb, TI_HANDLE hCb);

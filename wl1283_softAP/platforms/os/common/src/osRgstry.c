@@ -36,7 +36,7 @@
 #include <ndis.h>
 #elif defined( __LINUX__ )
 #include "osRgstry_parser.h"
-#elif defined(__ARMCC__) 
+#elif defined(__ARMCC__)
 #include "osRgstry_parser.h"
 #include "string.h"
 #endif
@@ -78,21 +78,21 @@ NDIS_STRING STRGroup_addr7              = NDIS_STRING_CONST( "Group_addr7" );
 /* If Early Wakeup is Enabled, 1251 wakes-up EARLY_WAKEUP_TIME before expected Beacon reception occasion */
 /* If Early Wakeup is Disabled, 1251 wakes-up at the expected Beacon reception occasion. */
 NDIS_STRING STREarlyWakeup                 = NDIS_STRING_CONST( "EarlyWakeup" );
-    
+
 NDIS_STRING STRArp_Ip_Addr              = NDIS_STRING_CONST( "ArpIp_Addr" );
 NDIS_STRING STRArp_Ip_Filter_Ena        = NDIS_STRING_CONST( "ArpIp_Filter_ena");
 
 
 NDIS_STRING STRBeaconFilterDesiredState = NDIS_STRING_CONST( "Beacon_Filter_Desired_State") ;
-NDIS_STRING STRBeaconFilterStored       = NDIS_STRING_CONST( "Beacon_Filter_Stored") ;  
+NDIS_STRING STRBeaconFilterStored       = NDIS_STRING_CONST( "Beacon_Filter_Stored") ;
 
 /*this is for configuring table from ini file*/
-NDIS_STRING STRBeaconIETableSize            = NDIS_STRING_CONST( "Beacon_IE_Table_Size") ;  
+NDIS_STRING STRBeaconIETableSize            = NDIS_STRING_CONST( "Beacon_IE_Table_Size") ;
 NDIS_STRING STRBeaconIETable                = NDIS_STRING_CONST( "Beacon_IE_Table") ;
-NDIS_STRING STRBeaconIETableNumOfElem       = NDIS_STRING_CONST( "Beacon_IE_Num_Of_Elem") ; 
+NDIS_STRING STRBeaconIETableNumOfElem       = NDIS_STRING_CONST( "Beacon_IE_Num_Of_Elem") ;
 
 NDIS_STRING STRCoexActivityTable                = NDIS_STRING_CONST( "Coex_Activity_Table") ;
-NDIS_STRING STRCoexActivityNumOfElem            = NDIS_STRING_CONST( "Coex_Activity_Num_Of_Elem") ; 
+NDIS_STRING STRCoexActivityNumOfElem            = NDIS_STRING_CONST( "Coex_Activity_Num_Of_Elem") ;
 
 /* ------------------------------------------------------ */
 NDIS_STRING STRFirmwareDebug                = NDIS_STRING_CONST( "FirmwareDebug" );
@@ -374,6 +374,7 @@ NDIS_STRING STRRoleApBeaconTxTimeout  = NDIS_STRING_CONST( "roleAPBeaconTxTimeou
 
 NDIS_STRING STRGenFwCmd =                                NDIS_STRING_CONST("GenFwCmd");
 NDIS_STRING STRHostIfCfgBitmap =                         NDIS_STRING_CONST("HostIfCfgBitmap");
+NDIS_STRING STRRoleApWantsRxBeacons                    = NDIS_STRING_CONST("RoleApWantsRxBeacons");
 
 /*-----------------------------------*/
 /*   SME Init Params                 */
@@ -502,7 +503,6 @@ NDIS_STRING STRTrafficMonitorMinIntervalPercentage = NDIS_STRING_CONST("TrafficM
 NDIS_STRING STRQOSPacketBurstEnable             = NDIS_STRING_CONST("QOS_PacketBurstEnable");
 NDIS_STRING STRQOSPacketBurstTxOpLimit          = NDIS_STRING_CONST("QOS_PacketBurstTxOpLimit");
 NDIS_STRING STRMaxAMPDU                         = NDIS_STRING_CONST("MaxAMPDU");
-
 
 /*-----------------------------------*/
 /*        QOS classifier Parameters  */
@@ -686,7 +686,7 @@ NDIS_STRING STRstationMacAddress                = NDIS_STRING_CONST("dot11Statio
 NDIS_STRING SendINIBufferToUser                 = NDIS_STRING_CONST("SendINIBufferToUserMode");
 
 /*-------------------------------------------
-   RSSI/SNR Weights for Average calculations   
+   RSSI/SNR Weights for Average calculations
 --------------------------------------------*/
 
 NDIS_STRING STRRssiBeaconAverageWeight = NDIS_STRING_CONST("RssiBeaconAverageWeight");
@@ -707,11 +707,6 @@ NDIS_STRING STRParseWSCInBeacons      = NDIS_STRING_CONST( "ParseWSCInBeacons" )
 /*      Current BSS parameters       */
 /*-----------------------------------*/
 NDIS_STRING STRNullDataKeepAliveDefaultPeriod  = NDIS_STRING_CONST("NullDataKeepAliveDefaultPeriod");
-
-/*-----------------------------------*/
-/*      Context-Engine parameters    */
-/*-----------------------------------*/
-NDIS_STRING STRContextSwitchRequired  = NDIS_STRING_CONST("ContextSwitchRequired");
 
 /*-----------------------------------*/
 /*      Radio parameters             */
@@ -876,6 +871,10 @@ NDIS_STRING STRRateMngRateRetryPolicy        	    = NDIS_STRING_CONST("RateMngRa
 
 NDIS_STRING STRincludeWSCinProbeReq                 = NDIS_STRING_CONST("IncludeWSCinProbeReq");
 
+/*----------------------------------------*/
+/*      Power State Related Parameters   */
+/*----------------------------------------*/
+NDIS_STRING STRSuspendCfgCmdTimeout                   = NDIS_STRING_CONST("SuspendCfgCmdTimeout"); /* timeout for commands during suspend/resume operation */
 
 
 /*
@@ -900,44 +899,44 @@ static void readRates(TWlanDrvIfObjPtr pAdapter, TInitTable *pInitTable);
 static void decryptScanControlTable(TI_UINT8* src, TI_UINT8* dst, USHORT len);
 
 static TI_UINT32 regReadIntegerTable(TWlanDrvIfObjPtr   pAdapter,
-                                PNDIS_STRING        pParameterName,
-                                TI_INT8*               pDefaultValue,
-                                USHORT              defaultLen,
-                                TI_UINT8*              pUnsignedParameter,
-                                TI_INT8*               pSignedParameter,
-                                TI_UINT32*             pEntriesNumber,
-                                TI_UINT8               uParameterSize,
-                                TI_BOOL                bHex);
+                                     PNDIS_STRING        pParameterName,
+                                     TI_INT8*               pDefaultValue,
+                                     USHORT              defaultLen,
+                                     TI_UINT8*              pUnsignedParameter,
+                                     TI_INT8*               pSignedParameter,
+                                     TI_UINT32*             pEntriesNumber,
+                                     TI_UINT8               uParameterSize,
+                                     TI_BOOL                bHex);
 
 static void assignRegValue(TI_UINT32* lValue, PNDIS_CONFIGURATION_PARAMETER ndisParameter);
 
 static void parse_filter_request(TRxDataFilterRequest* request, TI_UINT8 offset, char * mask, TI_UINT8 maskLength, char * pattern, TI_UINT8 patternLength);
 
 void regReadIntegerParameter (
-                 TWlanDrvIfObjPtr       pAdapter,
-                 PNDIS_STRING           pParameterName,
-                 TI_UINT32              defaultValue,
-                 TI_UINT32              minValue,
-                 TI_UINT32              maxValue,
-                 TI_UINT8               parameterSize,
-                 TI_UINT8*              pParameter);
+    TWlanDrvIfObjPtr       pAdapter,
+    PNDIS_STRING           pParameterName,
+    TI_UINT32              defaultValue,
+    TI_UINT32              minValue,
+    TI_UINT32              maxValue,
+    TI_UINT8               parameterSize,
+    TI_UINT8*              pParameter);
 
 static void regReadIntegerParameterHex (
-                 TWlanDrvIfObjPtr       pAdapter,
-                 PNDIS_STRING           pParameterName,
-                 TI_UINT32              defaultValue,
-                 TI_UINT32              minValue,
-                 TI_UINT32              maxValue,
-                 TI_UINT8               defaultSize,
-                 TI_UINT8 *             pParameter);
+    TWlanDrvIfObjPtr       pAdapter,
+    PNDIS_STRING           pParameterName,
+    TI_UINT32              defaultValue,
+    TI_UINT32              minValue,
+    TI_UINT32              maxValue,
+    TI_UINT8               defaultSize,
+    TI_UINT8 *             pParameter);
 
 static void regReadStringParameter (
-                 TWlanDrvIfObjPtr       pAdapter,
-                 PNDIS_STRING           pParameterName,
-                 TI_INT8*               pDefaultValue,
-                 USHORT                 defaultLen,
-                 TI_UINT8*              pParameter,
-                 void*                  pParameterSize);
+    TWlanDrvIfObjPtr       pAdapter,
+    PNDIS_STRING           pParameterName,
+    TI_INT8*               pDefaultValue,
+    USHORT                 defaultLen,
+    TI_UINT8*              pParameter,
+    void*                  pParameterSize);
 
 static void regReadWepKeyParameter (TWlanDrvIfObjPtr pAdapter, TI_UINT8 *pKeysStructure, TI_UINT8 defaultKeyId);
 
@@ -951,12 +950,12 @@ static void regReadWepKeyParameter (TWlanDrvIfObjPtr pAdapter, TI_UINT8 *pKeysSt
 /* ---------------------------------------------------------------------------*/
 static TI_UINT32 tiwlnstrtoi (char *num, TI_UINT32 length)
 {
-  TI_UINT32 value;
+    TI_UINT32 value;
 
-  if(num == NULL || length == 0 )
-  {
-    return 0;
-  }
+    if(num == NULL || length == 0 )
+    {
+        return 0;
+    }
 
     for(value=0; length&&*num; num++,length--)
     {
@@ -981,12 +980,12 @@ static TI_UINT32 tiwlnstrtoi (char *num, TI_UINT32 length)
 /* ---------------------------------------------------------------------------*/
 static TI_UINT32 tiwlnstrtoi_hex (TI_UINT8 *num, TI_UINT32 length)
 {
-  TI_UINT32 value = 0;
+    TI_UINT32 value = 0;
 
-  if (num == NULL || length == 0)
-  {
-      return 0;
-  }
+    if (num == NULL || length == 0)
+    {
+        return 0;
+    }
 
     for (value = 0; length && *num; num++, length--)
     {
@@ -1018,8 +1017,8 @@ Routine Name:
 
     regConvertStringtoMACAddress
 
-Routine Description: Converts the MAC Adrress in a form of string readen from the Registry 
-to the MAC Address Array to be stored in the init_table struct 
+Routine Description: Converts the MAC Adrress in a form of string readen from the Registry
+to the MAC Address Array to be stored in the init_table struct
 
 
 Arguments:
@@ -1062,7 +1061,7 @@ static void regConvertStringtoMACAddress(TI_UINT8 *staMACAddressString,TI_UINT8 
                 /* 'a' is in fact 10 decimal in hexa */
                 add_value = value_h + 10;
             }
-            value = value * 16 + add_value;               
+            value = value * 16 + add_value;
         }
         else
         {
@@ -1168,7 +1167,25 @@ regFillInitTable(
     
     /* Reset structure */
     NdisZeroMemory(p, sizeof(TInitTable));
-    
+
+    regReadIntegerParameter(pAdapter, &STRRoleApWantsRxBeacons,
+							ROLE_AP_WANTS_RX_BEACON_DEF, ROLE_AP_WANTS_RX_BEACON_MIN,
+							ROLE_AP_WANTS_RX_BEACON_MAX, sizeof p->tRoleApInitParams.bWantsRxBeacons,
+							(TI_UINT8*)&p->tRoleApInitParams.bWantsRxBeacons);
+
+    regReadIntegerParameter(pAdapter,
+			&STRSuspendCfgCmdTimeout,
+			SUSPEND_CFG_CMD_TIMEOUT_DEF,
+			SUSPEND_CFG_CMD_TIMEOUT_MIN,
+			SUSPEND_CFG_CMD_TIMEOUT_MAX,
+			sizeof p->twdInitParams.tSuspendConfig.uCmdMboxTimeout,
+			(TI_UINT8*)&p->twdInitParams.tSuspendConfig.uCmdMboxTimeout);
+
+    regReadIntegerParameter(pAdapter, &STRRoleApBeaconTxTimeout,
+                            ROLE_AP_BEACON_TX_TIMEOUT_DEF, ROLE_AP_BEACON_TX_TIMEOUT_MIN,
+                            ROLE_AP_BEACON_TX_TIMEOUT_MAX, sizeof p->tRoleApInitParams.ubeaconTxTimeout,
+                            (TI_UINT8*)&p->tRoleApInitParams.ubeaconTxTimeout);
+
     regReadIntegerParameter(pAdapter, &STRincludeWSCinProbeReq,
                             WSC_INCLUDE_IN_BEACON_DEF,WSC_INCLUDE_IN_BEACON_MIN,WSC_INCLUDE_IN_BEACON_MAX,
                             sizeof p->siteMgrInitParams.includeWSCinProbeReq, 
@@ -4056,11 +4073,6 @@ regFillInitTable(
 /*----------------------------------
  Context Engine
 ------------------------------------*/
-    regReadIntegerParameter( pAdapter, &STRContextSwitchRequired,
-                             CONTEXT_SWITCH_REQUIRED_DEF, CONTEXT_SWITCH_REQUIRED_MIN, CONTEXT_SWITCH_REQUIRED_MAX,
-                             sizeof p->tContextInitParams.bContextSwitchRequired,
-                             (TI_UINT8*)&p->tContextInitParams.bContextSwitchRequired );
-
     /*
      *  set 802.11n init parameters
     */
@@ -4183,10 +4195,13 @@ regReadIntegerParameter(pAdapter, &STRFRefClockSettingTime,
                         sizeof p->twdInitParams.tPlatformGenParams.SettlingTime,
                        (TI_UINT8*)&p->twdInitParams.tPlatformGenParams.SettlingTime);
 
-regReadIntegerParameter(pAdapter, &STRTXBiPFEMAutoDetect,
-						0,0,1,                             
-                        sizeof p->twdInitParams.tPlatformGenParams.TXBiPFEMAutoDetect,
-                        (TI_UINT8*)&p->twdInitParams.tPlatformGenParams.TXBiPFEMAutoDetect);
+    /* Reading of AutoDetect value MUST happen before reading FEM parameters*/
+    regReadIntegerParameter(pAdapter, &STRTXBiPFEMAutoDetect,
+                            0,0,1,
+                            sizeof p->twdInitParams.tPlatformGenParams.TXBiPFEMAutoDetect,
+                            (TI_UINT8*)&p->twdInitParams.tPlatformGenParams.TXBiPFEMAutoDetect);
+
+    WLAN_OS_REPORT(("AutoDetect = %d\n", p->twdInitParams.tPlatformGenParams.TXBiPFEMAutoDetect));
 
 regReadIntegerParameter(pAdapter, &STRTXBiPFEMManufacturer,
 						1,0,1,

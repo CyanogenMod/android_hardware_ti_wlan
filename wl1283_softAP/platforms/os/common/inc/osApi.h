@@ -528,6 +528,44 @@ void os_protectLock (TI_HANDLE OsContext, TI_HANDLE ProtectContext);
  * \sa
  */
 void os_protectUnlock (TI_HANDLE OsContext, TI_HANDLE ProtectContext);
+/** \brief  Prevent system suspend
+ *
+ * \param  OsContext - Handle to the OS object
+ * \return wake_lock counter
+ *
+ * \par Description
+ *   Called to prevent system from suspend.
+ */
+int os_wake_lock (TI_HANDLE OsContext);
+/** \brief  Allow system suspend
+ *
+ * \param  OsContext - Handle to the OS object
+ * \return wake_lock counter
+ *
+ * \par Description
+ *   Called to allow system to suspend.
+ */
+int os_wake_unlock (TI_HANDLE OsContext);
+/** \brief  Set wake-lock with timeout
+ *
+ * \param  OsContext - Handle to the OS object
+ * \return 1 if lock was enabled, 0 if not
+ *
+ * \par Description
+ *   Prevents system suspend for 1 sec if previously enabled by call to os_WakeLockTimeoutEnable.
+ */
+int os_wake_lock_timeout (TI_HANDLE OsContext);
+
+/** \brief  Enable following wake-lock with timeout
+ *
+ * \param  OsContext - Handle to the OS object
+ * \return 1 if lock was enabled, 0 if not
+ *
+ * \par Description
+ *   Enables prevention of system suspend for 1 sec in next call to os_WakeLockTimeout.
+ */
+int os_wake_lock_timeout_enable (TI_HANDLE OsContext);
+
 
 #define os_profile(hos,fn,par)
 
@@ -600,7 +638,7 @@ int os_SignalObjectFree (TI_HANDLE OsContext, void *ptr);
  * 
  * \sa
  */
-int os_RequestSchedule (TI_HANDLE OsContext);
+int os_RequestSchedule (TI_HANDLE OsContext, TI_BOOL *pContextSwitchRequired);
 
 
 /****************************************************************************************

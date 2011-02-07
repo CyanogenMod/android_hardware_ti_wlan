@@ -62,13 +62,13 @@ TI_HANDLE EvHandler_Create (TI_HANDLE hOs)
     }
     os_memoryZero(hOs,pEvHandler,sizeof(TEvHandlerObj));
 
-    #ifdef EV_HANDLER_DEBUG
+#ifdef EV_HANDLER_DEBUG
     ghEvHandler= pEvHandler;
-      PRINTF(DBG_INIT_VERY_LOUD, ("EvHandlerInit: ghEvHandler set to %08X\n", ghEvHandler));
-    #endif
+    PRINTF(DBG_INIT_VERY_LOUD, ("EvHandlerInit: ghEvHandler set to %08X\n", ghEvHandler));
+#endif
 
     pEvHandler->hOs = hOs;
-    
+
     pEvHandler->LastUMEventType = 0xFFFFFFFF;
 
     IPCKernelInit(hOs, NULL);
@@ -78,7 +78,7 @@ TI_HANDLE EvHandler_Create (TI_HANDLE hOs)
 TI_UINT32 EvHandlerUnload (TI_HANDLE hEvHandler)
 {
 
-    TEvHandlerObj *pEvHandler;            
+    TEvHandlerObj *pEvHandler;
 
     PRINT(DBG_INIT_LOUD, (" ev_handler_unLoad\n"));
     pEvHandler = (TEvHandlerObj *)hEvHandler;
@@ -112,22 +112,22 @@ TI_UINT32 EvHandlerRegisterEvent(TI_HANDLE hEvHandler, TI_UINT8* pData, TI_UINT3
 
     pEvParams = (IPC_EVENT_PARAMS*)pData;
 
-    
+
     PRINTF(DBG_INIT_LOUD, (" EvHandlerRegisterEvent EventType = %d \n",pEvParams->uEventType));
 
-    /* used to be: if ( sizeof(IPC_EVENT_PARAMS) != Length)     
+    /* used to be: if ( sizeof(IPC_EVENT_PARAMS) != Length)
        relaxed size checking (okay if output buffer is larger)  */
-    if ( sizeof(IPC_EVENT_PARAMS) > Length) 
+    if ( sizeof(IPC_EVENT_PARAMS) > Length)
     {
         PRINTF(DBG_INIT_ERROR, (" EvHandlerRegisterEvent Error sizeof(IPC_EVENT_PARAMS) != Length,"
-                               "%d != %d \n",sizeof(IPC_EVENT_PARAMS), (int)Length));
+                                "%d != %d \n",sizeof(IPC_EVENT_PARAMS), (int)Length));
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
     }
 
     if ( pEvParams->uEventType >= IPC_EVENT_MAX)
     {
         PRINTF(DBG_INIT_ERROR, (" EvHandlerRegisterEvent Error - Invalid Event Type = %d \n",
-              pEvParams->uEventType));
+                                pEvParams->uEventType));
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
     }
 
@@ -136,7 +136,7 @@ TI_UINT32 EvHandlerRegisterEvent(TI_HANDLE hEvHandler, TI_UINT8* pData, TI_UINT3
     while ((ModuleIndex < MAX_REGISTERED_MODULES) &&
             (pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex].uEventID != NULL))
     {
-        ModuleIndex++; 
+        ModuleIndex++;
     }
 
     if(ModuleIndex == MAX_REGISTERED_MODULES)
@@ -149,7 +149,7 @@ TI_UINT32 EvHandlerRegisterEvent(TI_HANDLE hEvHandler, TI_UINT8* pData, TI_UINT3
     }
 
     os_memoryCopy(pEvHandler->hOs,(TI_UINT8*)&pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex],
-                    (TI_UINT8*)pEvParams,Length);
+                  (TI_UINT8*)pEvParams,Length);
 
     pEvParams->uEventID = (TI_HANDLE)&pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex];
 
@@ -168,14 +168,14 @@ TI_UINT32 EvHandlerUnRegisterEvent(TI_HANDLE hEvHandler, TI_HANDLE uEventID)
     IPC_EVENT_PARAMS*    pEvParams;
     TI_UINT32  ModuleIndex;
 
-    #ifdef EV_HANDLER_DEBUG
-      if (ghEvHandler !=  hEvHandler )
+#ifdef EV_HANDLER_DEBUG
+    if (ghEvHandler !=  hEvHandler )
     {
-          return TI_NOK;
+        return TI_NOK;
     }
-    #endif
+#endif
 
-    if (uEventID == NULL) 
+    if (uEventID == NULL)
     {
         return TI_NOK;
     }
@@ -189,7 +189,7 @@ TI_UINT32 EvHandlerUnRegisterEvent(TI_HANDLE hEvHandler, TI_HANDLE uEventID)
     if ( pEvParams->uEventType >= IPC_EVENT_MAX)
     {
         PRINTF(DBG_INIT_ERROR, (" EvHandlerRegisterEvent Error Event Type = %d \n",
-              pEvParams->uEventType));
+                                pEvParams->uEventType));
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
     }
 
@@ -198,14 +198,14 @@ TI_UINT32 EvHandlerUnRegisterEvent(TI_HANDLE hEvHandler, TI_HANDLE uEventID)
     while ((ModuleIndex < MAX_REGISTERED_MODULES) &&
             (pEvHandler->RegistrationArray[pEvParams->uEventType][ModuleIndex].uEventID != pEvParams->uEventID))
     {
-        ModuleIndex++; 
+        ModuleIndex++;
     }
 
     if(ModuleIndex == MAX_REGISTERED_MODULES)
     {
         PRINTF(DBG_INIT_ERROR, (" EvHandlerUnRegisterEvent %d "
-                               "Registration queue doesn't hold this event!\n",
-                               pEvParams->uEventType ));
+                                "Registration queue doesn't hold this event!\n",
+                                pEvParams->uEventType ));
 
         return (TI_UINT32)STATUS_INVALID_PARAMETER;
     }
@@ -259,24 +259,24 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
 
             /* copy the event parameters and data to the events queue*/
             os_memoryCopy(pEvHandler->hOs,(TI_UINT8*)&pNewEvent->EvParams,
-                            (TI_UINT8*)&pEvHandler->RegistrationArray[EvType][ModuleIndex],
-                            sizeof(IPC_EVENT_PARAMS));
+                          (TI_UINT8*)&pEvHandler->RegistrationArray[EvType][ModuleIndex],
+                          sizeof(IPC_EVENT_PARAMS));
 
             os_memoryZero(pEvHandler->hOs,(TI_UINT8*)pNewEvent->uBuffer, sizeof(pNewEvent->uBuffer));
-    
+
             os_memoryCopy(pEvHandler->hOs,
                           (TI_UINT8*)pNewEvent->uBuffer,
                           (TI_UINT8*)pData,
                           Length);
-    
+
             pNewEvent->uBufferSize = Length;
-            
+
             if(pNewEvent->EvParams.uDeliveryType ==  DELIVERY_PUSH)
             {
-                    PRINTF(DBG_INIT_LOUD, (" EvHandlerSendEvent %d to OS \n", EvType));                
-                    PRINTF(DBG_INIT_LOUD, ("EvHandlerSendEvent Matching OS Registered event found at EvType = %d,"
-                                          "ModuleIndex = %d  \n", EvType, ModuleIndex));
-                    IPC_EventSend (pEvHandler->hOs,(TI_UINT8*)pNewEvent,sizeof(IPC_EV_DATA));
+                PRINTF(DBG_INIT_LOUD, (" EvHandlerSendEvent %d to OS \n", EvType));
+                PRINTF(DBG_INIT_LOUD, ("EvHandlerSendEvent Matching OS Registered event found at EvType = %d,"
+                                       "ModuleIndex = %d  \n", EvType, ModuleIndex));
+                IPC_EventSend (pEvHandler->hOs,(TI_UINT8*)pNewEvent,sizeof(IPC_EV_DATA));
             }
             else
             {
@@ -292,14 +292,14 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
                 {
                     IPC_EventSend (pEvHandler->hOs,NULL,0);
                 }
-            }   
+            }
         } /* end if*/
 
-       ModuleIndex++; 
+        ModuleIndex++;
 
-   } /* end of while*/
+    } /* end of while*/
 
     return TI_OK;
 }
 
- /* ************************** Bottom Interface End **********************************/
+/* ************************** Bottom Interface End **********************************/

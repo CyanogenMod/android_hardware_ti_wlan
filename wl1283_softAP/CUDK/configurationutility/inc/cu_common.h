@@ -30,7 +30,7 @@
 
 /* types */
 /*********/
-typedef struct 
+typedef struct
 {
     U32 temp; /* the place of the IE's id and length */
     U32 unmatchedPacketsCount;                  /* number of packets didn't match any filter (when the feature was enabled). */
@@ -67,7 +67,7 @@ S32 CuCommon_Get_BssidList_Size(THandle hCuCommon, PU32 pSizeOfBssiList);
 S32 CuCommon_GetRssi(THandle hCuCommon, PS8 pdRssi, PS8 pbRssi);
 S32 CuCommon_GetSnr(THandle hCuCommon, PU32 pdSnr, PU32 pbSnr);
 S32 CuCommon_GetdesiredPreambleType(THandle hCuCommon, PU32 pDesiredPreambleType);
-S32 CuCommon_GetTxStatistics(THandle hCuCommon, TIWLN_TX_STATISTICS* pTxCounters, U32 doReset); 
+S32 CuCommon_GetTxStatistics(THandle hCuCommon, TIWLN_TX_STATISTICS* pTxCounters, U32 doReset);
 S32 CuCommon_GetTxRxLinkStatistics(THandle hCuCommon, TLinkDataCounters *pLinkCounters);
 
 S32 CuCommon_Radio_Test(THandle hCuCommon,TTestCmd* data);
@@ -84,4 +84,3 @@ S32 CuCommon_GetRxDataFiltersStatistics(THandle hCuCommon, PU32 pUnmatchedPacket
 S32 CuCommon_GetPowerConsumptionStat(THandle hCuCommon, ACXPowerConsumptionTimeStat_t *pPowerstat);
 
 #endif  /* _CU_COMMON_H_ */
-        

@@ -132,6 +132,8 @@ typedef struct
     TBeaconFilterIeTable       beaconFilterIETable;
     TBeaconFilterInitParams    beaconFilterParams;
 
+    TI_BOOL                    bApBeaconFilterEnabled; /* if true, fw won't pass beacons to driver */
+
     /*Beacon Early Termination (Bet)*/
     TI_UINT8                   BetEnable;
     TI_UINT8                   MaximumConsecutiveET;

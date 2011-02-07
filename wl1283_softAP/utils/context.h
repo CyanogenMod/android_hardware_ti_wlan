@@ -47,13 +47,6 @@
 /* The callback function type for context clients */
 typedef void (*TContextCbFunc)(TI_HANDLE hCbHndl);
 
-/* The context init parameters */
-typedef struct
-{
-    /* Indicate if the driver should switch to its own context or not before handling events */
-    TI_BOOL   bContextSwitchRequired;  
-} TContextInitParams;
-
 
 
 /* External Functions Prototypes */
@@ -61,7 +54,6 @@ typedef struct
 TI_HANDLE context_Create          (TI_HANDLE hOs);
 TI_STATUS context_Destroy         (TI_HANDLE hContext);
 void      context_Init            (TI_HANDLE hContext, TI_HANDLE hOs, TI_HANDLE hReport);
-TI_STATUS context_SetDefaults     (TI_HANDLE hContext, TContextInitParams *pContextInitParams);
 
 TI_UINT32 context_RegisterClient (TI_HANDLE       hContext,
                                   TContextCbFunc  fCbFunc,

@@ -32,9 +32,9 @@
  */
 
 
-/** \file   timer.c 
+/** \file   timer.c
  *  \brief  The timers services OS-Independent layer over the OS-API timer services which are OS-Dependent.
- *  
+ *
  *  \see    timer.h, osapi.c
  */
 
@@ -50,21 +50,21 @@
 #define EXPIRY_QUE_SIZE  QUE_UNLIMITED_SIZE
 
 /* The timer module structure (common to all timers) */
-typedef struct 
+typedef struct
 {
-	TI_HANDLE   hOs;
-	TI_HANDLE   hReport;
-	TI_HANDLE   hContext;
+    TI_HANDLE   hOs;
+    TI_HANDLE   hReport;
+    TI_HANDLE   hContext;
     TI_UINT32   uContextId;     /* The ID allocated to this module on registration to context module */
     TI_HANDLE   hInitQueue;     /* Handle of the Init-Queue */
     TI_HANDLE   hOperQueue;     /* Handle of the Operational-Queue */
     TI_BOOL     bOperState;     /* TRUE when the driver is in operational state (not init or recovery) */
     TI_UINT32   uTwdInitCount;  /* Increments on each TWD init (i.e. recovery) */
     TI_UINT32   uTimersCount;   /* Number of created timers */
-} TTimerModule;	
+} TTimerModule;
 
 /* Per timer structure */
-typedef struct 
+typedef struct
 {
     TI_HANDLE    hTimerModule;             /* The timer module handle (see TTimerModule, needed on expiry) */
     TI_HANDLE    hOsTimerObj;              /* The OS-API timer object handle */
@@ -75,52 +75,52 @@ typedef struct
     TI_BOOL      bPeriodic;                /* If TRUE, restarted after each expiry */
     TI_BOOL      bOperStateWhenStarted;    /* The bOperState value when the timer was started */
     TI_UINT32    uTwdInitCountWhenStarted; /* The uTwdInitCount value when the timer was started */
-} TTimerInfo;	
+} TTimerInfo;
 
 
 
 
-/** 
- * \fn     tmr_Create 
+/**
+ * \fn     tmr_Create
  * \brief  Create the timer module
- * 
+ *
  * Allocate and clear the timer module object.
- * 
+ *
  * \note   This is NOT a specific timer creation! (see tmr_CreateTimer)
  * \param  hOs - Handle to Os Abstraction Layer
- * \return Handle of the allocated object 
+ * \return Handle of the allocated object
  * \sa     tmr_Destroy
- */ 
+ */
 TI_HANDLE tmr_Create (TI_HANDLE hOs)
 {
-	TI_HANDLE hTimerModule;
+    TI_HANDLE hTimerModule;
 
-	/* allocate module object */
-	hTimerModule = os_memoryAlloc (hOs, sizeof(TTimerModule));
-	
-	if (!hTimerModule)
-	{
-		WLAN_OS_REPORT (("tmr_Create():  Allocation failed!!\n"));
-		return NULL;
-	}
-	
+    /* allocate module object */
+    hTimerModule = os_memoryAlloc (hOs, sizeof(TTimerModule));
+
+    if (!hTimerModule)
+    {
+        WLAN_OS_REPORT (("tmr_Create():  Allocation failed!!\n"));
+        return NULL;
+    }
+
     os_memoryZero (hOs, hTimerModule, (sizeof(TTimerModule)));
 
-	return (hTimerModule);
+    return (hTimerModule);
 }
 
 
-/** 
+/**
  * \fn     tmr_Destroy
- * \brief  Destroy the module. 
- * 
+ * \brief  Destroy the module.
+ *
  * Free the module's queues and object.
- * 
+ *
  * \note   This is NOT a specific timer destruction! (see tmr_DestroyTimer)
  * \param  hTimerModule - The module object
- * \return TI_OK on success or TI_NOK on failure 
+ * \return TI_OK on success or TI_NOK on failure
  * \sa     tmr_Create
- */ 
+ */
 TI_STATUS tmr_Destroy (TI_HANDLE hTimerModule)
 {
     TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
@@ -133,7 +133,7 @@ TI_STATUS tmr_Destroy (TI_HANDLE hTimerModule)
     /* Alert if there are still timers that were not destroyed */
     if (pTimerModule->uTimersCount)
     {
-		WLAN_OS_REPORT (("tmr_Destroy():  ERROR - Destroying Timer module but not all timers were destroyed!!\n"));
+        WLAN_OS_REPORT (("tmr_Destroy():  ERROR - Destroying Timer module but not all timers were destroyed!!\n"));
     }
 
     /* Clear queues (critical section is used inside these functions) */
@@ -145,20 +145,20 @@ TI_STATUS tmr_Destroy (TI_HANDLE hTimerModule)
     context_LeaveCriticalSection (pTimerModule->hContext);
 
     /* free module object */
-	os_memoryFree (pTimerModule->hOs, pTimerModule, sizeof(TTimerModule));
-	
+    os_memoryFree (pTimerModule->hOs, pTimerModule, sizeof(TTimerModule));
+
     return TI_OK;
 }
-/** 
+/**
  * \fn     tmr_Free
- * \brief  Free the memory. 
- * 
+ * \brief  Free the memory.
+ *
  * Free the module's queues and object.
- * 
+ *
  * \param  hTimerModule - The module object
- * \return TI_OK on success or TI_NOK on failure 
+ * \return TI_OK on success or TI_NOK on failure
  * \sa     tmr_Create
- */ 
+ */
 TI_STATUS tmr_Free(TI_HANDLE hTimerModule)
 {
     TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
@@ -169,23 +169,23 @@ TI_STATUS tmr_Free(TI_HANDLE hTimerModule)
         return TI_NOK;
     }
     /* free module object */
-	os_memoryFree (pTimerModule->hOs, pTimerModule, sizeof(TTimerModule));
-	
+    os_memoryFree (pTimerModule->hOs, pTimerModule, sizeof(TTimerModule));
+
     return TI_OK;
 }
 
 
-/** 
+/**
  * \fn     tmr_ClearInitQueue & tmr_ClearOperQueue
  * \brief  Clear Init/Operationsl queue
- * 
+ *
  * Dequeue all queued timers.
- * 
- * \note   
- * \param  hTimerModule - The object                                          
- * \return void 
- * \sa     
- */ 
+ *
+ * \note
+ * \param  hTimerModule - The object
+ * \return void
+ * \sa
+ */
 void tmr_ClearInitQueue (TI_HANDLE hTimerModule)
 {
     TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
@@ -207,24 +207,24 @@ void tmr_ClearOperQueue (TI_HANDLE hTimerModule)
 }
 
 
-/** 
- * \fn     tmr_Init 
- * \brief  Init required handles 
- * 
- * Init required handles and module variables, create the init-queue and 
+/**
+ * \fn     tmr_Init
+ * \brief  Init required handles
+ *
+ * Init required handles and module variables, create the init-queue and
  *     operational-queue, and register as the context-engine client.
- * 
- * \note    
+ *
+ * \note
  * \param  hTimerModule  - The queue object
  * \param  hOs       - Handle to Os Abstraction Layer
  * \param  hReport   - Handle to report module
  * \param  hContext  - Handle to context module
- * \return void        
- * \sa     
- */ 
+ * \return void
+ * \sa
+ */
 void tmr_Init (TI_HANDLE hTimerModule, TI_HANDLE hOs, TI_HANDLE hReport, TI_HANDLE hContext)
 {
-	TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
+    TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
     TI_UINT32     uNodeHeaderOffset;
 
     if (!pTimerModule)
@@ -235,52 +235,52 @@ void tmr_Init (TI_HANDLE hTimerModule, TI_HANDLE hOs, TI_HANDLE hReport, TI_HAND
     pTimerModule->hOs           = hOs;
     pTimerModule->hReport       = hReport;
     pTimerModule->hContext      = hContext;
-	
+
     pTimerModule->bOperState    = TI_FALSE;
     pTimerModule->uTimersCount  = 0;
     pTimerModule->uTwdInitCount = 0;
 
     /* The offset of the queue-node-header from timer structure entry is needed by the queue */
-    uNodeHeaderOffset = TI_FIELD_OFFSET(TTimerInfo, tQueNodeHdr); 
+    uNodeHeaderOffset = TI_FIELD_OFFSET(TTimerInfo, tQueNodeHdr);
 
     /* Create and initialize the Init and Operational queues (for timers expiry events) */
-    pTimerModule->hInitQueue = que_Create (pTimerModule->hOs, 
-                                           pTimerModule->hReport, 
-                                           EXPIRY_QUE_SIZE, 
+    pTimerModule->hInitQueue = que_Create (pTimerModule->hOs,
+                                           pTimerModule->hReport,
+                                           EXPIRY_QUE_SIZE,
                                            uNodeHeaderOffset);
-    pTimerModule->hOperQueue = que_Create (pTimerModule->hOs, 
-                                           pTimerModule->hReport, 
-                                           EXPIRY_QUE_SIZE, 
+    pTimerModule->hOperQueue = que_Create (pTimerModule->hOs,
+                                           pTimerModule->hReport,
+                                           EXPIRY_QUE_SIZE,
                                            uNodeHeaderOffset);
 
     /* Register to the context engine and get the client ID */
     pTimerModule->uContextId = context_RegisterClient (pTimerModule->hContext,
-                                                       tmr_HandleExpiry,
-                                                       hTimerModule,
-                                                       TI_TRUE,
-                                                       "TIMER",
-                                                       sizeof("TIMER"));
+                               tmr_HandleExpiry,
+                               hTimerModule,
+                               TI_TRUE,
+                               "TIMER",
+                               sizeof("TIMER"));
 }
 
 
-/** 
- * \fn     tmr_UpdateDriverState 
- * \brief  Update driver state 
- * 
+/**
+ * \fn     tmr_UpdateDriverState
+ * \brief  Update driver state
+ *
  * Under critical section, update driver state (operational or not),
  *   and if opertional, clear init queue.
- * Leave critical section and if operational state, request schedule for handling 
+ * Leave critical section and if operational state, request schedule for handling
  *   timer events in driver context (if any).
- * 
- * \note    
+ *
+ * \note
  * \param  hTimerModule - The timer module object
  * \param  bOperState   - TRUE if driver state is now operational, FALSE if not.
- * \return void  
- * \sa     
- */ 
+ * \return void
+ * \sa
+ */
 void tmr_UpdateDriverState (TI_HANDLE hTimerModule, TI_BOOL bOperState)
 {
-	TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
+    TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
 
     if (!pTimerModule)
     {
@@ -301,7 +301,7 @@ void tmr_UpdateDriverState (TI_HANDLE hTimerModule, TI_BOOL bOperState)
     pTimerModule->bOperState = bOperState;
 
     /* If new state is operational */
-    if (bOperState) 
+    if (bOperState)
     {
         /* Increment the TWD initializations counter (for detecting recovery events). */
         pTimerModule->uTwdInitCount++;
@@ -310,12 +310,12 @@ void tmr_UpdateDriverState (TI_HANDLE hTimerModule, TI_BOOL bOperState)
         while (que_Dequeue (pTimerModule->hInitQueue) != NULL)
             {}
     }
-	
+
     /* Leave critical section */
     context_LeaveCriticalSection (pTimerModule->hContext);
 
     /* If new state is operational, request switch to driver context for handling timer events */
-    if (bOperState) 
+    if (bOperState)
     {
         context_RequestSchedule (pTimerModule->hContext, pTimerModule->uContextId);
     }
@@ -324,20 +324,20 @@ void tmr_UpdateDriverState (TI_HANDLE hTimerModule, TI_BOOL bOperState)
 
 
 
-/** 
+/**
  * \fn     tmr_CreateTimer
  * \brief  Create a new timer
- * 
- * Create a new timer object, icluding creating a timer in the OS-API.  
- * 
+ *
+ * Create a new timer object, icluding creating a timer in the OS-API.
+ *
  * \note   This timer creation may be used only after tmr_Create() and tmr_Init() were executed!!
  * \param  hTimerModule - The module handle
  * \return TI_HANDLE    - The created timer handle
  * \sa     tmr_DestroyTimer
- */ 
+ */
 TI_HANDLE tmr_CreateTimer (TI_HANDLE hTimerModule)
 {
-	TTimerModule *pTimerModule = (TTimerModule *)hTimerModule; /* The timer module handle */
+    TTimerModule *pTimerModule = (TTimerModule *)hTimerModule; /* The timer module handle */
     TTimerInfo   *pTimerInfo;  /* The created timer handle */
 
     if (!pTimerModule)
@@ -356,13 +356,13 @@ TI_HANDLE tmr_CreateTimer (TI_HANDLE hTimerModule)
 
     /* Allocate OS-API timer, providing the common expiry callback with the current timer handle */
     pTimerInfo->hOsTimerObj = os_timerCreate(pTimerModule->hOs, tmr_GetExpiry, (TI_HANDLE)pTimerInfo);
-	if (!pTimerInfo->hOsTimerObj)
-	{
+    if (!pTimerInfo->hOsTimerObj)
+    {
         TRACE0(pTimerModule->hReport, REPORT_SEVERITY_CONSOLE ,"tmr_CreateTimer():  OS-API Timer allocation failed!!\n");
         os_memoryFree (pTimerModule->hOs, pTimerInfo, sizeof(TTimerInfo));
         WLAN_OS_REPORT (("tmr_CreateTimer():  OS-API Timer allocation failed!!\n"));
-		return NULL;
-	}
+        return NULL;
+    }
 
     /* Save the timer module handle in the created timer object (needed for the expiry callback) */
     pTimerInfo->hTimerModule = hTimerModule;
@@ -373,17 +373,17 @@ TI_HANDLE tmr_CreateTimer (TI_HANDLE hTimerModule)
 }
 
 
-/** 
+/**
  * \fn     tmr_DestroyTimer
  * \brief  Destroy the specified timer
- * 
- * Destroy the specified timer object, icluding the timer in the OS-API.  
- * 
+ *
+ * Destroy the specified timer object, icluding the timer in the OS-API.
+ *
  * \note   This timer destruction function should be used before tmr_Destroy() is executed!!
  * \param  hTimerInfo - The timer handle
- * \return TI_OK on success or TI_NOK on failure 
+ * \return TI_OK on success or TI_NOK on failure
  * \sa     tmr_CreateTimer
- */ 
+ */
 TI_STATUS tmr_DestroyTimer (TI_HANDLE hTimerInfo)
 {
     TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */
@@ -408,22 +408,22 @@ TI_STATUS tmr_DestroyTimer (TI_HANDLE hTimerInfo)
     }
     /* Free the timer object */
     os_memoryFree (pTimerModule->hOs, hTimerInfo, sizeof(TTimerInfo));
-	
+
 
     return TI_OK;
 }
 
 
 
-/** 
+/**
  * \fn     tmr_StartTimer
  * \brief  Start a timer
- * 
+ *
  * Start the specified timer running.
- * 
- * \note   Periodic-Timer may be used by applications that serve the timer expiry 
+ *
+ * \note   Periodic-Timer may be used by applications that serve the timer expiry
  *           in a single context.
- *         If an application can't finish serving the timer expiry in a single context, 
+ *         If an application can't finish serving the timer expiry in a single context,
  *           e.g. periodic scan, then it isn't recommended to use the periodic timer service.
  *         If such an application uses the periodic timer then it should protect itself from cases
  *            where the timer expires again before the previous timer expiry processing is finished!!
@@ -434,15 +434,15 @@ TI_STATUS tmr_DestroyTimer (TI_HANDLE hTimerInfo)
  * \param  bPeriodic     - If TRUE, the timer is restarted after expiry.
  * \return void
  * \sa     tmr_StopTimer, tmr_GetExpiry
- */ 
+ */
 void tmr_StartTimer (TI_HANDLE     hTimerInfo,
                      TTimerCbFunc  fExpiryCbFunc,
                      TI_HANDLE     hExpiryCbHndl,
                      TI_UINT32     uIntervalMsec,
                      TI_BOOL       bPeriodic)
 {
-    TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */     
-	TTimerModule *pTimerModule = (TTimerModule *)pTimerInfo->hTimerModule; /* The timer module handle */
+    TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */
+    TTimerModule *pTimerModule = (TTimerModule *)pTimerInfo->hTimerModule; /* The timer module handle */
 
     if (!pTimerModule)
     {
@@ -462,23 +462,23 @@ void tmr_StartTimer (TI_HANDLE     hTimerInfo,
 }
 
 
-/** 
+/**
  * \fn     tmr_StopTimer
  * \brief  Stop a running timer
- * 
+ *
  * Stop the specified timer.
- * 
+ *
  * \note   When using this function, it must be considered that timer expiry may happen
- *           right before the timer is stopped, so it can't be assumed that this completely 
+ *           right before the timer is stopped, so it can't be assumed that this completely
  *           prevents the timer expiry event!
  * \param  hTimerInfo - The specific timer handle
  * \return void
  * \sa     tmr_StartTimer
- */ 
+ */
 void tmr_StopTimer (TI_HANDLE hTimerInfo)
 {
-    TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */     
-	TTimerModule *pTimerModule = (TTimerModule *)pTimerInfo->hTimerModule; /* The timer module handle */
+    TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */
+    TTimerModule *pTimerModule = (TTimerModule *)pTimerInfo->hTimerModule; /* The timer module handle */
 
     if (!pTimerModule)
     {
@@ -493,19 +493,19 @@ void tmr_StopTimer (TI_HANDLE hTimerInfo)
 }
 
 
-/** 
+/**
  * \fn     tmr_GetExpiry
  * \brief  Called by OS-API upon any timer expiry
- * 
+ *
  * This is the common callback function called upon expiartion of any timer.
  * It is called by the OS-API in timer expiry context and handles the transition
  *   to the driver's context for handling the expiry event.
- * 
- * \note   
+ *
+ * \note
  * \param  hTimerInfo - The specific timer handle
  * \return void
  * \sa     tmr_HandleExpiry
- */ 
+ */
 void tmr_GetExpiry (TI_HANDLE hTimerInfo)
 {
     TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */
@@ -519,16 +519,16 @@ void tmr_GetExpiry (TI_HANDLE hTimerInfo)
     /* Enter critical section */
     context_EnterCriticalSection (pTimerModule->hContext);
 
-    /* 
+    /*
      * If the expired timer was started when the driver's state was Operational,
-     *   insert it to the Operational-queue 
+     *   insert it to the Operational-queue
      */
     if (pTimerInfo->bOperStateWhenStarted)
     {
         que_Enqueue (pTimerModule->hOperQueue, hTimerInfo);
     }
 
-    /* 
+    /*
      * Else (started when driver's state was NOT-Operational), if now the state is still
      *   NOT Operational insert it to the Init-queue.
      *   (If state changed from non-operational to operational the event is ignored)
@@ -546,24 +546,24 @@ void tmr_GetExpiry (TI_HANDLE hTimerInfo)
 }
 
 
-/** 
+/**
  * \fn     tmr_HandleExpiry
  * \brief  Handles queued expiry events in driver context
- * 
+ *
  * This is the Timer module's callback that is registered to the ContextEngine module to be invoked
  *   from the driver task (after requested by tmr_GetExpiry through context_RequestSchedule ()).
  * It dequeues all expiry events from the queue that correlates to the current driver state,
  *   and calls their users callbacks.
- * 
- * \note   
+ *
+ * \note
  * \param  hTimerModule - The module object
  * \return void
  * \sa     tmr_GetExpiry
- */ 
+ */
 void tmr_HandleExpiry (TI_HANDLE hTimerModule)
 {
-	TTimerModule *pTimerModule = (TTimerModule *)hTimerModule; /* The timer module handle */
-    TTimerInfo   *pTimerInfo;      /* The timer handle */     
+    TTimerModule *pTimerModule = (TTimerModule *)hTimerModule; /* The timer module handle */
+    TTimerInfo   *pTimerInfo;      /* The timer handle */
     TI_BOOL       bTwdInitOccured; /* Indicates if TWD init occured since timer start */
 
     if (!pTimerModule)
@@ -575,24 +575,24 @@ void tmr_HandleExpiry (TI_HANDLE hTimerModule)
     {
         /* Enter critical section */
         context_EnterCriticalSection (pTimerModule->hContext);
-    
+
         /* If current driver state is Operational, dequeue timer object from Operational-queue */
         if (pTimerModule->bOperState)
         {
             pTimerInfo = (TTimerInfo *) que_Dequeue (pTimerModule->hOperQueue);
         }
-    
+
         /* Else (driver state is NOT-Operational), dequeue timer object from Init-queue */
         else
         {
             pTimerInfo = (TTimerInfo *) que_Dequeue (pTimerModule->hInitQueue);
         }
-    
+
         /* Leave critical section */
         context_LeaveCriticalSection (pTimerModule->hContext);
 
         /* If no more objects in queue, exit */
-        if (!pTimerInfo) 
+        if (!pTimerInfo)
         {
             return;  /** EXIT Point **/
         }
@@ -604,7 +604,7 @@ void tmr_HandleExpiry (TI_HANDLE hTimerModule)
         pTimerInfo->fExpiryCbFunc (pTimerInfo->hExpiryCbHndl, bTwdInitOccured);
 
         /* If the expired timer is periodic, start it again. */
-        if (pTimerInfo->bPeriodic) 
+        if (pTimerInfo->bPeriodic)
         {
             tmr_StartTimer ((TI_HANDLE)pTimerInfo,
                             pTimerInfo->fExpiryCbFunc,
@@ -616,23 +616,23 @@ void tmr_HandleExpiry (TI_HANDLE hTimerModule)
 }
 
 
-/** 
+/**
  * \fn     tmr_PrintModule / tmr_PrintTimer
  * \brief  Print module / timer information
- * 
+ *
  * Print the module's information / a specific timer information.
- * 
- * \note   
+ *
+ * \note
  * \param  The module / timer handle
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 
 #ifdef TI_DBG
 
 void tmr_PrintModule (TI_HANDLE hTimerModule)
 {
-	TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
+    TTimerModule *pTimerModule = (TTimerModule *)hTimerModule;
 
     if (!pTimerModule)
     {
@@ -640,25 +640,25 @@ void tmr_PrintModule (TI_HANDLE hTimerModule)
         return;
     }
     /* Print module parameters */
-    WLAN_OS_REPORT(("tmr_PrintModule(): uContextId=%d, bOperState=%d, uTwdInitCount=%d, uTimersCount=%d\n", 
-        pTimerModule->uContextId, pTimerModule->bOperState, 
-        pTimerModule->uTwdInitCount, pTimerModule->uTimersCount));
+    WLAN_OS_REPORT(("tmr_PrintModule(): uContextId=%d, bOperState=%d, uTwdInitCount=%d, uTimersCount=%d\n",
+                    pTimerModule->uContextId, pTimerModule->bOperState,
+                    pTimerModule->uTwdInitCount, pTimerModule->uTimersCount));
 
     /* Print Init Queue Info */
-    WLAN_OS_REPORT(("tmr_PrintModule(): Init-Queue:\n")); 
+    WLAN_OS_REPORT(("tmr_PrintModule(): Init-Queue:\n"));
     que_Print(pTimerModule->hInitQueue);
 
     /* Print Operational Queue Info */
-    WLAN_OS_REPORT(("tmr_PrintModule(): Operational-Queue:\n")); 
+    WLAN_OS_REPORT(("tmr_PrintModule(): Operational-Queue:\n"));
     que_Print(pTimerModule->hOperQueue);
 }
 
 void tmr_PrintTimer (TI_HANDLE hTimerInfo)
 {
-    TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */     
+    TTimerInfo   *pTimerInfo   = (TTimerInfo *)hTimerInfo;                 /* The timer handle */
 
-    WLAN_OS_REPORT(("tmr_PrintTimer(): uIntervalMs=%d, bPeriodic=%d, bOperStateWhenStarted=%d, uTwdInitCountWhenStarted=%d, hOsTimerObj=0x%x, fExpiryCbFunc=0x%x\n", 
-        pTimerInfo->uIntervalMsec, pTimerInfo->bPeriodic, pTimerInfo->bOperStateWhenStarted, 
+    WLAN_OS_REPORT(("tmr_PrintTimer(): uIntervalMs=%d, bPeriodic=%d, bOperStateWhenStarted=%d, uTwdInitCountWhenStarted=%d, hOsTimerObj=0x%x, fExpiryCbFunc=0x%x\n",
+                    pTimerInfo->uIntervalMsec, pTimerInfo->bPeriodic, pTimerInfo->bOperStateWhenStarted,
                     pTimerInfo->uTwdInitCountWhenStarted, pTimerInfo->hOsTimerObj, pTimerInfo->fExpiryCbFunc));
 }
 

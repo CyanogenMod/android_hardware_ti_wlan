@@ -557,6 +557,24 @@ TI_STATUS cmdBld_CfgBeaconFilterOpt (TI_HANDLE  hCmdBld,
 }
 
 /****************************************************************************
+ *                     cmdBld_CfgApBeaconFilter
+ ****************************************************************************
+ * DESCRIPTION: Sets Ap Beacon filtering state
+ *
+ * INPUTS:  bEnable - 1 to enable filter; 0 to disable
+ *
+ * OUTPUT:  None
+ *
+ * RETURNS: TI_OK or TI_NOK
+ ****************************************************************************/
+TI_STATUS cmdBld_CfgApBeaconFilter(TI_HANDLE hCmdBld, TI_BOOL bEnable,void *fCb, TI_HANDLE hCb)
+{
+	DB_WLAN(hCmdBld).bApBeaconFilterEnabled = bEnable;
+
+	return cmdBld_CfgIeApBeaconFilter(hCmdBld, bEnable, fCb, hCb);
+}
+
+/****************************************************************************
  *                     cmdBld_CfgRateMngDbg
  ****************************************************************************
  * DESCRIPTION: Sets rate managment params  

@@ -6551,6 +6551,15 @@ VOID CuCmd_ApRoleSetSSID(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 
 }
 
+VOID CuCmd_ApRoleCfgWantsBeacons(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
+    TI_BOOL  bWantsBeacons;
+
+    bWantsBeacons = (TI_BOOL) parm[0].value;
+
+    CuCommon_SetU32(pCuCmd->hCuCommon, ROLE_AP_WANTS_BEACONS_PARAM, bWantsBeacons);
+}
 
 /* AP Role - Hostapd CLI menu */
 

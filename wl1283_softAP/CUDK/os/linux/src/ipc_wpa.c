@@ -127,9 +127,9 @@ S32 IpcWpa_Command(THandle hIpcWpa, PS8 cmd, S32 print)
 {
 #ifdef WPA_SUPPLICANT
 	TIpcWpa* pIpcWpa = (TIpcWpa*)hIpcWpa;
-	S8  Resp[IPC_WPA_RESP_MAX_LEN];
-	TI_SIZE_T RespLen = IPC_WPA_RESP_MAX_LEN - 1;
-	S32 ret;
+    S8  Resp[IPC_WPA_RESP_MAX_LEN];
+    TI_SIZE_T RespLen = IPC_WPA_RESP_MAX_LEN - 1;
+    S32 ret;
 
 	ret = wpa_ctrl_request(pIpcWpa->pWpaCtrl, (char*)cmd, os_strlen(cmd), (char*)Resp, (size_t*)&RespLen, NULL);
 
@@ -158,7 +158,7 @@ S32 IpcWpa_CommandWithResp(THandle hIpcWpa, PS8 cmd, S32 print, PS8 pResp, PU32 
 {
 #ifdef WPA_SUPPLICANT
 	TIpcWpa* pIpcWpa = (TIpcWpa*)hIpcWpa;	
-	S32 ret;
+    S32 ret;
 
 	*pRespLen = IPC_WPA_RESP_MAX_LEN - 1;
 	ret = wpa_ctrl_request(pIpcWpa->pWpaCtrl, (char*)cmd, os_strlen(cmd), (char*)pResp, (size_t*)pRespLen, NULL);

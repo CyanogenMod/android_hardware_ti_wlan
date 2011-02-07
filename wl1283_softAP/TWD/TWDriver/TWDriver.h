@@ -2772,6 +2772,14 @@ typedef struct
 	uint8 RateRetryPolicy[13]; 
 }RateMangeParams_t;
 
+/**
+ * \brief	Suspend parameters regarding TWD
+ */
+typedef struct
+{
+	TI_UINT32	uCmdMboxTimeout;	/* time period before declaring a command timed-out (during a suspend/resume command) */
+} TTwdSuspendConfig;
+
 /*
  * IMPORTANT NOTE:
  * ===============
@@ -2802,7 +2810,7 @@ typedef struct
     ACXSmartReflexState_t               tSmartReflexState;        /**< Smart Refelx state   	            */
 	RateMangeParams_t					tRateMngParams;			  
     DcoItrimParams_t                    tDcoItrimParams;          /**< Dco Itrim Parameters   	            */
-   
+    TTwdSuspendConfig                   tSuspendConfig;     /**< Params for suspend/resume */
 } TTwdInitParams;
 
 /** \struct TTwdHtCapabilities
@@ -4203,6 +4211,24 @@ TI_STATUS TWD_CfgPreamble (TI_HANDLE hTWD, EPreamble ePreamble);
  * \sa
  */ 
 TI_STATUS TWD_CfgBeaconFilterOpt (TI_HANDLE hTWD, TI_UINT8 uBeaconFilteringStatus, TI_UINT8 uNumOfBeaconsToBuffer);
+
+/** @ingroup Power_Management
+ * \brief  Configure AP Beacon Filter State
+ *
+ * \param  hTWD     				- TWD module object handle
+ * \param  bEnabled                 - 1 to enable filter (drop beacons) ; 0 to disable filter (pass to driver)
+ * \param  fCb                      - callback to invoke when done (when command completes)
+ * \param  hCb                      - context for fCb
+ *
+ * \return TI_OK on success or TI_NOK on failure
+ *
+ * \par Description
+ * Configure Beacon Filter State to the FW
+ *
+ * \sa
+ */
+TI_STATUS TWD_CfgApBeaconFilter(TI_HANDLE hTWD, TI_BOOL bEnabled, void *fCb, TI_HANDLE hCb);
+
 /** @ingroup Power_Management
  * \brief  Configure Beacon Filter Table
  * 
@@ -4900,5 +4926,8 @@ TI_STATUS TWD_NopCmd(TI_HANDLE hTWD, void *fCb, TI_HANDLE  hCb);
 TI_STATUS TWD_SetConnectionPhase(TI_HANDLE hTWD, TTwdConnPhaseParam *pParam, void *fCb, TI_HANDLE  hCb);
 
 EHwRateBitFiled TWD_GetBitmapByRateNumber(TI_HANDLE hTWD, TI_UINT8 uRate);
+
+TI_STATUS TWD_PrepareSuspend(TI_HANDLE hTWD);
+TI_STATUS TWD_CompleteSuspend(TI_HANDLE hTWD);
 
 #endif  /* TWDRIVER_H */

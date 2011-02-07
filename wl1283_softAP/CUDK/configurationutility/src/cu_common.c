@@ -19,12 +19,12 @@
 /****************************************************************************
 *
 *   MODULE:  CU_Common.c
-*   
-*   PURPOSE: 
-* 
-*   DESCRIPTION:  
+*
+*   PURPOSE:
+*
+*   DESCRIPTION:
 *   ============
-*      
+*
 *
 ****************************************************************************/
 
@@ -85,7 +85,7 @@ THandle CuCommon_Create(THandle *pIpcSta, const PS8 device_name)
 
     pCuCommon->hIpcSta = IpcSta_Create(device_name);
     if(pCuCommon->hIpcSta == NULL)
-    {   
+    {
         CuCommon_Destroy(pCuCommon);
         return NULL;
     }
@@ -109,13 +109,13 @@ S32 CuCommon_SetU32(THandle hCuCommon, U32 PrivateIoctlId, U32 Data)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U32), 
-                                                NULL, 0);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U32),
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_GetU32(THandle hCuCommon, U32 PrivateIoctlId, PU32 pData)
@@ -123,13 +123,13 @@ S32 CuCommon_GetU32(THandle hCuCommon, U32 PrivateIoctlId, PU32 pData)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, NULL, 0, 
-                                                pData, sizeof(U32));
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, NULL, 0,
+                               pData, sizeof(U32));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_SetU16(THandle hCuCommon, U32 PrivateIoctlId, U16 Data)
@@ -137,13 +137,13 @@ S32 CuCommon_SetU16(THandle hCuCommon, U32 PrivateIoctlId, U16 Data)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U16), 
-                                                NULL, 0);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U16),
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_SetU8(THandle hCuCommon, U32 PrivateIoctlId, U8 Data)
@@ -151,13 +151,13 @@ S32 CuCommon_SetU8(THandle hCuCommon, U32 PrivateIoctlId, U8 Data)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U8), 
-                                                NULL, 0);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, &Data, sizeof(U8),
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 
@@ -166,141 +166,141 @@ S32 CuCommon_GetU8(THandle hCuCommon, U32 PrivateIoctlId, PU8 pData)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, NULL, 0, 
-                                                pData, sizeof(U8));
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, NULL, 0,
+                               pData, sizeof(U8));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 
 S32 CuCommon_SetBuffer(THandle hCuCommon, U32 PrivateIoctlId, PVOID pBuffer, U32 len)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, pBuffer, len, 
-                                                NULL, 0);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, pBuffer, len,
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;      
+    return OK;
 }
 
 S32 CuCommon_GetBuffer(THandle hCuCommon, U32 PrivateIoctlId, PVOID pBuffer, U32 len)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, NULL, 0, 
-                                                pBuffer, len);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, NULL, 0,
+                               pBuffer, len);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;      
+    return OK;
 }
 
 S32 CuCommon_GetSetBuffer(THandle hCuCommon, U32 PrivateIoctlId, PVOID pBuffer, U32 len)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, pBuffer, len, 
-                                                pBuffer, len);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, PrivateIoctlId, pBuffer, len,
+                               pBuffer, len);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;      
+    return OK;
 }
-   
+
 S32 CuCommon_Get_BssidList_Size(THandle hCuCommon, PU32 pSizeOfBssiList)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, SCAN_CNCN_BSSID_LIST_SIZE_PARAM, NULL, 0, 
-                                                pSizeOfBssiList, sizeof(U32));
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, SCAN_CNCN_BSSID_LIST_SIZE_PARAM, NULL, 0,
+                               pSizeOfBssiList, sizeof(U32));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;      
+    return OK;
 }
 
 S32 CuCommon_GetRssi(THandle hCuCommon, PS8 pdRssi, PS8 pbRssi)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
-    S32 res;    
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
+    S32 res;
     TCuCommon_RoamingStatisticsTable buffer;
-    
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_802_11_RSSI, NULL, 0, 
-                                                &buffer, sizeof(TCuCommon_RoamingStatisticsTable));
+
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_802_11_RSSI, NULL, 0,
+                               &buffer, sizeof(TCuCommon_RoamingStatisticsTable));
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
     *pdRssi = (S8)buffer.rssi;
-	*pbRssi = (S8)buffer.rssiBeacon;
+    *pbRssi = (S8)buffer.rssiBeacon;
 
     return OK;
 }
 
 S32 CuCommon_GetSnr(THandle hCuCommon, PU32 pdSnr, PU32 pbSnr)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
     TCuCommon_RoamingStatisticsTable buffer;
-        
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TWD_SNR_RATIO_PARAM, NULL, 0, 
-                                                &buffer, sizeof(TCuCommon_RoamingStatisticsTable));
+
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TWD_SNR_RATIO_PARAM, NULL, 0,
+                               &buffer, sizeof(TCuCommon_RoamingStatisticsTable));
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-	*pdSnr = (U32)buffer.snr;
-	*pbSnr = (U32)buffer.snrBeacon;
+    *pdSnr = (U32)buffer.snr;
+    *pbSnr = (U32)buffer.snrBeacon;
 
     return OK;
 }
 
 S32 CuCommon_GetTxStatistics(THandle hCuCommon, TIWLN_TX_STATISTICS* pTxCounters, U32 doReset)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_802_11_TX_STATISTICS, pTxCounters, sizeof(TIWLN_TX_STATISTICS),
-                                                pTxCounters, sizeof(TIWLN_TX_STATISTICS));
+                               pTxCounters, sizeof(TIWLN_TX_STATISTICS));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
     if(doReset)
     {
-        res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TX_CTRL_RESET_COUNTERS_PARAM, NULL, 0, 
-                                                NULL, 0);
+        res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TX_CTRL_RESET_COUNTERS_PARAM, NULL, 0,
+                                   NULL, 0);
         if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
             return ECUERR_CU_COMMON_ERROR;
     }
 
-    return OK;      
+    return OK;
 }
 
 S32 CuCommon_GetTxRxLinkStatistics(THandle hCuCommon, TLinkDataCounters *pLinkCounters)
 {
-    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon; 
+    CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, ROLE_AP_GET_LINK_COUNTERS,
-							   pLinkCounters, sizeof(TLinkDataCounters)*WLANLINKS_MAX_LINKS,
-							   pLinkCounters, sizeof(TLinkDataCounters)*WLANLINKS_MAX_LINKS);
+                               pLinkCounters, sizeof(TLinkDataCounters)*WLANLINKS_MAX_LINKS,
+                               pLinkCounters, sizeof(TLinkDataCounters)*WLANLINKS_MAX_LINKS);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
-    
-    return OK;      
+
+    return OK;
 }
 
 S32 CuCommon_Radio_Test(THandle hCuCommon,TTestCmd* data)
@@ -308,26 +308,26 @@ S32 CuCommon_Radio_Test(THandle hCuCommon,TTestCmd* data)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-	res = IPC_STA_Private_Send(pCuCommon->hIpcSta, 
-							   TWD_RADIO_TEST_PARAM, 
-							   (PVOID)data, 
-							   sizeof(TTestCmd),
-							   (PVOID)data, 
-							   sizeof(TTestCmd));
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta,
+                               TWD_RADIO_TEST_PARAM,
+                               (PVOID)data,
+                               sizeof(TTestCmd),
+                               (PVOID)data,
+                               sizeof(TTestCmd));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
-	{
-		os_error_printf(CU_MSG_INFO2, (PS8)"In CuCommon_Radio_Test: IPC_STA_Private_Send failed\n");            
-		return ECUERR_CU_COMMON_ERROR;
-	}
+    {
+        os_error_printf(CU_MSG_INFO2, (PS8)"In CuCommon_Radio_Test: IPC_STA_Private_Send failed\n");
+        return ECUERR_CU_COMMON_ERROR;
+    }
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_AddKey(THandle hCuCommon, OS_802_11_WEP* pKey)
 {
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
-    S32 res;    
+    S32 res;
     OS_802_11_KEY  key;
 
     os_memset(&key, 0, sizeof(OS_802_11_KEY));
@@ -337,13 +337,13 @@ S32 CuCommon_AddKey(THandle hCuCommon, OS_802_11_WEP* pKey)
     key.KeyLength = pKey->KeyLength;
     os_memcpy(key.KeyMaterial, pKey->KeyMaterial, pKey->KeyLength);
 
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, RSN_ADD_KEY_PARAM, &key, sizeof(OS_802_11_KEY), 
-                                                NULL, 0);
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, RSN_ADD_KEY_PARAM, &key, sizeof(OS_802_11_KEY),
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_RemoveKey(THandle hCuCommon, U32 KeyIndex)
@@ -354,14 +354,14 @@ S32 CuCommon_RemoveKey(THandle hCuCommon, U32 KeyIndex)
 
     os_memset(&key, 0, sizeof(OS_802_11_KEY));
     key.KeyIndex = KeyIndex;
-    
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, RSN_REMOVE_KEY_PARAM, &key, sizeof(OS_802_11_KEY), 
-                                                NULL, 0);
+
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, RSN_REMOVE_KEY_PARAM, &key, sizeof(OS_802_11_KEY),
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_GetDfsChannels(THandle hCuCommon, PU16 pMinDfsChannel, PU16 pMaxDfsChannel)
@@ -369,9 +369,9 @@ S32 CuCommon_GetDfsChannels(THandle hCuCommon, PU16 pMinDfsChannel, PU16 pMaxDfs
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
     DFS_ChannelRange_t DFS_ChannelRange;
-    
-    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_REG_DOMAIN_GET_DFS_RANGE, NULL, 0, 
-                                                &DFS_ChannelRange, sizeof(DFS_ChannelRange_t));
+
+    res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_REG_DOMAIN_GET_DFS_RANGE, NULL, 0,
+                               &DFS_ChannelRange, sizeof(DFS_ChannelRange_t));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
@@ -379,7 +379,7 @@ S32 CuCommon_GetDfsChannels(THandle hCuCommon, PU16 pMinDfsChannel, PU16 pMaxDfs
     *pMaxDfsChannel = DFS_ChannelRange.maxDFS_channelNum;
     *pMinDfsChannel = DFS_ChannelRange.minDFS_channelNum;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_SetDfsChannels(THandle hCuCommon, U16 MinDfsChannel, U16 MaxDfsChannel)
@@ -390,14 +390,14 @@ S32 CuCommon_SetDfsChannels(THandle hCuCommon, U16 MinDfsChannel, U16 MaxDfsChan
 
     DFS_ChannelRange.maxDFS_channelNum = MaxDfsChannel;
     DFS_ChannelRange.minDFS_channelNum = MinDfsChannel;
-    
+
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_REG_DOMAIN_SET_DFS_RANGE, &DFS_ChannelRange, sizeof(DFS_ChannelRange_t),
-                                                NULL, 0);
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_PrintDriverDebug(THandle hCuCommon, PVOID pParams, U32 param_size)
@@ -405,18 +405,18 @@ S32 CuCommon_PrintDriverDebug(THandle hCuCommon, PVOID pParams, U32 param_size)
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
 
-	if ( pParams == NULL )
-	{
-		return ECUERR_CU_COMMON_ERROR;
-	}
+    if ( pParams == NULL )
+    {
+        return ECUERR_CU_COMMON_ERROR;
+    }
 
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_DISPLAY_STATS, pParams, param_size,
-							   NULL, 0);
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 S32 CuCommon_PrintDriverDebugBuffer(THandle hCuCommon, U32 func_id, U32 opt_param)
@@ -431,14 +431,14 @@ S32 CuCommon_PrintDriverDebugBuffer(THandle hCuCommon, U32 func_id, U32 opt_para
     len = os_strlen((PS8)opt_param);
     *(PU32)buf = func_id;
     os_memcpy((PS8)buf + sizeof(U32),(PS8)opt_param, len);
-        
+
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_DISPLAY_STATS, buf, len + sizeof(U32),
-                                                NULL, 0);
+                               NULL, 0);
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
-    return OK;  
+    return OK;
 }
 
 
@@ -447,9 +447,9 @@ S32 CuCommon_GetRxDataFiltersStatistics(THandle hCuCommon, PU32 pUnmatchedPacket
     CuCommon_t* pCuCommon = (CuCommon_t*)hCuCommon;
     S32 res;
     TCuCommon_RxDataFilteringStatistics buffer;
-    
+
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_GET_RX_DATA_FILTERS_STATISTICS, NULL, 0,
-                                                &buffer, sizeof(TCuCommon_RxDataFilteringStatistics));
+                               &buffer, sizeof(TCuCommon_RxDataFilteringStatistics));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
@@ -457,7 +457,7 @@ S32 CuCommon_GetRxDataFiltersStatistics(THandle hCuCommon, PU32 pUnmatchedPacket
     *pUnmatchedPacketsCount = buffer.unmatchedPacketsCount;
     os_memcpy(pMatchedPacketsCount, &buffer.matchedPacketsCount, MAX_DATA_FILTERS*sizeof(U32));
 
-    return OK;  
+    return OK;
 }
 
 
@@ -467,52 +467,52 @@ S32 CuCommon_GetPowerConsumptionStat(THandle hCuCommon, ACXPowerConsumptionTimeS
     ACXPowerConsumptionTimeStat_t tStatistics;
     S32 res;
 
-    
+
     res = IPC_STA_Private_Send(pCuCommon->hIpcSta, TIWLN_GET_POWER_CONSUMPTION_STATISTICS, NULL, 0,
-                                                &tStatistics, sizeof(ACXPowerConsumptionTimeStat_t));
+                               &tStatistics, sizeof(ACXPowerConsumptionTimeStat_t));
 
     if(res == EOALERR_IPC_STA_ERROR_SENDING_WEXT)
         return ECUERR_CU_COMMON_ERROR;
 
     os_memcpy(pPowerstat, &tStatistics, sizeof(ACXPowerConsumptionTimeStat_t));
 
-    return OK;  
+    return OK;
 }
 
 
 static S32 RunShellCmd(S8 *cmd)
 {
-	/*  We'd like to execute the command using the regular call to system(). But system() assumes the existence of
-	   /bin/sh  in the file system which doesn't exist in Android zoom2 shell, where shell is in /system/bin/sh
-	   So if /bin/sh is not found run the command using fork&exec and assume that the shell is invoked using /system/bin/sh
-	*/
-	if (access("/bin/sh", F_OK) != -1)
-	{
-		return system(cmd);
-	}
-	else
-	{
-		/*Spawn a child to run the program.*/
-		pid_t pid=fork();
-	
-		if (pid == -1)
-		{
-			os_error_printf(CU_MSG_ERROR, (PS8)("Fork failed!\n"));
-			return -1;
-		}
-		else if (pid==0) 
-		{ 
-			/* child process */
-			execl("/system/bin/sh", "sh", "-c", cmd, NULL);
-			os_error_printf(CU_MSG_ERROR, (PS8)("Exec failed!\n"));
-			return -1;
-		}
-		else 
+    /*  We'd like to execute the command using the regular call to system(). But system() assumes the existence of
+       /bin/sh  in the file system which doesn't exist in Android zoom2 shell, where shell is in /system/bin/sh
+       So if /bin/sh is not found run the command using fork&exec and assume that the shell is invoked using /system/bin/sh
+    */
+    if (access("/bin/sh", F_OK) != -1)
+    {
+        return system(cmd);
+    }
+    else
+    {
+        /*Spawn a child to run the program.*/
+        pid_t pid=fork();
+
+        if (pid == -1)
+        {
+            os_error_printf(CU_MSG_ERROR, (PS8)("Fork failed!\n"));
+            return -1;
+        }
+        else if (pid==0)
+        {
+            /* child process */
+            execl("/system/bin/sh", "sh", "-c", cmd, NULL);
+            os_error_printf(CU_MSG_ERROR, (PS8)("Exec failed!\n"));
+            return -1;
+        }
+        else
         {
             /* pid!=0; parent process */
-			waitpid(pid,0,0); /* wait for child to exit */
-		}
-	}
-	return 0;
+            waitpid(pid,0,0); /* wait for child to exit */
+        }
+    }
+    return 0;
 
 }

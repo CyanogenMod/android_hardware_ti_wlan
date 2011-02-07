@@ -60,6 +60,7 @@
 #include "rx.h"
 #include "rate.h"
 #include "siteMgrApi.h"
+#include "timer.h"
 
 /* Constants */
 #define BSS_INDEX_DEFAULT   1
@@ -81,29 +82,44 @@ typedef struct
     TI_HANDLE           hSiteMgr;
     TI_HANDLE           hCtrlData;
     TI_HANDLE           hRegulatoryDomain;
-	TI_HANDLE			hWlanLinks;
-	TI_HANDLE			hApCmd;
+    TI_HANDLE			hWlanLinks;
+    TI_HANDLE			hApCmd;
     TI_HANDLE           hTxDataQ;
     TI_HANDLE           hTxMgmtQ;
     TI_HANDLE           hDrvMain;
     TI_HANDLE           hTxPort;
     TI_HANDLE           hTxCtrl;
     TI_HANDLE           hRxData;
-    
+
     TBssCapabilities    tBssCapabilities;
-	TI_UINT8            uBeaconTxTimeout;
-	TI_UINT32			aAllocatedLinks[WLANLINKS_MAX_LINKS];
-	TI_UINT32			uNumAllocatedLinks;
-	TI_UINT32			uBrcstHlid;
-	TI_UINT32			uGlobalHlid;
+
+    /* Whether driver wants to receive incoming beacons from FW.
+     *
+     * If false, FW will be configured not to pass incoming beacons to host.
+     * Note that during system suspend, FW is configured not to pass beacons (until resume)
+     */
+    TI_BOOL             bWantsRxBeacons;
+
+    TI_UINT8            uBeaconTxTimeout;
+    TI_UINT32			aAllocatedLinks[WLANLINKS_MAX_LINKS];
+    TI_UINT32			uNumAllocatedLinks;
+    TI_UINT32			uBrcstHlid;
+    TI_UINT32			uGlobalHlid;
     TI_UINT8            cBssIndex;
     EKeyType            keyType;
     TI_UINT8            DefaultKeyIndex;
     TSecurityKeys       tTwdKey[MAX_WEP_KEY];
-	ERoleApState		eState;
-	TRoleApStats		tRoleApStats;
-	TApWpsIe            tWpsIe;
+    ERoleApState		eState;
+    TRoleApStats		tRoleApStats;
+    TApWpsIe            tWpsIe;
     TI_UINT32           uTxPower;
+
+    TI_HANDLE           hTimer;
+
+	/* data needed to complete async commands in another task (see InvokeAsync) */
+	TI_HANDLE	hInvokeAsyncTimer;		/* timer (to invoke fCb in another context - when expired) */
+	void (*fInvokeAsyncCb)(TI_HANDLE);	/* callback to invoke */
+	TI_HANDLE	hInvokeAsyncCb;			/* context for fCb */
 
 } TRoleAP;
 
@@ -146,16 +162,20 @@ static void SetApRates(TI_HANDLE hRoleAP, TApRateSet *pRateParams);
 static TI_STATUS RemoveBssLinks(TI_HANDLE hRoleAP, TI_BOOL bRemFromFw);
 static TI_STATUS roleAP_enable (TI_HANDLE hRoleAP);
 static void ResetRoleApDB(TI_HANDLE hRoleAP);
+static TI_STATUS Suspend(TI_HANDLE hRoleAp, void *fCb, TI_HANDLE hCb);
+static TI_STATUS Resume(TI_HANDLE hRoleAp, void *fCb, TI_HANDLE hCb);
+static void InvokeAsync( TI_HANDLE hRoleAp, void(*fCb)(TI_HANDLE), TI_HANDLE hCb );
+static void InvokeAsyncExpiryCb(TI_HANDLE hRoleAp, TI_BOOL bTwdInitOccured);
 
 /* Public functions implementation */
 
 
-/** 
- * \fn     roleAP_create 
+/**
+ * \fn     roleAP_create
  * \brief  Create roleAP object
- * 
+ *
  * Allocate and clear the module's object
- */ 
+ */
 TI_HANDLE roleAP_create(TI_HANDLE hOs)
 {
     TRoleAP   *pRoleAP;
@@ -174,16 +194,16 @@ TI_HANDLE roleAP_create(TI_HANDLE hOs)
 }
 
 
-/** 
- * \fn     roleAP_destroy 
+/**
+ * \fn     roleAP_destroy
  * \brief  Destroy RolesMgr object
- * 
+ *
  * Free the module's object memory
- */ 
+ */
 TI_STATUS roleAP_destroy(TI_HANDLE hRoleAP)
 {
     TRoleAP   *pRoleAP;
-    
+
     if (hRoleAP != NULL)
     {
         pRoleAP = (TRoleAP *)hRoleAP;
@@ -196,12 +216,12 @@ TI_STATUS roleAP_destroy(TI_HANDLE hRoleAP)
 
 
 
-/** 
- * \fn     roleAP_init 
+/**
+ * \fn     roleAP_init
  * \brief  Init roleAP object
- * 
+ *
  * Init module's object and link its handles
- */ 
+ */
 void roleAP_init (TStadHandlesList *pStadHandles)
 {
     TRoleAP *pRoleAP = (TRoleAP *)(pStadHandles->hRoleAP);
@@ -212,44 +232,50 @@ void roleAP_init (TStadHandlesList *pStadHandles)
     pRoleAP->hTWD               = pStadHandles->hTWD;
     pRoleAP->hCtrlData          = pStadHandles->hCtrlData;
     pRoleAP->hRegulatoryDomain  = pStadHandles->hRegulatoryDomain;
-    pRoleAP->hSiteMgr           = pStadHandles->hSiteMgr;   
+    pRoleAP->hSiteMgr           = pStadHandles->hSiteMgr;
     pRoleAP->hWlanLinks         = pStadHandles->hWlanLinks;
     pRoleAP->hApCmd             = pStadHandles->hApCmd;
-    pRoleAP->hTxDataQ           = pStadHandles->hTxDataQ;           
+    pRoleAP->hTxDataQ           = pStadHandles->hTxDataQ;
     pRoleAP->hTxMgmtQ           = pStadHandles->hTxMgmtQ;
     pRoleAP->hDrvMain           = pStadHandles->hDrvMain;
-    pRoleAP->hTxPort            = pStadHandles->hTxPort;   
-    pRoleAP->hTxDataQ           = pStadHandles->hTxDataQ;   
-    pRoleAP->hTxCtrl            = pStadHandles->hTxCtrl;   
-    pRoleAP->hRxData            = pStadHandles->hRxData;           
+    pRoleAP->hTxPort            = pStadHandles->hTxPort;
+    pRoleAP->hTxDataQ           = pStadHandles->hTxDataQ;
+    pRoleAP->hTxCtrl            = pStadHandles->hTxCtrl;
+    pRoleAP->hRxData            = pStadHandles->hRxData;
     pRoleAP->eState				= ROLEAP_STATE_STOPPED;
+    pRoleAP->hTimer             = pStadHandles->hTimer;
+
+    pRoleAP->fInvokeAsyncCb = NULL;
+    pRoleAP->hInvokeAsyncTimer = NULL;
 }
 
 
-/** 
- * \fn     roleAP_SetDefaults 
+/**
+ * \fn     roleAP_SetDefaults
  * \brief  set roleAP object default values
- * 
- * Set module's object default values 
- */ 
+ *
+ * Set module's object default values
+ */
 TI_STATUS roleAP_SetDefaults (TI_HANDLE hRoleAP, TRoleApInitParams *tRoleApInitParams)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
+    pRoleAP->hInvokeAsyncTimer = tmr_CreateTimer(pRoleAP->hTimer);
 
-	pRoleAP->uBeaconTxTimeout = tRoleApInitParams->ubeaconTxTimeout;
+    pRoleAP->uBeaconTxTimeout = tRoleApInitParams->ubeaconTxTimeout;
+	pRoleAP->bWantsRxBeacons  = tRoleApInitParams->bWantsRxBeacons;
 
     rxData_IntraBssBridge_Enable(pRoleAP->hRxData);
 
     return TI_OK;
 }
 
-/** 
- * \fn     roleAP_setParam 
- * \brief  roleAP object getParam API 
- * 
- * Module's object set param API 
- */ 
+/**
+ * \fn     roleAP_setParam
+ * \brief  roleAP object getParam API
+ *
+ * Module's object set param API
+ */
 TI_STATUS roleAP_setParam(TI_HANDLE hRoleAP, paramInfo_t *pParam)
 {
     TRoleAP     *pRoleAP = (TRoleAP *)hRoleAP;
@@ -260,68 +286,74 @@ TI_STATUS roleAP_setParam(TI_HANDLE hRoleAP, paramInfo_t *pParam)
         TRACE0(pRoleAP->hReport, REPORT_SEVERITY_ERROR , " roleAP_setParam(): pParam is NULL!\n");
         return TI_NOK;
     }
-    
-    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "roleAP_setParam() %X \n", pParam->paramType);    
+
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "roleAP_setParam() %X \n", pParam->paramType);
 
     switch (pParam->paramType)
     {
-    
+
     case ROLE_AP_BSS_START_PARAM:
-            pRoleAP->tBssCapabilities.uBssIndex = pParam->content.roleAPBssIndex;
-            roleAP_start(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
-            break;
-    
+        pRoleAP->tBssCapabilities.uBssIndex = pParam->content.roleAPBssIndex;
+        roleAP_start(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
+        break;
+
     case ROLE_AP_BSS_STOP_PARAM:
-            roleAP_stop(hRoleAP, pParam->content.roleAPBssIndex);
-            break;
-            
+        roleAP_stop(hRoleAP, pParam->content.roleAPBssIndex);
+        break;
+
     case ROLE_AP_SET_SSID_TYPE_PARAM:
-            pRoleAP->tBssCapabilities.eSsidType = pParam->content.roleAPSsidType;
-            break;
-    
+        pRoleAP->tBssCapabilities.eSsidType = pParam->content.roleAPSsidType;
+        break;
+
     case ROLE_AP_SET_CHANNEL_PARAM:
-            pRoleAP->tBssCapabilities.uChannel = pParam->content.roleAPChannel;
-            break;
+        pRoleAP->tBssCapabilities.uChannel = pParam->content.roleAPChannel;
+        break;
 
     case ROLE_AP_SET_BEACON_INTERVAL_PARAM:
-            pRoleAP->tBssCapabilities.uBeaconInterval = pParam->content.roleAPBeaconInterval;
-            break;
+        pRoleAP->tBssCapabilities.uBeaconInterval = pParam->content.roleAPBeaconInterval;
+        break;
+    case ROLE_AP_WANTS_BEACONS_PARAM:
+	pRoleAP->bWantsRxBeacons = pParam->content.roleAPWantsBeacons;
+
+	/* ENABLE filter if driver does NOT want beacons */
+	TWD_CfgApBeaconFilter(pRoleAP->hTWD, !(pRoleAP->bWantsRxBeacons), NULL, NULL);
+	break;
 
     case ROLE_AP_SET_DTIM_PERIOD_PARAM:
-            pRoleAP->tBssCapabilities.uDtimPeriod = pParam->content.roleAPDtimPeriod;
-            break;
+        pRoleAP->tBssCapabilities.uDtimPeriod = pParam->content.roleAPDtimPeriod;
+        break;
 
 
     case ROLE_AP_SET_SSID_PARAM:
 
-            os_memoryZero(pRoleAP->hOs, &pRoleAP->tBssCapabilities.tSsid.str, MAX_SSID_LEN);
-            os_memoryCopy(pRoleAP->hOs,
-                           pRoleAP->tBssCapabilities.tSsid.str,
-                           pParam->content.roleAPSsidName.Ssid,
-                           pParam->content.roleAPSsidName.SsidLength);
+        os_memoryZero(pRoleAP->hOs, &pRoleAP->tBssCapabilities.tSsid.str, MAX_SSID_LEN);
+        os_memoryCopy(pRoleAP->hOs,
+                      pRoleAP->tBssCapabilities.tSsid.str,
+                      pParam->content.roleAPSsidName.Ssid,
+                      pParam->content.roleAPSsidName.SsidLength);
 
-            pRoleAP->tBssCapabilities.tSsid.len = pParam->content.roleAPSsidName.SsidLength;
-            break;
+        pRoleAP->tBssCapabilities.tSsid.len = pParam->content.roleAPSsidName.SsidLength;
+        break;
 
     case ROLE_AP_SET_GENERIC_CMD_TO_FW_PARAM:
-            TWD_SendGenricCmdToFW(pRoleAP->hTWD,
-                                  pParam->content.tRoleAPGenericCmd.uCmdID,
-                                  pParam->content.tRoleAPGenericCmd.buffer,
-                                  pParam->content.tRoleAPGenericCmd.len);
+        TWD_SendGenricCmdToFW(pRoleAP->hTWD,
+                              pParam->content.tRoleAPGenericCmd.uCmdID,
+                              pParam->content.tRoleAPGenericCmd.buffer,
+                              pParam->content.tRoleAPGenericCmd.len);
 
 
 
-            
-            break;
-	case ROLE_AP_PRINT_DB:
-			PrintRoleApDB(pRoleAP);
-			/*Alexa_TODO: move this to WlanLinks*/
-            wlanLinks_PrintDB(pRoleAP->hWlanLinks);
-            break;
+
+        break;
+    case ROLE_AP_PRINT_DB:
+        PrintRoleApDB(pRoleAP);
+        /*Alexa_TODO: move this to WlanLinks*/
+        wlanLinks_PrintDB(pRoleAP->hWlanLinks);
+        break;
 
     default:
-			TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n *** In roleAP_setParam,  bad param= %X\n", pParam->paramType);    
-            break;
+        TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n *** In roleAP_setParam,  bad param= %X\n", pParam->paramType);
+        break;
     }
 
     status = TI_OK;;
@@ -329,75 +361,118 @@ TI_STATUS roleAP_setParam(TI_HANDLE hRoleAP, paramInfo_t *pParam)
     return status;
 }
 
-/** 
- * \fn     roleAP_getParam 
- * \brief  roleAP object getParam API 
- * 
- * Module's object set param API 
+/**
+ * \fn     roleAP_getParam
+ * \brief  roleAP object getParam API
+ *
+ * Module's object set param API
  */
 TI_STATUS roleAP_getParam(TI_HANDLE hRoleAP, paramInfo_t *pParam)
 {
-	TRoleAP     *pRoleAP = (TRoleAP *)hRoleAP;
-    
+	TI_STATUS   rc;
+    TRoleAP     *pRoleAP = (TRoleAP *)hRoleAP;
+
     /* check handle validity */
     if (pParam == NULL)
     {
-		TRACE0(pRoleAP->hReport, REPORT_SEVERITY_ERROR , " roleAP_getParam(): pParam is NULL!\n");
+        TRACE0(pRoleAP->hReport, REPORT_SEVERITY_ERROR , " roleAP_getParam(): pParam is NULL!\n");
         return TI_NOK;
     }
 
     switch (pParam->paramType)
-	{
-		case ROLE_AP_GET_LINK_COUNTERS:
+    {
+    case ROLE_AP_GET_LINK_COUNTERS:
+    {
+        TI_UINT32 uHlid;
+        TWlanLinkPeerDescr tPeerDescr;
+        TLinkDataCounters *pLinkCounters = (TLinkDataCounters*)pParam->content.linkDataCounters;
+
+        /* Get Rx Link Counters*/
+        pParam->paramType = RX_DATA_LINK_COUNTERS;
+        rxData_getParam(pRoleAP->hRxData, pParam);
+
+        /* Get Rx Link Counters*/
+        pParam->paramType = TX_CTRL_GET_DATA_LINK_COUNTER;
+        txCtrlParams_getParam(pRoleAP->hTxCtrl, pParam);
+
+        /* Get Link MAC Address*/
+        for (uHlid = 0; uHlid < WLANLINKS_MAX_LINKS; uHlid++)
+        {
+            pLinkCounters[uHlid].validLink = TI_FALSE;
+
+            if (pRoleAP->aAllocatedLinks[uHlid] != WLANLINKS_INVALID_HLID)
+            {
+                if ((wlanLinks_GetPeerDescr(pRoleAP->hWlanLinks, uHlid, &tPeerDescr) != TI_OK) ||
+                        (wlanLinks_GetLinkType(pRoleAP->hWlanLinks, uHlid, &(pLinkCounters[uHlid].linkType)) != TI_OK))
+                    continue;
+
+                pLinkCounters[uHlid].validLink = TI_TRUE;
+                if (pLinkCounters[uHlid].linkType == WLANLINK_TYPE_BRCST)
+                    os_memorySet(pRoleAP->hOs, pLinkCounters[uHlid].aMacAddr, 0xFF, sizeof(TMacAddr));
+                else
+                    os_memoryCopy(pRoleAP->hOs, pLinkCounters[uHlid].aMacAddr, tPeerDescr.aMacAddr, sizeof(TMacAddr));
+            }
+        }
+
+			rc = TI_OK;
+    }
+    break;
+
+		case ROLE_AP_SUSPEND_STATE_PARAM:
 		{
-			TI_UINT32 uHlid;
-			TWlanLinkPeerDescr tPeerDescr;
-            TLinkDataCounters *pLinkCounters = (TLinkDataCounters*)pParam->content.linkDataCounters;
+			TI_BOOL   bSuspendState = *(TI_BOOL*)(pParam->content.interogateCmdCBParams.pCb);
+			void *    fCompleteCb   = pParam->content.interogateCmdCBParams.fCb;
+			TI_HANDLE hCompleteCb   = pParam->content.interogateCmdCBParams.hCb;
 
-			/* Get Rx Link Counters*/
-            pParam->paramType = RX_DATA_LINK_COUNTERS;
-			rxData_getParam(pRoleAP->hRxData, pParam);
-
-			/* Get Rx Link Counters*/
-            pParam->paramType = TX_CTRL_GET_DATA_LINK_COUNTER;
-			txCtrlParams_getParam(pRoleAP->hTxCtrl, pParam);
-            
-            /* Get Link MAC Address*/
-			for (uHlid = 0; uHlid < WLANLINKS_MAX_LINKS; uHlid++)
+			if (bSuspendState)
 			{
-				pLinkCounters[uHlid].validLink = TI_FALSE;
-
-				if (pRoleAP->aAllocatedLinks[uHlid] != WLANLINKS_INVALID_HLID)
-				{
-					if ((wlanLinks_GetPeerDescr(pRoleAP->hWlanLinks, uHlid, &tPeerDescr) != TI_OK) ||
-						(wlanLinks_GetLinkType(pRoleAP->hWlanLinks, uHlid, &(pLinkCounters[uHlid].linkType)) != TI_OK))
-						continue;
-
-                    pLinkCounters[uHlid].validLink = TI_TRUE;
-					if (pLinkCounters[uHlid].linkType == WLANLINK_TYPE_BRCST)
-						os_memorySet(pRoleAP->hOs, pLinkCounters[uHlid].aMacAddr, 0xFF, sizeof(TMacAddr));
-					else
-						os_memoryCopy(pRoleAP->hOs, pLinkCounters[uHlid].aMacAddr, tPeerDescr.aMacAddr, sizeof(TMacAddr));
-				}
+				rc = Suspend(pRoleAP, fCompleteCb, hCompleteCb);
 			}
+			else
+			{
+				rc = Resume(pRoleAP, fCompleteCb, hCompleteCb);
+			}
+
+			if (rc == TI_PENDING)
+			{
+				/* nothing to do here - fCompleteCb will be invoked when command completes */
+
+				TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION, "suspend state changing, will end in another context\n");
+
+				rc = TI_OK; /* upper level does not like TI_PENDING */
+			}
+			else if (rc == TI_OK)
+			{
+				/* fCompleteCb will NOT be called - we need to call it ourselves */
+
+				TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION, "suspend state changed (synchronously). completing (asynchronously, using timer)\n");
+
+				InvokeAsync(pRoleAP, fCompleteCb, hCompleteCb); /* invoke fComplete in another task */
+			}
+			else
+			{
+				TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING, "failed to change suspend state, rc=%d\n", rc);
+			}
+
+			break;
 		}
-		break;
 
-		default:
+    default:
 			TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n *** In roleAP_getParam,  bad param= %X\n", pParam->paramType);    
-            break;
-	}
+			rc = TI_NOK;
+        break;
+    }
 
-    return TI_OK;
+    return rc;
 }
 
 
-/** 
- * \fn     roleAP_start 
+/**
+ * \fn     roleAP_start
  * \brief  RolesMgr start command API
- * 
+ *
  * Start RolesMgr object - send configuration & start cmd to FW
- */ 
+ */
 TI_STATUS roleAP_start(TI_HANDLE hRoleAP, TI_UINT8 uBssIdx)
 {
     TRoleAP *pRoleAP  = (TRoleAP *)hRoleAP;
@@ -431,118 +506,126 @@ TI_STATUS roleAP_start(TI_HANDLE hRoleAP, TI_UINT8 uBssIdx)
     /* configure TX power in dBm*/
     pTwdParam->paramType = TWD_TX_POWER_PARAM_ID;
     pTwdParam->content.halCtrlTxPowerDbm = regulatoryDomain_getMaxPowerAllowed(pRoleAP->hRegulatoryDomain,
-                                                                               pRoleAP->tBssCapabilities.uChannel,
-                                                                               (ERadioBand)pRoleAP->tBssCapabilities.uBand,
-                                                                               TI_TRUE);
+                                           pRoleAP->tBssCapabilities.uChannel,
+                                           (ERadioBand)pRoleAP->tBssCapabilities.uBand,
+                                           TI_TRUE);
 
     pTwdParam->content.halCtrlTxPowerDbm = TI_MIN(pRoleAP->uTxPower, pTwdParam->content.halCtrlTxPowerDbm);
 
     tRes = TWD_SetParam(pRoleAP->hTWD, pTwdParam);
-	if (tRes != TI_OK)
-	{
+    if (tRes != TI_OK)
+    {
         TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: TWD_SetParam failed\n",__FUNCTION__);
-		return tRes;
-	}
+        return tRes;
+    }
 
     /* Configures default Rate Policy */
-	ConfigureRatePolicies(hRoleAP);
+    ConfigureRatePolicies(hRoleAP);
 
-	/* Configure the FW with frame templates */
-	ConfigureFrameTemplates(hRoleAP);
+    /* Configure the FW with frame templates */
+    ConfigureFrameTemplates(hRoleAP);
+
+	/* ENABLE filter if driver does NOT want beacons */
+	tRes = TWD_CfgApBeaconFilter(pRoleAP->hTWD, !(pRoleAP->bWantsRxBeacons), NULL, NULL);
+	if (tRes != TI_OK)
+	{
+        TRACE0(pRoleAP->hReport, REPORT_SEVERITY_WARNING, "failed to config rx beacon filter. probably won't sleep well\n");
+	}
+
 
 
     params.maxTxRetry = AP_MAX_TX_RETRY;
     TWD_CfgMaxTxRetry (pRoleAP->hTWD, &params);
 
-	/*Register for events*/
-	TWD_RegisterEvent(pRoleAP->hTWD, TWD_OWN_EVENT_STA_REMOVE_COMPLETE, roleAP_RemoveStaCompleteCB, pRoleAP);
-	TWD_EnableEvent  (pRoleAP->hTWD, TWD_OWN_EVENT_STA_REMOVE_COMPLETE);
+    /*Register for events*/
+    TWD_RegisterEvent(pRoleAP->hTWD, TWD_OWN_EVENT_STA_REMOVE_COMPLETE, roleAP_RemoveStaCompleteCB, pRoleAP);
+    TWD_EnableEvent  (pRoleAP->hTWD, TWD_OWN_EVENT_STA_REMOVE_COMPLETE);
 
-	TWD_RegisterEvent(pRoleAP->hTWD, TWD_OWN_INACTIVE_STA_EVENT_ID, InactiveStaEventCB, pRoleAP);
-	TWD_EnableEvent  (pRoleAP->hTWD, TWD_OWN_INACTIVE_STA_EVENT_ID);
+    TWD_RegisterEvent(pRoleAP->hTWD, TWD_OWN_INACTIVE_STA_EVENT_ID, InactiveStaEventCB, pRoleAP);
+    TWD_EnableEvent  (pRoleAP->hTWD, TWD_OWN_INACTIVE_STA_EVENT_ID);
 
-	TWD_RegisterEvent(pRoleAP->hTWD, TWD_OWN_EVENT_MAX_TX_RETRY, maxTxRetryStaEventCB, pRoleAP);
-	TWD_EnableEvent  (pRoleAP->hTWD, TWD_OWN_EVENT_MAX_TX_RETRY);
+    TWD_RegisterEvent(pRoleAP->hTWD, TWD_OWN_EVENT_MAX_TX_RETRY, maxTxRetryStaEventCB, pRoleAP);
+    TWD_EnableEvent  (pRoleAP->hTWD, TWD_OWN_EVENT_MAX_TX_RETRY);
 
     if (pRoleAP->keyType != KEY_NULL)
-      TxDataQ_SetEncryptFlag(pRoleAP->hTxDataQ, pRoleAP->uBrcstHlid, TI_TRUE);
-   
+        TxDataQ_SetEncryptFlag(pRoleAP->hTxDataQ, pRoleAP->uBrcstHlid, TI_TRUE);
+
     os_memorySet(pRoleAP->hOs, &pRoleAP->tRoleApStats, 0, sizeof(pRoleAP->tRoleApStats));
 
     os_memoryFree(pRoleAP->hOs, pParam , sizeof(paramInfo_t));
     os_memoryFree(pRoleAP->hOs, pTwdParam, sizeof(TTwdParamInfo));
 
     tRes = BssStart(hRoleAP, uBssIdx);
-	if (tRes != TI_OK)
-	{
+    if (tRes != TI_OK)
+    {
         TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: BssStart failed\n",__FUNCTION__);
-		return tRes;
-	}
+        return tRes;
+    }
 
-           
-    for (i=0;i<MAX_WEP_KEY;i++)
+
+    for (i=0; i<MAX_WEP_KEY; i++)
     {
         if (pRoleAP->tTwdKey[i].keyType != KEY_NULL)
         {
-         setKey(pRoleAP,&pRoleAP->tTwdKey[i]);
+            setKey(pRoleAP,&pRoleAP->tTwdKey[i]);
         }
     }
 
     if (pRoleAP->keyType == KEY_WEP)
     {
-     tTwdParam.paramType = TWD_RSN_DEFAULT_KEY_ID_PARAM_ID;
-     tTwdParam.content.configureCmdCBParams.pCb = &pRoleAP->DefaultKeyIndex;
-     tTwdParam.content.configureCmdCBParams.fCb = NULL;
-     tTwdParam.content.configureCmdCBParams.hCb = NULL;
-     tRes = TWD_SetParam (pRoleAP->hTWD, &tTwdParam); 
-     if (tRes != TI_OK)
-		TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "%s: TWD_RSN_KEY_ADD_PARAM_ID : TWD_SetParam status %d \n", __FUNCTION__, tRes);
-   
+        tTwdParam.paramType = TWD_RSN_DEFAULT_KEY_ID_PARAM_ID;
+        tTwdParam.content.configureCmdCBParams.pCb = &pRoleAP->DefaultKeyIndex;
+        tTwdParam.content.configureCmdCBParams.fCb = NULL;
+        tTwdParam.content.configureCmdCBParams.hCb = NULL;
+        tRes = TWD_SetParam (pRoleAP->hTWD, &tTwdParam);
+        if (tRes != TI_OK)
+            TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "%s: TWD_RSN_KEY_ADD_PARAM_ID : TWD_SetParam status %d \n", __FUNCTION__, tRes);
+
     }
 
     /* Set bssid to TxCtrl module for header conversion */
     txCtrlParams_setBssId(pRoleAP->hTxCtrl, &pRoleAP->tBssCapabilities.tBssid);
 
     /* Synchronize start call back with completion of commands in TWD Command Queue */
-    tRes = TWD_NopCmd (pRoleAP->hTWD, BssStartCompleteCb, hRoleAP); 
+    tRes = TWD_NopCmd (pRoleAP->hTWD, BssStartCompleteCb, hRoleAP);
 
     return tRes;
 }
 
 
 
-/** 
- * \fn     roleAP_RemoveStaCompleteCB 
+/**
+ * \fn     roleAP_RemoveStaCompleteCB
  * \brief  FW Remove STA Complete event callback
- * 
+ *
  * Start roleAP object - send stop BSS to FW
- */ 
+ */
 TI_STATUS roleAP_RemoveStaCompleteCB(TI_HANDLE hRoleAP, TI_CHAR *pData, TI_UINT32 uDataLen)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
-	TI_UINT8 uHlid = *pData;
+    TI_UINT8 uHlid = *pData;
 
-	TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Hlid = %u, DataLen=%u \n",__FUNCTION__,uHlid, uDataLen);    
+    TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Hlid = %u, DataLen=%u \n",__FUNCTION__,uHlid, uDataLen);
 
-	if (uHlid >= WLANLINKS_MAX_LINKS)
-	{
-		TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Invalid HLID: %u\n",__FUNCTION__, uHlid);
+    if (uHlid >= WLANLINKS_MAX_LINKS)
+    {
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Invalid HLID: %u\n",__FUNCTION__, uHlid);
         return TI_NOK;
-	}
+    }
 
-	if (FreeWlanLink(hRoleAP,uHlid) != TI_OK)
-	{
-		TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to free Wlan Link: %u\n",__FUNCTION__, uHlid);
-		return TI_NOK;
-	}
+    if (FreeWlanLink(hRoleAP,uHlid) != TI_OK)
+    {
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to free Wlan Link: %u\n",__FUNCTION__, uHlid);
+        return TI_NOK;
+    }
 
-	pRoleAP->tRoleApStats.uNumAuthorized--;
+    pRoleAP->tRoleApStats.uNumAuthorized--;
 
     /*Notify the Remove STA CMD caller that remove STA process is complete*/
     if (apCmd_ServiceCompleteCB(pRoleAP->hApCmd, 0, NULL) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-			   "%s: Failed to report remove STA completion, HLID = %u to ApCmd\n",__FUNCTION__, uHlid);
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+               "%s: Failed to report remove STA completion, HLID = %u to ApCmd\n",__FUNCTION__, uHlid);
         return TI_NOK;
     }
 
@@ -550,78 +633,78 @@ TI_STATUS roleAP_RemoveStaCompleteCB(TI_HANDLE hRoleAP, TI_CHAR *pData, TI_UINT3
 }
 
 
-/** 
- * \fn     roleAP_stop 
+/**
+ * \fn     roleAP_stop
  * \brief  roleAP stop command API
- * 
+ *
  * Stop roleAP object - disables Tx from network device, stops
  * global & broadcast queueus, sends stop BSS to FW
- */ 
+ */
 TI_STATUS roleAP_stop(TI_HANDLE hRoleAP, TI_UINT8 uBssIdx)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
-	if (pRoleAP->eState	== ROLEAP_STATE_STOPPED)
-	{
-		TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING ,"%s: AP is already stopped - ignoring!!!\n",__FUNCTION__);    
+    if (pRoleAP->eState	== ROLEAP_STATE_STOPPED)
+    {
+        TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING ,"%s: AP is already stopped - ignoring!!!\n",__FUNCTION__);
         return TI_OK;
-	}
+    }
 
     pRoleAP->eState	= ROLEAP_STATE_STOPPED;
 
     wlanDrvIf_DisableTx (pRoleAP->hOs);
     setRxPortStatus(pRoleAP, CLOSE); /* disable Rx path */
 
-	TWD_DisableEvent (pRoleAP->hTWD, TWD_OWN_EVENT_STA_REMOVE_COMPLETE);
-	TWD_DisableEvent (pRoleAP->hTWD, TWD_OWN_INACTIVE_STA_EVENT_ID);
+    TWD_DisableEvent (pRoleAP->hTWD, TWD_OWN_EVENT_STA_REMOVE_COMPLETE);
+    TWD_DisableEvent (pRoleAP->hTWD, TWD_OWN_INACTIVE_STA_EVENT_ID);
     TWD_DisableEvent (pRoleAP->hTWD, TWD_OWN_EVENT_MAX_TX_RETRY);
 
-	if (RemoveBssLinks(hRoleAP, TI_TRUE) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to remove BSS links\n",__FUNCTION__);
-		return TI_NOK;
-	}
+    if (RemoveBssLinks(hRoleAP, TI_TRUE) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to remove BSS links\n",__FUNCTION__);
+        return TI_NOK;
+    }
 
-	ResetRoleApDB(hRoleAP);
+    ResetRoleApDB(hRoleAP);
 
     TWD_BssStop(pRoleAP->hTWD, uBssIdx);
     return TI_OK;
 }
 
-/** 
- * \fn     roleAP_NotifyFwReset 
+/**
+ * \fn     roleAP_NotifyFwReset
  * \brief  notify the roleAP about FW reset
- * 
- */ 
+ *
+ */
 TI_STATUS roleAP_NotifyFwReset(TI_HANDLE hRoleAP)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
-    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: FW RESET notification received!\n",__FUNCTION__);    
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: FW RESET notification received!\n",__FUNCTION__);
 
-	pRoleAP->eState	= ROLEAP_STATE_RECOVERING;
+    pRoleAP->eState	= ROLEAP_STATE_RECOVERING;
 
     wlanDrvIf_StopTx(pRoleAP->hOs);
     setRxPortStatus(pRoleAP, CLOSE); /* disable Rx path */
 
-	if (RemoveBssLinks(hRoleAP, TI_FALSE) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-			   "%s: Failed to remove BSS links\n",__FUNCTION__);
-		return TI_NOK;
-	}
-
-	ResetRoleApDB(hRoleAP);
-
-	/*Release the user mode application (it may be currently blocked waiting for the AP Cmd to complete)*/
-	/*Note: this function would also command handler, but there wouldn't be queued commands since insert is disabled during the recovery */
-	if (apCmd_ServiceCompleteCB(pRoleAP->hApCmd, 0, NULL) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to unblock the user mode application\n",__FUNCTION__);
+    if (RemoveBssLinks(hRoleAP, TI_FALSE) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+               "%s: Failed to remove BSS links\n",__FUNCTION__);
         return TI_NOK;
-	}
+    }
 
-	return TI_OK;
+    ResetRoleApDB(hRoleAP);
+
+    /*Release the user mode application (it may be currently blocked waiting for the AP Cmd to complete)*/
+    /*Note: this function would also command handler, but there wouldn't be queued commands since insert is disabled during the recovery */
+    if (apCmd_ServiceCompleteCB(pRoleAP->hApCmd, 0, NULL) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to unblock the user mode application\n",__FUNCTION__);
+        return TI_NOK;
+    }
+
+    return TI_OK;
 }
 
 TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
@@ -629,52 +712,52 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
     TRoleAP          	*pRoleAP = (TRoleAP *)hRoleAP;
     TApGeneralParam  	*pGenParams;
     TApChannelParams 	*pChannelParams;
-    TApSsidParam     	*pSsidParams;    
+    TApSsidParam     	*pSsidParams;
     TApWpsIe         	*pWpsIe;
     TI_STATUS 			status = TI_OK;
     TSecurityKeys    	*pTwdKey;
     TTwdParamInfo    	tTwdParam;
     TI_STATUS  			tRes = TI_NOK;
-    
 
-    switch (cmd) 
+
+    switch (cmd)
     {
     case ROLE_AP_SET_CHANNEL:
-         pChannelParams =  (TApChannelParams*)pBuffer;
-         pRoleAP->tBssCapabilities.uChannel = pChannelParams->cChannel;
-         break;
+        pChannelParams =  (TApChannelParams*)pBuffer;
+        pRoleAP->tBssCapabilities.uChannel = pChannelParams->cChannel;
+        break;
 
     case ROLE_AP_SET_DTIM_PERIOD:
         pGenParams = (TApGeneralParam*)pBuffer;
         pRoleAP->tBssCapabilities.uDtimPeriod = (TI_UINT8)pGenParams->lValue;
         break;
-        
+
     case ROLE_AP_SET_BEACON_INT:
         pGenParams = (TApGeneralParam*)pBuffer;
         pRoleAP->tBssCapabilities.uBeaconInterval = (TI_UINT16)pGenParams->lValue;
         break;
 
     case ROLE_AP_USE_CTS_PROT:
-		{
-			TTwdParamInfo    *pTwdParam = os_memoryAlloc(pRoleAP->hOs, sizeof(TTwdParamInfo));;
+    {
+        TTwdParamInfo    *pTwdParam = os_memoryAlloc(pRoleAP->hOs, sizeof(TTwdParamInfo));;
 
-			if (!pTwdParam)
-			{
-				TRACE1(pRoleAP->hReport, REPORT_SEVERITY_FATAL_ERROR, "%s: Memory allocation failed\n",__FUNCTION__);
-				return TI_NOK;
-			}
+        if (!pTwdParam)
+        {
+            TRACE1(pRoleAP->hReport, REPORT_SEVERITY_FATAL_ERROR, "%s: Memory allocation failed\n",__FUNCTION__);
+            return TI_NOK;
+        }
         pGenParams = (TApGeneralParam*)pBuffer;
         pRoleAP->tBssCapabilities.bUseProtection = (TI_BOOL)pGenParams->lValue;
-            pTwdParam->paramType = TWD_CTS_TO_SELF_PARAM_ID;
-			pTwdParam->content.halCtrlCtsToSelf = (pRoleAP->tBssCapabilities.bUseProtection) ? CTS_TO_SELF_ENABLE : CTS_TO_SELF_DISABLE;
+        pTwdParam->paramType = TWD_CTS_TO_SELF_PARAM_ID;
+        pTwdParam->content.halCtrlCtsToSelf = (pRoleAP->tBssCapabilities.bUseProtection) ? CTS_TO_SELF_ENABLE : CTS_TO_SELF_DISABLE;
 
-			TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INIT , "%s: ROLE_AP_USE_CTS_PROT: protection=%u\n", __FUNCTION__, pTwdParam->content.halCtrlCtsToSelf);    
+        TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INIT , "%s: ROLE_AP_USE_CTS_PROT: protection=%u\n", __FUNCTION__, pTwdParam->content.halCtrlCtsToSelf);
 
-			TWD_SetParam (pRoleAP->hTWD, pTwdParam);
+        TWD_SetParam (pRoleAP->hTWD, pTwdParam);
 
-			os_memoryFree(pRoleAP->hOs, pTwdParam, sizeof(TTwdParamInfo));
-		}
-        break;
+        os_memoryFree(pRoleAP->hOs, pTwdParam, sizeof(TTwdParamInfo));
+    }
+    break;
 
     case ROLE_AP_SET_RTS:
         pGenParams = (TApGeneralParam*)pBuffer;
@@ -682,37 +765,37 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         break;
 
     case ROLE_AP_SET_AP_SHORT_PREAMBLE:
-		{
-			EPreamble ePreamble;
+    {
+        EPreamble ePreamble;
 
-			pGenParams = (TApGeneralParam*)pBuffer;
-			pRoleAP->tBssCapabilities.bUseShortPreamble = (TI_BOOL)pGenParams->lValue;
+        pGenParams = (TApGeneralParam*)pBuffer;
+        pRoleAP->tBssCapabilities.bUseShortPreamble = (TI_BOOL)pGenParams->lValue;
 
-			ePreamble = (pRoleAP->tBssCapabilities.bUseShortPreamble) ? PREAMBLE_SHORT : PREAMBLE_LONG;
+        ePreamble = (pRoleAP->tBssCapabilities.bUseShortPreamble) ? PREAMBLE_SHORT : PREAMBLE_LONG;
 
-			TWD_CfgPreamble (pRoleAP->hTWD, ePreamble);
-		}
-        break;
+        TWD_CfgPreamble (pRoleAP->hTWD, ePreamble);
+    }
+    break;
 
     case ROLE_AP_SET_PRIVACY:
-         pGenParams = (TApGeneralParam*)pBuffer;
-         pRoleAP->tBssCapabilities.bPrivacyEnabled = (TI_BOOL)pGenParams->lValue;
-         break;
+        pGenParams = (TApGeneralParam*)pBuffer;
+        pRoleAP->tBssCapabilities.bPrivacyEnabled = (TI_BOOL)pGenParams->lValue;
+        break;
 
     case ROLE_AP_USE_SHORT_SLOT_TIME:
-		{
-			ESlotTime eSlotTime;
+    {
+        ESlotTime eSlotTime;
 
         pGenParams = (TApGeneralParam*)pBuffer;
         pRoleAP->tBssCapabilities.bUseShortSlotTime = (TI_BOOL)pGenParams->lValue;
 
-			eSlotTime = (pRoleAP->tBssCapabilities.bUseShortSlotTime) ? PHY_SLOT_TIME_SHORT : PHY_SLOT_TIME_LONG;
+        eSlotTime = (pRoleAP->tBssCapabilities.bUseShortSlotTime) ? PHY_SLOT_TIME_SHORT : PHY_SLOT_TIME_LONG;
 
-			TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INIT , "%s: ROLE_AP_USE_SHORT_SLOT_TIME: timeSlot=%u cmd=%x\n", __FUNCTION__, eSlotTime, cmd);    
+        TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INIT , "%s: ROLE_AP_USE_SHORT_SLOT_TIME: timeSlot=%u cmd=%x\n", __FUNCTION__, eSlotTime, cmd);
 
-			TWD_CfgSlotTime(pRoleAP->hTWD, eSlotTime);
-		}
-        break;
+        TWD_CfgSlotTime(pRoleAP->hTWD, eSlotTime);
+    }
+    break;
 
     case ROLE_AP_SET_RATE:
         SetApRates(hRoleAP, pBuffer);
@@ -723,56 +806,56 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         break;
 
     case ROLE_AP_SET_TX_PARAM:
-        {
-            TApTxParams *pTxParams = (TApTxParams*)pBuffer;
-            TAcQosParams tAcQosParams;
+    {
+        TApTxParams *pTxParams = (TApTxParams*)pBuffer;
+        TAcQosParams tAcQosParams;
 
-            tAcQosParams.ac = (TI_UINT8)pTxParams->cQueueId; /* [LiorC] check if need to be converted */
-            tAcQosParams.aifsn = (TI_UINT8)pTxParams->cAifs;
-            tAcQosParams.cwMin = (TI_UINT8)pTxParams->sCwmin;
-            tAcQosParams.cwMax = (TI_UINT16)pTxParams->sCwmax;
-            tAcQosParams.txopLimit = (TI_UINT16)pTxParams->sTxop;
+        tAcQosParams.ac = (TI_UINT8)pTxParams->cQueueId; /* [LiorC] check if need to be converted */
+        tAcQosParams.aifsn = (TI_UINT8)pTxParams->cAifs;
+        tAcQosParams.cwMin = (TI_UINT8)pTxParams->sCwmin;
+        tAcQosParams.cwMax = (TI_UINT16)pTxParams->sCwmax;
+        tAcQosParams.txopLimit = (TI_UINT16)pTxParams->sTxop;
 
-            TWD_CfgAcParams(pRoleAP->hTWD, &tAcQosParams, NULL, NULL);
-        }
-        
-        break;
+        TWD_CfgAcParams(pRoleAP->hTWD, &tAcQosParams, NULL, NULL);
+    }
+
+    break;
 
     case ROLE_AP_ADD_BEACON_PARAM:
-		TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INIT , "%s: ROLE_AP_ADD_BEACON_PARAM\n", __FUNCTION__);    
+        TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INIT , "%s: ROLE_AP_ADD_BEACON_PARAM\n", __FUNCTION__);
 
         os_memoryCopy(pRoleAP->hOs, &pRoleAP->tBssCapabilities.tAPBeaconParams, (TApBeaconParams*)pBuffer, sizeof(TApBeaconParams));
 
-		if (pRoleAP->eState == ROLEAP_STATE_STARTED)
-		{
-			/* Templates are to be updated in FW when AP Role is in started state. 
-			 * RoleAp_Start takes care to download templates from BssCapabilities in stoped state 
-			 */
-			setBeaconProbeRspTempl(pRoleAP);
-		}
+        if (pRoleAP->eState == ROLEAP_STATE_STARTED)
+        {
+            /* Templates are to be updated in FW when AP Role is in started state.
+             * RoleAp_Start takes care to download templates from BssCapabilities in stoped state
+             */
+            setBeaconProbeRspTempl(pRoleAP);
+        }
 
         break;
 
     case ROLE_AP_SET_SSID:
-         pSsidParams = (TApSsidParam*)pBuffer;
-         pRoleAP->tBssCapabilities.tSsid.len = pSsidParams->iSsidLen;
-         os_memoryCopy(pRoleAP->hOs,pRoleAP->tBssCapabilities.tSsid.str,pSsidParams->cSsid,pSsidParams->iSsidLen);
-         break;
+        pSsidParams = (TApSsidParam*)pBuffer;
+        pRoleAP->tBssCapabilities.tSsid.len = pSsidParams->iSsidLen;
+        os_memoryCopy(pRoleAP->hOs,pRoleAP->tBssCapabilities.tSsid.str,pSsidParams->cSsid,pSsidParams->iSsidLen);
+        break;
 
     case ROLE_AP_SET_SSID_TYPE:
-        {
-            TApGeneralParam *pSsidTypeParam = (TApGeneralParam *)pBuffer;
-            pRoleAP->tBssCapabilities.eSsidType = (pSsidTypeParam->lValue == AP_SSID_TYPE_PUBLIC) ? 
-                                                   SSID_TYPE_PUBLIC : SSID_TYPE_HIDDEN;
-        }
-        break;
+    {
+        TApGeneralParam *pSsidTypeParam = (TApGeneralParam *)pBuffer;
+        pRoleAP->tBssCapabilities.eSsidType = (pSsidTypeParam->lValue == AP_SSID_TYPE_PUBLIC) ?
+                                              SSID_TYPE_PUBLIC : SSID_TYPE_HIDDEN;
+    }
+    break;
 
     case ROLE_AP_SET_INACTIVE_INT:
         /* [LiorC] To be implemented later in hostapd */
         break;
 
     case ROLE_AP_CHANGE_STATION_PARAM:
-         /* [LiorC] To be implemented later in hostapd */
+        /* [LiorC] To be implemented later in hostapd */
         break;
 
     case ROLE_AP_SET_PORT_STATUS:
@@ -780,12 +863,12 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         break;
 
     case ROLE_AP_COMMIT_CMD:
-        {
-         TApGeneralParam *pGenParam = (TApGeneralParam *)pBuffer;
-         pRoleAP->tBssCapabilities.uInactivity = pGenParam->lValue;
-         roleAP_start(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
-        }
-        break;
+    {
+        TApGeneralParam *pGenParam = (TApGeneralParam *)pBuffer;
+        pRoleAP->tBssCapabilities.uInactivity = pGenParam->lValue;
+        roleAP_start(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
+    }
+    break;
 
     case ROLE_AP_STOP:
         roleAP_stop(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
@@ -795,7 +878,7 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         status = AddStation(hRoleAP, pBuffer);
         break;
 
-    case ROLE_AP_REMOVE_STATION:  
+    case ROLE_AP_REMOVE_STATION:
         status = RemStation(hRoleAP, pBuffer);
         break;
 
@@ -803,48 +886,48 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         break;
 
     case ROLE_AP_SET_BSS_BRIDGE:
+    {
+        TApGeneralParam *pBssBridgeParam = (TApGeneralParam *)pBuffer;
+        if(pBssBridgeParam->lValue)
         {
-            TApGeneralParam *pBssBridgeParam = (TApGeneralParam *)pBuffer;
-            if(pBssBridgeParam->lValue) 
-            {
-                rxData_IntraBssBridge_Enable(pRoleAP->hRxData);
-            }
-            else
-            {
-                rxData_IntraBssBridge_Disable(pRoleAP->hRxData);
-            }
+            rxData_IntraBssBridge_Enable(pRoleAP->hRxData);
         }
+        else
+        {
+            rxData_IntraBssBridge_Disable(pRoleAP->hRxData);
+        }
+    }
+    break;
+
+    case ROLE_AP_DEAUTH_STATION:
+        status = SaveDeauthReason(hRoleAP, (TApGeneralParam *)pBuffer);
         break;
 
-	case ROLE_AP_DEAUTH_STATION:
-		status = SaveDeauthReason(hRoleAP, (TApGeneralParam *)pBuffer);
+    case ROLE_AP_SET_PROBE_WPS_IE:
+        pWpsIe = (TApWpsIe*)pBuffer;
+        pRoleAP->tWpsIe.iIeLen = pWpsIe->iIeLen;
+        os_memoryCopy(pRoleAP->hOs,pRoleAP->tWpsIe.cIe,pWpsIe->cIe,pWpsIe->iIeLen);
         break;
-
-	case ROLE_AP_SET_PROBE_WPS_IE:
-		pWpsIe = (TApWpsIe*)pBuffer;
-		pRoleAP->tWpsIe.iIeLen = pWpsIe->iIeLen;
-		os_memoryCopy(pRoleAP->hOs,pRoleAP->tWpsIe.cIe,pWpsIe->cIe,pWpsIe->iIeLen);
-		break;
 
     case TWD_ADD_KEY_PARAMS:
-         pTwdKey = (TSecurityKeys*)pBuffer;
-         pRoleAP->keyType = pTwdKey->keyType;
+        pTwdKey = (TSecurityKeys*)pBuffer;
+        pRoleAP->keyType = pTwdKey->keyType;
 
-         TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INIT , " RoleAp: TWD_ADD_KEY_PARAMS key type %d \n",pRoleAP->keyType);    
+        TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INIT , " RoleAp: TWD_ADD_KEY_PARAMS key type %d \n",pRoleAP->keyType);
 
 
         // in case of wep or broadcst key keep the keys in roleAp and set the FW after BssConfig.
         if (((pTwdKey->lidKeyType == BROADCAST_LID_TYPE)|| (pTwdKey->keyType == KEY_WEP)) &&
-			(pRoleAP->eState != ROLEAP_STATE_STARTED))
+                (pRoleAP->eState != ROLEAP_STATE_STARTED))
         {
-          os_memoryCopy(pRoleAP->hOs, &pRoleAP->tTwdKey[pTwdKey->keyIndex],pBuffer, sizeof(TSecurityKeys));
+            os_memoryCopy(pRoleAP->hOs, &pRoleAP->tTwdKey[pTwdKey->keyIndex],pBuffer, sizeof(TSecurityKeys));
         }
         else
         {
-         status = setKey(pRoleAP,pTwdKey);
-		 TxMgmtQ_SetEncryptFlag(pRoleAP->hTxMgmtQ,pTwdKey->hlid,TI_TRUE);
+            status = setKey(pRoleAP,pTwdKey);
+            TxMgmtQ_SetEncryptFlag(pRoleAP->hTxMgmtQ,pTwdKey->hlid,TI_TRUE);
         }
-     
+
         break;
 
     case TWD_DEL_KEY_PARAMS:
@@ -856,48 +939,48 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         tTwdParam.content.configureCmdCBParams.hCb = NULL;
         tRes = TWD_SetParam (pRoleAP->hTWD, &tTwdParam);
         if (tRes != TI_OK)
-			TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING , "RoleAp TWD_DEL_KEY_PARAMS :Error in TWD_SetParam status %d \n", tRes);    
-	
+            TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING , "RoleAp TWD_DEL_KEY_PARAMS :Error in TWD_SetParam status %d \n", tRes);
+
         TxMgmtQ_SetEncryptFlag(pRoleAP->hTxMgmtQ,pTwdKey->hlid,TI_FALSE);
         TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,pTwdKey->hlid,0);
 
         break;
 
     case TWD_SET_DEFAULT_KEY_PARAMS:
-         pGenParams = (TApGeneralParam*)pBuffer;
-         pRoleAP->DefaultKeyIndex = pGenParams->lValue;  
-                 
-         break;
-    
+        pGenParams = (TApGeneralParam*)pBuffer;
+        pRoleAP->DefaultKeyIndex = pGenParams->lValue;
+
+        break;
+
     case ROLE_AP_REMOVE_ALL_STATION:
     case ROLE_AP_SET_STA_SHORT_PREAMBLE:
         /* Not supported for now */
         break;
 
-	case ROLE_AP_ENABLE:
-		status = roleAP_enable(hRoleAP);
+    case ROLE_AP_ENABLE:
+        status = roleAP_enable(hRoleAP);
         break;
 
     case ROLE_AP_SET_TX_POWER:
-         pGenParams = (TApGeneralParam *)pBuffer;
-         pRoleAP->uTxPower = pGenParams->lValue;
-         break;
+        pGenParams = (TApGeneralParam *)pBuffer;
+        pRoleAP->uTxPower = pGenParams->lValue;
+        break;
 
-	case TWD_SET_CONNECTION_PHASE:
-	{
-		TTwdConnPhaseParam	tTwdConnPhaseParam;
-		pGenParams = (TApGeneralParam *)pBuffer;
+    case TWD_SET_CONNECTION_PHASE:
+    {
+        TTwdConnPhaseParam	tTwdConnPhaseParam;
+        pGenParams = (TApGeneralParam *)pBuffer;
 
         os_memoryCopy(pRoleAP->hOs, tTwdConnPhaseParam.aMacAddr, pGenParams->cMac, AP_MAC_ADDR);
 
         tRes = TWD_SetConnectionPhase(pRoleAP->hTWD, &tTwdConnPhaseParam, NULL, NULL);
         if (tRes != TI_OK)
-			TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING , "RoleAp TWD_SET_CONNECTION_PHASE :Error in TWD_SetConnectionPhase status %d \n", tRes);
-	}
-        break;
+            TRACE1(pRoleAP->hReport,REPORT_SEVERITY_WARNING , "RoleAp TWD_SET_CONNECTION_PHASE :Error in TWD_SetConnectionPhase status %d \n", tRes);
+    }
+    break;
 
     default:
-		TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n !!! In %s,  bad command type = 0x%X\n", __FUNCTION__,cmd);    
+        TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n !!! In %s,  bad command type = 0x%X\n", __FUNCTION__,cmd);
         status = TI_NOK;
         break;
     }
@@ -913,14 +996,14 @@ TI_STATUS RoleAp_getApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pInBuf, void *
     paramInfo_t      tParam;
     TApChanHwInfo  *pChanData;
 
-	switch (cmd) 
+    switch (cmd)
     {
     case ROLE_AP_GET_STATION_PARAM:
         /* [LiorC] To be implemented later. */
         break;
 
-	case ROLE_AP_GET_STA_INACTIVITY:
-		staInactivity (hRoleAP, pInBuf, pOutBuf);
+    case ROLE_AP_GET_STA_INACTIVITY:
+        staInactivity (hRoleAP, pInBuf, pOutBuf);
         break;
 
     case ROLE_AP_GET_HW:
@@ -932,8 +1015,8 @@ TI_STATUS RoleAp_getApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pInBuf, void *
         os_memoryCopy(pRoleAP->hOs, pOutBuf, pInBuf, sizeof(TApChanHwInfo));
         break;
 
-	default:
-		TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n !!! In %s,  bad command type = 0x%X\n", __FUNCTION__,cmd);   
+    default:
+        TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n !!! In %s,  bad command type = 0x%X\n", __FUNCTION__,cmd);
         status = TI_NOK;
         break;
     }
@@ -942,21 +1025,21 @@ TI_STATUS RoleAp_getApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pInBuf, void *
 }
 
 
-/** 
- * \fn     roleAp_getApState 
+/**
+ * \fn     roleAp_getApState
  * \brief  get Role AP current state
- * 
- */ 
+ *
+ */
 TI_STATUS roleAp_getApState(TI_HANDLE hRoleAP, TI_UINT32 *pState)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
-	*pState = pRoleAP->eState;
+    *pState = pRoleAP->eState;
 
-	return TI_OK;
+    return TI_OK;
 }
 
-/** 
+/**
  * \fn     RoleAp_DrvResetNotifyUpperLayers
  * \brief  Send driver reset event to user application - hostapd
  * \return  operation status
@@ -968,34 +1051,34 @@ TI_STATUS RoleAp_DrvResetNotifyUpperLayers(TI_HANDLE hRoleAP)
 
     tApEvent.uEvent = (unsigned char) AP_EVENT_DRV_RESET;
 
-    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Sending Driver Reset event\n",__FUNCTION__);    
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Sending Driver Reset event\n",__FUNCTION__);
 
-	return EvHandlerSendEvent (pRoleAP->hEvHandler, IPC_EVENT_AP_EVENT, (TI_UINT8*) &tApEvent, sizeof (tApEvent));
+    return EvHandlerSendEvent (pRoleAP->hEvHandler, IPC_EVENT_AP_EVENT, (TI_UINT8*) &tApEvent, sizeof (tApEvent));
 }
 
 /**************************************************************************/
 /*      STATIC FUNCTIONS                                                   */
 /**************************************************************************/
 
-/** 
- * \fn     BssStart 
+/**
+ * \fn     BssStart
  * \brief  roleAP bss configure & start command
- * 
+ *
  * Configures the BSS with the params to be received from Hostapd/INI file
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
  * \param   uBssIdx - the BSS Index
- * 
+ *
  * \return  TI_OK if success , otherwise - TI_NOK
  * \sa      roleAP_start()
- */ 
+ */
 static TI_STATUS BssStart(TI_HANDLE hRoleAP, TI_UINT8 uBssIdx)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
     BssStartCmd_t       bssStartPrm;
 
-	os_memoryZero(pRoleAP->hOs, &bssStartPrm, sizeof(bssStartPrm));
+    os_memoryZero(pRoleAP->hOs, &bssStartPrm, sizeof(bssStartPrm));
 
     bssStartPrm.beaconInterval  = pRoleAP->tBssCapabilities.uBeaconInterval;
     bssStartPrm.dtimInterval    = pRoleAP->tBssCapabilities.uDtimPeriod;
@@ -1013,7 +1096,7 @@ static TI_STATUS BssStart(TI_HANDLE hRoleAP, TI_UINT8 uBssIdx)
     bssStartPrm.broadcastHLID   = pRoleAP->uBrcstHlid;
     bssStartPrm.bssIndex        = uBssIdx;
     bssStartPrm.basicRateSet    = pRoleAP->tBssCapabilities.uBasicRateBitmap;
-	bssStartPrm.beaconExpiry	= pRoleAP->uBeaconTxTimeout;
+    bssStartPrm.beaconExpiry	= pRoleAP->uBeaconTxTimeout;
 
 
     return TWD_BssStart(pRoleAP->hTWD, &bssStartPrm);
@@ -1023,20 +1106,20 @@ static TI_STATUS BssStart(TI_HANDLE hRoleAP, TI_UINT8 uBssIdx)
 
 
 
-/** 
+/**
  * \fn     ConvertRateSetToBitmap
  * \brief  roleAP Conver Rateset command
- * 
+ *
  * Convert the basic rates array received by Hostapd (100k units format) to FW bitmap style
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
  * \param   pRates - rates array
  * \param   pRatesLen - rates array length
- * 
+ *
  * \return  TI_OK if success , otherwise - TI_NOK
  * \sa      roleAP_start()
- */ 
+ */
 static EHwRateBitFiled ConvertRateSetToBitmap(TI_HANDLE hRoleAP, TI_UINT8 *pRates, TI_UINT8 uRatesLen)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
@@ -1045,25 +1128,25 @@ static EHwRateBitFiled ConvertRateSetToBitmap(TI_HANDLE hRoleAP, TI_UINT8 *pRate
 
     for (i=0 ; i< uRatesLen ; i++)
     {
-		eRateSetBitmap |=  TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRates[i]);
+        eRateSetBitmap |=  TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRates[i]);
     }
 
     return eRateSetBitmap;
 }
 
 
-/** 
+/**
  * \fn     AllocateWlanLink
  * \brief Allocate Wlan Link for the station
- * 
- * 
+ *
+ *
  * \param   hRoleAP - Handle to RoleAP object
  * \param   eLinkType - link type
  * \param   pStationParams - station parameters
  * \param   pHlid - output HLID
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS AllocateWlanLink(TI_HANDLE hRoleAP, EWlanLinkType eLinkType, TApStationParams *pStaParams, TI_UINT32 *pHlid)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
@@ -1081,106 +1164,106 @@ static TI_STATUS AllocateWlanLink(TI_HANDLE hRoleAP, EWlanLinkType eLinkType, TA
 
     *pHlid = uHlid;
 
-	/* Update my links */
-	pRoleAP->aAllocatedLinks[uHlid] = uHlid;
-	pRoleAP->uNumAllocatedLinks ++;
+    /* Update my links */
+    pRoleAP->aAllocatedLinks[uHlid] = uHlid;
+    pRoleAP->uNumAllocatedLinks ++;
 
-	/* Update link type in  Rx and Tx */
+    /* Update link type in  Rx and Tx */
     txMgmtQ_SetLinkType(pRoleAP->hTxMgmtQ, uHlid, eLinkType);
     rxData_SetLinkType(pRoleAP->hRxData, uHlid, eLinkType, WLANLINK_ROLE_AP);
 
     return TI_OK;
 }
 
-/** 
+/**
  * \fn     FreeWlanLink
  * \brief  Free Wlan Link of the AP
- * 
- * 
+ *
+ *
  * \param   hRoleAP - Handle to RoleAP object
  * \param   uHlid - link HLID
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS FreeWlanLink(TI_HANDLE hRoleAP, TI_UINT32 uHlid)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
     if (pRoleAP->keyType != KEY_NULL)
     {
-      /* TODO save this flag in Wilink DB */
-  	  TxDataQ_SetEncryptFlag(pRoleAP->hTxDataQ,uHlid,TI_FALSE);
-      TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,uHlid,0);
+        /* TODO save this flag in Wilink DB */
+        TxDataQ_SetEncryptFlag(pRoleAP->hTxDataQ,uHlid,TI_FALSE);
+        TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,uHlid,0);
     }
 
     /* Free the Wlan Link*/
     if (wlanLinks_FreeLink(pRoleAP->hWlanLinks, (TI_UINT32)uHlid) != TI_OK)
     {
-         return TI_NOK;
+        return TI_NOK;
     }
 
     /* Reset Rx & Tx Link counters*/
-	rxData_resetLinkCounters(pRoleAP->hRxData, pRoleAP->aAllocatedLinks[uHlid]);
+    rxData_resetLinkCounters(pRoleAP->hRxData, pRoleAP->aAllocatedLinks[uHlid]);
     txCtrlParams_resetLinkCounters(pRoleAP->hTxCtrl, pRoleAP->aAllocatedLinks[uHlid]);
 
-	/* Update my links */
-	pRoleAP->aAllocatedLinks[uHlid] = WLANLINKS_INVALID_HLID;
-	pRoleAP->uNumAllocatedLinks--;
+    /* Update my links */
+    pRoleAP->aAllocatedLinks[uHlid] = WLANLINKS_INVALID_HLID;
+    pRoleAP->uNumAllocatedLinks--;
 
 
-	return TI_OK;
+    return TI_OK;
 }
 
-/** 
- * \fn     AddStation 
+/**
+ * \fn     AddStation
  * \brief  add new station in BSS
- * 
+ *
  * Add station to WlanLinks DB, DataPath tables and FW DB
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
  * \param   pStationParams - station parameters
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS AddStation(TI_HANDLE hRoleAP, void *pStationParams)
 {
     TRoleAP            *pRoleAP  =  (TRoleAP *)hRoleAP;
     TI_UINT32          uHlid;
     TApStationParams   *pStaParams = (TApStationParams *)pStationParams;
 
-    TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "\n ************** AddStation **************  \n");    
+    TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "\n ************** AddStation **************  \n");
 
-	pRoleAP->tRoleApStats.uAddStaCmds ++;
+    pRoleAP->tRoleApStats.uAddStaCmds ++;
 
     if (!pStaParams)
     {
-		TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n *** In %s, pStaParams is NULL \n", __FUNCTION__);    
+        TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "\n *** In %s, pStaParams is NULL \n", __FUNCTION__);
         return TI_NOK;
     }
 
-	TRACE4(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION, "%s: MAC=" REPORT_MACSTR", capabilities=0x%x, AID=%u\n",
-					__FUNCTION__, REPORT_MAC2STR(pStaParams->cMac),pStaParams->sCapability, pStaParams->sAid);
+    TRACE4(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION, "%s: MAC=" REPORT_MACSTR", capabilities=0x%x, AID=%u\n",
+           __FUNCTION__, REPORT_MAC2STR(pStaParams->cMac),pStaParams->sCapability, pStaParams->sAid);
 
-	DecodeStaRates(pStaParams->cSupportedRates, pStaParams->cSupportedRatesLen);
+    DecodeStaRates(pStaParams->cSupportedRates, pStaParams->cSupportedRatesLen);
 
     /*Check if the station already exists in WlanLinks DB*/
     if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, pStaParams->cMac, &uHlid) == TI_OK)
     {
         TWlanLinkInfo    linkInfo;
 
-        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_WARNING, 
-               "%s: Failed to add a STA" REPORT_MACSTR ", link with such MAC already exists under HLID=%u - updating parameters\n",__FUNCTION__, 
+        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_WARNING,
+               "%s: Failed to add a STA" REPORT_MACSTR ", link with such MAC already exists under HLID=%u - updating parameters\n",__FUNCTION__,
                REPORT_MAC2STR(pStaParams->cMac), uHlid);
 
-		FillLinkInfo(hRoleAP, WLANLINK_TYPE_SPECIFIC, pStaParams,&linkInfo);
+        FillLinkInfo(hRoleAP, WLANLINK_TYPE_SPECIFIC, pStaParams,&linkInfo);
 
-		/* Update the station in WlanLinks DB*/
-		if (wlanLinks_UpdateLinkInfo(pRoleAP->hWlanLinks, &linkInfo, uHlid) != TI_OK)
-		{
-			TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to update link (HLID=%u) data for STA" REPORT_MACSTR "\n",
-				__FUNCTION__, uHlid, REPORT_MAC2STR(pStaParams->cMac));
-			return TI_NOK;
-		}
+        /* Update the station in WlanLinks DB*/
+        if (wlanLinks_UpdateLinkInfo(pRoleAP->hWlanLinks, &linkInfo, uHlid) != TI_OK)
+        {
+            TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to update link (HLID=%u) data for STA" REPORT_MACSTR "\n",
+                   __FUNCTION__, uHlid, REPORT_MAC2STR(pStaParams->cMac));
+            return TI_NOK;
+        }
 
     }
     else
@@ -1189,25 +1272,25 @@ static TI_STATUS AddStation(TI_HANDLE hRoleAP, void *pStationParams)
         if (AllocateWlanLink(hRoleAP, WLANLINK_TYPE_SPECIFIC, pStaParams, &uHlid) != TI_OK)
         {
             TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to add a STA" REPORT_MACSTR "\n",
-				   __FUNCTION__, REPORT_MAC2STR(pStaParams->cMac));
+                   __FUNCTION__, REPORT_MAC2STR(pStaParams->cMac));
             return TI_NOK;
         }
         TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, "%s: Added STA" REPORT_MACSTR ", to WlanLinks DB under HLID=%u\n",
-			   __FUNCTION__, REPORT_MAC2STR(pStaParams->cMac),  uHlid);
+               __FUNCTION__, REPORT_MAC2STR(pStaParams->cMac),  uHlid);
 
     }
 
-	/* Set link state CONNECTING till we receive port authorized notification from AP manager */
-	if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTING, uHlid) != TI_OK)
-	{
-		TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
-			   "%s: Failed to update link state, for STA" REPORT_MACSTR "under HLID=%u\n",__FUNCTION__, 
-			   REPORT_MAC2STR(pStaParams->cMac),  uHlid);
+    /* Set link state CONNECTING till we receive port authorized notification from AP manager */
+    if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTING, uHlid) != TI_OK)
+    {
+        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+               "%s: Failed to update link state, for STA" REPORT_MACSTR "under HLID=%u\n",__FUNCTION__,
+               REPORT_MAC2STR(pStaParams->cMac),  uHlid);
         return TI_NOK;
-	}
+    }
 
     /* Set link state to OPEN in Rx and Tx */
-     rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_OPEN);
+    rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_OPEN);
 
     /*Update the Data Path*/
     if (txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_EAPOL) != TI_OK)
@@ -1215,49 +1298,49 @@ static TI_STATUS AddStation(TI_HANDLE hRoleAP, void *pStationParams)
         TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to update link %u state in TX Mgmt\n",__FUNCTION__, uHlid);
         return TI_NOK;
     }
-	   
+
     if (txDataQ_LinkMacAdd(pRoleAP->hTxDataQ, uHlid, pStaParams->cMac) != TI_OK)
     {
-        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to add link %u MAC "REPORT_MACSTR" to Data Path table\n",
-			   __FUNCTION__, uHlid, REPORT_MAC2STR(pStaParams->cMac));
+               __FUNCTION__, uHlid, REPORT_MAC2STR(pStaParams->cMac));
         return TI_NOK;
     }
 
-    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
+    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
            "%s: Updated the Data Path for Link %u, MAC "REPORT_MACSTR"\n",__FUNCTION__, uHlid, REPORT_MAC2STR(pStaParams->cMac));
 
     /*Update the FW*/
     if (AddStaToFW(pRoleAP, uHlid, pStaParams) != TI_OK)
     {
-        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to add a STA "REPORT_MACSTR", HLID=%u to FW DB\n",__FUNCTION__, REPORT_MAC2STR(pStaParams->cMac),  uHlid);
         return TI_NOK;
     }
 
-    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
+    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
            "%s: Added STA "REPORT_MACSTR", HLID=%u to FW DB\n",__FUNCTION__, REPORT_MAC2STR(pStaParams->cMac), uHlid);
 
     /* set Data Encrypt bit for not OPEN system */
     if (pRoleAP->keyType != KEY_NULL)
     {
-      TxDataQ_SetEncryptFlag(pRoleAP->hTxDataQ,uHlid,TI_TRUE);
+        TxDataQ_SetEncryptFlag(pRoleAP->hTxDataQ,uHlid,TI_TRUE);
     }
 
 
-	return TI_OK;
+    return TI_OK;
 }
 
-/** 
- * \fn     AddStaToFW 
+/**
+ * \fn     AddStaToFW
  * \brief  Add station to FW
- * 
+ *
  * \param   pRoleAP - Pinter to RoleAP object
  * \param   uHlid   - station HLID
  * \param pStationParams - station parameters buffer
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS AddStaToFW(TRoleAP *pRoleAP, TI_UINT32 uHlid, TApStationParams *pStaParams)
 {
     TTwdAddStaParams   twdAddStaParams;
@@ -1267,78 +1350,78 @@ static TI_STATUS AddStaToFW(TRoleAP *pRoleAP, TI_UINT32 uHlid, TApStationParams 
     twdAddStaParams.uAid = pStaParams->sAid;
     twdAddStaParams.uBssIndex = pRoleAP->tBssCapabilities.uBssIndex;
     twdAddStaParams.bWme = ((pStaParams->sCapability & DOT11_CAPS_QOS_SUPPORTED) ? TI_TRUE : TI_FALSE);
-	wlanLinks_GetLinkSupRates(pRoleAP->hWlanLinks, &twdAddStaParams.uSupRates, uHlid);
-    
-	/* By now our device doesn't support UAPSD, set the UAPSD parameters to 0*/
+    wlanLinks_GetLinkSupRates(pRoleAP->hWlanLinks, &twdAddStaParams.uSupRates, uHlid);
+
+    /* By now our device doesn't support UAPSD, set the UAPSD parameters to 0*/
     os_memorySet(pRoleAP->hOs, twdAddStaParams.aPSDType, 0, sizeof(twdAddStaParams.aPSDType));
     twdAddStaParams.uSPLen = 0;
 
-	TRACE5(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
-		   "%s: HLID = %u, MAC "REPORT_MACSTR", AID=%u, Supp. rates = 0x%x\n",__FUNCTION__, twdAddStaParams.uHlid,
-		   REPORT_MAC2STR(pStaParams->cMac),twdAddStaParams.uAid, twdAddStaParams.uSupRates);
+    TRACE5(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
+           "%s: HLID = %u, MAC "REPORT_MACSTR", AID=%u, Supp. rates = 0x%x\n",__FUNCTION__, twdAddStaParams.uHlid,
+           REPORT_MAC2STR(pStaParams->cMac),twdAddStaParams.uAid, twdAddStaParams.uSupRates);
 
     return TWD_AddSta(pRoleAP->hTWD, &twdAddStaParams);
 }
 
-/** 
+/**
  * \fn     RemStaFromFW
  * \brief  Remove station from FW
- * 
+ *
  * \param   pRoleAP - Pinter to RoleAP object
  * \param   uHlid   - station HLID
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS RemStaFromFW(TRoleAP *pRoleAP, TI_UINT32 uHlid)
 {
-	TI_UINT32 uDeauthReason = 0;
-	TI_BOOL	  bSendDeauth;
+    TI_UINT32 uDeauthReason = 0;
+    TI_BOOL	  bSendDeauth;
 
-	if (wlanLinks_GetDeauthReason(pRoleAP->hWlanLinks, &uDeauthReason, uHlid))
-		return TI_NOK;
+    if (wlanLinks_GetDeauthReason(pRoleAP->hWlanLinks, &uDeauthReason, uHlid))
+        return TI_NOK;
 
-	bSendDeauth = uDeauthReason ? TI_TRUE : TI_FALSE;
+    bSendDeauth = uDeauthReason ? TI_TRUE : TI_FALSE;
 
-	TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, "%s: Removing STA from FW DB HLID=%u, Deauth flag = %s \n",
-		   __FUNCTION__, uHlid, bSendDeauth ? "True" : "False");
-    
+    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, "%s: Removing STA from FW DB HLID=%u, Deauth flag = %s \n",
+           __FUNCTION__, uHlid, bSendDeauth ? "True" : "False");
+
     return TWD_RemSta(pRoleAP->hTWD, uHlid, uDeauthReason, bSendDeauth);
 }
 
-/** 
- * \fn     RemStation 
+/**
+ * \fn     RemStation
  * \brief  remove a station
- * 
+ *
  * Remove a station from WlanLinks DB, DataPath tables and FW DB
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
  * \param   pBuf - command buffer
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS RemStation(TI_HANDLE hRoleAP, void *pBuf)
 {
     TRoleAP          *pRoleAP    =  (TRoleAP *)hRoleAP;
     TI_UINT32        uHlid;
     TI_UINT8         *aMacAddr = (TI_UINT8 *)pBuf;
 
-	TRACE2(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
-		   "********%s: Removing STA "REPORT_MACSTR" *******\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
-    
-	pRoleAP->tRoleApStats.uRemStaCmds ++;
+    TRACE2(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
+           "********%s: Removing STA "REPORT_MACSTR" *******\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
+
+    pRoleAP->tRoleApStats.uRemStaCmds ++;
 
     /*Check if the station exists in WlanLinks DB*/
     if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, aMacAddr, &uHlid) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_WARNING, 
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_WARNING,
                "%s: Failed to remove a STA "REPORT_MACSTR", link with such MAC not found\n",
-			   __FUNCTION__, REPORT_MAC2STR(aMacAddr));
+               __FUNCTION__, REPORT_MAC2STR(aMacAddr));
         return TI_NOK;
     }
 
     if (txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_CLOSE) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to update link %u state in TX Mgmt\n",__FUNCTION__, uHlid);
         return TI_NOK;
     }
@@ -1349,249 +1432,249 @@ static TI_STATUS RemStation(TI_HANDLE hRoleAP, void *pBuf)
     /*Update the FW*/
     if (RemStaFromFW(pRoleAP, uHlid) != TI_OK)
     {
-        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to remove STA "REPORT_MACSTR", HLID=%u from FW DB\n",
-			   __FUNCTION__, REPORT_MAC2STR(aMacAddr), uHlid);
+               __FUNCTION__, REPORT_MAC2STR(aMacAddr), uHlid);
         return TI_NOK;
     }
 
 
-	TRACE2(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
-		   "%s: Sent CMD_REMOVE_STA to FW for STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
-    
+    TRACE2(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
+           "%s: Sent CMD_REMOVE_STA to FW for STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
+
     /*return Pending status in order to block the caller application till FW Remove Complete event occurs */
     return COMMAND_PENDING;
 }
 
-/** 
- * \fn     SaveDeauthReason 
+/**
+ * \fn     SaveDeauthReason
  * \brief  save deauthentication reason for a station
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
  * \param   pGenParam - command structure
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS SaveDeauthReason(TI_HANDLE hRoleAP, TApGeneralParam *pGenParam)
 {
     TRoleAP          *pRoleAP    =  (TRoleAP *)hRoleAP;
     TI_UINT8         *aMacAddr = (TI_UINT8 *)pGenParam->cMac;
-	TI_UINT32		 uHlid;
+    TI_UINT32		 uHlid;
 
-	TRACE2(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
-		   "********%s:  STA "REPORT_MACSTR"*******\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
-    
-	/*Check if the station exists in WlanLinks DB*/
+    TRACE2(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
+           "********%s:  STA "REPORT_MACSTR"*******\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
+
+    /*Check if the station exists in WlanLinks DB*/
     if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, aMacAddr, &uHlid) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_WARNING, 
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_WARNING,
                "%s: Failed to save deauth reason for STA "REPORT_MACSTR", link with such MAC not found\n",
-			   __FUNCTION__, REPORT_MAC2STR(aMacAddr));
+               __FUNCTION__, REPORT_MAC2STR(aMacAddr));
         return TI_NOK;
     }
 
     if (wlanLinks_SetDeauthReason(pRoleAP->hWlanLinks, pGenParam->lValue, uHlid) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to save deauth reason for STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
         return TI_NOK;
     }
 
-	return TI_OK;
+    return TI_OK;
 }
 
-/** 
- * \fn     SetPortStatus 
+/**
+ * \fn     SetPortStatus
  * \brief  Set port authorization status
- * 
+ *
  * \param   pRoleAP - A pointer to RoleAP object
  * \param tGenParam - General Ap Command parameter structure
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS SetPortStatus(TRoleAP *pRoleAP , TApGeneralParam *tGenParam)
 {
-	TI_BOOL bAuthorized = (tGenParam->lValue ? TI_TRUE : TI_FALSE);
+    TI_BOOL bAuthorized = (tGenParam->lValue ? TI_TRUE : TI_FALSE);
     TI_UINT8         *aMacAddr = (TI_UINT8 *)tGenParam->cMac;
-	TI_UINT32		 uHlid;
-	EWlanLinkState   eState;
+    TI_UINT32		 uHlid;
+    EWlanLinkState   eState;
 
     /*Check if the station exists in WlanLinks DB*/
     if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, aMacAddr, &uHlid) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to set port status for STA "REPORT_MACSTR", link with such MAC not found\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
         return TI_NOK;
     }
 
     if (wlanLinks_GetLinkState(pRoleAP->hWlanLinks, uHlid, &eState) != TI_OK)
     {
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to get link state for STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(aMacAddr));
         return TI_NOK;
     }
 
-	if (bAuthorized)
-	{
-		if (eState != WLANLINK_STATE_CONNECTED)
-		{
-			txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_OPEN);
-			rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_OPEN);
-			/* Set link state CONNECTED since we received port authorized notification from AP manager */
-			if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTED, uHlid) != TI_OK)
-			{
-				TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-					   "%s: Failed to update link state, for STA "REPORT_MACSTR", under HLID=%u\n",
-					   __FUNCTION__, REPORT_MAC2STR(aMacAddr),  uHlid);
-				return TI_NOK;
-			}
-			pRoleAP->tRoleApStats.uNumAuthorized++;
-		}
-	}
-	else
-	{
-		if (eState != WLANLINK_STATE_CONNECTING)
-		{
-			txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_MGMT);
-			txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_EAPOL); /* TODO[ilanb]: add it to enable EAPOL queue */
-			rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_OPEN);
-			/* Set link state CONNECTING since we received port authorized notification from AP manager */
-			if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTING, uHlid) != TI_OK)
-			{
-				TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-				       "%s: Failed to update link state, for STA "REPORT_MACSTR", under HLID=%u\n",
-					   __FUNCTION__, REPORT_MAC2STR(aMacAddr),  uHlid);
-				return TI_NOK;
-			}
-			pRoleAP->tRoleApStats.uNumAuthorized--;
-		}
-	}
+    if (bAuthorized)
+    {
+        if (eState != WLANLINK_STATE_CONNECTED)
+        {
+            txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_OPEN);
+            rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_OPEN);
+            /* Set link state CONNECTED since we received port authorized notification from AP manager */
+            if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTED, uHlid) != TI_OK)
+            {
+                TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+                       "%s: Failed to update link state, for STA "REPORT_MACSTR", under HLID=%u\n",
+                       __FUNCTION__, REPORT_MAC2STR(aMacAddr),  uHlid);
+                return TI_NOK;
+            }
+            pRoleAP->tRoleApStats.uNumAuthorized++;
+        }
+    }
+    else
+    {
+        if (eState != WLANLINK_STATE_CONNECTING)
+        {
+            txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_MGMT);
+            txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_EAPOL); /* TODO[ilanb]: add it to enable EAPOL queue */
+            rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_OPEN);
+            /* Set link state CONNECTING since we received port authorized notification from AP manager */
+            if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTING, uHlid) != TI_OK)
+            {
+                TRACE3(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+                       "%s: Failed to update link state, for STA "REPORT_MACSTR", under HLID=%u\n",
+                       __FUNCTION__, REPORT_MAC2STR(aMacAddr),  uHlid);
+                return TI_NOK;
+            }
+            pRoleAP->tRoleApStats.uNumAuthorized--;
+        }
+    }
 
 
-    TRACE4(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, 
-           "%s: Set port status for STA "REPORT_MACSTR", HLID=%u  to %s\n",__FUNCTION__, 
+    TRACE4(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,
+           "%s: Set port status for STA "REPORT_MACSTR", HLID=%u  to %s\n",__FUNCTION__,
            REPORT_MAC2STR(aMacAddr), uHlid, (bAuthorized ? "Authorized": "Unauthorized"));
-	
-	return  TI_OK;
+
+    return  TI_OK;
 }
 
-/** 
- * \fn     InitBssLinks 
+/**
+ * \fn     InitBssLinks
  * \brief  Initialize the links of the Role AP
- * 
+ *
  * \param   hRoleAP - A handle to RoleAP object
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS InitBssLinks(TI_HANDLE hRoleAP)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
-	TApStationParams tStaParams;
+    TApStationParams tStaParams;
     int i;
 
     for (i=0; i<WLANLINKS_MAX_LINKS; i++)
     {
         pRoleAP->aAllocatedLinks[i] = WLANLINKS_INVALID_HLID;
     }
-	pRoleAP->uNumAllocatedLinks = 0;
+    pRoleAP->uNumAllocatedLinks = 0;
     pRoleAP->uBrcstHlid = pRoleAP->uGlobalHlid = WLANLINKS_INVALID_HLID;
 
     /*Allocate the links for Broadcast and Global traffic*/
-	os_memorySet(pRoleAP->hOs, &tStaParams, 0, sizeof(tStaParams));
+    os_memorySet(pRoleAP->hOs, &tStaParams, 0, sizeof(tStaParams));
 
-	/* Configure basic rates for global traffic */
-	os_memoryCopy(pRoleAP->hOs, tStaParams.cSupportedRates, pRoleAP->tBssCapabilities.aBasicRateSet, pRoleAP->tBssCapabilities.uNumBasicRates); 
-	tStaParams.cSupportedRatesLen = pRoleAP->tBssCapabilities.uNumBasicRates;
+    /* Configure basic rates for global traffic */
+    os_memoryCopy(pRoleAP->hOs, tStaParams.cSupportedRates, pRoleAP->tBssCapabilities.aBasicRateSet, pRoleAP->tBssCapabilities.uNumBasicRates);
+    tStaParams.cSupportedRatesLen = pRoleAP->tBssCapabilities.uNumBasicRates;
 
-	if (AllocateWlanLink(hRoleAP, WLANLINK_TYPE_GLOBAL, &tStaParams, &pRoleAP->uGlobalHlid) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to allocate a link for global traffic\n",__FUNCTION__);
-		return TI_NOK;
-	}
+    if (AllocateWlanLink(hRoleAP, WLANLINK_TYPE_GLOBAL, &tStaParams, &pRoleAP->uGlobalHlid) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to allocate a link for global traffic\n",__FUNCTION__);
+        return TI_NOK;
+    }
 
-	/* Configure MIN basic rate for broadcast traffic */
-	tStaParams.cSupportedRates[0] = pRoleAP->tBssCapabilities.uMinBasicRate;
-	tStaParams.cSupportedRatesLen = 1;
+    /* Configure MIN basic rate for broadcast traffic */
+    tStaParams.cSupportedRates[0] = pRoleAP->tBssCapabilities.uMinBasicRate;
+    tStaParams.cSupportedRatesLen = 1;
 
-	if (AllocateWlanLink(hRoleAP, WLANLINK_TYPE_BRCST, &tStaParams, &pRoleAP->uBrcstHlid) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to allocate a link for broadcast traffic\n",__FUNCTION__);
-		return TI_NOK;
-	}
+    if (AllocateWlanLink(hRoleAP, WLANLINK_TYPE_BRCST, &tStaParams, &pRoleAP->uBrcstHlid) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed to allocate a link for broadcast traffic\n",__FUNCTION__);
+        return TI_NOK;
+    }
 
-	TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, "%s: Allocated link for global (HLID=%u) and broadcast(HLID=%u) traffic\n",
-		   __FUNCTION__, pRoleAP->uGlobalHlid, pRoleAP->uBrcstHlid);
+    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION, "%s: Allocated link for global (HLID=%u) and broadcast(HLID=%u) traffic\n",
+           __FUNCTION__, pRoleAP->uGlobalHlid, pRoleAP->uBrcstHlid);
 
     return TI_OK;
 }
 
-/** 
- * \fn     RemoveBssLinks 
+/**
+ * \fn     RemoveBssLinks
  * \brief  Remove the links of the Role AP
- * 
+ *
  * \param   hRoleAP - A handle to RoleAP object
  * \param   bRemFromFw - If remove from FW is required
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static TI_STATUS RemoveBssLinks(TI_HANDLE hRoleAP, TI_BOOL bRemFromFw)
 {
-	TI_UINT32 uHlid;
-	TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
-	EWlanLinkType eLinkType;
+    TI_UINT32 uHlid;
+    TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
+    EWlanLinkType eLinkType;
 
-    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Removing BSS links\n",__FUNCTION__);    
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Removing BSS links\n",__FUNCTION__);
 
-	for (uHlid=0; uHlid<WLANLINKS_MAX_LINKS; uHlid++)
-	{
-		if (pRoleAP->aAllocatedLinks[uHlid] != WLANLINKS_INVALID_HLID)
-		{
-			wlanLinks_GetLinkType(pRoleAP->hWlanLinks,  uHlid, &eLinkType);
+    for (uHlid=0; uHlid<WLANLINKS_MAX_LINKS; uHlid++)
+    {
+        if (pRoleAP->aAllocatedLinks[uHlid] != WLANLINKS_INVALID_HLID)
+        {
+            wlanLinks_GetLinkType(pRoleAP->hWlanLinks,  uHlid, &eLinkType);
 
-			if (bRemFromFw && (eLinkType == WLANLINK_TYPE_SPECIFIC))
-			{
-				if (RemStaFromFW(pRoleAP, uHlid) != TI_OK)
-				{
-					TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-						   "%s: Failed to remove STA with HLID %u from FW DB\n",__FUNCTION__, uHlid);
-					return TI_NOK;
-				}
-			}
+            if (bRemFromFw && (eLinkType == WLANLINK_TYPE_SPECIFIC))
+            {
+                if (RemStaFromFW(pRoleAP, uHlid) != TI_OK)
+                {
+                    TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+                           "%s: Failed to remove STA with HLID %u from FW DB\n",__FUNCTION__, uHlid);
+                    return TI_NOK;
+                }
+            }
 
 
-			if (FreeWlanLink(hRoleAP, uHlid) != TI_OK)
-			{
-				TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-					   "%s: Failed to free link, HLID=%u\n",__FUNCTION__, uHlid);
-				return TI_NOK;
-			}
-			txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_CLOSE);
-			rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_CLOSE);
+            if (FreeWlanLink(hRoleAP, uHlid) != TI_OK)
+            {
+                TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+                       "%s: Failed to free link, HLID=%u\n",__FUNCTION__, uHlid);
+                return TI_NOK;
+            }
+            txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, uHlid, TX_CONN_STATE_CLOSE);
+            rxData_SetLinkState(pRoleAP->hRxData, uHlid, RX_CONN_STATE_CLOSE);
 
-			if (eLinkType == WLANLINK_TYPE_SPECIFIC)
-				txDataQ_LinkMacRemove(pRoleAP->hTxDataQ, uHlid);
-		}
-	}
-	pRoleAP->uBrcstHlid = WLANLINKS_INVALID_HLID;
-	pRoleAP->uGlobalHlid = WLANLINKS_INVALID_HLID;
+            if (eLinkType == WLANLINK_TYPE_SPECIFIC)
+                txDataQ_LinkMacRemove(pRoleAP->hTxDataQ, uHlid);
+        }
+    }
+    pRoleAP->uBrcstHlid = WLANLINKS_INVALID_HLID;
+    pRoleAP->uGlobalHlid = WLANLINKS_INVALID_HLID;
 
-	return TI_OK;
+    return TI_OK;
 }
 
-/** 
- * \fn     FillLinkInfo 
+/**
+ * \fn     FillLinkInfo
  * \brief  Fill Wlan Link Info structure
- * 
+ *
  * \param hRoleAP - A handle to RoleAP object
  * \param eLinkType - link type
  * \param pStationParams - station parameters buffer
  * \param pLinkInfo - output structure
- * 
+ *
  * \return  TI_OK if success , TI_NOK otherwise
- */ 
+ */
 static void FillLinkInfo(TI_HANDLE hRoleAP, EWlanLinkType eLinkType, TApStationParams *pStaParams, TWlanLinkInfo *pLinkInfo)
 {
-	TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
+    TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
     pLinkInfo->eRole = WLANLINK_ROLE_AP;
     pLinkInfo->eSubRole = WLANLINK_SUBROLE_APLIKE;
@@ -1602,9 +1685,9 @@ static void FillLinkInfo(TI_HANDLE hRoleAP, EWlanLinkType eLinkType, TApStationP
     pLinkInfo->tPeerDescr.uBand = pRoleAP->tBssCapabilities.uBand;
     pLinkInfo->tPeerDescr.uChannel = pRoleAP->tBssCapabilities.uChannel;
     pLinkInfo->tPeerDescr.uCapablities = pStaParams->sCapability;
-	pLinkInfo->tPeerDescr.uSupRatesBitmap = ConvertRateSetToBitmap(hRoleAP, &pStaParams->cSupportedRates[0], pStaParams->cSupportedRatesLen); 
+    pLinkInfo->tPeerDescr.uSupRatesBitmap = ConvertRateSetToBitmap(hRoleAP, &pStaParams->cSupportedRates[0], pStaParams->cSupportedRatesLen);
     pLinkInfo->uAid   = pStaParams->sAid;
-    
+
     /*ALEXA_TODO: where to take the fields below values from*/
     pLinkInfo->uQuality = 0;
     pLinkInfo->uTxPow   = 0;
@@ -1641,7 +1724,7 @@ static TI_STATUS FillBeaconTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBeaco
 
     ((beaconTemplate_t*)pTemplateStruct->ptr)->hdr.fc = ENDIAN_HANDLE_WORD(DOT11_FC_BEACON);
 
-       
+
     return TI_OK;
 }
 
@@ -1673,8 +1756,8 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
         os_memoryCopy(pRoleAP->hOs, pSsidIE->serviceSetId, pRoleAP->tBssCapabilities.tSsid.str, pRoleAP->tBssCapabilities.tSsid.len);
 
         /* Copy header reminder exept hidden SSID */
-        os_memoryCopy(pRoleAP->hOs, pTemplateStruct->ptr + uTempSize + sizeof(dot11_eleHdr_t) + pSsidIE->hdr[1], 
-                      pAPBeaconParams->cHead + uTempSize + sizeof(dot11_eleHdr_t), 
+        os_memoryCopy(pRoleAP->hOs, pTemplateStruct->ptr + uTempSize + sizeof(dot11_eleHdr_t) + pSsidIE->hdr[1],
+                      pAPBeaconParams->cHead + uTempSize + sizeof(dot11_eleHdr_t),
                       pAPBeaconParams->iHeadLen - uTempSize - sizeof(dot11_eleHdr_t));
         uTempSize = pAPBeaconParams->iHeadLen + pSsidIE->hdr[1];
     }
@@ -1685,10 +1768,10 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
     if (pRoleAP->tWpsIe.iIeLen != 0)
     {
 
-    	TI_UINT8 *pPos = pAPBeaconParams->cTail;
-    	TI_UINT8 *pEnd = pAPBeaconParams->cTail + pAPBeaconParams->iTailLen;
-    	TI_UINT8 *pWps = NULL;
-    	TI_UINT8 *pCopyPos = NULL;
+        TI_UINT8 *pPos = pAPBeaconParams->cTail;
+        TI_UINT8 *pEnd = pAPBeaconParams->cTail + pAPBeaconParams->iTailLen;
+        TI_UINT8 *pWps = NULL;
+        TI_UINT8 *pCopyPos = NULL;
 
 #define WLAN_EID_VENDOR_SPECIFIC 221
 #define WPS_DEV_OUI_WFA 0x0050f204
@@ -1719,22 +1802,22 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
 
         // IDAN, TODO, add error handling
 
-    	/* copy first part of tail */
-    	pCopyPos = pTemplateStruct->ptr + uTempSize;
-    	os_memoryCopy(pRoleAP->hOs, pCopyPos, pAPBeaconParams->cTail, (char *)pWps - pAPBeaconParams->cTail);
-    	pCopyPos += (char *)pWps-pAPBeaconParams->cTail;
-       
-    	/* copy WPS IE */
-    	os_memoryCopy(pRoleAP->hOs, pCopyPos, pRoleAP->tWpsIe.cIe, pRoleAP->tWpsIe.iIeLen);
-    	pCopyPos += pRoleAP->tWpsIe.iIeLen;
-        
-    	/* copy last part of tail */
-        os_memoryCopy(pRoleAP->hOs, pCopyPos, pWps + pWps[1] + 2,
-    			pAPBeaconParams->iTailLen - ((char*)pWps - pAPBeaconParams->cTail) - (pWps[1] + 2));
-    	pCopyPos += pAPBeaconParams->iTailLen - ((char*)pWps - pAPBeaconParams->cTail) - (pWps[1] + 2);
+        /* copy first part of tail */
+        pCopyPos = pTemplateStruct->ptr + uTempSize;
+        os_memoryCopy(pRoleAP->hOs, pCopyPos, pAPBeaconParams->cTail, (char *)pWps - pAPBeaconParams->cTail);
+        pCopyPos += (char *)pWps-pAPBeaconParams->cTail;
 
-    	pTemplateStruct->len = pCopyPos - pTemplateStruct->ptr;
-        
+        /* copy WPS IE */
+        os_memoryCopy(pRoleAP->hOs, pCopyPos, pRoleAP->tWpsIe.cIe, pRoleAP->tWpsIe.iIeLen);
+        pCopyPos += pRoleAP->tWpsIe.iIeLen;
+
+        /* copy last part of tail */
+        os_memoryCopy(pRoleAP->hOs, pCopyPos, pWps + pWps[1] + 2,
+                      pAPBeaconParams->iTailLen - ((char*)pWps - pAPBeaconParams->cTail) - (pWps[1] + 2));
+        pCopyPos += pAPBeaconParams->iTailLen - ((char*)pWps - pAPBeaconParams->cTail) - (pWps[1] + 2);
+
+        pTemplateStruct->len = pCopyPos - pTemplateStruct->ptr;
+
     }
     else
     {
@@ -1748,40 +1831,40 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
     return TI_OK;
 }
 
-/** 
- * \fn     FillDeauthTemplate 
+/**
+ * \fn     FillDeauthTemplate
  * \brief  Fill the constant fields of the deauth template
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
  * \param   pTemplateStruct - Output template
- * 
+ *
  * \return  NA
- */ 
+ */
 static void FillDeauthTemplate(TI_HANDLE hRoleAP, TSetTemplate *pTemplateStruct)
 {
     TRoleAP             *pRoleAP  = (TRoleAP *)hRoleAP;
-	disconnTemplate_t	*pBuffer = (disconnTemplate_t	*)pTemplateStruct->ptr;
-	TI_UINT16			fc;
-    
-	os_memoryZero(pRoleAP->hOs, pBuffer, sizeof(disconnTemplate_t));
+    disconnTemplate_t	*pBuffer = (disconnTemplate_t	*)pTemplateStruct->ptr;
+    TI_UINT16			fc;
 
-	fc = DOT11_FC_DEAUTH; 
+    os_memoryZero(pRoleAP->hOs, pBuffer, sizeof(disconnTemplate_t));
 
-	COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
+    fc = DOT11_FC_DEAUTH;
 
-	pBuffer->disconnReason = 0; /* filled by firmware */
-	
-	pTemplateStruct->len = sizeof(disconnTemplate_t);
+    COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
+
+    pBuffer->disconnReason = 0; /* filled by firmware */
+
+    pTemplateStruct->len = sizeof(disconnTemplate_t);
 }
 
-/** 
- * \fn     ConfigureFrameTemplates 
+/**
+ * \fn     ConfigureFrameTemplates
  * \brief  Configure the FW with frame templates
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  NA
- */ 
+ */
 static void ConfigureFrameTemplates(TI_HANDLE hRoleAP)
 {
     TRoleAP *pRoleAP      = (TRoleAP *)hRoleAP;
@@ -1792,91 +1875,91 @@ static void ConfigureFrameTemplates(TI_HANDLE hRoleAP)
     setNullDataTemplate(pRoleAP);
 }
 
-/** 
- * \fn     ConfigureRatePolicies 
+/**
+ * \fn     ConfigureRatePolicies
  * \brief  Configure the FW and the Data path with rate policies
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  NA
- */ 
+ */
 static void ConfigureRatePolicies(TI_HANDLE hRoleAP)
 {
-	TRoleAP *pRoleAP      = (TRoleAP *)hRoleAP;
+    TRoleAP *pRoleAP      = (TRoleAP *)hRoleAP;
 
     ctrlData_InitRatePolicy(pRoleAP->hCtrlData);
-	ctrlData_setDataTxRatePolicies(pRoleAP->hCtrlData, pRoleAP->tBssCapabilities.uSupRateBitmap);
+    ctrlData_setDataTxRatePolicies(pRoleAP->hCtrlData, pRoleAP->tBssCapabilities.uSupRateBitmap);
     ctrlData_setMgmtTxRatePolicy(pRoleAP->hCtrlData, pRoleAP->tBssCapabilities.uBasicRateBitmap);
-	ctrlData_setBrcstTxRatePolicy(pRoleAP->hCtrlData, TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate));
+    ctrlData_setBrcstTxRatePolicy(pRoleAP->hCtrlData, TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate));
 }
 
-/** 
- * \fn     PrintRoleApDB 
+/**
+ * \fn     PrintRoleApDB
  * \brief  Print Role AP DB
- * 
+ *
  * \param   pRoleAP - Pointer to RoleAP object
- * 
+ *
  * \return  NA
- */ 
+ */
 static void PrintRoleApDB(TRoleAP *pRoleAP)
 {
-	int i;
+    int i;
 
-	os_printf("Role AP DB:\n");
+    os_printf("Role AP DB:\n");
 
-	os_printf("Global HLID = %u\n", pRoleAP->uGlobalHlid);
-	os_printf("Broadcast HLID = %u\n", pRoleAP->uBrcstHlid);
-	os_printf("Number of allocated links = %u\n", pRoleAP->uNumAllocatedLinks);
-	os_printf("Allocated links HLIDs:");
-	for (i=0; i<WLANLINKS_MAX_LINKS; i++)
-	{
-		if (pRoleAP->aAllocatedLinks[i] != WLANLINKS_INVALID_HLID)
-		{
-			os_printf("%u ", pRoleAP->aAllocatedLinks[i]);
-		}
-	}
-		os_printf("\n");
-	os_printf("Role AP Statitics:\n");
-	os_printf("Authorized stations = %u\n", pRoleAP->tRoleApStats.uNumAuthorized);
-	os_printf("ADD_STATION commands received = %u\n", pRoleAP->tRoleApStats.uAddStaCmds);
-	os_printf("REM_STATION commands received = %u\n", pRoleAP->tRoleApStats.uRemStaCmds);
+    os_printf("Global HLID = %u\n", pRoleAP->uGlobalHlid);
+    os_printf("Broadcast HLID = %u\n", pRoleAP->uBrcstHlid);
+    os_printf("Number of allocated links = %u\n", pRoleAP->uNumAllocatedLinks);
+    os_printf("Allocated links HLIDs:");
+    for (i=0; i<WLANLINKS_MAX_LINKS; i++)
+    {
+        if (pRoleAP->aAllocatedLinks[i] != WLANLINKS_INVALID_HLID)
+        {
+            os_printf("%u ", pRoleAP->aAllocatedLinks[i]);
+        }
+    }
+    os_printf("\n");
+    os_printf("Role AP Statitics:\n");
+    os_printf("Authorized stations = %u\n", pRoleAP->tRoleApStats.uNumAuthorized);
+    os_printf("ADD_STATION commands received = %u\n", pRoleAP->tRoleApStats.uAddStaCmds);
+    os_printf("REM_STATION commands received = %u\n", pRoleAP->tRoleApStats.uRemStaCmds);
 }
 
 
-/** 
- * \fn     BssStartCompleteCb 
+/**
+ * \fn     BssStartCompleteCb
  * \brief  Bss Start complete call back function, opens data
  * pass in broadcast & global links and network device
- * 
+ *
  * Is called by TWD once Bss initialization sequence is
  * completed
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  void
  * \sa      roleAP_start()
- */ 
+ */
 static void BssStartCompleteCb(TI_HANDLE hRoleAP)
 {
     TRoleAP *pRoleAP  = (TRoleAP *)hRoleAP;
 
-	/* Set Global link state to CONNECTED */
-	if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTED, pRoleAP->uGlobalHlid) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-		   "%s: Failed to update link state, for Global link\n",__FUNCTION__);
-	}
+    /* Set Global link state to CONNECTED */
+    if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTED, pRoleAP->uGlobalHlid) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+               "%s: Failed to update link state, for Global link\n",__FUNCTION__);
+    }
     /* Set link state to OPEN and to prevent error, go through state MGMT */
     txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, pRoleAP->uGlobalHlid, TX_CONN_STATE_MGMT);
     txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, pRoleAP->uGlobalHlid, TX_CONN_STATE_OPEN);
     rxData_SetLinkState(pRoleAP->hRxData, pRoleAP->uGlobalHlid, RX_CONN_STATE_OPEN);
 
-	/* Set Broadcast link state to CONNECTED */
-	if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTED, pRoleAP->uBrcstHlid) != TI_OK)
-	{
-		TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
-		   "%s: Failed to update link state, for Broadcast link\n",__FUNCTION__);
+    /* Set Broadcast link state to CONNECTED */
+    if (wlanLinks_SetLinkState(pRoleAP->hWlanLinks, WLANLINK_STATE_CONNECTED, pRoleAP->uBrcstHlid) != TI_OK)
+    {
+        TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
+               "%s: Failed to update link state, for Broadcast link\n",__FUNCTION__);
     }
     /* Set link state to OPEN and to prevent error, go through state MGMT */
     txMgmtQ_SetLinkState(pRoleAP->hTxMgmtQ, pRoleAP->uBrcstHlid, TX_CONN_STATE_MGMT);
@@ -1886,18 +1969,18 @@ static void BssStartCompleteCb(TI_HANDLE hRoleAP)
     wlanDrvIf_EnableTx (pRoleAP->hOs);
     setRxPortStatus(pRoleAP, OPEN); /* enable rx path */
 
-	pRoleAP->eState	= ROLEAP_STATE_STARTED;
+    pRoleAP->eState	= ROLEAP_STATE_STARTED;
 }
 
-/** 
+/**
  * \fn     setRxPortStatus
  * \brief  Enable/Disable rx path
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  void
- */ 
+ */
 static TI_STATUS setRxPortStatus(TRoleAP *pRoleAP, portStatus_e ePortStatus)
 {
     paramInfo_t *pParam;
@@ -1925,87 +2008,87 @@ static TI_STATUS setRxPortStatus(TRoleAP *pRoleAP, portStatus_e ePortStatus)
 
     return TI_OK;
 }
-/** 
+/**
  * \fn     InactiveStaEventCB
  * \brief  The functions is called when Inactive STA FE event is
  * received
- * 
+ *
  * Is called by TWD once FW INACTIVE_STA_EVENT_ID is
  * received
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  void
  * \sa      roleAP_SetDefaults()
- */ 
+ */
 static TI_STATUS InactiveStaEventCB(TI_HANDLE hRoleAP, TI_CHAR *pData, TI_UINT32 uDataLen)
 {
     TRoleAP 	*pRoleAP 	  = (TRoleAP *)hRoleAP;
-	TI_UINT16 	uStaBitMap    = *((TI_UINT16 *) pData); /* it is safe to typecast as field offset is set properly in EvMBox */
-	TI_UINT16	i, uStaBitMask;
+    TI_UINT16 	uStaBitMap    = *((TI_UINT16 *) pData); /* it is safe to typecast as field offset is set properly in EvMBox */
+    TI_UINT16	i, uStaBitMask;
 
     TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: pRoleAP=%p uStaBitMap=%u\n",__FUNCTION__, pRoleAP, uStaBitMap);
 
     for (i=0, uStaBitMask=1; i<WLANLINKS_MAX_LINKS; i++, uStaBitMask <<= 1)
     {
-		if (uStaBitMap & uStaBitMask)
-		{
-            TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Set STA HLID=%u inactivity\n",__FUNCTION__, i);	
+        if (uStaBitMap & uStaBitMask)
+        {
+            TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Set STA HLID=%u inactivity\n",__FUNCTION__, i);
 
-			wlanLinks_SetLinkInactivity (pRoleAP->hWlanLinks, TI_TRUE, i);
+            wlanLinks_SetLinkInactivity (pRoleAP->hWlanLinks, TI_TRUE, i);
             sendEvent (pRoleAP, i, AP_EVENT_STA_AGING);
-    	}
+        }
     }
     return TI_OK;
 }
 
-/** 
+/**
  * \fn     maxTxRetryStaEventCB
  * \brief  The functions is called when MAX TX Retry STA FE
  * event is received
- * 
+ *
  * It's called by TWD once FW MAX_TX_RETRY_EVENT_ID is
  * received
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  TI_STATUS
  * \sa      roleAP_SetDefaults()
- */ 
+ */
 static TI_STATUS maxTxRetryStaEventCB(TI_HANDLE hRoleAP, TI_CHAR *pData, TI_UINT32 uDataLen)
 {
     TRoleAP 	*pRoleAP 	  = (TRoleAP *)hRoleAP;
-	TI_UINT16 	uStaBitMap    = *((TI_UINT16 *) pData); /* it is safe to typecast as field offset is set properly in EvMBox */
-	TI_UINT16	i, uStaBitMask;
+    TI_UINT16 	uStaBitMap    = *((TI_UINT16 *) pData); /* it is safe to typecast as field offset is set properly in EvMBox */
+    TI_UINT16	i, uStaBitMask;
 
-	TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: pRoleAP=%p uStaBitMap=%u\n",__FUNCTION__, pRoleAP, uStaBitMap);
+    TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: pRoleAP=%p uStaBitMap=%u\n",__FUNCTION__, pRoleAP, uStaBitMap);
 
     for (i=0, uStaBitMask=1; i<WLANLINKS_MAX_LINKS; i++, uStaBitMask <<= 1)
     {
-		if (uStaBitMap & uStaBitMask)
-		{
-			TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Set STA HLID=%u inactivity\n",__FUNCTION__, i);	
+        if (uStaBitMap & uStaBitMask)
+        {
+            TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "%s: Set STA HLID=%u inactivity\n",__FUNCTION__, i);
 
-			wlanLinks_SetLinkInactivity (pRoleAP->hWlanLinks, TI_TRUE, i);
+            wlanLinks_SetLinkInactivity (pRoleAP->hWlanLinks, TI_TRUE, i);
             sendEvent (pRoleAP, i, AP_EVENT_STA_MAX_TX_RETRY);
-    	}
+        }
     }
     return TI_OK;
 }
 
 
-/** 
+/**
  * \fn     sendEvent
  * \brief  The functions is called to send inactivity event to
  * users space process - hostapd
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
  * \param   uHlid   - host link ID
  * \param   eEvent  - Aging Event
- * 
+ *
  * \return  operation status
  * \sa      roleAP_SetDefaults()
  */
@@ -2015,177 +2098,177 @@ static TI_STATUS sendEvent(TRoleAP *pRoleAP, TI_UINT32 uHlid, EApEvent eEvent)
     TWlanLinkPeerDescr tStaDescr;
 
     tRes = wlanLinks_GetPeerDescr (pRoleAP->hWlanLinks, uHlid, &tStaDescr);
-    if (tRes == TI_OK) 
+    if (tRes == TI_OK)
     {
         TApEvent    tApEvent;
 
         tApEvent.uEvent = (unsigned char) eEvent;
         os_memoryCopy(pRoleAP->hOs, tApEvent.uAddr, tStaDescr.aMacAddr, sizeof (tApEvent.uAddr));
 
-		TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,
-			   "%s: Sending Aging Event for STA "REPORT_MACSTR" HLID=%u\n",__FUNCTION__, REPORT_MAC2STR(tApEvent.uAddr), uHlid);
-        
+        TRACE3(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,
+               "%s: Sending Aging Event for STA "REPORT_MACSTR" HLID=%u\n",__FUNCTION__, REPORT_MAC2STR(tApEvent.uAddr), uHlid);
+
         EvHandlerSendEvent (pRoleAP->hEvHandler, IPC_EVENT_AP_EVENT, (TI_UINT8*) &tApEvent, sizeof (tApEvent));
     }
     else
     {
         TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR ,"%s: Failed to get Peer Description for HLID %u\n",
-                __FUNCTION__, uHlid);
+               __FUNCTION__, uHlid);
     }
 
     return tRes;
 
 }
 
-/** 
+/**
  * \fn     staInactivity
  * \brief  The functions is called to retrive STA inactivity
  * status
- * 
+ *
  * Is called by ApCmd once ROLE_AP_GET_STA_INACTIVITY command is
  * invoked
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  void
  * \sa      roleAP_SetDefaults()
  */
 static TI_STATUS staInactivity(TI_HANDLE hRoleAP, void * pInBuf, void *pOutBuf)
 {
     TRoleAP 		* pRoleAP = (TRoleAP *)hRoleAP;
-	TApGeneralParam * pInPrm  = (TApGeneralParam *) pInBuf;
-	TApGeneralParam * pOutPrm = (TApGeneralParam *) pOutBuf;
-	TI_UINT8		* pAdr 	  = pInPrm->cMac;
-	TI_UINT32 		  uHlid;
-	TI_BOOL			  bInactivity;
-	TI_STATUS		  tRes = TI_NOK;
+    TApGeneralParam * pInPrm  = (TApGeneralParam *) pInBuf;
+    TApGeneralParam * pOutPrm = (TApGeneralParam *) pOutBuf;
+    TI_UINT8		* pAdr 	  = pInPrm->cMac;
+    TI_UINT32 		  uHlid;
+    TI_BOOL			  bInactivity;
+    TI_STATUS		  tRes = TI_NOK;
 
-	TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,
-		   "%s: STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(pAdr));
+    TRACE2(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,
+           "%s: STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(pAdr));
 
     /* Find STA in WlanLinks DB*/
     if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, pAdr, &uHlid) == TI_OK)
     {
         if (wlanLinks_GetLinkInactivity (pRoleAP->hWlanLinks, uHlid, &bInactivity) == TI_OK)
         {
-			pOutPrm->lValue = (bInactivity) ? AP_STA_MAX_INACTIVITY : 0;
+            pOutPrm->lValue = (bInactivity) ? AP_STA_MAX_INACTIVITY : 0;
             TRACE4(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,
-				   "%s: STA "REPORT_MACSTR" HLID=%u inactivity=%u\n",__FUNCTION__, REPORT_MAC2STR(pAdr), uHlid, pOutPrm->lValue);
+                   "%s: STA "REPORT_MACSTR" HLID=%u inactivity=%u\n",__FUNCTION__, REPORT_MAC2STR(pAdr), uHlid, pOutPrm->lValue);
 
             tRes = TI_OK;
         }
-		else
-		{
-			pOutPrm->lValue = AP_STA_MAX_INACTIVITY;
-			TRACE4(pRoleAP->hReport,REPORT_SEVERITY_ERROR ,
-				   "%s: Error STA "REPORT_MACSTR" HLID=%u inactivity=%u\n",__FUNCTION__, REPORT_MAC2STR(pAdr), uHlid, pOutPrm->lValue);
+        else
+        {
+            pOutPrm->lValue = AP_STA_MAX_INACTIVITY;
+            TRACE4(pRoleAP->hReport,REPORT_SEVERITY_ERROR ,
+                   "%s: Error STA "REPORT_MACSTR" HLID=%u inactivity=%u\n",__FUNCTION__, REPORT_MAC2STR(pAdr), uHlid, pOutPrm->lValue);
             tRes = TI_NOK;
-		}
+        }
     }
-	else
-	{
-        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR, 
+    else
+    {
+        TRACE2(pRoleAP->hReport, REPORT_SEVERITY_ERROR,
                "%s: Failed to find STA "REPORT_MACSTR"\n",__FUNCTION__, REPORT_MAC2STR(pAdr));
 
-		pOutPrm->lValue = AP_STA_MAX_INACTIVITY;
-		tRes = TI_NOK;
-	}
+        pOutPrm->lValue = AP_STA_MAX_INACTIVITY;
+        tRes = TI_NOK;
+    }
 
-	os_memoryCopy(pRoleAP->hOs, pOutPrm->cMac, pInPrm->cMac, sizeof(pOutPrm->cMac));
+    os_memoryCopy(pRoleAP->hOs, pOutPrm->cMac, pInPrm->cMac, sizeof(pOutPrm->cMac));
 
-	return tRes;
+    return tRes;
 }
 
 
-/** 
+/**
  * \fn     setKey
  * \brief  set key to FW
- *  
+ *
  * Is called by TWD once TWD_BssStart is completed
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
- * 
+ *
  * \return  void
  * \sa      roleAP_start()
- */ 
+ */
 
 static TI_STATUS setKey(TI_HANDLE hRoleAP, TSecurityKeys *pTwdKey)
 {
     TRoleAP *pRoleAP  = (TRoleAP *)hRoleAP;
     TTwdParamInfo    tTwdParam;
     TI_STATUS  tRes = TI_NOK;
-    
+
     TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "\n~~~~~  %s ~~~~~\n", __FUNCTION__ );
-    
-   tTwdParam.paramType = TWD_RSN_SECURITY_MODE_PARAM_ID;
-   tTwdParam.content.rsnEncryptionStatus =pTwdKey->keyType;
-   tRes = TWD_SetParam(pRoleAP->hTWD, &tTwdParam);
-   if (tRes != TI_OK)
-   {
-	   TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "%s: Error in TWD_SetParam TWD_RSN_SECURITY_MODE_PARAM_ID, status %d \n", __FUNCTION__, tRes);
-	   return tRes;
-   }
 
-      /* set the size to reserve for encryption to the tx */
-        switch (pTwdKey->keyType)
-        {
-        case KEY_TKIP:
-                TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,pTwdKey->hlid, IV_FIELD_SIZE);
-                break;
-        case KEY_AES:
-                TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,pTwdKey->hlid, AES_AFTER_HEADER_FIELD_SIZE);
-                break;
+    tTwdParam.paramType = TWD_RSN_SECURITY_MODE_PARAM_ID;
+    tTwdParam.content.rsnEncryptionStatus =pTwdKey->keyType;
+    tRes = TWD_SetParam(pRoleAP->hTWD, &tTwdParam);
+    if (tRes != TI_OK)
+    {
+        TRACE2(pRoleAP->hReport,REPORT_SEVERITY_ERROR , "%s: Error in TWD_SetParam TWD_RSN_SECURITY_MODE_PARAM_ID, status %d \n", __FUNCTION__, tRes);
+        return tRes;
+    }
+
+    /* set the size to reserve for encryption to the tx */
+    switch (pTwdKey->keyType)
+    {
+    case KEY_TKIP:
+        TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,pTwdKey->hlid, IV_FIELD_SIZE);
+        break;
+    case KEY_AES:
+        TxDataQ_setEncryptionFieldSizes(pRoleAP->hTxDataQ,pTwdKey->hlid, AES_AFTER_HEADER_FIELD_SIZE);
+        break;
 #ifdef GEM_SUPPORTED
-            case KEY_GEM:
+    case KEY_GEM:
 #endif
-            case KEY_WEP:
-            case KEY_NULL:
-            case KEY_XCC:
-        default:
-                TxDataQ_setEncryptionFieldSizes (pRoleAP->hTxDataQ,pTwdKey->hlid, 0);
-                break;
-        }
-    
+    case KEY_WEP:
+    case KEY_NULL:
+    case KEY_XCC:
+    default:
+        TxDataQ_setEncryptionFieldSizes (pRoleAP->hTxDataQ,pTwdKey->hlid, 0);
+        break;
+    }
 
-   tTwdParam.paramType = TWD_RSN_KEY_ADD_PARAM_ID;
-   tTwdParam.content.configureCmdCBParams.pCb = (TI_UINT8*)pTwdKey;
-   tTwdParam.content.configureCmdCBParams.fCb = NULL;
-   tTwdParam.content.configureCmdCBParams.hCb = NULL;
 
-   tRes = TWD_SetParam (pRoleAP->hTWD, &tTwdParam);
-   if (tRes != TI_OK)
-	   TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR, "RoleAp_SetKey TWD_RSN_KEY_ADD_PARAM_ID :TWD_SetParam status %d \n", tRes);
+    tTwdParam.paramType = TWD_RSN_KEY_ADD_PARAM_ID;
+    tTwdParam.content.configureCmdCBParams.pCb = (TI_UINT8*)pTwdKey;
+    tTwdParam.content.configureCmdCBParams.fCb = NULL;
+    tTwdParam.content.configureCmdCBParams.hCb = NULL;
 
-   return tRes;
+    tRes = TWD_SetParam (pRoleAP->hTWD, &tTwdParam);
+    if (tRes != TI_OK)
+        TRACE1(pRoleAP->hReport,REPORT_SEVERITY_ERROR, "RoleAp_SetKey TWD_RSN_KEY_ADD_PARAM_ID :TWD_SetParam status %d \n", tRes);
+
+    return tRes;
 }
 
 
-/** 
+/**
  * \fn     setBeaconProbeRspTempl
  * \brief  The functions is called to set Beacon and Probe
  * Response templates
- * 
+ *
  * Is called by ApCmd once ROLE_AP_ADD_BEACON_PARAM command is
  * invoked
- * 
+ *
  * \note
  * \param   pRoleAP - pointer to RoleAP object
- * 
+ *
  * \return  void
  * \sa      roleAP_Start()
  */
 static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP)
 {
-	TSetTemplate         tTemplateStruct;
+    TSetTemplate         tTemplateStruct;
     TI_UINT32            uLen;
-	TI_STATUS		  	 tRes;
+    TI_STATUS		  	 tRes;
 
-    /* Allocate common buffer for Beacon and ProbeResp templates building, 
+    /* Allocate common buffer for Beacon and ProbeResp templates building,
      * max size is defined by ProbeResp for hidden SSID support
      */
-    uLen = pRoleAP->tBssCapabilities.tAPBeaconParams.iHeadLen + 
+    uLen = pRoleAP->tBssCapabilities.tAPBeaconParams.iHeadLen +
            pRoleAP->tBssCapabilities.tAPBeaconParams.iTailLen + sizeof(dot11_SSID_t);
 
     tTemplateStruct.ptr = (TI_UINT8 *)os_memoryAlloc (pRoleAP->hOs, uLen );
@@ -2196,31 +2279,31 @@ static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP)
     }
 
     tTemplateStruct.type = AP_BEACON_TEMPLATE;
-	tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
+    tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
     FillBeaconTemplate(pRoleAP, (TApBeaconParams*)&pRoleAP->tBssCapabilities.tAPBeaconParams, &tTemplateStruct);
-    
-	tRes = TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
-	if (tRes != TI_OK)
-	{
+
+    tRes = TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
+    if (tRes != TI_OK)
+    {
         TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed TWD_CmdTemplate for Beacon\n",__FUNCTION__);
         os_memoryFree (pRoleAP->hOs, tTemplateStruct.ptr, uLen);
-		return tRes;
-	}
+        return tRes;
+    }
 
     tTemplateStruct.type = AP_PROBE_RESPONSE_TEMPLATE;
-	tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
+    tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
     FillProbeRespTemplate(pRoleAP, (TApBeaconParams*)&pRoleAP->tBssCapabilities.tAPBeaconParams, &tTemplateStruct);
 
-	tRes = TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
-	if (tRes != TI_OK)
-	{
+    tRes = TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
+    if (tRes != TI_OK)
+    {
         TRACE1(pRoleAP->hReport, REPORT_SEVERITY_ERROR, "%s: Failed TWD_CmdTemplate for Probe Response\n",__FUNCTION__);
         os_memoryFree (pRoleAP->hOs, tTemplateStruct.ptr, uLen);
-		return tRes;
-	}
+        return tRes;
+    }
 
     os_memoryFree (pRoleAP->hOs, tTemplateStruct.ptr, uLen);
-	return tRes;
+    return tRes;
 }
 /**
  * \fn     setDeauthTemplate
@@ -2343,87 +2426,87 @@ static void setNullDataTemplate(TRoleAP * pRoleAP)
            */
 static void DecodeStaRates(TI_UINT8 *aRates, TI_UINT32 uRatesLen)
 {
-	int i;
+    int i;
 
-	for (i=0; i<uRatesLen; i++)
-	{
-		aRates[i] = rate_NetToNumber(aRates[i]);
-	}
+    for (i=0; i<uRatesLen; i++)
+    {
+        aRates[i] = rate_NetToNumber(aRates[i]);
+    }
 }
 
-/** 
+/**
  * \fn     SetApRates
  * \brief  Set AP supported rates received from the application
- * 
+ *
  * \param   hRoleAP - RoleAP handle
  * \param   pRateParams - Rates parameters structure
- * 
+ *
  * \return  void
  */
 static void SetApRates(TI_HANDLE hRoleAP, TApRateSet *pRateParams)
 {
     TRoleAP *pRoleAP  = (TRoleAP *)hRoleAP;
     int i;
-  	TI_UINT8   aApSuppRates[AP_MAX_SUPPORT_RATE];
-	TI_UINT32  uMinBasicRate;
+    TI_UINT8   aApSuppRates[AP_MAX_SUPPORT_RATE];
+    TI_UINT32  uMinBasicRate;
 
-  	pRoleAP->tBssCapabilities.uNumSupRates = pRateParams->cSuppRateLen;
+    pRoleAP->tBssCapabilities.uNumSupRates = pRateParams->cSuppRateLen;
 
-	/*Rates come in 100 Kbps, convert it to Mbps*/
+    /*Rates come in 100 Kbps, convert it to Mbps*/
     TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION , "ROLE_AP_SET_RATE: Number of AP supported rates = %u, supported rates list :", pRateParams->cSuppRateLen);
     for (i=0; i<pRateParams->cSuppRateLen; i++)
-  	{
-  		aApSuppRates[i] = pRateParams->aSupportedRates[i]/10;
+    {
+        aApSuppRates[i] = pRateParams->aSupportedRates[i]/10;
         TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"%u ", aApSuppRates[i]);
     }
 
-	TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"\n");
+    TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"\n");
 
-  	pRoleAP->tBssCapabilities.uSupRateBitmap = ConvertRateSetToBitmap(hRoleAP, &aApSuppRates[0],pRateParams->cSuppRateLen); 
+    pRoleAP->tBssCapabilities.uSupRateBitmap = ConvertRateSetToBitmap(hRoleAP, &aApSuppRates[0],pRateParams->cSuppRateLen);
 
-  	pRoleAP->tBssCapabilities.uNumBasicRates = pRateParams->cBasicRateLen;
-	uMinBasicRate = 0xFFFF;
-  	
-	TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION, "ROLE_AP_SET_RATE: Number of AP  basic rates = %u, basic rates list :", pRateParams->cBasicRateLen);
+    pRoleAP->tBssCapabilities.uNumBasicRates = pRateParams->cBasicRateLen;
+    uMinBasicRate = 0xFFFF;
+
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION, "ROLE_AP_SET_RATE: Number of AP  basic rates = %u, basic rates list :", pRateParams->cBasicRateLen);
     for (i=0; i<pRateParams->cBasicRateLen; i++)
-  	{
-  		pRoleAP->tBssCapabilities.aBasicRateSet[i] = pRateParams->aBasicRates[i]/10;
-		if (uMinBasicRate > pRoleAP->tBssCapabilities.aBasicRateSet[i])
-			uMinBasicRate = pRoleAP->tBssCapabilities.aBasicRateSet[i];
+    {
+        pRoleAP->tBssCapabilities.aBasicRateSet[i] = pRateParams->aBasicRates[i]/10;
+        if (uMinBasicRate > pRoleAP->tBssCapabilities.aBasicRateSet[i])
+            uMinBasicRate = pRoleAP->tBssCapabilities.aBasicRateSet[i];
         TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"%u ", pRoleAP->tBssCapabilities.aBasicRateSet[i]);
     }
-	TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"\n");
+    TRACE0(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"\n");
 
-	TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"MIN basic rate = %u\n", uMinBasicRate);
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"MIN basic rate = %u\n", uMinBasicRate);
 
-  	pRoleAP->tBssCapabilities.uBasicRateBitmap = ConvertRateSetToBitmap(hRoleAP, &pRoleAP->tBssCapabilities.aBasicRateSet[0],pRateParams->cBasicRateLen); 
+    pRoleAP->tBssCapabilities.uBasicRateBitmap = ConvertRateSetToBitmap(hRoleAP, &pRoleAP->tBssCapabilities.aBasicRateSet[0],pRateParams->cBasicRateLen);
 
-	pRoleAP->tBssCapabilities.uMinBasicRate = uMinBasicRate;
+    pRoleAP->tBssCapabilities.uMinBasicRate = uMinBasicRate;
 
-	TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"ROLE_AP_SET_RATE: uSupRateBitmap=0x%x\n",pRoleAP->tBssCapabilities.uSupRateBitmap);
-	TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"ROLE_AP_SET_RATE: uBasicRateBitmap=0x%x\n",pRoleAP->tBssCapabilities.uBasicRateBitmap);
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"ROLE_AP_SET_RATE: uSupRateBitmap=0x%x\n",pRoleAP->tBssCapabilities.uSupRateBitmap);
+    TRACE1(pRoleAP->hReport,REPORT_SEVERITY_INFORMATION ,"ROLE_AP_SET_RATE: uBasicRateBitmap=0x%x\n",pRoleAP->tBssCapabilities.uBasicRateBitmap);
 }
 
-/** 
- * \fn     roleAP_enable 
+/**
+ * \fn     roleAP_enable
  * \brief  Enable roleAP
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
- * 
- */ 
+ *
+ */
 static TI_STATUS roleAP_enable (TI_HANDLE hRoleAP)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
-	/*ignore the command if we're in the Started state*/
-	if (pRoleAP->eState != ROLEAP_STATE_STARTED)
-	{
-		pRoleAP->eState = ROLEAP_STATE_ENABLED;
-	}
-	else
-	{
-		return TI_NOK;
-	}
+    /*ignore the command if we're in the Started state*/
+    if (pRoleAP->eState != ROLEAP_STATE_STARTED)
+    {
+        pRoleAP->eState = ROLEAP_STATE_ENABLED;
+    }
+    else
+    {
+        return TI_NOK;
+    }
 
     if (InitBssLinks(hRoleAP) != TI_OK)
     {
@@ -2431,35 +2514,35 @@ static TI_STATUS roleAP_enable (TI_HANDLE hRoleAP)
         return TI_NOK;
     }
 
-	TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,"%s: Initialized BSS links for the Role AP. Broadcast HLID=%u, global HLID=%u!\n", __FUNCTION__, pRoleAP->uBrcstHlid, pRoleAP->uGlobalHlid);
+    TRACE3(pRoleAP->hReport, REPORT_SEVERITY_INFORMATION,"%s: Initialized BSS links for the Role AP. Broadcast HLID=%u, global HLID=%u!\n", __FUNCTION__, pRoleAP->uBrcstHlid, pRoleAP->uGlobalHlid);
 
-	return TI_OK;
+    return TI_OK;
 }
 
-/** 
- * \fn     ResetRoleApDB 
+/**
+ * \fn     ResetRoleApDB
  * \brief  Reset roleAP DB
- * 
+ *
  * \param   hRoleAP - Handle to RoleAP object
- * 
- */ 
+ *
+ */
 static void ResetRoleApDB(TI_HANDLE hRoleAP)
 {
     TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
-	os_memoryZero (pRoleAP->hOs, (void *)&pRoleAP->tBssCapabilities, sizeof(pRoleAP->tBssCapabilities));
-	pRoleAP->DefaultKeyIndex = 0;
-	pRoleAP->keyType = KEY_NULL;
-	os_memoryZero (pRoleAP->hOs, (void *)&pRoleAP->tTwdKey, sizeof(pRoleAP->tTwdKey));
+    os_memoryZero (pRoleAP->hOs, (void *)&pRoleAP->tBssCapabilities, sizeof(pRoleAP->tBssCapabilities));
+    pRoleAP->DefaultKeyIndex = 0;
+    pRoleAP->keyType = KEY_NULL;
+    os_memoryZero (pRoleAP->hOs, (void *)&pRoleAP->tTwdKey, sizeof(pRoleAP->tTwdKey));
 }
 
-/** 
+/**
  * \fn     roleAP_reportMicFailure
- * \brief  The functions is called when Mic failure packet 
+ * \brief  The functions is called when Mic failure packet
  * is received
- * 
+ *
  * It's called by rxData_ReceivePacket
- * 
+ *
  * \note
  * \param   hRoleAP - Handle to RoleAP object
  *          sta address
@@ -2467,14 +2550,125 @@ static void ResetRoleApDB(TI_HANDLE hRoleAP)
 
 void roleAP_reportMicFailure(TI_HANDLE hRoleAP,TI_UINT8* pMac)
 {
- TI_UINT32          uHlid;
- TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
+    TI_UINT32          uHlid;
+    TRoleAP *pRoleAP = (TRoleAP *)hRoleAP;
 
- if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, pMac, &uHlid) == TI_OK)
- {
-       sendEvent (pRoleAP, uHlid, AP_EVENT_STA_MIC_FAILURE);
- }
-  else
-      WLAN_OS_REPORT(("%s: can't find hlid \n",__FUNCTION__));
+    if (wlanLinks_FindLinkByMac(pRoleAP->hWlanLinks, pMac, &uHlid) == TI_OK)
+    {
+        sendEvent (pRoleAP, uHlid, AP_EVENT_STA_MIC_FAILURE);
+    }
+    else
+        WLAN_OS_REPORT(("%s: can't find hlid \n",__FUNCTION__));
 
+}
+
+/*
+ * \brief	configure the AP for suspended state
+ *
+ * \param	fCb (hCb)	callback (and context) for completion notification
+ *
+ * \return	TI_OK if configured successfully;
+ * 			TI_PENDING if configuration will be finished in another task (and
+ * 			fCb will be invoked)
+ * 			TI_NOK if could not configure
+ */
+static TI_STATUS Suspend(TI_HANDLE hRoleAp, void *fCb, TI_HANDLE hCb)
+{
+	TRoleAP *pRoleAp = (TRoleAP *)hRoleAp;
+	TI_STATUS rc;
+
+	TWD_PrepareSuspend(pRoleAp->hTWD);
+
+	if (pRoleAp->bWantsRxBeacons)
+	{
+		/* disable beacons from fw until resumed (only if driver generally
+		 * wants beacons, otherwise, they were already disabled)
+		 */
+		rc = TWD_CfgApBeaconFilter(pRoleAp->hTWD, TI_TRUE, fCb, hCb);
+
+		/* indicate command will end in another task (and fCb will be called) */
+		if (rc == TI_OK)
+		{
+			rc = TI_PENDING;
+		}
+	}
+	else
+	{
+		rc = TI_OK; /* we're done. nothing to do */
+	}
+
+	TWD_CompleteSuspend(pRoleAp->hTWD);
+
+	return rc;
+}
+
+/*
+ * \brief	revert the suspended-state configuration
+ *
+ * 			reverts actions performed by Suspend
+ *
+ * \param	fCb (hCb)	callback (and context) for completion notification
+ *
+ * \return	TI_OK if configured successfully;
+ * 			TI_PENDING if configuration will be finished in another task (and
+ * 			fCb will be invoked)
+ * 			TI_NOK if could not configure
+ */
+static TI_STATUS Resume(TI_HANDLE hRoleAp, void *fCb, TI_HANDLE hCb)
+{
+	TRoleAP *pRoleAp = (TRoleAP *)hRoleAp;
+
+	if (pRoleAp->bWantsRxBeacons)
+	{
+		TI_STATUS rc;
+
+		/* re-enable beacons from fw (only if driver generally
+		 * wants beacons, otherwise, they should stay disabled)
+		 */
+		rc = TWD_CfgApBeaconFilter(pRoleAp->hTWD, TI_FALSE, fCb, hCb);
+
+		/* indicate command will end in another task (and fCb will be called) */
+		return (rc == TI_OK) ? TI_PENDING : rc;
+	}
+	else
+	{
+		return TI_OK; /* we're done. nothing to do */
+	}
+}
+
+/*
+ * \brief	invoke fCb asynchronously (in another driver-task)
+ *
+ * 			sets a minimal-time timer. When expired (in another task) it will
+ * 			invoke fCb.
+ *
+ * \param	fCb	callback to invoke
+ * \param	hCb	context for fCb
+ */
+static void InvokeAsync( TI_HANDLE hRoleAp, void(*fCb)(TI_HANDLE), TI_HANDLE hCb )
+{
+	TRoleAP *pRoleAp = (TRoleAP *)hRoleAp;
+
+	if (pRoleAp->hInvokeAsyncTimer == NULL)
+	{
+		TRACE0(pRoleAp->hReport,REPORT_SEVERITY_ERROR, "InvokeAsync: timer not created! cannot invoke callback\n");
+		return;
+	}
+
+	/* store so InvokeAsyncExpiryCb can access them */
+	pRoleAp->fInvokeAsyncCb = fCb;
+	pRoleAp->hInvokeAsyncCb = hCb;
+
+	/* set minimal-time timer */
+	tmr_StartTimer(pRoleAp->hInvokeAsyncTimer, InvokeAsyncExpiryCb, pRoleAp, 1, TI_FALSE);
+}
+
+static void InvokeAsyncExpiryCb(TI_HANDLE hRoleAp, TI_BOOL bTwdInitOccured)
+{
+	TRoleAP *pRoleAp = (TRoleAP *)hRoleAp;
+
+	if (pRoleAp->fInvokeAsyncCb)
+	{
+		pRoleAp->fInvokeAsyncCb( pRoleAp->hInvokeAsyncCb );
+	}
 }

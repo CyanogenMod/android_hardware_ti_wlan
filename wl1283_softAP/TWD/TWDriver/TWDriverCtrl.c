@@ -445,6 +445,15 @@ TI_STATUS TWD_CfgBeaconFilterOpt (TI_HANDLE hTWD, TI_UINT8 uBeaconFilteringStatu
     return cmdBld_CfgBeaconFilterOpt (pTWD->hCmdBld, uBeaconFilteringStatus, uNumOfBeaconsToBuffer, NULL, NULL);
 }
 
+TI_STATUS TWD_CfgApBeaconFilter(TI_HANDLE hTWD, TI_BOOL bEnable, void *fCb, TI_HANDLE hCb)
+{
+	TTwd *pTWD = (TTwd *)hTWD;
+
+	TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_CfgRxBeaconFilter: called\n");
+
+	return cmdBld_CfgApBeaconFilter(pTWD->hCmdBld, bEnable, fCb, hCb);
+}
+
 TI_STATUS TWD_SetRateMngDebug(TI_HANDLE hTWD, RateMangeParams_t *pRateMngParams)
 {
   TTwd   *pTWD = (TTwd *)hTWD;

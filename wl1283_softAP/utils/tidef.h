@@ -36,11 +36,11 @@
 
 #include "osTIType.h"
 
-/** \file  tidef.h 
- * \brief TI User Definitions APIs 
+/** \file  tidef.h
+ * \brief TI User Definitions APIs
  * \n\n
  * Note: TI_ prefix implies TI wrapping of primitives which is used for partability.
- * E.g. using these interfaces enables porting between different OS under these 
+ * E.g. using these interfaces enables porting between different OS under these
  * interfaces without user notice.
  * \n\n
  */
@@ -125,7 +125,7 @@
  * \def TI_VOIDCAST
  * \brief Macro which Casts to void
  */
-#ifndef TI_VOIDCAST 
+#ifndef TI_VOIDCAST
 #define TI_VOIDCAST(p)             ((void)p)
 #endif
 
@@ -145,7 +145,7 @@
  * \brief Macro which returns a field offset from structure begine
  */
 #define TI_FIELD_OFFSET(type,field)    ((TI_UINT32)(&(((type*)0)->field)))
-#endif                                 
+#endif
 
 
 #ifndef TI_BIT
@@ -235,7 +235,7 @@
 #define MAC_MULTICAST(mac)          ((mac)[0] & 0x01)
 /**
  * \def IP_COPY
- * \brief Macro which copies IP V4 source to IP V4 destination 
+ * \brief Macro which copies IP V4 source to IP V4 destination
  */
 #define IP_COPY(dst,src)            *((TI_UINT32*)(dst)) = *((TI_UINT32*)(src))
 /**
@@ -308,12 +308,12 @@
 
 /**
  * \def ENDIAN_HANDLE_WORD
- * \brief Macro which handles Word in Little Endian 
+ * \brief Macro which handles Word in Little Endian
  */
 #define ENDIAN_HANDLE_WORD(x)       (x)
 /**
  * \def ENDIAN_HANDLE_WORD
- * \brief Macro which handles Long in Little Endian 
+ * \brief Macro which handles Long in Little Endian
  */
 #define ENDIAN_HANDLE_LONG(x)       (x)
 

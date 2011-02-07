@@ -967,20 +967,50 @@ TI_STATUS cmdBld_CfgIePacketDetectionThreshold (TI_HANDLE hCmdBld, TI_UINT32 pdT
 TI_STATUS cmdBld_CfgIeBeaconFilterOpt (TI_HANDLE hCmdBld, TI_UINT8 beaconFilteringStatus, TI_UINT8 numOfBeaconsToBuffer, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
-    ACXBeaconFilterOptions_t  ACXBeaconFilterOptions;
-    ACXBeaconFilterOptions_t *pCfg = &ACXBeaconFilterOptions;
+    ACXStaBeaconFilterOptions_t  ACXBeaconFilterOptions;
+    ACXStaBeaconFilterOptions_t *pCfg = &ACXBeaconFilterOptions;
     
     pCfg->enable = beaconFilteringStatus;
     pCfg->maxNumOfBeaconsStored = numOfBeaconsToBuffer;
 
     /* Set information element header */
-    pCfg->EleHdr.id = ACX_BEACON_FILTER_OPT;
-    pCfg->EleHdr.len = sizeof(ACXBeaconFilterOptions_t) - sizeof(EleHdrStruct);
+    pCfg->EleHdr.id = ACX_STA_BEACON_FILTER_OPT;
+    pCfg->EleHdr.len = sizeof(ACXStaBeaconFilterOptions_t) - sizeof(EleHdrStruct);
 
     TRACE3(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "ID=%u: enable=%u, num-stored=%u\n", pCfg->EleHdr.id, beaconFilteringStatus, numOfBeaconsToBuffer);
 
-    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, pCfg, sizeof(ACXBeaconFilterOptions_t), fCb, hCb, NULL);
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, pCfg, sizeof(ACXStaBeaconFilterOptions_t), fCb, hCb, NULL);
 }
+
+/****************************************************************************
+ *                      cmdBld_CfgIeRxBeaconFilter()
+ ****************************************************************************
+ * DESCRIPTION: Configure/Interrogate the rx beacon filtering option (whether
+ *              driver wants to receive incoming beacons from fw)
+ *
+ * INPUTS:		bEnable - enable filter (fw will drop beacons) or disable (fw
+ *              will forward beacons to driver)
+ *
+ * OUTPUT:  	None
+ *
+ * RETURNS: 	TI_OK or TI_NOK
+ ****************************************************************************/
+TI_STATUS cmdBld_CfgIeApBeaconFilter(TI_HANDLE hCmdBld, TI_BOOL bEnable, void *fCb, TI_HANDLE hCb)
+{
+    TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
+    ACXApBeaconFilterOptions_t cfg;
+
+    cfg.enable = bEnable;
+
+    /* Set information element header */
+    cfg.EleHdr.id = ACX_AP_BEACON_FILTER_OPT;
+    cfg.EleHdr.len = sizeof(ACXApBeaconFilterOptions_t) - sizeof(EleHdrStruct);
+
+    TRACE2(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "ID=%u: enable=%u\n", cfg.EleHdr.id, cfg.enable);
+
+    return cmdQueue_SendCommand (pCmdBld->hCmdQueue, CMD_CONFIGURE, &cfg, sizeof(ACXApBeaconFilterOptions_t), fCb, hCb, NULL);
+}
+
 /****************************************************************************
  *                      cmdBld_CfgIeRateMngDbg()
  ****************************************************************************
@@ -2079,7 +2109,8 @@ TI_STATUS cmdBld_CfgPlatformGenParams (TI_HANDLE hCmdBld, IniFileGeneralParam *p
     }
 
     pTestCmd->testCmdId = TEST_CMD_INI_FILE_GENERAL_PARAM;
-    
+
+
     os_memoryCopy(pCmdBld->hOs, &pTestCmd->testCmd_u.IniFileGeneralParams, pGenParams, sizeof(IniFileGeneralParam));
 
     if (pGenParams->TXBiPFEMAutoDetect == 0) /* Manual detection */
@@ -2111,8 +2142,6 @@ TI_STATUS cmdBld_CfgPlatformGenParams (TI_HANDLE hCmdBld, IniFileGeneralParam *p
 
     return status;
 }
-
-
 
 
 /****************************************************************************

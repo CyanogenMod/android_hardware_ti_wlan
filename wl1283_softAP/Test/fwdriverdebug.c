@@ -84,56 +84,56 @@ extern TI_STATUS cmdBld_CmdJoinBss (TI_HANDLE hCmdBld, TJoinBss *pJoinBssParams,
 void sendMgmtPacket (TI_HANDLE hOs);
 void sendDataPacket (TI_HANDLE hOs);
 
-void FWDebugFunction(TI_HANDLE hDrvMain, 
-					 TI_HANDLE hOs, 
-					 TI_HANDLE hTWD, 
-					 TI_HANDLE hMlme, 
-					 TI_HANDLE hTxMgmtQ,
-					 TI_HANDLE hTxCtrl,
-					 unsigned long funcType, 
-					 void *pParam)
+void FWDebugFunction(TI_HANDLE hDrvMain,
+                     TI_HANDLE hOs,
+                     TI_HANDLE hTWD,
+                     TI_HANDLE hMlme,
+                     TI_HANDLE hTxMgmtQ,
+                     TI_HANDLE hTxCtrl,
+                     unsigned long funcType,
+                     void *pParam)
 {
-	tmp_hMlme   = hMlme;
+    tmp_hMlme   = hMlme;
     tmp_hTWD    = hTWD;
     tmp_hTxCtrl = hTxCtrl;
 
-	switch (funcType)
-	{
-	case DBG_FW_PRINT_HELP:
-		 printFWDbgFunctions();
-		 break;
-	case DBG_FW_SEND_GENERAL_TEST_CMD:
-		 FW_debugSendGeneralTestCmd(hTWD, pParam);
-		 break;
-	case DBG_FW_IBSS_CONNECTION:
-		 FW_DebugSendJoinCommand(hTWD, hTxMgmtQ);
-		 break;
-	case DBG_FW_SEND_MGMT_PACKET:
-         bSendDataPkt = TI_FALSE;
-		 FW_DebugSendPacket(hDrvMain, hOs, hTxMgmtQ, pParam);
-		 break;
-    case DBG_FW_SEND_DATA_PACKET: 
-         bSendDataPkt = TI_TRUE;
-		 FW_DebugSendPacket(hDrvMain, hOs, hTxMgmtQ, pParam);
-		 break;
-	case DBG_FW_START_LOOPBACK:
-		 FW_DebugStartLoopBack (hDrvMain, hTWD);
-		 break;
-	case DBG_FW_STOP_LOOPBACK:
-		 FW_DebugStopLoopBack (hDrvMain, hTWD);
-		 break;
-	case DBG_FW_INFINIT_SEND:
-		 FW_DebugInfinitSendPacket (hDrvMain, hTWD);
-		 break;
+    switch (funcType)
+    {
+    case DBG_FW_PRINT_HELP:
+        printFWDbgFunctions();
+        break;
+    case DBG_FW_SEND_GENERAL_TEST_CMD:
+        FW_debugSendGeneralTestCmd(hTWD, pParam);
+        break;
+    case DBG_FW_IBSS_CONNECTION:
+        FW_DebugSendJoinCommand(hTWD, hTxMgmtQ);
+        break;
+    case DBG_FW_SEND_MGMT_PACKET:
+        bSendDataPkt = TI_FALSE;
+        FW_DebugSendPacket(hDrvMain, hOs, hTxMgmtQ, pParam);
+        break;
+    case DBG_FW_SEND_DATA_PACKET:
+        bSendDataPkt = TI_TRUE;
+        FW_DebugSendPacket(hDrvMain, hOs, hTxMgmtQ, pParam);
+        break;
+    case DBG_FW_START_LOOPBACK:
+        FW_DebugStartLoopBack (hDrvMain, hTWD);
+        break;
+    case DBG_FW_STOP_LOOPBACK:
+        FW_DebugStopLoopBack (hDrvMain, hTWD);
+        break;
+    case DBG_FW_INFINIT_SEND:
+        FW_DebugInfinitSendPacket (hDrvMain, hTWD);
+        break;
 
-	case DBG_FW_GENERAL:
-		 FW_DebugGeneral (hTWD, pParam);
-		 break;
-	default:
-		break;
+    case DBG_FW_GENERAL:
+        FW_DebugGeneral (hTWD, pParam);
+        break;
+    default:
+        break;
 
 
- }
+    }
 }
 
 void printFWDbgFunctions(void)
@@ -151,68 +151,68 @@ void printFWDbgFunctions(void)
 
 void FW_debugSendGeneralTestCmd(TI_HANDLE hTWD, void *pParam)
 {
-	TTwd     *pTWD = (TTwd *)hTWD;
-	FWDebugTestCmdParamter_t Cfg;
-	unsigned char Len;
-	Len = *(unsigned char *)pParam;
-	
-	os_memoryCopy(pTWD->hOs, Cfg.buf,(unsigned long*)pParam + sizeof(TI_UINT8),Len * 4 );
-  
-	Cfg.len = Len;
-	
-	/* Set information element header */
-	Cfg.EleHdr.id = CMD_TEST;
-	Cfg.EleHdr.len = sizeof(Cfg) - sizeof(EleHdrStruct);
-	  
+    TTwd     *pTWD = (TTwd *)hTWD;
+    FWDebugTestCmdParamter_t Cfg;
+    unsigned char Len;
+    Len = *(unsigned char *)pParam;
+
+    os_memoryCopy(pTWD->hOs, Cfg.buf,(unsigned long*)pParam + sizeof(TI_UINT8),Len * 4 );
+
+    Cfg.len = Len;
+
+    /* Set information element header */
+    Cfg.EleHdr.id = CMD_TEST;
+    Cfg.EleHdr.len = sizeof(Cfg) - sizeof(EleHdrStruct);
+
     cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_CONFIGURE, (void*)&Cfg, sizeof(Cfg), NULL, NULL, NULL);
 }
 
 void FW_DebugSendJoinCommand(TI_HANDLE hTWD, TI_HANDLE hTxMgmtQ)
 {
-	TTwd     *pTWD = (TTwd *)hTWD;
-	TCmdBld  *pCmdBld = (TCmdBld *)(pTWD->hCmdBld);
-	TI_STATUS res;
-	TJoinBss  JoinBss;
-	char ssid[10];
-	unsigned char Bssid[6] = {0x0,0x12,0x43,0xad,0xe5,0x10};
+    TTwd     *pTWD = (TTwd *)hTWD;
+    TCmdBld  *pCmdBld = (TCmdBld *)(pTWD->hCmdBld);
+    TI_STATUS res;
+    TJoinBss  JoinBss;
+    char ssid[10];
+    unsigned char Bssid[6] = {0x0,0x12,0x43,0xad,0xe5,0x10};
 
-	os_memoryCopy(pTWD->hOs,ssid,"ronit",5);
-  
-	JoinBss.basicRateSet = DRV_RATE_2M;
-	JoinBss.radioBand = RADIO_BAND_2_4_GHZ;
-	JoinBss.pBSSID = Bssid;
-	
-	JoinBss.bssType = BSS_INDEPENDENT;
-	JoinBss.pSSID =ssid;
-	JoinBss.ssidLength = 5;
-	JoinBss.channel = 1;
-	JoinBss.beaconInterval = 100;
-	JoinBss.dtimInterval = 2;
-  
-	pCmdBld->hReport = pTWD->hReport;
-	pCmdBld->tDb.bss.BssId[0] = 0x0;
-	pCmdBld->tDb.bss.BssId[1] = 0x12;
-	pCmdBld->tDb.bss.BssId[2] = 0x43;
-	pCmdBld->tDb.bss.BssId[3] = 0xad;
-	pCmdBld->tDb.bss.BssId[4] = 0xe5;
-	pCmdBld->tDb.bss.BssId[5] = 0x10;
-	pCmdBld->tDb.bss.RadioChannel = 1;
-   
-	txMgmtQ_SetConnState(hTxMgmtQ,TX_CONN_STATE_MGMT);
-  
-	res = cmdBld_CmdJoinBss  (pCmdBld, 
-							  &JoinBss, 
-							  NULL,//cmdBld_ConfigSeq, 
-							  NULL);//pTWD->hCmdBld
-  
-	if (res)
-	{
-		os_printf("\n failed to make IBSS connection\n");
-	}
-  
-	os_printf("\n res = %d\n", res);
-   
-	txMgmtQ_SetConnState(hTxMgmtQ, TX_CONN_STATE_MGMT);
+    os_memoryCopy(pTWD->hOs,ssid,"ronit",5);
+
+    JoinBss.basicRateSet = DRV_RATE_2M;
+    JoinBss.radioBand = RADIO_BAND_2_4_GHZ;
+    JoinBss.pBSSID = Bssid;
+
+    JoinBss.bssType = BSS_INDEPENDENT;
+    JoinBss.pSSID =ssid;
+    JoinBss.ssidLength = 5;
+    JoinBss.channel = 1;
+    JoinBss.beaconInterval = 100;
+    JoinBss.dtimInterval = 2;
+
+    pCmdBld->hReport = pTWD->hReport;
+    pCmdBld->tDb.bss.BssId[0] = 0x0;
+    pCmdBld->tDb.bss.BssId[1] = 0x12;
+    pCmdBld->tDb.bss.BssId[2] = 0x43;
+    pCmdBld->tDb.bss.BssId[3] = 0xad;
+    pCmdBld->tDb.bss.BssId[4] = 0xe5;
+    pCmdBld->tDb.bss.BssId[5] = 0x10;
+    pCmdBld->tDb.bss.RadioChannel = 1;
+
+    txMgmtQ_SetConnState(hTxMgmtQ,TX_CONN_STATE_MGMT);
+
+    res = cmdBld_CmdJoinBss  (pCmdBld,
+                              &JoinBss,
+                              NULL,//cmdBld_ConfigSeq,
+                              NULL);//pTWD->hCmdBld
+
+    if (res)
+    {
+        os_printf("\n failed to make IBSS connection\n");
+    }
+
+    os_printf("\n res = %d\n", res);
+
+    txMgmtQ_SetConnState(hTxMgmtQ, TX_CONN_STATE_MGMT);
 
 }
 
@@ -220,13 +220,13 @@ void FW_DebugSendJoinCommand(TI_HANDLE hTWD, TI_HANDLE hTxMgmtQ)
 void sendDataPacket (TI_HANDLE hOs)
 {
     TI_UINT32       i;
-	TTxCtrlBlk *    pPktCtrlBlk;
+    TTxCtrlBlk *    pPktCtrlBlk;
     TI_UINT8 *      pPktBuf;
     TEthernetHeader tEthHeader;
-	char SrcBssid[6] = {0x88,0x88,0x88,0x88,0x88,0x88};
-	char DesBssid[6] = {0x22,0x22,0x22,0x22,0x22,0x22};
+    char SrcBssid[6] = {0x88,0x88,0x88,0x88,0x88,0x88};
+    char DesBssid[6] = {0x22,0x22,0x22,0x22,0x22,0x22};
 
-	/* Allocate a TxCtrlBlk for the Tx packet and save timestamp, length and packet handle */
+    /* Allocate a TxCtrlBlk for the Tx packet and save timestamp, length and packet handle */
     pPktCtrlBlk = TWD_txCtrlBlk_Alloc (tmp_hTWD);
     pPktCtrlBlk->tTxDescriptor.startTime = os_timeStampMs (hOs);
     pPktCtrlBlk->tTxDescriptor.length    = (TI_UINT16)packetLength + ETHERNET_HDR_LEN;
@@ -243,14 +243,14 @@ void sendDataPacket (TI_HANDLE hOs)
     os_memoryCopy (hOs, pPktBuf + 2, &tEthHeader, ETHERNET_HDR_LEN);
 
     /* Build BDL */
-    BUILD_TX_TWO_BUF_PKT_BDL (pPktCtrlBlk, 
-                              pPktBuf + 2, 
-                              ETHERNET_HDR_LEN, 
-                              pPktBuf + 2 + ETHERNET_HDR_LEN, 
+    BUILD_TX_TWO_BUF_PKT_BDL (pPktCtrlBlk,
+                              pPktBuf + 2,
+                              ETHERNET_HDR_LEN,
+                              pPktBuf + 2 + ETHERNET_HDR_LEN,
                               packetLength)
 
     /* Fill data buffer with incremented numbers */
-    for (i = 0; i < packetLength; i++) 
+    for (i = 0; i < packetLength; i++)
     {
         *(pPktBuf + 2 + ETHERNET_HDR_LEN + i) = i;
     }
@@ -276,17 +276,17 @@ void sendMgmtPacket(TI_HANDLE hOs)
     }
 
     mlmeBuilder_sendFrame(tmp_hMlme, eMsgType, aMsg, packetLength, 0);
-    
+
     numOfPackets++;
     if ((infinitLoopFl == 0) && (numOfPackets > packetsNum))
-    {      
+    {
         os_timerStop(hOs, dTimer);
         os_printf("\n *********** Last Packet was sent **********");
         os_timerDestroy(hOs, dTimer);
     }
     else
     {
-        os_timerStart(hOs, dTimer, 1000); 
+        os_timerStart(hOs, dTimer, 1000);
     }
     os_memoryFree(hOs, aMsg, 2000);
 }
@@ -295,67 +295,67 @@ void FW_DebugSendPacket(TI_HANDLE hDrvMain ,TI_HANDLE hOs, TI_HANDLE hTxMgmtQ, v
 {
     void *fSendPkt;
 
-	if ( pParam == NULL )
-	{
+    if ( pParam == NULL )
+    {
         os_printf("\nFW_DebugSendPacket Error: received NULL parameter\n");
-		return;
-	}
+        return;
+    }
 
     /* Open Tx path for all packet types */
     txMgmtQ_SetConnState (hTxMgmtQ, TX_CONN_STATE_MGMT);
     txMgmtQ_SetConnState (hTxMgmtQ, TX_CONN_STATE_EAPOL);
     txMgmtQ_SetConnState (hTxMgmtQ, TX_CONN_STATE_OPEN);
 
-	infinitLoopFl	= 0;
-	numOfPackets 	= 1;
-	packetsNum 		= 1;
-	packetLength    = *(TI_UINT32*)pParam;
+    infinitLoopFl	= 0;
+    numOfPackets 	= 1;
+    packetsNum 		= 1;
+    packetLength    = *(TI_UINT32*)pParam;
     os_printf("\nFW_DebugSendPacket: packetsNum = %d, packetLength = %d\n",packetsNum, packetLength);
     fSendPkt = bSendDataPkt ? sendDataPacket : sendMgmtPacket;
     dTimer = os_timerCreate(hOs, fSendPkt, hDrvMain);
-    os_timerStart(hOs, dTimer, 1000);       
-    
-    SendFlag = TI_TRUE;   
+    os_timerStart(hOs, dTimer, 1000);
+
+    SendFlag = TI_TRUE;
 }
 
 void FW_DebugInfinitSendPacket(TI_HANDLE hDrvMain ,TI_HANDLE hOs)
 {
-	infinitLoopFl = 1;
-	numOfPackets = 1;
+    infinitLoopFl = 1;
+    numOfPackets = 1;
 
-    dTimer = os_timerCreate(hOs, sendMgmtPacket, hDrvMain); 
-    os_timerStart(hOs, dTimer, 1000);        
-    SendFlag = TI_TRUE;   
+    dTimer = os_timerCreate(hOs, sendMgmtPacket, hDrvMain);
+    os_timerStart(hOs, dTimer, 1000);
+    SendFlag = TI_TRUE;
 }
 
 void FW_DebugStartLoopBack (TI_HANDLE hDrvMain, TI_HANDLE hTWD)
-{    
-	TTwd     *pTWD = (TTwd *)hTWD;
-	TTestCmd     Plt;
-	  
-	Plt.testCmdId = TEST_CMD_LOOPBACK_START;
-	os_printf("\n send loopback start command");  
-	cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_TEST, (char*)&Plt, sizeof(Plt), NULL, NULL, NULL);
+{
+    TTwd     *pTWD = (TTwd *)hTWD;
+    TTestCmd     Plt;
+
+    Plt.testCmdId = TEST_CMD_LOOPBACK_START;
+    os_printf("\n send loopback start command");
+    cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_TEST, (char*)&Plt, sizeof(Plt), NULL, NULL, NULL);
 }
 
 
 void FW_DebugStopLoopBack (TI_HANDLE hDrvMain, TI_HANDLE hTWD)
-{    
-	TTwd     *pTWD = (TTwd *)hTWD;
-	TTestCmd     Plt;
-		
-	Plt.testCmdId = TEST_CMD_LOOPBACK_STOP;
-	os_printf("\n send loopback stop command");
-	cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_TEST, (char*)&Plt, sizeof(Plt), NULL, NULL, NULL);  
+{
+    TTwd     *pTWD = (TTwd *)hTWD;
+    TTestCmd     Plt;
+
+    Plt.testCmdId = TEST_CMD_LOOPBACK_STOP;
+    os_printf("\n send loopback stop command");
+    cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_TEST, (char*)&Plt, sizeof(Plt), NULL, NULL, NULL);
 }
 
 
 void FW_DebugGeneral(TI_HANDLE hTWD, void *pParam)
 {
-	TTwd     *pTWD = (TTwd *)hTWD;
-	TI_UINT32 size = *((TI_UINT32*) pParam) + sizeof(TI_UINT32);
+    TTwd     *pTWD = (TTwd *)hTWD;
+    TI_UINT32 size = *((TI_UINT32*) pParam) + sizeof(TI_UINT32);
 
-	cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_DEBUG, (char*)pParam, size, NULL, NULL, NULL);
+    cmdQueue_SendCommand (pTWD->hCmdQueue, CMD_DEBUG, (char*)pParam, size, NULL, NULL, NULL);
 }
 
 
@@ -382,7 +382,7 @@ void FW_ComparePacket (char *buf)
        os_printf("\n");
        for (i=0;i<Len;i++) {
            os_printf(" 0x%02x  ",*ptemp++);
-           if (i %5 == 0) { 
+           if (i %5 == 0) {
            }
 
        }

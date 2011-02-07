@@ -31,9 +31,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- 
-/** \file   TwIf.c 
- *  \brief  The TWD bottom API towards the Txn-Queue. 
+
+/** \file   TwIf.c
+ *  \brief  The TWD bottom API towards the Txn-Queue.
  *
  * The TwIf module is the lowest WLAN-specific layer and presents a common interface to all Xfer modules.
  * As such, it is responsible for the common functionalities related to device access, which includes:
@@ -41,12 +41,13 @@
  *    - interface power control
  *    - address translation (paging) when needed (depends on bus attributes).
  * The TwIf has no OS, platform or bus type dependencies.
- * 
+ *
  *  \see    TwIf.h, TxnQueue.c, TxnQueue.h
  */
 
 #define __FILE_ID__  FILE_ID_121
 #include "tidef.h"
+#include "osApi.h"
 #include "report.h"
 #include "context.h"
 #include "timer.h"
@@ -54,7 +55,7 @@
 #include "TxnQueue.h"
 #include "TwIf.h"
 #include "TWDriver.h"
- 
+
 
 /************************************************************************
  * Defines
@@ -66,11 +67,11 @@
 #define ELP_CTRL_REG_SLEEP      0
 #define ELP_CTRL_REG_AWAKE      1
 
-/* 
+/*
  * Device interface-control registers addresses (at the end ot the 17-bit address space):
  */
 #define PARTITION_REGISTERS_ADDR        (0x1FFC0)   /* Start address of the chip memory regions partition (see also HwInit) */
-                                                    /* 4 couples of registers: region start address & region size */
+/* 4 couples of registers: region start address & region size */
 
 #define ELP_CTRL_REG_ADDR               (0x1FFFC)   /* ELP control register address */
 
@@ -97,7 +98,7 @@ typedef enum
 } ESmEvent;
 
 /* The addresses partitioning configuration Txn data */
-typedef struct 
+typedef struct
 {
     TI_UINT32       uMemSize;        /* The HW memory region size. */
     TI_UINT32       uMemAddr;        /* The HW memory region address. */
@@ -107,7 +108,7 @@ typedef struct
 } TPartitionTxnData;
 
 /* The addresses partitioning configuration Txn */
-typedef struct 
+typedef struct
 {
     TTxnStruct          tHdr;        /* The generic transaction structure */
     TPartitionTxnData   tData;       /* The addresses partitioning configuration data */
@@ -115,7 +116,7 @@ typedef struct
 } TPartitionTxn;
 
 /* The addresses partitioning configuration Txn */
-typedef struct 
+typedef struct
 {
     TTxnStruct      tHdr;           /* The generic transaction structure */
     TI_UINT32   tData;       /* The addresses partitioning configuration data for one register */
@@ -123,7 +124,7 @@ typedef struct
 } TPartitionRegTxn;
 
 /* The addresses partitioning configuration Txn */
-typedef struct 
+typedef struct
 {
     TTxnStruct      tHdr;           /* The generic transaction structure */
     TI_UINT8        uElpData;       /* The value to write to the ELP register */
@@ -134,7 +135,7 @@ typedef struct
 typedef struct _TTwIfObj
 {
     /* Other modules handles */
-    TI_HANDLE       hOs;             
+    TI_HANDLE       hOs;
     TI_HANDLE       hReport;
     TI_HANDLE       hContext;
     TI_HANDLE       hTimer;
@@ -160,7 +161,7 @@ typedef struct _TTwIfObj
     TI_UINT32       uMemAddr3;        /* The INT Status registers region start address. */
     TI_UINT32       uMemSize3;        /* The INT Status registers region end address. */
     TI_UINT32       uMemAddr4;        /* The FW Status mem registers region start address. */
-    
+
 
 #ifdef TI_DBG
     /* Debug counters */
@@ -171,9 +172,9 @@ typedef struct _TTwIfObj
     TI_UINT32       uDbgCountTxnComplete;/* Count transactions that returned COMPLETE */
     TI_UINT32       uDbgCountTxnDoneCb;  /* Count calls to twIf_TxnDoneCb */
 #endif
-   
+
     TI_BOOL         bTxnDoneInRecovery;      /* Indicate that current TxnDone is within recovery process */
-    TI_BOOL         bPendRestartTimerRunning;/* Indicate that the restart guard timer is running */ 
+    TI_BOOL         bPendRestartTimerRunning;/* Indicate that the restart guard timer is running */
     TI_HANDLE       hPendRestartTimer;       /* The restart process guard timer */
 
 } TTwIfObj;
@@ -199,17 +200,17 @@ static void        twIf_PendRestratTimeout (TI_HANDLE hTwIf, TI_BOOL bTwdInitOcc
  *
  ************************************************************************/
 
-/** 
- * \fn     twIf_Create 
+/**
+ * \fn     twIf_Create
  * \brief  Create the module
- * 
+ *
  * Allocate and clear the module's object.
- * 
- * \note   
+ *
+ * \note
  * \param  hOs - Handle to Os Abstraction Layer
- * \return Handle of the allocated object, NULL if allocation failed 
+ * \return Handle of the allocated object, NULL if allocation failed
  * \sa     twIf_Destroy
- */ 
+ */
 TI_HANDLE twIf_Create (TI_HANDLE hOs)
 {
     TI_HANDLE  hTwIf;
@@ -218,28 +219,28 @@ TI_HANDLE twIf_Create (TI_HANDLE hOs)
     hTwIf = os_memoryAlloc (hOs, sizeof(TTwIfObj));
     if (hTwIf == NULL)
         return NULL;
-    
+
     pTwIf = (TTwIfObj *)hTwIf;
 
     os_memoryZero (hOs, hTwIf, sizeof(TTwIfObj));
-    
+
     pTwIf->hOs = hOs;
 
     return pTwIf;
 }
 
 
-/** 
+/**
  * \fn     twIf_Destroy
- * \brief  Destroy the module. 
- * 
+ * \brief  Destroy the module.
+ *
  * Unregister from TxnQ and free the TxnDone-queue and the module's object.
- * 
- * \note   
+ *
+ * \note
  * \param  The module's object
- * \return TI_OK on success or TI_NOK on failure 
+ * \return TI_OK on success or TI_NOK on failure
  * \sa     twIf_Create
- */ 
+ */
 TI_STATUS twIf_Destroy (TI_HANDLE hTwIf)
 {
     TTwIfObj *pTwIf = (TTwIfObj*)hTwIf;
@@ -255,36 +256,36 @@ TI_STATUS twIf_Destroy (TI_HANDLE hTwIf)
         {
             tmr_DestroyTimer (pTwIf->hPendRestartTimer);
         }
-        os_memoryFree (pTwIf->hOs, pTwIf, sizeof(TTwIfObj));     
+        os_memoryFree (pTwIf->hOs, pTwIf, sizeof(TTwIfObj));
     }
 
     return TI_OK;
 }
 
 
-/** 
- * \fn     twIf_Init 
- * \brief  Init module 
- * 
+/**
+ * \fn     twIf_Init
+ * \brief  Init module
+ *
  * - Init required handles and module variables
  * - Create the TxnDone-queue
  * - Register to TxnQ
  * - Register to context module
- * 
- * \note    
+ *
+ * \note
  * \param  hTwIf       - The module's object
  * \param  hXxx        - Handles to other modules
  * \param  fRecoveryCb - Callback function for recovery completed after TxnDone
  * \param  hRecoveryCb - Handle for fRecoveryCb
- * \return void        
- * \sa     
- */ 
-void twIf_Init (TI_HANDLE hTwIf, 
-                TI_HANDLE hReport, 
-                TI_HANDLE hContext, 
-                TI_HANDLE hTimer, 
-                TI_HANDLE hTxnQ, 
-                TRecoveryCb fRecoveryCb, 
+ * \return void
+ * \sa
+ */
+void twIf_Init (TI_HANDLE hTwIf,
+                TI_HANDLE hReport,
+                TI_HANDLE hContext,
+                TI_HANDLE hTimer,
+                TI_HANDLE hTxnQ,
+                TRecoveryCb fRecoveryCb,
                 TI_HANDLE hRecoveryCb)
 {
     TTwIfObj   *pTwIf = (TTwIfObj*)hTwIf;
@@ -311,13 +312,13 @@ void twIf_Init (TI_HANDLE hTwIf,
     pTwIf->tElpTxnAwake.uElpData = ELP_CTRL_REG_AWAKE;
     pTxnHdr = &(pTwIf->tElpTxnAwake.tHdr);
     TXN_PARAM_SET(pTxnHdr, TXN_LOW_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_WRITE, TXN_INC_ADDR)
-    TXN_PARAM_SET_MORE(pTxnHdr, 1);         
+    TXN_PARAM_SET_MORE(pTxnHdr, 1);
     /* NOTE: Function id for single step will be replaced to 0 by the bus driver */
     TXN_PARAM_SET_SINGLE_STEP(pTxnHdr, 1);  /* ELP write is always single step (TxnQ is topped)! */
     BUILD_TTxnStruct(pTxnHdr, ELP_CTRL_REG_ADDR, &(pTwIf->tElpTxnAwake.uElpData), sizeof(TI_UINT8), NULL, NULL)
 
     /* Create the TxnDone queue. */
-    uNodeHeaderOffset = TI_FIELD_OFFSET(TTxnStruct, tTxnQNode); 
+    uNodeHeaderOffset = TI_FIELD_OFFSET(TTxnStruct, tTxnQNode);
     pTwIf->hTxnDoneQueue = que_Create (pTwIf->hOs, pTwIf->hReport, TXN_DONE_QUE_SIZE, uNodeHeaderOffset);
     if (pTwIf->hTxnDoneQueue == NULL)
     {
@@ -326,11 +327,11 @@ void twIf_Init (TI_HANDLE hTwIf,
 
     /* Register to the context engine and get the client ID */
     pTwIf->uContextId = context_RegisterClient (pTwIf->hContext,
-                                                twIf_HandleTxnDone,
-                                                hTwIf,
-                                                TI_TRUE,
-                                                "TWIF",
-                                                sizeof("TWIF"));
+                        twIf_HandleTxnDone,
+                        hTwIf,
+                        TI_TRUE,
+                        "TWIF",
+                        sizeof("TWIF"));
 
     /* Allocate timer */
     pTwIf->hPendRestartTimer = tmr_CreateTimer (hTimer);
@@ -349,22 +350,22 @@ void twIf_Init (TI_HANDLE hTwIf,
 }
 
 
-/** 
+/**
  * \fn     twIf_Restart
  * \brief  Restart module upon driver stop or recovery
- * 
- * Called upon driver stop command or upon recovery. 
+ *
+ * Called upon driver stop command or upon recovery.
  * Calls txnQ_Restart to clear the WLAN queues and call the TxnDone CB on each tansaction.
- * If no transaction in progress, the queues are cleared immediately. 
+ * If no transaction in progress, the queues are cleared immediately.
  * If a transaction is in progress, it is done upon TxnDone.
  * The status in transactions that were dropped due to restart is TXN_STATUS_RECOVERY,
  *     and its originator (Xfer module) handles it if required (if its CB was written in the Txn).
- * 
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return COMPLETE if the WLAN queues were restarted, PENDING if waiting for TxnDone to restart queues
- * \sa     
- */ 
+ * \sa
+ */
 ETxnStatus twIf_Restart (TI_HANDLE hTwIf)
 {
     TTwIfObj    *pTwIf = (TTwIfObj*)hTwIf;
@@ -382,7 +383,7 @@ ETxnStatus twIf_Restart (TI_HANDLE hTwIf)
     eStatus = txnQ_Restart (pTwIf->hTxnQ, TXN_FUNC_ID_WLAN);
 
     /* If pending upon ongoing transaction, start guard timer in case SDIO does not call us back */
-    if (eStatus == TXN_STATUS_PENDING) 
+    if (eStatus == TXN_STATUS_PENDING)
     {
         pTwIf->bPendRestartTimerRunning = TI_TRUE;
         tmr_StartTimer (pTwIf->hPendRestartTimer, twIf_PendRestratTimeout, hTwIf, PEND_RESTART_TIMEOUT, TI_FALSE);
@@ -393,19 +394,19 @@ ETxnStatus twIf_Restart (TI_HANDLE hTwIf)
 }
 
 
-/** 
+/**
  * \fn     twIf_RegisterErrCb
  * \brief  Register Error CB
- * 
+ *
  * Register upper layer (health monitor) CB for bus error
- * 
- * \note   
+ *
+ * \note
  * \param  hTwIf  - The module's object
- * \param  fErrCb - The upper layer CB function for error handling 
+ * \param  fErrCb - The upper layer CB function for error handling
  * \param  hErrCb - The CB function handle
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 void twIf_RegisterErrCb (TI_HANDLE hTwIf, void *fErrCb, TI_HANDLE hErrCb)
 {
     TTwIfObj *pTwIf = (TTwIfObj*) hTwIf;
@@ -416,16 +417,16 @@ void twIf_RegisterErrCb (TI_HANDLE hTwIf, void *fErrCb, TI_HANDLE hErrCb)
 }
 
 
-/** 
+/**
  * \fn     twIf_WriteElpReg
  * \brief  write ELP register
- * 
- * \note   
+ *
+ * \note
  * \param  pTwIf   - The module's object
  * \param  uValue  - ELP_CTRL_REG_SLEEP or ELP_CTRL_REG_AWAKE
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void twIf_WriteElpReg (TTwIfObj *pTwIf, TI_UINT32 uValue)
 {
     TRACE1(pTwIf->hReport, REPORT_SEVERITY_INFORMATION, "twIf_WriteElpReg:  ELP Txn data = 0x%x\n", uValue);
@@ -442,19 +443,19 @@ static void twIf_WriteElpReg (TTwIfObj *pTwIf, TI_UINT32 uValue)
 }
 
 
-/** 
+/**
  * \fn     twIf_SetPartition
  * \brief  Set HW addresses partition
- * 
+ *
  * Called by the HwInit module to set the HW address ranges for download or working access.
  * Generate and configure the bus access address mapping table.
- * The partition is split between register (fixed partition of 24KB size, exists in all modes), 
+ * The partition is split between register (fixed partition of 24KB size, exists in all modes),
  *     and memory (dynamically changed during init and gets constant value in run-time, 104KB size).
- * The TwIf configures the memory mapping table on the device by issuing write transaction to 
- *     table address (note that the TxnQ and bus driver see this as a regular transaction). 
- * 
- * \note In future versions, a specific bus may not support partitioning (as in wUART), 
- *       In this case the HwInit module shall not call this function (will learn the bus 
+ * The TwIf configures the memory mapping table on the device by issuing write transaction to
+ *     table address (note that the TxnQ and bus driver see this as a regular transaction).
+ *
+ * \note In future versions, a specific bus may not support partitioning (as in wUART),
+ *       In this case the HwInit module shall not call this function (will learn the bus
  *       configuration from the INI file).
  *
  * \param  hTwIf          - The module's object
@@ -463,8 +464,8 @@ static void twIf_WriteElpReg (TTwIfObj *pTwIf, TI_UINT32 uValue)
  * \param  uRegAddr  - The registers partition base address
  * \param  uRegSize  - The register partition size
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 
 void twIf_SetPartition (TI_HANDLE hTwIf,
                         TPartition *pPartition)
@@ -497,13 +498,13 @@ void twIf_SetPartition (TI_HANDLE hTwIf,
     os_memoryZero(pTwIf->hOs, pPartitionRegTxn, 7*sizeof(TPartitionRegTxn));
 
     /* Prepare partition transaction data */
-    pPartitionRegTxn[0].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr1); 
-    pPartitionRegTxn[1].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemSize1);  
-    pPartitionRegTxn[2].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr2); 
-    pPartitionRegTxn[3].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemSize2);  
-    pPartitionRegTxn[4].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr3);  
-    pPartitionRegTxn[5].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemSize3);  
-    pPartitionRegTxn[6].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr4);  
+    pPartitionRegTxn[0].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr1);
+    pPartitionRegTxn[1].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemSize1);
+    pPartitionRegTxn[2].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr2);
+    pPartitionRegTxn[3].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemSize2);
+    pPartitionRegTxn[4].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr3);
+    pPartitionRegTxn[5].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemSize3);
+    pPartitionRegTxn[6].tData  = ENDIAN_HANDLE_LONG(pTwIf->uMemAddr4);
 
 
     /* Prepare partition Txn header */
@@ -511,7 +512,7 @@ void twIf_SetPartition (TI_HANDLE hTwIf,
     {
         pTxnHdr = &(pPartitionRegTxn[i].tHdr);
         TXN_PARAM_SET(pTxnHdr, TXN_LOW_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_WRITE, TXN_INC_ADDR)
-        TXN_PARAM_SET_MORE(pTxnHdr, 1);         
+        TXN_PARAM_SET_MORE(pTxnHdr, 1);
         TXN_PARAM_SET_SINGLE_STEP(pTxnHdr, 0);
     }
 
@@ -536,25 +537,25 @@ void twIf_SetPartition (TI_HANDLE hTwIf,
     BUILD_TTxnStruct(pTxnHdr, PARTITION_REGISTERS_ADDR+8,  &(pPartitionRegTxn[3].tData), REGISTER_SIZE, 0, 0)
     eStatus = twIf_SendTransaction (pTwIf, pTxnHdr);
 
- /* Registers address */
+    /* Registers address */
     pTxnHdr = &(pPartitionRegTxn[4].tHdr);
     BUILD_TTxnStruct(pTxnHdr, PARTITION_REGISTERS_ADDR+20,  &(pPartitionRegTxn[4].tData), REGISTER_SIZE, 0, 0)
     twIf_SendTransaction (pTwIf, pTxnHdr);
 
- /* Registers size */
+    /* Registers size */
     pTxnHdr = &(pPartitionRegTxn[5].tHdr);
     BUILD_TTxnStruct(pTxnHdr, PARTITION_REGISTERS_ADDR+16,  &(pPartitionRegTxn[5].tData), REGISTER_SIZE, 0, 0)
     eStatus = twIf_SendTransaction (pTwIf, pTxnHdr);
 
- /* Registers address */
+    /* Registers address */
     pTxnHdr = &(pPartitionRegTxn[6].tHdr);
     BUILD_TTxnStruct(pTxnHdr, PARTITION_REGISTERS_ADDR+24,  &(pPartitionRegTxn[6].tData), REGISTER_SIZE, twIf_PartitionTxnDoneCb, pTwIf)
     twIf_SendTransaction (pTwIf, pTxnHdr);
 
     /* If the transaction is done, free the allocated memory (otherwise freed in the partition CB) */
-    if (eStatus != TXN_STATUS_PENDING) 
+    if (eStatus != TXN_STATUS_PENDING)
     {
-        os_memoryFree (pTwIf->hOs, pPartitionRegTxn,7*sizeof(TPartitionRegTxn));     
+        os_memoryFree (pTwIf->hOs, pPartitionRegTxn,7*sizeof(TPartitionRegTxn));
     }
 }
 
@@ -564,25 +565,25 @@ static void twIf_PartitionTxnDoneCb (TI_HANDLE hTwIf, void *hTxn)
     TTwIfObj *pTwIf = (TTwIfObj*) hTwIf;
 
     /* Free the partition transaction buffer after completed (see transaction above) */
-    os_memoryFree (pTwIf->hOs, 
+    os_memoryFree (pTwIf->hOs,
                    (char *)hTxn - (6 * sizeof(TPartitionRegTxn)),  /* Move back to the first Txn start */
-                   7 * sizeof(TPartitionRegTxn)); 
+                   7 * sizeof(TPartitionRegTxn));
 }
 
 
-/** 
+/**
  * \fn     twIf_Awake
  * \brief  Request to keep the device awake
- * 
+ *
  * Used by the Xfer modules to request to keep the device awake until twIf_Sleep() is called.
- * Each call to this function increments AwakeReq counter. Once the device is awake (upon transaction), 
+ * Each call to this function increments AwakeReq counter. Once the device is awake (upon transaction),
  *     the TwIf SM keeps it awake as long as this counter is not zero.
- * 
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
  * \sa     twIf_Sleep
- */ 
+ */
 void twIf_Awake (TI_HANDLE hTwIf)
 {
     TTwIfObj *pTwIf = (TTwIfObj*) hTwIf;
@@ -597,27 +598,27 @@ void twIf_Awake (TI_HANDLE hTwIf)
 }
 
 
-/** 
+/**
  * \fn     twIf_Sleep
  * \brief  Remove request to keep the device awake
- * 
+ *
  * Each call to this function decrements AwakeReq counter.
- * Once this counter is zeroed, if the TxnQ is empty (no WLAN transactions), the TwIf SM is 
+ * Once this counter is zeroed, if the TxnQ is empty (no WLAN transactions), the TwIf SM is
  *     invoked to stop the TxnQ and enable the device to sleep (write 0 to ELP register).
- * 
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
  * \sa     twIf_Awake
- */ 
+ */
 void twIf_Sleep (TI_HANDLE hTwIf)
 {
     TTwIfObj *pTwIf = (TTwIfObj*) hTwIf;
 
     /* Decrement awake requests counter */
     if (pTwIf->uAwakeReqCount > 0) /* in case of redundant call after recovery */
-    {   
-    pTwIf->uAwakeReqCount--;
+    {
+        pTwIf->uAwakeReqCount--;
     }
 
 #ifdef TI_DBG
@@ -633,18 +634,18 @@ void twIf_Sleep (TI_HANDLE hTwIf)
 }
 
 
-/** 
+/**
  * \fn     twIf_HwAvailable
  * \brief  The device is awake
- * 
+ *
  * This is an indication from the FwEvent that the device is awake.
  * Issue HW_AVAILABLE event to the SM.
- * 
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 void twIf_HwAvailable (TI_HANDLE hTwIf)
 {
     TTwIfObj *pTwIf = (TTwIfObj*) hTwIf;
@@ -656,19 +657,19 @@ void twIf_HwAvailable (TI_HANDLE hTwIf)
 }
 
 
-/** 
+/**
  * \fn     twIf_Transact
  * \brief  Issue a transaction
- * 
+ *
  * This method is used by the Xfer modules to issue all transaction types.
  * Translate HW address according to bus partition and call twIf_SendTransaction().
- * 
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
- * \param  pTxn  - The transaction object 
+ * \param  pTxn  - The transaction object
  * \return COMPLETE if the transaction was completed in this context, PENDING if not, ERROR if failed
  * \sa     twIf_SendTransaction
- */ 
+ */
 ETxnStatus twIf_Transact (TI_HANDLE hTwIf, TTxnStruct *pTxn)
 {
     TTwIfObj  *pTwIf   = (TTwIfObj*)hTwIf;
@@ -679,16 +680,16 @@ ETxnStatus twIf_Transact (TI_HANDLE hTwIf, TTxnStruct *pTxn)
         pTxn->uHwAddr = pTxn->uHwAddr - pTwIf->uMemAddr2 + pTwIf->uMemSize1;
     }
     /* Translate HW address for memory region */
-    else 
+    else
     {
         pTxn->uHwAddr = pTxn->uHwAddr - pTwIf->uMemAddr1;
     }
 
     /* Regular transaction are not the last and are not single step (only ELP write is) */
-    TXN_PARAM_SET_MORE(pTxn, 1);         
+    TXN_PARAM_SET_MORE(pTxn, 1);
     TXN_PARAM_SET_SINGLE_STEP(pTxn, 0);
 
-    /* Send the transaction to the TxnQ and update the SM if needed. */  
+    /* Send the transaction to the TxnQ and update the SM if needed. */
     return twIf_SendTransaction (pTwIf, pTxn);
 }
 
@@ -697,27 +698,27 @@ ETxnStatus twIf_TransactReadFWStatus (TI_HANDLE hTwIf, TTxnStruct *pTxn)
     TTwIfObj  *pTwIf   = (TTwIfObj*)hTwIf;
 
     /* Regular transaction are not the last and are not single step (only ELP write is) */
-    TXN_PARAM_SET_MORE(pTxn, 1);         
+    TXN_PARAM_SET_MORE(pTxn, 1);
     TXN_PARAM_SET_SINGLE_STEP(pTxn, 0);
 
-    /* Send the transaction to the TxnQ and update the SM if needed. */  
+    /* Send the transaction to the TxnQ and update the SM if needed. */
     return twIf_SendTransaction (pTwIf, pTxn);
 }
 
 
-/** 
+/**
  * \fn     twIf_SendTransaction
  * \brief  Send a transaction to the device
- * 
+ *
  * This method is used by the Xfer modules and the TwIf to send all transaction types to the device.
  * Send the transaction to the TxnQ and update the SM if needed.
- * 
- * \note   
+ *
+ * \note
  * \param  pTwIf - The module's object
- * \param  pTxn  - The transaction object 
+ * \param  pTxn  - The transaction object
  * \return COMPLETE if the transaction was completed in this context, PENDING if not, ERROR if failed
- * \sa     
- */ 
+ * \sa
+ */
 static ETxnStatus twIf_SendTransaction (TTwIfObj *pTwIf, TTxnStruct *pTxn)
 {
     ETxnStatus eStatus;
@@ -727,10 +728,10 @@ static ETxnStatus twIf_SendTransaction (TTwIfObj *pTwIf, TTxnStruct *pTxn)
     /* Verify that the Txn HW-Address is 4-bytes aligned */
     if (pTxn->uHwAddr & 0x3)
     {
-TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned HwAddr! HwAddr=0x%x, Params=0x%x\n", pTxn->uHwAddr, pTxn->uTxnParams);
+        TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned HwAddr! HwAddr=0x%x, Params=0x%x\n", pTxn->uHwAddr, pTxn->uTxnParams);
         return TXN_STATUS_ERROR;
-    }   
-  
+    }
+
 #endif
 
     context_EnterCriticalSection (pTwIf->hContext);
@@ -759,6 +760,9 @@ TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned H
     /* If Txn status is PENDING issue Start event to the SM */
     if (eStatus == TXN_STATUS_PENDING)
     {
+	/* Prevent system suspend one more second after WLAN task completion (to cover DMA transaction) */
+	os_wake_lock_timeout_enable (pTwIf->hOs);
+
         twIf_HandleSmEvent (pTwIf, SM_EVENT_START);
     }
 
@@ -792,18 +796,18 @@ TRACE2(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_SendTransaction: Unaligned H
     return eStatus;
 }
 
-/** 
+/**
  * \fn     twIf_HandleSmEvent
  * \brief  The TwIf SM implementation
- * 
+ *
  * Handle SM event.
  * Control the device awake/sleep states and the TxnQ run/stop states according to the event.
- *  
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void twIf_HandleSmEvent (TTwIfObj *pTwIf, ESmEvent eEvent)
 {
     ESmState eState = pTwIf->eState;  /* The state before handling the event */
@@ -849,20 +853,20 @@ static void twIf_HandleSmEvent (TTwIfObj *pTwIf, ESmEvent eEvent)
 }
 
 
-/** 
+/**
  * \fn     twIf_TxnDoneCb
  * \brief  Transaction completion CB
- * 
+ *
  * This callback is called by the TxnQ upon transaction completion, unless is was completed in
  *     the original context where it was issued.
  * It may be called from bus driver external context (TxnDone ISR) or from WLAN driver context.
- *  
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
- * \param  pTxn  - The completed transaction object 
+ * \param  pTxn  - The completed transaction object
  * \return void
  * \sa     twIf_HandleTxnDone
- */ 
+ */
 static void twIf_TxnDoneCb (TI_HANDLE hTwIf, TTxnStruct *pTxn)
 {
     TTwIfObj *pTwIf = (TTwIfObj*)hTwIf;
@@ -886,7 +890,7 @@ static void twIf_TxnDoneCb (TI_HANDLE hTwIf, TTxnStruct *pTxn)
     }
 
     /* If the completed Txn is ELP, nothing to do (not counted) so exit */
-    if (TXN_PARAM_GET_SINGLE_STEP(pTxn)) 
+    if (TXN_PARAM_GET_SINGLE_STEP(pTxn))
     {
         return;
     }
@@ -907,7 +911,7 @@ static void twIf_TxnDoneCb (TI_HANDLE hTwIf, TTxnStruct *pTxn)
     else
     {
         context_EnterCriticalSection (pTwIf->hContext);
-         /* Decrement pending Txn counter, It's value will be checked in twIf_HandleTxnDone() */
+        /* Decrement pending Txn counter, It's value will be checked in twIf_HandleTxnDone() */
         if (pTwIf->uPendingTxnCount > 0) /* in case of callback on recovery after restart */
         {
             pTwIf->uPendingTxnCount--;
@@ -915,25 +919,25 @@ static void twIf_TxnDoneCb (TI_HANDLE hTwIf, TTxnStruct *pTxn)
         context_LeaveCriticalSection (pTwIf->hContext);
 
     }
-    
+
     /* Request schedule to continue handling in driver context (will call twIf_HandleTxnDone()) */
     context_RequestSchedule (pTwIf->hContext, pTwIf->uContextId);
 }
 
-/** 
+/**
  * \fn     twIf_HandleTxnDone
  * \brief  Completed transactions handler
- * 
+ *
  * The completed transactions handler, called upon TxnDone event, either from the context engine
  *     or directly from twIf_TxnDoneCb() if we are already in the WLAN driver's context.
  * Dequeue all completed transactions in critical section, and call their callbacks if available.
  * If awake is not required and no pending transactions in TxnQ, issue Sleep event to SM.
- *  
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void twIf_HandleTxnDone (TI_HANDLE hTwIf)
 {
     TTwIfObj   *pTwIf = (TTwIfObj*)hTwIf;
@@ -944,7 +948,7 @@ static void twIf_HandleTxnDone (TI_HANDLE hTwIf)
     {
         TRACE0(pTwIf->hReport, REPORT_SEVERITY_INFORMATION, "twIf_HandleTxnDone: call RecoveryCb\n");
         pTwIf->bTxnDoneInRecovery = TI_FALSE;
-        if (pTwIf->bPendRestartTimerRunning) 
+        if (pTwIf->bPendRestartTimerRunning)
         {
             tmr_StopTimer (pTwIf->hPendRestartTimer);
             pTwIf->bPendRestartTimerRunning = TI_FALSE;
@@ -954,7 +958,7 @@ static void twIf_HandleTxnDone (TI_HANDLE hTwIf)
     }
 
     /* Loop while there are completed transactions to handle */
-    while (1) 
+    while (1)
     {
         /* In critical section, dequeue completed transaction from the TxnDoneQ. */
         context_EnterCriticalSection (pTwIf->hContext);
@@ -965,33 +969,33 @@ static void twIf_HandleTxnDone (TI_HANDLE hTwIf)
         if (pTxn != NULL)
         {
             context_EnterCriticalSection (pTwIf->hContext);
-            /* Decrement pending Txn counter */ 
+            /* Decrement pending Txn counter */
             if (pTwIf->uPendingTxnCount > 0) /* in case of callback on recovery after restart */
-            {   
+            {
                 pTwIf->uPendingTxnCount--;
             }
             context_LeaveCriticalSection (pTwIf->hContext);
 
             TRACE4(pTwIf->hReport, REPORT_SEVERITY_INFORMATION, "twIf_HandleTxnDone: Completed-Txn: Params=0x%x, HwAddr=0x%x, Len0=%d, fTxnDoneCb=0x%x\n", pTxn->uTxnParams, pTxn->uHwAddr, pTxn->aLen[0], pTxn->fTxnDoneCb);
-    
+
             /* If Txn failed and error CB available, call it to initiate recovery */
             if (TXN_PARAM_GET_STATUS(pTxn) == TXN_PARAM_STATUS_ERROR)
             {
                 TRACE6(pTwIf->hReport, REPORT_SEVERITY_ERROR, "twIf_HandleTxnDone: Txn failed!!  Params=0x%x, HwAddr=0x%x, Len0=%d, Len1=%d, Len2=%d, Len3=%d\n", pTxn->uTxnParams, pTxn->uHwAddr, pTxn->aLen[0], pTxn->aLen[1], pTxn->aLen[2], pTxn->aLen[3]);
-    
+
                 if (pTwIf->fErrCb)
                 {
                     pTwIf->fErrCb (pTwIf->hErrCb, BUS_FAILURE);
                 }
                 /* in error do not continue */
-        return;
+                return;
             }
-    
+
             /* If Txn specific CB available, call it (may free Txn resources and issue new Txns) */
             if (pTxn->fTxnDoneCb != NULL)
             {
                 ((TTxnDoneCb)(pTxn->fTxnDoneCb)) (pTxn->hCbHandle, pTxn);
-            } 
+            }
         }
 
         /*If uPendingTxnCount == 0 and awake not required, issue Sleep event to SM */
@@ -1005,26 +1009,26 @@ static void twIf_HandleTxnDone (TI_HANDLE hTwIf)
             return;
         }
     }
-} 
+}
 
-/** 
+/**
  * \fn     twIf_ClearTxnDoneQueue
  * \brief  Clean the DoneQueue
- * 
+ *
  * Clear the specified done queue - don't call the callbacks.
- *  
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void twIf_ClearTxnDoneQueue (TI_HANDLE hTwIf)
 {
     TTwIfObj   *pTwIf = (TTwIfObj*)hTwIf;
     TTxnStruct *pTxn;
 
     /* Loop while there are completed transactions to handle */
-    while (1) 
+    while (1)
     {
         /* In critical section, dequeue completed transaction from the TxnDoneQ. */
         context_EnterCriticalSection (pTwIf->hContext);
@@ -1034,15 +1038,15 @@ static void twIf_ClearTxnDoneQueue (TI_HANDLE hTwIf)
         /* If no more transactions to handle, exit */
         if (pTxn != NULL)
         {
-            /* Decrement pending Txn counter */ 
+            /* Decrement pending Txn counter */
             if (pTwIf->uPendingTxnCount > 0) /* in case of callback on recovery after restart */
-            {   
+            {
                 pTwIf->uPendingTxnCount--;
             }
-            
-            /* 
-             * Drop on Recovery 
-             * do not call pTxn->fTxnDoneCb (pTxn->hCbHandle, pTxn) callback 
+
+            /*
+             * Drop on Recovery
+             * do not call pTxn->fTxnDoneCb (pTxn->hCbHandle, pTxn) callback
              */
         }
 
@@ -1054,19 +1058,19 @@ static void twIf_ClearTxnDoneQueue (TI_HANDLE hTwIf)
 }
 
 
-/** 
+/**
  * \fn     twIf_PendRestratTimeout
  * \brief  Pending restart process timeout handler
- * 
- * Called if timer expires upon fail to complete the last bus transaction that was 
+ *
+ * Called if timer expires upon fail to complete the last bus transaction that was
  *   pending during restart process.
  * Calls the recovery callback to continue the restart process.
- *  
- * \note   
+ *
+ * \note
  * \param  hTwIf - The module's object
  * \return void
- * \sa     
- */ 
+ * \sa
+ */
 static void twIf_PendRestratTimeout (TI_HANDLE hTwIf, TI_BOOL bTwdInitOccured)
 {
     TTwIfObj *pTwIf = (TTwIfObj*)hTwIf;
@@ -1087,9 +1091,9 @@ TI_BOOL twIf_isValidMemoryAddr(TI_HANDLE hTwIf, TI_UINT32 Address, TI_UINT32 Len
 {
     TTwIfObj   *pTwIf = (TTwIfObj*)hTwIf;
 
-    if ((Address >= pTwIf->uMemAddr1) && 
+    if ((Address >= pTwIf->uMemAddr1) &&
             (Address + Length < pTwIf->uMemAddr1 + pTwIf->uMemSize1 ))
-    return TI_TRUE;
+        return TI_TRUE;
 
     return TI_FALSE;
 }
@@ -1098,9 +1102,9 @@ TI_BOOL twIf_isValidRegAddr(TI_HANDLE hTwIf, TI_UINT32 Address, TI_UINT32 Length
 {
     TTwIfObj   *pTwIf = (TTwIfObj*)hTwIf;
 
-    if ((Address >= pTwIf->uMemAddr2 ) && 
-        ( Address < pTwIf->uMemAddr2 + pTwIf->uMemSize2 ))
-    return TI_TRUE;
+    if ((Address >= pTwIf->uMemAddr2 ) &&
+            ( Address < pTwIf->uMemAddr2 + pTwIf->uMemSize2 ))
+        return TI_TRUE;
 
     return TI_FALSE;
 }
@@ -1114,18 +1118,18 @@ TI_BOOL twIf_isValidRegAddr(TI_HANDLE hTwIf, TI_UINT32 Address, TI_UINT32 Length
 /** 
  * \fn     twIf_PrintModuleInfo
  * \brief  Print module's parameters (debug)
- * 
+ *
  * This function prints the module's parameters.
- * 
- * \note   
- * \param  hTwIf - The module's object                                          
- * \return void 
- * \sa     
- */ 
-void twIf_PrintModuleInfo (TI_HANDLE hTwIf) 
+ *
+ * \note
+ * \param  hTwIf - The module's object
+ * \return void
+ * \sa
+ */
+void twIf_PrintModuleInfo (TI_HANDLE hTwIf)
 {
     TTwIfObj *pTwIf = (TTwIfObj*)hTwIf;
-    
+
     WLAN_OS_REPORT(("-------------- TwIf Module Info-- ------------------------\n"));
     WLAN_OS_REPORT(("==========================================================\n"));
     WLAN_OS_REPORT(("eSmState             = %d\n",   pTwIf->eState                  ));
@@ -1145,7 +1149,7 @@ void twIf_PrintModuleInfo (TI_HANDLE hTwIf)
     WLAN_OS_REPORT(("uDbgCountTxnComplete = %d\n",   pTwIf->uDbgCountTxnComplete    ));
     WLAN_OS_REPORT(("uDbgCountTxnDone     = %d\n",   pTwIf->uDbgCountTxnDoneCb      ));
     WLAN_OS_REPORT(("==========================================================\n\n"));
-} 
+}
 
 
 void twIf_PrintQueues (TI_HANDLE hTwIf)

@@ -361,7 +361,7 @@ typedef struct
      TI_UINT32               uRegStage;
     TI_UINT32               uRegLoop;
     TI_UINT32               uRegSeqStage;
-    TI_UINT32               uRegData;  
+    TI_UINT32               uRegData;
 	TI_HANDLE               hStallTimer;
 
     /* Top register Read/Write SM temporary data*/
@@ -470,13 +470,13 @@ TI_HANDLE hwInit_Create (TI_HANDLE hOs)
 TI_STATUS hwInit_Destroy (TI_HANDLE hHwInit)
 {
     THwInit *pHwInit = (THwInit *)hHwInit;
-
-        if (pHwInit->hStallTimer)
-        {
+    if (pHwInit->hStallTimer)
+    {
 #ifdef DOWNLOAD_TIMER_REQUIERD
 		tmr_DestroyTimer (pHwInit->hStallTimer);
 #endif
-        }        
+
+    }
 
     /* Free HwInit Module */
     os_memoryFree (pHwInit->hOs, pHwInit, sizeof(THwInit));
@@ -520,7 +520,6 @@ TI_STATUS hwInit_Init (TI_HANDLE      hHwInit,
         /* Setting write as default transaction */
         TXN_PARAM_SET(pTxn, TXN_LOW_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_WRITE, TXN_INC_ADDR)
     }
-
 #ifdef DOWNLOAD_TIMER_REQUIERD
 	pHwInit->hStallTimer = tmr_CreateTimer (hTimer);
 	if (pHwInit->hStallTimer == NULL) 
@@ -1633,6 +1632,7 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
     TI_STATUS status = TI_OK;
     TTxnStruct* pTxn;
 
+
     while (TI_TRUE)
     {
         switch (pHwInit->uFinStage)
@@ -1699,7 +1699,7 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
                 pHwInit->uFinStage = 4;
 
 #ifndef DOWNLOAD_TIMER_REQUIERD
-                os_StalluSec (pHwInit->hOs, 50);
+				os_StalluSec (pHwInit->hOs, 50);
 #endif
 
                 /* Read interrupt status register */
@@ -1744,11 +1744,11 @@ static TI_STATUS hwInit_FinalizeDownloadSm (TI_HANDLE hHwInit)
             {
                 pHwInit->uFinStage = 3;
                 pHwInit->uFinLoop ++;
+
 #ifdef DOWNLOAD_TIMER_REQUIERD
                 tmr_StartTimer (pHwInit->hStallTimer, hwInit_StallTimerCb, hHwInit, STALL_TIMEOUT, TI_FALSE);
                 return TXN_STATUS_PENDING;
 #endif
-
             }
 #ifndef DOWNLOAD_TIMER_REQUIERD
             continue;
@@ -2412,7 +2412,6 @@ TI_STATUS hwInit_InitPolarity(TI_HANDLE hHwInit)
 
 #ifndef FPGA_SKIP_TOP_INIT
 
-
 /****************************************************************************
  *                      hwInit_InitTopRegisterWrite()
  ****************************************************************************
@@ -2641,8 +2640,7 @@ TI_STATUS hwInit_InitTopRegisterRead(TI_HANDLE hHwInit, TI_UINT32 uAddress)
 
      } /* End while */
 
-}
-
+ }
 #endif
 
 /****************************************************************************
@@ -2658,7 +2656,8 @@ TI_STATUS hwInit_InitTopRegisterRead(TI_HANDLE hHwInit, TI_UINT32 uAddress)
 #ifdef DOWNLOAD_TIMER_REQUIERD
  static void hwInit_StallTimerCb (TI_HANDLE hHwInit, TI_BOOL bTwdInitOccured)
 {
-	hwInit_FinalizeDownloadSm(hHwInit);
+	hwInit_FinalizeDownloadSm (hHwInit);
 }
+
 #endif
 

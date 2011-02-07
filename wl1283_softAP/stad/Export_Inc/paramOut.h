@@ -44,7 +44,6 @@
 
 #include "tidef.h"
 #include "report.h"
-#include "context.h"
 #include "rate.h"
 #include "bssTypes.h"
 #include "roamingMngrTypes.h"
@@ -823,6 +822,7 @@ typedef struct{
         SsidType_enum                       roleAPSsidType;
         OS_802_11_SSID                      roleAPSsidName;
         TRoleAPGenericCmdToFW               tRoleAPGenericCmd;
+        TI_BOOL                             roleAPWantsBeacons; /* whether driver wants FW to pass it incoming beacons */
        
     } content;
 }paramInfo_t;
@@ -1177,6 +1177,7 @@ typedef struct
 typedef struct
 {
 	TI_UINT8                ubeaconTxTimeout;	/* in msec */
+	TI_BOOL                 bWantsRxBeacons;    /* whether the driver wants to receive beacons from FW */
 }TRoleApInitParams;
 
 
@@ -1213,7 +1214,6 @@ typedef struct
     TI_UINT8                        trafficMonitorMinIntervalPercentage;
     TReportInitParams               tReport;
     TCurrBssInitParams              tCurrBssInitParams;
-    TContextInitParams              tContextInitParams;
     TMlmeInitParams                 tMlmeInitParams;
     TDrvMainParams                  tDrvMainParams;
     TRoamScanMngrInitParams         tRoamScanMngrInitParams;

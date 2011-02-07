@@ -146,7 +146,9 @@ typedef struct
 	TTestCmdCB	fRadioCb;
 	void		*pRadioCb;
 	TI_HANDLE	hRadioCb;
-	TTestCmd 	testCmd; 
+	TTestCmd 	testCmd;
+
+	TTwdSuspendConfig tSuspendConfig;
 } TTwd;
 
 
