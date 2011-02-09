@@ -37,9 +37,9 @@ endif
 # List of linux OS files needed to be compiled
 #
 OS_SRCS = \
-	$(DK_ROOT)/external_drivers/sdc4430/Linux/standard_sdio/SdioDrv.c \
+    $(DK_ROOT)/external_drivers/Linux/standard_sdio/SdioDrv.c \
     $(DK_ROOT)/platforms/os/linux/src/WlanDrvIf.c \
-    $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/standard_sdio/host_platform.c \
+    $(DK_ROOT)/platforms/hw/linux/standard_sdio/host_platform.c \
     $(DK_ROOT)/platforms/os/linux/src/osapi.c \
     $(DK_ROOT)/platforms/os/linux/src/osmemapi.c \
     $(DK_ROOT)/platforms/os/linux/src/osRgstry_parser.c \
@@ -57,8 +57,8 @@ ifeq ($(NO_ARCH_STRCMP),y)
     OS_SRCS += $(DK_ROOT)/platforms/os/linux/src/string.c 
 endif
 
-OS_INCS = $(DK_ROOT)/platforms/os/linux/inc $(DK_ROOT)/platforms/os/linux/src $(DK_ROOT)/platforms/os/common/inc $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux 
-OS_INCS += $(DK_ROOT)/stad/src/core/EvHandler $(DK_ROOT)/Test $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/standard_sdio
+OS_INCS = $(DK_ROOT)/platforms/os/linux/inc $(DK_ROOT)/platforms/os/linux/src $(DK_ROOT)/platforms/os/common/inc $(DK_ROOT)/platforms/hw/linux
+OS_INCS += $(DK_ROOT)/stad/src/core/EvHandler $(DK_ROOT)/Test $(DK_ROOT)/platforms/hw/linux/standard_sdio
 
 ifeq ($(WSPI),y)
     OS_SRCS += $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/WspiAdapter.c 
@@ -66,8 +66,8 @@ ifeq ($(WSPI),y)
 endif
 
 ifeq ($(WSPI),n)
-    OS_SRCS += $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/standard_sdio/SdioAdapter.c 
-	OS_INCS += $(EXT_DRV)/$(HOST_PLATFORM)/Linux/standard_sdio
+    OS_SRCS += $(DK_ROOT)/platforms/hw/linux/standard_sdio/SdioAdapter.c
+	OS_INCS += $(EXT_DRV)/Linux/standard_sdio
 endif
 
 OS_OBJS = $(patsubst %.c, %.o, $(OS_SRCS))

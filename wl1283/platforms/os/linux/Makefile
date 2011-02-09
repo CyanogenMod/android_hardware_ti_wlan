@@ -195,21 +195,7 @@ HAVE_GPL = $(wildcard $(OS_LINUX_DIR)/Makefile)
 # Combines all the three components to create the driver.
 #
 HOST_PLATFORM ?= *UNDEFINED*
-ifeq "$(HOST_PLATFORM)" "sdc4430"
 TARGET = apps.tar
-endif
-ifeq "$(HOST_PLATFORM)" "omap2430"
-TARGET = apps.tar
-endif
-ifeq "$(HOST_PLATFORM)" "omap3430"
-TARGET = apps.tar
-endif
-ifeq "$(HOST_PLATFORM)" "zoom2"
-TARGET = apps.tar
-endif
-ifeq "$(HOST_PLATFORM)" "zoom1"
-TARGET = apps.tar
-endif
 #
 .PHONY: all
 all: verifypackages .depend $(TARGET)

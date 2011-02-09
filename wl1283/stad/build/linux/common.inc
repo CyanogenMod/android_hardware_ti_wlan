@@ -81,22 +81,6 @@ TI_TRACE_BUFFER ?= n
 ## Driver Compilation Directives
 ##
 ##
-ifeq "$(HOST_PLATFORM)" "omap2430"	
-	DK_DEFINES += -D HOST_PLATFORM_OMAP2430
-endif
-ifeq "$(HOST_PLATFORM)" "omap3430"
-	DK_DEFINES += -D HOST_PLATFORM_OMAP3430
-endif
-ifeq "$(HOST_PLATFORM)" "zoom2"
-	DK_DEFINES += -D HOST_PLATFORM_ZOOM2
-endif
-ifeq "$(HOST_PLATFORM)" "zoom1"
-	DK_DEFINES += -D HOST_PLATFORM_ZOOM1
-endif
-ifeq "$(HOST_PLATFORM)" "sdc4430"	
-	DK_DEFINES += -D HOST_PLATFORM_SDC4430
-endif
-
 ifeq ($(XCC),y)
     DK_DEFINES += -D XCC_MODULE_INCLUDED
 endif
