@@ -147,11 +147,7 @@ static struct iw_handler_def tWextIf = {
 /* Initialite WEXT support - Register callbacks in kernel */
 void wlanDrvWext_Init (struct net_device *dev)
 {
-#ifdef  HOST_PLATFORM_OMAP2430
-   	dev->get_wireless_stats = wlanDrvWext_GetWirelessStats;
-#endif
 	dev->wireless_handlers = &tWextIf;
-
 }
 
 /* Return driver statistics */

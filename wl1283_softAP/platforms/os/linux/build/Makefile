@@ -54,7 +54,7 @@ OS_SRCS = \
     $(DK_ROOT)/platforms/os/linux/src/WlanDrvWext.c \
     $(DK_ROOT)/platforms/os/linux/src/CmdInterpretWext.c \
     $(DK_ROOT)/platforms/os/linux/src/RxBuf.c \
-    $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/host_platform.c
+    $(DK_ROOT)/platforms/hw/linux/host_platform.c
 
 ifeq ($(STACK_PROFILING_ON),y)    
     OS_SRCS += $(DK_ROOT)/platforms/os/linux/src/stack_profile.c
@@ -66,7 +66,7 @@ ifeq ($(NO_ARCH_STRCMP),y)
 endif
 
 OS_INCS = $(DK_ROOT)/platforms/os/linux/inc $(DK_ROOT)/platforms/os/linux/src $(DK_ROOT)/platforms/os/common/inc
-OS_INCS += $(DK_ROOT)/stad/src/core/EvHandler $(DK_ROOT)/Test $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux
+OS_INCS += $(DK_ROOT)/stad/src/core/EvHandler $(DK_ROOT)/Test $(DK_ROOT)/platforms/hw/linux
 
 ifeq ($(WSPI),y)
     OS_SRCS += $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/WspiAdapter.c 
@@ -74,11 +74,11 @@ ifeq ($(WSPI),y)
 endif
 
 ifeq ($(WSPI),n)
-    OS_SRCS += $(DK_ROOT)/platforms/hw/host_platform_$(HOST_PLATFORM)/linux/SdioAdapter.c 
-	OS_INCS += $(EXT_DRV)/$(HOST_PLATFORM)/Linux/sdio
+    OS_SRCS += $(DK_ROOT)/platforms/hw/linux/SdioAdapter.c 
+	OS_INCS += $(EXT_DRV)/Linux/sdio
 endif
-    OS_SRCS += $(DK_ROOT)/external_drivers/$(HOST_PLATFORM)/Linux/standard_sdio/SdioDrv.c
-    OS_INCS += $(DK_ROOT)/external_drivers/$(HOST_PLATFORM)/Linux/standard_sdio
+    OS_SRCS += $(DK_ROOT)/external_drivers/Linux/standard_sdio/SdioDrv.c
+    OS_INCS += $(DK_ROOT)/external_drivers/Linux/standard_sdio
 
 OS_OBJS = $(patsubst %.c, %.o, $(OS_SRCS))
 
