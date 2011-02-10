@@ -210,6 +210,9 @@ TI_STATUS roleAP_destroy(TI_HANDLE hRoleAP)
 
         /* Free pre-allocated control block */
         os_memoryFree(pRoleAP->hOs, pRoleAP, sizeof(TRoleAP));
+
+        if(pRoleAP->hInvokeAsyncTimer)
+            tmr_DestroyTimer(pRoleAP->hInvokeAsyncTimer);
     }
     return TI_OK;
 }
