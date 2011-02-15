@@ -495,11 +495,6 @@ static ETxnStatus fwEvent_SmReadIntrInfo (TfwEvent *pFwEvent)
     ETxnStatus eStatus;
     CL_TRACE_START_L4();
 
-#ifdef HOST_INTR_MODE_EDGE
-    /* Acknowledge the host interrupt for EDGE mode (must be before HINT_STT_CLR register clear on read) */
-    os_InterruptServiced (pFwEvent->hOs);
-#endif
-
     /* Indicate that the chip is awake (since it interrupted us) */
     twIf_HwAvailable(pFwEvent->hTwIf);
 
@@ -543,11 +538,6 @@ static ETxnStatus fwEvent_SmHandleEvents (TfwEvent *pFwEvent)
     /* Save delta between driver and FW time (needed for Tx packets lifetime) */
     pFwEvent->uFwTimeOffset = (os_timeStampMs (pFwEvent->hOs) * 1000) -
                               ENDIAN_HANDLE_LONG (pFwEvent->tFwStatusTxn.tFwStatus.fwLocalTime);
-
-#ifdef HOST_INTR_MODE_LEVEL
-    /* Acknowledge the host interrupt for LEVEL mode (must be after HINT_STT_CLR register clear on read) */
-    os_InterruptServiced (pFwEvent->hOs);
-#endif
 
     /* Save the interrupts status retreived from the FW */
     pFwEvent->uEventVector = pFwEvent->tFwStatusTxn.tFwStatus.intrStatus;

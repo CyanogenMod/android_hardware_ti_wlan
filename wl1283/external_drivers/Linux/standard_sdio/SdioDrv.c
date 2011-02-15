@@ -69,7 +69,6 @@ typedef struct OMAP3430_sdiodrv
 	struct work_struct sdio_opp_set_work;
 	struct timer_list inact_timer;
 	int    inact_timer_running;
-	struct device *mpu_dev;
 } OMAP3430_sdiodrv_t;
 
 int g_sdio_debug_level = SDIO_DEBUGLEVEL_ERR;
@@ -428,7 +427,6 @@ static int tiwlan_sdio_probe(struct sdio_func *func, const struct sdio_device_id
 	g_drv.inact_timer.function = sdioDrv_inact_timer;
 	g_drv.inact_timer_running = 0;
 	INIT_WORK(&g_drv.sdio_opp_set_work, sdioDrv_opp_setup);
-	g_drv.mpu_dev = omap2_get_mpuss_device();
 	return 0;
 }
 

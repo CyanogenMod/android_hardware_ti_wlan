@@ -124,9 +124,7 @@ endif
 # WPS Support
 DK_DEFINES += -D SUPPL_WPS_SUPPORT
 
-# FixMe:
 # Flag to support level based interrupt in OMAP
-# till the ISR issue is resolved
 DK_DEFINES += -D OMAP_LEVEL_INT
 
 ##
