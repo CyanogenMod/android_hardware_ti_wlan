@@ -69,7 +69,6 @@ INFO ?= n
 # TNETW chip version
 #
 TNETW ?= 1283
-FPGA ?= n
 
 #
 # Enable trace buffer
@@ -159,17 +158,11 @@ PFORM_DEFINES += -D FW_RUNNING_AS_STA
 
 
 ifeq ($(TNETW),1273)
-PFORM_DEFINES += -D TNETW1273
-	ifeq ($(FPGA),y)
-		PFORM_DEFINES += -D TNETW1273_FPGA
-	endif
+    PFORM_DEFINES += -D TNETW1273
 endif
 
 ifeq ($(TNETW),1283)
     PFORM_DEFINES += -D TNETW1283
-	ifeq ($(FPGA),y)
-		PFORM_DEFINES += -D TNETW1283_FPGA
-	endif
 endif
 
 ifeq ($(FULL_ASYNC),y)

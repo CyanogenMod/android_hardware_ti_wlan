@@ -69,9 +69,9 @@ BMTRACE ?= n
 INFO ?= n
 
 #
-# 1273 FPGA platform
+# TNETW chip version
 #
-FPGA1273 ?= n
+TNETW ?= 1283
 
 #
 # Enable trace buffer
@@ -167,17 +167,11 @@ endif
 PFORM_DEFINES += -D HOST_COMPILE
 PFORM_DEFINES += -D FW_RUNNING_AS_STA
 ifeq ($(TNETW),1273)
-PFORM_DEFINES += -D TNETW1273
-	ifeq ($(FPGA),y)
-		PFORM_DEFINES += -D TNETW1273_FPGA
-	endif
+    PFORM_DEFINES += -D TNETW1273
 endif
 
 ifeq ($(TNETW),1283)
     PFORM_DEFINES += -D TNETW1283
-	ifeq ($(FPGA),y)
-		PFORM_DEFINES += -D TNETW1283_FPGA
-	endif
 endif
 
 ifeq ($(FULL_ASYNC),y)
