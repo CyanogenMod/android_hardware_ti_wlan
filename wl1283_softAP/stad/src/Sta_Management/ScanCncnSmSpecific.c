@@ -269,10 +269,14 @@ void scanCncnSmAppP_StartScan (TI_HANDLE hScanCncnClient)
     TScanCncn       *pScanCncn = (TScanCncn*)pScanCncnClient->hScanCncn;
     TI_STATUS       tStatus;
 
-    /* call the TWD start scan */
-    tStatus = TWD_StartConnectionScan (pScanCncnClient->hTWD, &(pScanCncnClient->uScanParams.tPeriodicScanParams),
-                                       SCAN_RESULT_TAG_APPLICATION_PEIODIC, 
-                                       pScanCncn->tInitParams.uDfsPassiveDwellTimeMs, NULL, NULL);
+
+	tStatus = TWD_ConfigConnectionScan (pScanCncnClient->hTWD, &(pScanCncnClient->uScanParams.tPeriodicScanParams),
+									   SCAN_RESULT_TAG_APPLICATION_PEIODIC,
+									   pScanCncn->tInitParams.uDfsPassiveDwellTimeMs, NULL, NULL);
+
+	/* call the TWD start scan */
+    tStatus = TWD_StartConnectionScan (pScanCncnClient->hTWD,
+                                       SCAN_RESULT_TAG_APPLICATION_PEIODIC, NULL, NULL);
     if (TI_OK != tStatus)
     {
         TRACE1(pScanCncnClient->hReport, REPORT_SEVERITY_ERROR , "scanCncnSmAppP_StartScan: TWD returned status %d, quitting app scan.\n", tStatus);
@@ -408,10 +412,14 @@ void scanCncnSmDrvP_StartScan (TI_HANDLE hScanCncnClient)
     TScanCncn       *pScanCncn = (TScanCncn*)pScanCncnClient->hScanCncn;
     TI_STATUS       status;
 
-    /* call the TWD_scan function */
-    status = TWD_StartConnectionScan (pScanCncnClient->hTWD, &(pScanCncnClient->uScanParams.tPeriodicScanParams),
-                                      SCAN_RESULT_TAG_DRIVER_PERIODIC, 
-                                      pScanCncn->tInitParams.uDfsPassiveDwellTimeMs, NULL, NULL);
+
+	status = TWD_ConfigConnectionScan (pScanCncnClient->hTWD, &(pScanCncnClient->uScanParams.tPeriodicScanParams),
+									  SCAN_RESULT_TAG_DRIVER_PERIODIC,
+									  pScanCncn->tInitParams.uDfsPassiveDwellTimeMs, NULL, NULL);
+
+	/* call the TWD_scan function */
+    status = TWD_StartConnectionScan (pScanCncnClient->hTWD,
+									  SCAN_RESULT_TAG_DRIVER_PERIODIC, NULL, NULL);
 
     if (TI_OK != status)
     {

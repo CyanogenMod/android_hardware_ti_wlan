@@ -160,6 +160,7 @@ typedef struct
     TFailureEventCb     fErrCb;                                 /* The upper layer CB function for error handling */
     TI_HANDLE           hErrCb;                                 /* The CB function handle */
     TI_UINT32           uHostIfCfgBitmap;                       /* Host interface configuration bitmap */
+    TI_UINT32           uSdioBlkSizeShift;                      /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
 
 #ifdef TI_DBG
     TRxXferDbgStat      tDbgStat;
@@ -277,7 +278,8 @@ TI_STATUS rxXfer_Config (TI_HANDLE hRxXfer, TTwdInitParams *pInitParams)
 {
     TRxXfer  *pRxXfer = (TRxXfer *)hRxXfer;
     
-    pRxXfer->uHostIfCfgBitmap = pInitParams->tGeneral.HostIfCfgBitmap;
+    pRxXfer->uHostIfCfgBitmap = pInitParams->tGeneral.uHostIfCfgBitmap;
+    pRxXfer->uSdioBlkSizeShift = pInitParams->tGeneral.uSdioBlkSizeShift;
 
     return TI_OK;
 }
@@ -520,6 +522,7 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
     TI_UINT32        uTotalAggregLen  = 0;
     TI_UINT32        uDrvIndex;
     TI_UINT32        uFwIndex;
+    TI_UINT32        uBlockMask;
     TI_UINT8 *       pHostBuf;
     TTxnStruct *     pTxn = NULL;
     ETxnStatus       eTxnStatus;
@@ -551,6 +554,7 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
         ADD_DBG_TRACE(20, uDrvIndex, uRxDesc);
             uBuffSize     = RX_DESC_GET_LENGTH(uRxDesc) << 2;
             eRxPacketType = (PacketClassTag_e)RX_DESC_GET_PACKET_CLASS_TAG (uRxDesc);
+            uBlockMask = ((1 << pRxXfer->uSdioBlkSizeShift) - 1);
 
             /* If new packet exceeds max aggregation length, set flag to send previous packets (postpone it to next loop) */
             if ((uTotalAggregLen + uBuffSize) > pRxXfer->uMaxAggregLen)
@@ -567,9 +571,9 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
              */
             #define BLOCK_MASK 0x1FF
             else if ((pRxXfer->uHostIfCfgBitmap & HOST_IF_CFG_BITMAP_RX_AGGR_WA_ENABLE) &&
-                     (uAggregPktsNum > 0) && ((uTotalAggregLen+uBuffSize) > BLOCK_MASK))
+                     (uAggregPktsNum > 0) && ((uTotalAggregLen+uBuffSize) > uBlockMask))
             {  
-                TI_UINT32 uRemainder = (uTotalAggregLen + uBuffSize) & BLOCK_MASK;
+                TI_UINT32 uRemainder = (uTotalAggregLen + uBuffSize) & uBlockMask;
                 TI_UINT32 uIncrementLen = 0;
                 TI_UINT32 uPktIndex;
 
@@ -580,7 +584,7 @@ static TI_STATUS rxXfer_Handle(TI_HANDLE hRxXfer)
                     uIncrementLen += pTxn->aLen[uPktIndex];
 
                     
-                    if ((uIncrementLen > uRemainder) && (((uIncrementLen-uRemainder) & BLOCK_MASK) < 16))
+                    if ((uIncrementLen > uRemainder) && (((uIncrementLen-uRemainder) & uBlockMask) < 16))
                     {
                         ADD_DBG_TRACE(22, uIncrementLen, uRemainder);
                         pRxXfer->uRxFifoWa++;

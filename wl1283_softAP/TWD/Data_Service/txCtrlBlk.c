@@ -269,14 +269,22 @@ void txCtrlBlk_PrintTable (TI_HANDLE hTxCtrlBlk)
 	
 	for(entry = 0; entry < CTRL_BLK_ENTRIES_NUM; entry++)
 	{
+#ifdef TNETW1283
+        WLAN_OS_REPORT(("Entry %d: DescID=%d, Next=0x%x, Len=%d, StartTime=%d, TID=%d, extraBytes=%d, TotalBlks=%d, Flags=0x%x\n",
+#else
 		WLAN_OS_REPORT(("Entry %d: DescID=%d, Next=0x%x, Len=%d, StartTime=%d, TID=%d, ExtraBlks=%d, TotalBlks=%d, Flags=0x%x\n", 
+#endif
 			entry, 
 			pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.descID,
 			(TI_UINT32)pTxCtrlBlk->aTxCtrlBlkTbl[entry].pNextFreeEntry,
 			ENDIAN_HANDLE_WORD(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.length),
 			(TI_UINT32)ENDIAN_HANDLE_LONG(pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.startTime),
             pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.tid,
+#ifdef TNETW1283
+            pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.extraBytes,
+#else
 			pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.extraMemBlks,
+#endif
             pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxDescriptor.totalMemBlks,
             pTxCtrlBlk->aTxCtrlBlkTbl[entry].tTxPktParams.uFlags));
 	}

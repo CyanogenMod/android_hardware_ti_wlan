@@ -75,6 +75,9 @@
 
 #define SIOCIWAPPRIV     SIOCIWFIRSTPRIV + 2
 
+#define NUM_G_CHANNELS				14
+#define MAX_ACTIVE_SSID_NUM			8
+
 /*********************/
 /* enumeration types */
 /*********************/
@@ -133,6 +136,7 @@ typedef enum
   TWD_DEL_KEY_PARAMS                	  =   SET_BIT | AP_TWD_PARAMS | 0x02,
   TWD_SET_DEFAULT_KEY_PARAMS         	  =   SET_BIT | AP_TWD_PARAMS | 0x03,
   TWD_SET_CONNECTION_PHASE		       	  =   SET_BIT | AP_TWD_PARAMS | 0x04,
+  TWD_SET_ENTERPRISE_DISCOVER_PARAMS   		   =   SET_BIT | AP_TWD_PARAMS | 0x05,
   ROLE_AP_ADD_STATION_PARAM               =   SET_BIT | AP_ROLEAP_PARAMS | 0x01,
   ROLE_AP_CHANGE_STATION_PARAM            =   SET_BIT | AP_ROLEAP_PARAMS | 0x02,
   ROLE_AP_GET_STATION_PARAM               =   GET_BIT | AP_ROLEAP_PARAMS | 0x03,
@@ -166,7 +170,9 @@ typedef enum
   ROLE_AP_ENABLE	                      =   SET_BIT | AP_ROLEAP_PARAMS | 0x1F,
   ROLE_AP_STOP		                      =   SET_BIT | AP_ROLEAP_PARAMS | 0x20,
   ROLE_AP_SET_PROBE_WPS_IE                =   SET_BIT | AP_ROLEAP_PARAMS | 0x21,
-  ROLE_AP_SET_TX_POWER                    =   SET_BIT | AP_ROLEAP_PARAMS | 0x22
+  ROLE_AP_SET_TX_POWER                 		   =   SET_BIT | AP_ROLEAP_PARAMS | 0x22,
+  ROLE_AP_START_ENTERPRISE_DISCOVER    		   =   SET_BIT | AP_ROLEAP_PARAMS | 0x23,
+  ROLE_AP_STOP_ENTERPRISE_DISCOVER     		   =   SET_BIT | AP_ROLEAP_PARAMS | 0x24
 } EApExternalCmd;
 
 
@@ -286,8 +292,8 @@ char            cBasicRateLen;
 /* ROLE_AP_SET_SSID */
 typedef struct
 {
- char cSsid[AP_MAX_SSID_LEN];
- int iSsidLen;
+	unsigned char iSsidLen;
+	char cSsid[AP_MAX_SSID_LEN];
 }TApSsidParam;
 
 typedef enum
@@ -342,7 +348,21 @@ typedef struct
  unsigned char  MaxtxPower;
 }TApChanHwInfo;
 
+typedef struct
+{
+    EApSsidType     type;
+	TApSsidParam    ssid;
+}TApActiveScanSsidParam;
 
+typedef struct
+{
+    unsigned int            discover_enabled;
+    TApActiveScanSsidParam  ssid_list[MAX_ACTIVE_SSID_NUM];
+	unsigned int			ssids_num;
+	unsigned int            channels_list[NUM_G_CHANNELS];
+	unsigned int			channels_num;
+    unsigned int            interval;
+}TApActiveScanParams;
 
 #endif /*__AP_EXTERNAL_IF_H__*/
 

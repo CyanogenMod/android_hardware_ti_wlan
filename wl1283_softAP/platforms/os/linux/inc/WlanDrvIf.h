@@ -191,4 +191,26 @@ void wlanDrvIf_DisableTx (TI_HANDLE hOs);
  * \sa      cmdDispathcer CB
  */
 extern TI_BOOL wlanDrvIf_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacket, TI_UINT16 Length, TIntraBssBridge *pIntraBssBridgeDecision);
+
+/**
+ * \fn		wlanDrvIf_IsIoctlEnabled
+ *
+ * \brief	indicates whether the driver currently accepts the specified IOCTL
+ *
+ * \param	uIoctl	the IOCTL to check
+ * \return	TI_TRUE if the driver can accept uIoctl now, TI_FALSE otherwise
+ */
+TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl);
+
+/**
+ * \fn		wlanDrvIf_IsCmdEnabled
+ *
+ * \brief	Indicates whether the driver currently accepts the specified private-command.
+ * 			Used to filter commands from user applications
+ *
+ * \param	uCmd	the private-command to check
+ * \return	TI_TRUE if the driver can accept eCmd now, TI_FALSE otherwise
+ */
+TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd);
+
 #endif /* WLAN_DRV_IF_H*/

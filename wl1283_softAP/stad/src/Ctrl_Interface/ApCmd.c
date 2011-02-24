@@ -287,9 +287,14 @@ int apCmd_Execute(TI_HANDLE hApCmd, TConfigCommand *pCmdObj)
         case ROLE_AP_STOP:
             TRACE0(pApCmd->hReport,REPORT_SEVERITY_INFORMATION ,"\n apCmd_Execute:  ROLE_AP_STOP \n");
             break;
-
-        case ROLE_AP_GET_LINK_COUNTERS:
-            TRACE0(pApCmd->hReport,REPORT_SEVERITY_INFORMATION ,"\n apCmd_Execute:  ROLE_AP_GET_LINK_COUNTERS \n");
+		case ROLE_AP_START_ENTERPRISE_DISCOVER:
+			TRACE0(pApCmd->hReport,REPORT_SEVERITY_INFORMATION ,"\n apCmd_Execute:  ROLE_AP_START_ENTERPRISE_DISCOVER \n");
+            break;
+		case ROLE_AP_STOP_ENTERPRISE_DISCOVER:
+			TRACE0(pApCmd->hReport,REPORT_SEVERITY_ERROR ,"\n Hassan: apCmd_Execute:  ROLE_AP_STOP_ENTERPRISE_DISCOVER \n");
+            break;
+		case ROLE_AP_GET_LINK_COUNTERS:
+			TRACE0(pApCmd->hReport,REPORT_SEVERITY_INFORMATION ,"\n apCmd_Execute:  ROLE_AP_GET_LINK_COUNTERS \n");
             break;
 
         default:
@@ -448,8 +453,13 @@ int apCmd_Execute(TI_HANDLE hApCmd, TConfigCommand *pCmdObj)
             TRACE0(pApCmd->hReport,REPORT_SEVERITY_INFORMATION ,"apCmd_Execute :Set Connection Phase\n");
             RoleAp_setApCmd(pApCmd->hRoleAp,TWD_SET_CONNECTION_PHASE,pMyCmd->in_buffer);
 
-            break;
-        }
+			break;
+	   case TWD_SET_ENTERPRISE_DISCOVER_PARAMS:
+		    TRACE0(pApCmd->hReport,REPORT_SEVERITY_INFORMATION ,"apCmd_Execute :Set connection scan params\n");
+		    RoleAp_setApCmd(pApCmd->hRoleAp,TWD_SET_ENTERPRISE_DISCOVER_PARAMS,pMyCmd->in_buffer);
+
+			break;
+       }
 
         break;
 

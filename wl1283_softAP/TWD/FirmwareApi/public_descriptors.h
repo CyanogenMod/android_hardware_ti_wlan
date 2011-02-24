@@ -98,10 +98,17 @@ typedef TxDescStatus_enum TxDescStatus_e;
 typedef struct TxIfDescriptor_t
 {
     uint16          length;		/* Length of packet in words, including descriptor+header+data */
+#ifdef TNETW1283
+    uint8           totalMemBlks;   /* Total number of memory blocks allocated by the host for this packet.
+                                       Must be equal or greater than the actual blocks number allocated by HW!! */
+    uint8           extraBytes;     /* Number of extra bvtes, at the end of the frame. the host uses this padding to
+                                      complete each frame to integer number of SDIO blocks. */
+#else
     uint8           extraMemBlks; /* Number of extra memory blocks to allocate for this packet in addition 
                                        to the number of blocks derived from the packet length */
     uint8           totalMemBlks;   /* Total number of memory blocks allocated by the host for this packet. 
                                     Must be equal or greater than the actual blocks number allocated by HW!! */
+#endif
     uint32          startTime;  /* Device time (in us) when the packet arrived to the driver */
     uint16          lifeTime;   /* Max delay in TUs until transmission. The last device time the 
                                       packet can be transmitted is: startTime+(1024*LifeTime) */ 

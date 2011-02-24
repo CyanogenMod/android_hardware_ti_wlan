@@ -1694,8 +1694,8 @@ regFillInitTable(
     regReadIntegerParameter(pAdapter, &STRHostIfCfgBitmap,
                             TWD_HOST_IF_CFG_BITMAP_DEF, TWD_HOST_IF_CFG_BITMAP_MIN,
                             TWD_HOST_IF_CFG_BITMAP_MAX,
-                            sizeof p->twdInitParams.tGeneral.HostIfCfgBitmap, 
-                            (TI_UINT8*)&(p->twdInitParams.tGeneral.HostIfCfgBitmap));
+                            sizeof p->twdInitParams.tGeneral.uHostIfCfgBitmap,
+                            (TI_UINT8*)&(p->twdInitParams.tGeneral.uHostIfCfgBitmap));
 
     regReadIntegerParameter(pAdapter, &STRRxAggregationPktsLimit,
                             TWD_RX_AGGREG_PKTS_LIMIT_DEF, TWD_RX_AGGREG_PKTS_LIMIT_MIN,
@@ -4611,8 +4611,8 @@ regReadIntegerParameter(pAdapter, &STRSingle_Dual_Band_Solution,
 
     regReadIntegerParameter( pAdapter, &STRSdioBlkSizeShift,
                              SDIO_BLK_SIZE_SHIFT_DEF, SDIO_BLK_SIZE_SHIFT_MIN, SDIO_BLK_SIZE_SHIFT_MAX,
-                             sizeof p->tDrvMainParams.uSdioBlkSizeShift,
-                             (TI_UINT8*)&p->tDrvMainParams.uSdioBlkSizeShift);
+                             sizeof p->twdInitParams.tGeneral.uSdioBlkSizeShift,
+                             (TI_UINT8*)&p->twdInitParams.tGeneral.uSdioBlkSizeShift);
 
 
 

@@ -64,7 +64,14 @@
 #define MAX_CMD_NAME_SIZE   20
 #define MAX_CMD_DESCRIPTION_SIZE 150
 #define MAX_FILENAME_SIZE	80
-
+#define MAX_SSID_LEN        (32)
+#define MAX_SSID_TYPE_LEN	(1)
+#define MAX_SUPPORTED_SSIDS (32)
+#define SSID_TYPE_DELIMITER_LEN (2)
+#define MAX_CHANNEL_LEN (3)
+#define NUM_OF_G_CHANNELS (14)
+#define MAX_SSID_LIST_SIZE  ((MAX_SSID_LEN+MAX_SSID_TYPE_LEN+SSID_TYPE_DELIMITER_LEN) * MAX_SUPPORTED_SSIDS)
+#define MAX_CHANNEL_LIST_SIZE (NUM_OF_G_CHANNELS*MAX_CHANNEL_LEN )
 #define MAX_PARAMS_IN_CMD   10
 
 
@@ -88,6 +95,15 @@ typedef enum
 	HOSTAPD_CLI_CMD_RESET,
 	HOSTAPD_CLI_CMD_STOP,
 	HOSTAPD_CLI_CMD_START,
+	HOSTAPD_CLI_CMD_SET_SSID_LIST,
+	HOSTAPD_CLI_CMD_SET_CHANNEL_LIST,
+	HOSTAPD_CLI_CMD_COMMIT_CONFIGURATION,
+	HOSTAPD_CLI_CMD_START_SCAN,
+	HOSTAPD_CLI_CMD_STOP_SCAN,
+	HOSTAPD_CLI_CMD_SET_SCAN_INTERVAL,
+	HOSTAPD_CLI_CMD_DISABLE_SCAN,
+	HOSTAPD_CLI_CMD_ENABLE_SCAN,
+	HOSTAPD_CLI_CMD_GET_AP_RESULTS,
 #ifndef CONFIG_NO_TI          
 	HOSTAPD_CLI_CMD_RELOAD_ACL,
 #endif
@@ -108,6 +124,15 @@ static TCmdInfo tCmdsNames[HOSTAPD_CLI_CMD_LAST] =
     {"reset",   "Reload config file and reset the AP\n"},	                /* HOSTAPD_CLI_CMD_RESET */
     {"stop",    "Stop the AP\n"},							                /* HOSTAPD_CLI_CMD_STOP */
     {"start",   "Start the AP <config filename>\n"},		                /* HOSTAPD_CLI_CMD_START */
+	{"SET_SSIDS",   		"Set ssid list <ssid list: ap1 p ap2 h>\n"},		    	/* HOSTAPD_CLI_CMD_SET_SSID_LIST */
+	{"SET_CHANNELS",   		"Set channel list <channel list: c1 c2>\n"},		   		/* HOSTAPD_CLI_CMD_SET_CHANNEL_LIST */
+	{"COMMIT_CONFIG",		"Commit the discovery params configuration\n"},	    		/* HOSTAPD_CLI_CMD_COMMIT_CONFIGURATION */
+	{"START_SCAN",    		"Start enterprise discovery\n"},	    					/* HOSTAPD_CLI_CMD_START_SCAN */
+	{"STOP_SCAN",     		"Stop enterprise discovery\n"},	    						/* HOSTAPD_CLI_CMD_STOP_SCAN */
+	{"SET_INTERVAL",  		"Set interval value between cycles in mSec\n"},				/* HOSTAPD_CLI_CMD_SET_INTERVAL_SCAN      */
+	{"DISABLE_DISCOVERY",   "Disable enterprise discovery\n"},	    					/* HOSTAPD_CLI_CMD_DISABLE_SCAN */
+	{"ENABLE_DISCOVERY",   	"Enable enterprise discovery\n"},	    					/* HOSTAPD_CLI_CMD_ENABLE_SCAN       */
+	{"GET_AP_TABLE",   	  	"Get enterprise discovery ap results\n"},	    			/* HOSTAPD_CLI_CMD_ENABLE_SCAN       */
 #ifndef CONFIG_NO_TI
 	{"reload_acl", "reload acl configuration \n"}                           /* HOSTAPD_CLI_CMD_RELOAD_ACL */
 #endif
@@ -117,6 +142,21 @@ typedef struct
 {
     char config_fname[MAX_FILENAME_SIZE];
 }TCmdStart;
+
+typedef struct
+{
+	unsigned int interval;
+}TCmdSetInterval;
+
+typedef struct
+{
+    char channel_list[MAX_CHANNEL_LIST_SIZE];
+}TCmdSetChannels;
+
+typedef struct
+{
+    char ssid_list[MAX_SSID_LIST_SIZE];
+}TCmdSetSsid;
 
 typedef struct
 {
@@ -142,6 +182,9 @@ typedef struct
 		TCmdStart   tCmdStart;
         TCmdSta     tCmdSta;
         TCmdWPSPin  tCmdWPSPin;
+		TCmdSetSsid 	tCmdSetSsid;
+		TCmdSetChannels tCmdSetChannels;
+		TCmdSetInterval tCmdSetInterval;
     } u;
 } THostapdCLICmd;
 

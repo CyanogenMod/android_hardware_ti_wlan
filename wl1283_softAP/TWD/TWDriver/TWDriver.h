@@ -2633,7 +2633,7 @@ typedef struct
     TI_UINT16                           RxIntrPacingTimeout;			    /**< */
 
     TI_UINT8                            GenFwCmd[GEN_FW_CMD_SIZE];		    /**< */
-    TI_UINT32                           HostIfCfgBitmap;					/**< */
+    TI_UINT32                           uHostIfCfgBitmap;					/**< */
     
     TI_UINT32                           uRxAggregPktsLimit;					/**< */
     TI_UINT32                           uTxAggregPktsLimit;					/**< */
@@ -2672,6 +2672,7 @@ typedef struct
     THalCoexActivityTable               halCoexActivityTable;               /**< */
     TFmCoexParams                       tFmCoexParams;                      /**< */
     TI_UINT8                            uMaxAMPDU;                          /**< */
+    TI_UINT32                           uSdioBlkSizeShift;                  /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
 
 #ifdef TNETW1283
     /* TCXO parameters */
@@ -3444,12 +3445,18 @@ TI_STATUS TWD_StopScanOnFWReset (TI_HANDLE hTWD);
  *
  * \sa
  */ 
-TI_STATUS TWD_StartConnectionScan (TI_HANDLE hTWD, 
+TI_STATUS TWD_ConfigConnectionScan (TI_HANDLE hTWD,
 								 TPeriodicScanParams *pPeriodicScanParams, 
 								 EScanResultTag eScanTag, 
 								 TI_UINT32 uPassiveScanDfsDwellTimeMs, 
 								 TCmdResponseCb fResponseCb, 
 								 TI_HANDLE hResponseCb);
+
+TI_STATUS TWD_StartConnectionScan (TI_HANDLE hTWD,
+				    EScanResultTag eScanTag,
+				    TCmdResponseCb fResponseCb,
+				    TI_HANDLE hResponseCb);
+
 /** @ingroup Measurement
  * \brief Stop Periodic Scan operation
  * 

@@ -250,6 +250,27 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 		ConParm_t aaa[]  = { { (PS8)"Pass beacons to driver", CON_PARM_RANGE, 0, 1, 1 }, CON_LAST_PARM };
 		Console_AddToken(pTiCon->hConsole, h1, (PS8)"wants_Beacons",  (PS8)"whether FW should pass beacons to driver", (FuncToken_t) CuCmd_ApRoleCfgWantsBeacons, aaa );
         }
+		CHK_NULL(h2 = (THandle) Console_AddDirExt (pTiCon->hConsole, (THandle)h1, (PS8)"enterprise Discover", (PS8)"enterprise environment discover" ) );
+		{
+			{
+				ConParm_t aaa[] = {{(PS8)"SSID", CON_PARM_LINE, 0, MAX_SSID_LIST_SIZE, 0},CON_LAST_PARM };
+				Console_AddToken (pTiCon->hConsole, h2, (PS8)"SSID", (PS8)"Configure SSID list", CuCmd_SendSetSsidListCmdToHostapd, aaa);
+			}
+			{
+				ConParm_t aaa[] = {{(PS8)"Channel", CON_PARM_LINE, 0, MAX_CHANNEL_LIST_SIZE, 0},CON_LAST_PARM };
+				Console_AddToken (pTiCon->hConsole, h2, (PS8)"Channel", (PS8)"Configure Channel list", CuCmd_SendSetChannelListCmdToHostapd, aaa);
+			}
+			Console_AddToken (pTiCon->hConsole, h2, (PS8)"coMmit",  (PS8)"commit configuration", (FuncToken_t) CuCmd_SendCommitCfgCmdToHostapd, NULL );
+			Console_AddToken (pTiCon->hConsole, h2, (PS8)"stArt scan",  (PS8)"start scanning", (FuncToken_t) CuCmd_SendStartScanCmdToHostapd, NULL );
+			Console_AddToken (pTiCon->hConsole, h2, (PS8)"stOp scan",  (PS8)"stop scanning", (FuncToken_t) CuCmd_SendStopScanCmdToHostapd, NULL );
+			Console_AddToken (pTiCon->hConsole, h2, (PS8)"Disable scan",  (PS8)"disable scanning", (FuncToken_t) CuCmd_SendDisableScanCmdToHostapd, NULL );
+			Console_AddToken (pTiCon->hConsole, h2, (PS8)"Enable scan",  (PS8)"enable scanning", (FuncToken_t) CuCmd_SendEnableScanCmdToHostapd, NULL );
+			Console_AddToken (pTiCon->hConsole, h2, (PS8)"Get ap results",  (PS8)"get ap results", (FuncToken_t) CuCmd_SendGetApResultsCmdToHostapd, NULL );
+			{
+				ConParm_t aaa[]  = { {(PS8)"Interval", CON_PARM_RANGE | CON_PARM_OPTIONAL, 0, 120000, 0 }, CON_LAST_PARM };
+				Console_AddToken(pTiCon->hConsole,h2, (PS8)"Interval", (PS8)"Set mSec interval between cycles up to 2 sec", (FuncToken_t) CuCmd_SendSetIntervalCmdToHostapd, aaa );
+			}
+		}
 	}
 
 
@@ -1276,7 +1297,11 @@ S32 user_main(S32 argc, PS8* argv)
 	if(g_TiCon.hConsole == NULL)
 		return 0;
 
-	Console_GetDeviceStatus(g_TiCon.hConsole);	
+	/* warn if driver is not running */
+	if (!Console_GetDeviceStatus(g_TiCon.hConsole))
+	{
+		os_error_printf(CU_MSG_ERROR, (PS8)("Driver is not in RUNNING state!\n") );
+	}
 
 	os_Catch_CtrlC_Signal(TiCon_SignalCtrlC);		
 

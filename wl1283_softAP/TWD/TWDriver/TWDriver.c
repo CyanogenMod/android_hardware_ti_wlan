@@ -742,7 +742,7 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     for (uIndex=0; uIndex<GEN_FW_CMD_SIZE; uIndex++)
         pWlanParams->GenFwCmd[uIndex]      = pInitParams->tGeneral.GenFwCmd[uIndex];
     /* HostIfCfgBitmap */
-    pWlanParams->HostIfCfgBitmap        = pInitParams->tGeneral.HostIfCfgBitmap;
+    pWlanParams->HostIfCfgBitmap        = pInitParams->tGeneral.uHostIfCfgBitmap;
 #ifndef AP_MODE_ENABLED
     /* Configure ARP IP */
     pWlanParams->arpFilterType    = pInitParams->tArpIpFilter.filterType;
@@ -1490,7 +1490,7 @@ TI_STATUS TWD_StopScanOnFWReset (TI_HANDLE hTWD)
     return MacServices_scanSRV_stopOnFWReset (pTWD->hMacServices);
 }
 
-TI_STATUS TWD_StartConnectionScan (TI_HANDLE              hTWD,
+TI_STATUS TWD_ConfigConnectionScan (TI_HANDLE              hTWD,
                                    TPeriodicScanParams    *pPeriodicScanParams,
                                    EScanResultTag         eScanTag,
                                    TI_UINT32              uPassiveScanDfsDwellTimeMs,
@@ -1499,10 +1499,20 @@ TI_STATUS TWD_StartConnectionScan (TI_HANDLE              hTWD,
 {
     TTwd *pTWD = (TTwd *)hTWD;
 
-    TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_StartConnectionScan: called\n");
+    TRACE0(pTWD->hReport, REPORT_SEVERITY_INFORMATION , "TWD_ConfigConnectionScan: called\n");
 
-    return cmdBld_StartPeriodicScan (pTWD->hCmdBld, pPeriodicScanParams, eScanTag, uPassiveScanDfsDwellTimeMs,
+    return cmdBld_ConfigPeriodicScan (pTWD->hCmdBld, pPeriodicScanParams, eScanTag, uPassiveScanDfsDwellTimeMs,
                                      (void*)fResponseCb, hResponseCb);
+}
+
+TI_STATUS TWD_StartConnectionScan (TI_HANDLE              hTWD,
+								   EScanResultTag         eScanTag,
+								   TCmdResponseCb         fResponseCb,
+								   TI_HANDLE              hResponseCb)
+{
+    TTwd *pTWD = (TTwd *)hTWD;
+
+    return cmdBld_StartPeriodicScan (pTWD->hCmdBld, eScanTag, (void*)fResponseCb, hResponseCb);
 }
 
 TI_STATUS TWD_StopPeriodicScan  (TI_HANDLE              hTWD,

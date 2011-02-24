@@ -254,7 +254,8 @@ TI_STATUS buildProbeReqTemplate(siteMgr_t *pSiteMgr, TSetTemplate *pTemplate, TS
 	/* Build Source address */
 	param.paramType = CTRL_DATA_MAC_ADDRESS;
 	ctrlData_getParam(pSiteMgr->hCtrlData, &param);
-	MAC_COPY (pBuffer->hdr.SA, param.content.ctrlDataDeviceMacAddress);  
+	MAC_COPY (pBuffer->hdr.SA, param.content.ctrlDataDeviceMacAddress);
+	MAC_COPY (pBuffer->hdr.BSSID, param.content.ctrlDataDeviceMacAddress);
 	
 	COPY_WLAN_WORD(&pBuffer->hdr.fc, &fc); /* copy with endianess handling. */
 

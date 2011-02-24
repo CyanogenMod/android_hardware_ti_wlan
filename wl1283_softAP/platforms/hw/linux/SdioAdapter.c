@@ -62,7 +62,7 @@ int g_ssd_debug_level=4;
 #ifdef FULL_ASYNC_MODE
 #define SYNC_ASYNC_LENGTH_THRESH	0     /* Use Async for all transactions */
 #else
-#define SYNC_ASYNC_LENGTH_THRESH	360   /* Use Async for transactions longer than this threshold (in bytes) */
+#define SYNC_ASYNC_LENGTH_THRESH	512   /* Use Async for transactions longer than this threshold (in bytes) */
 #endif
 
 #define MAX_RETRIES                 10
@@ -81,7 +81,7 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
 
     if (uBlkSize < SYNC_ASYNC_LENGTH_THRESH) 
     {
-        PERR1("%s(): Block-Size should be bigger than SYNC_ASYNC_LENGTH_THRESH!!\n", __FUNCTION__ );
+        PERR1("%s(): Block-Size %d should be bigger than SYNC_ASYNC_LENGTH_THRESH %d!!\n", __FUNCTION__, uBlkSize, SYNC_ASYNC_LENGTH_THRESH );
     }
 
     /* Allocate a DMA-able buffer and provide it to the upper layer to be used for all read and write transactions */

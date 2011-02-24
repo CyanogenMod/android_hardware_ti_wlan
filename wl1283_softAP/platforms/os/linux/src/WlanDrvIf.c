@@ -1395,7 +1395,7 @@ TI_BOOL wlanDrvIf_receivePacket(TI_HANDLE OsContext, void *pRxDesc ,void *pPacke
 static int SuspendCb(TI_HANDLE hWlanDrvIf)
 {
 	TWlanDrvIfObj *pWlanDrvIf = (TWlanDrvIfObj *)hWlanDrvIf;
-	TI_STATUS rc;
+	TI_STATUS rc = TI_OK;
 	TI_BOOL bSuspendState = TI_TRUE;
 	ti_private_cmd_t tSuspendCmd =
 	{
@@ -1410,7 +1410,11 @@ static int SuspendCb(TI_HANDLE hWlanDrvIf)
 	printk(KERN_INFO "tiap: suspending\n");
 	pWlanDrvIf->bSuspendInProgress = TI_TRUE;
 
-	rc = KExecPrivCmd(pWlanDrvIf, tSuspendCmd);
+	/* suspend driver (if running) */
+	if (pWlanDrvIf->tCommon.eDriverState == DRV_STATE_RUNNING)
+	{
+		rc = KExecPrivCmd(pWlanDrvIf, tSuspendCmd);
+	}
 
 	if (rc != TI_OK)
 	{
@@ -1430,7 +1434,7 @@ static int SuspendCb(TI_HANDLE hWlanDrvIf)
 static int ResumeCb(TI_HANDLE hWlanDrvIf)
 {
 	TWlanDrvIfObj *pWlanDrvIf = (TWlanDrvIfObj *)hWlanDrvIf;
-	TI_STATUS rc;
+	TI_STATUS rc = TI_OK;
 	TI_BOOL bSuspendState = TI_FALSE;
 	ti_private_cmd_t tResumeCmd =
 	{
@@ -1444,7 +1448,11 @@ static int ResumeCb(TI_HANDLE hWlanDrvIf)
 
 	printk(KERN_INFO "tiap: resuming\n");
 
-	rc = KExecPrivCmd(pWlanDrvIf, tResumeCmd);
+	/* resume driver (if running) */
+	if (pWlanDrvIf->tCommon.eDriverState == DRV_STATE_RUNNING)
+	{
+		rc = KExecPrivCmd(pWlanDrvIf, tResumeCmd);
+	}
 
 	pWlanDrvIf->bSuspendInProgress = TI_FALSE;
 
@@ -1455,6 +1463,91 @@ static int ResumeCb(TI_HANDLE hWlanDrvIf)
 	}
 
 	return 0;
+}
+
+/**
+ * \fn		wlanDrvIf_IsIoctlEnabled
+ *
+ * \brief	indicates whether the driver currently accepts the specified IOCTL
+ *
+ * \param	uIoctl	the IOCTL to check
+ * \return	TI_TRUE if the driver can accept uIoctl now, TI_FALSE otherwise
+ */
+TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl)
+{
+	TWlanDrvIfObj *pWlanDrvIf = (TWlanDrvIfObj*) hWlanDrvIf;
+	TI_BOOL        bEnabled = TI_FALSE;
+
+	switch (pWlanDrvIf->tCommon.eDriverState)
+	{
+	case DRV_STATE_RUNNING:
+		bEnabled = TI_TRUE;
+		break;
+	case DRV_STATE_FAILED:
+	case DRV_STATE_STOPING:
+	case DRV_STATE_STOPPED:
+	case DRV_STATE_IDLE:
+		/* to allow DRIVER_INIT_PARAM, DRIVER_STATUS and DRIVER_START command. see wlanDrvIf_IsCmdEnabled() */
+		bEnabled = (uIoctl==SIOCIWFIRSTPRIV);
+		break;
+	}
+
+	if (!bEnabled)
+	{
+		printk(KERN_WARNING "tiap: ioctl 0x%x is disabled in state %d\n", uIoctl, pWlanDrvIf->tCommon.eDriverState);
+	}
+
+	return bEnabled;
+}
+
+/**
+ * \fn		wlanDrvIf_IsCmdEnabled
+ *
+ * \brief	Indicates whether the driver currently accepts the specified private-command.
+ * 			Used to filter commands from user applications
+ *
+ * \param	uCmd	the private-command to check
+ * \return	TI_TRUE if the driver can accept eCmd now, TI_FALSE otherwise
+ */
+TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd)
+{
+	TWlanDrvIfObj *pWlanDrvIf = (TWlanDrvIfObj*) hWlanDrvIf;
+	TI_BOOL        bEnabled = TI_FALSE;
+
+	/* PwrState commands are never allowed from user application */
+	switch (uCmd)
+	{
+	case ROLE_AP_SUSPEND_STATE_PARAM:
+		printk(KERN_WARNING "tiap: cmd 0x%x is not allowed\n", uCmd);
+		return TI_FALSE;
+	}
+
+	/* other commands are enabled/disabled depending on the driver-state */
+	switch (pWlanDrvIf->tCommon.eDriverState)
+	{
+	case DRV_STATE_RUNNING:
+		bEnabled = (uCmd != DRIVER_START_PARAM); /* reject START when driver is running (accepted when driver is stopped) */
+		break;
+	case DRV_STATE_FAILED:
+	case DRV_STATE_STOPING:
+		bEnabled = (uCmd == DRIVER_STATUS_PARAM);
+		break;
+	case DRV_STATE_STOPPED:
+		bEnabled = ( (uCmd == DRIVER_START_PARAM)
+				  || (uCmd == DRIVER_STATUS_PARAM) );
+		break;
+	case DRV_STATE_IDLE:
+		bEnabled = ( (uCmd == DRIVER_INIT_PARAM) /* used by tiwlan_loader */
+				  || (uCmd == DRIVER_STATUS_PARAM) );
+		break;
+	}
+
+	if (!bEnabled)
+	{
+		printk(KERN_WARNING "tiap: cmd 0x%x is disabled in state %d\n", uCmd, pWlanDrvIf->tCommon.eDriverState);
+	}
+
+	return bEnabled;
 }
 
 module_init (wlanDrvIf_ModuleInit);

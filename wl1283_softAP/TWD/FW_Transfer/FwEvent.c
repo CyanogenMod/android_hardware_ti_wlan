@@ -69,10 +69,7 @@ extern int trigger_another_read;
 #endif
 
 
-#if defined(READ_FW_STATUS_FROM_REG_AREA) //|| defined(TNETW1273_FPGA)
 /* Read FW status from registers area */
-#define FW_STATUS_ADDR ACX_REG_INTERRUPT_CLEAR
-#else
 /*
  * Address of FW-Status structure in FW memory ==> Special mapping, see note!!
  *
@@ -83,7 +80,6 @@ extern int trigger_another_read;
  *           partition that maps them as contiguous memory.
  */
 #define FW_STATUS_ADDR           0x14FC0 + 0xA000
-#endif
 
 
 #define ALL_EVENTS_VECTOR        ACX_INTR_WATCHDOG | ACX_INTR_INIT_COMPLETE | ACX_INTR_EVENT_A |\
@@ -264,7 +260,7 @@ TI_STATUS fwEvent_Init (TI_HANDLE hFwEvent, TI_HANDLE hTWD)
      *         same priority as all other transaction for simplicity.
      */
     pTxn = (TTxnStruct*)&pFwEvent->tFwStatusTxn.tTxnStruct;
-    TXN_PARAM_SET(pTxn, TXN_HIGH_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_READ, TXN_INC_ADDR)
+    TXN_PARAM_SET(pTxn, TXN_LOW_PRIORITY, TXN_FUNC_ID_WLAN, TXN_DIRECTION_READ, TXN_INC_ADDR)
     BUILD_TTxnStruct(pTxn, FW_STATUS_ADDR, &pFwEvent->tFwStatusTxn.tFwStatus, sizeof(FwStatus_t), (TTxnDoneCb)fwEvent_StateMachine, hFwEvent)
 
     /*
@@ -487,13 +483,9 @@ static ETxnStatus fwEvent_SmReadIntrInfo (TfwEvent *pFwEvent)
      *           partition that maps them as contiguous memory.
      */
     TXN_FW_EVENT_SET_FW_STAT_ADDR(pFwEvent)
-#if defined(READ_FW_STATUS_FROM_REG_AREA) //|| defined(TNETW1273_FPGA)
-    /* Read FW status from registers area */
-    eStatus = twIf_Transact(pFwEvent->hTwIf, &(pFwEvent->tFwStatusTxn.tTxnStruct));
-#else
+
     eStatus = twIf_TransactReadFWStatus (pFwEvent->hTwIf, &(pFwEvent->tFwStatusTxn.tTxnStruct));
 
-#endif
     CL_TRACE_END_L4("tiwlan_drv.ko", "CONTEXT", "FwEvent", "");
 
     /* Return the status of the FwStatus read (complete, pending or error) */

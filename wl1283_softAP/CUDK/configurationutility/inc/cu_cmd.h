@@ -256,7 +256,14 @@ VOID CuCmd_ApRoleSendCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SendStartCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SendStopCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SendResetCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
-
-
+VOID CuCmd_SendSetSsidListCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendSetChannelListCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendCommitCfgCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendStartScanCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendStopScanCmdToHostapd (THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendSetIntervalCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendEnableScanCmdToHostapd (THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendDisableScanCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendGetApResultsCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 #endif  /* _CU_CMD_H_ */
 

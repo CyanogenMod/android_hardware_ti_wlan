@@ -176,6 +176,8 @@ typedef struct
     TI_UINT32           mediumTime[MAX_NUM_OF_AC];
     TI_UINT32           totalUsedTime[MAX_NUM_OF_AC];
 
+    TI_UINT32           uSdioBlkSizeShift;       /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
+    TI_UINT32           uHostIfCfgBitmap;        /* Host interface configuration bitmap */
 
     txDataDbgCounters_t 	dbgCounters;    /* debug counters */
     txDataDbgLinkCounters_t dbgLinkCounters;    /* debug counters per link */

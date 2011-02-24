@@ -75,7 +75,7 @@ typedef void (*FuncToken_t)(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 /*************/
 THandle Console_Create(const PS8 device_name, S32 BypassSupplicant, PS8 pSupplIfFile);
 VOID Console_Destroy(THandle hConsole);
-VOID Console_GetDeviceStatus(THandle hConsole);
+S32 Console_GetDeviceStatus(THandle hConsole);
 VOID Console_Start(THandle hConsole);
 VOID Console_Stop(THandle hConsole);
 THandle Console_AddDirExt( THandle  hConsole,

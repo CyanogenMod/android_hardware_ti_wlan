@@ -652,19 +652,14 @@ static U8 Console_ParseString(Console_t* pConsole, PS8 input_string )
     S8          name[MAX_NAME_LEN];
     TokenType_t tType;
     U16         nParms; 
-        
+
+    if ((NULL == pConsole) || (NULL == input_string))
+    {
+        return 0;
+    }
+
     if (!pConsole->p_mon_root)
         return 1;
-
-    if(!pConsole->isDeviceOpen)
-    {
-        Console_GetDeviceStatus(pConsole);
-        if(!pConsole->isDeviceOpen)
-        {
-            os_error_printf(CU_MSG_ERROR, (PS8)("ERROR - Console_ParseString - Device isn't loaded !!!\n") );
-            return 1;
-        }
-    }
     
     if( input_string[os_strlen( input_string)-1] == '\n' )
     {
@@ -826,19 +821,21 @@ VOID Console_Start(THandle hConsole)
         }   
 
         if(res == OS_GETINPUTSTRING_CONTINUE)
+        {
             continue;
-
+        }
         /* change to NULL terminated strings */
         if( inbuf[os_strlen(inbuf)-1] == '\n' )
+		{
             inbuf[os_strlen(inbuf)-1] = 0;
-        
+        }
         /* parse the string */
         Console_ParseString(pConsole, inbuf);
     }
 
 }
 
-VOID Console_GetDeviceStatus(THandle hConsole)
+S32 Console_GetDeviceStatus(THandle hConsole)
 {
     Console_t* pConsole = (Console_t*)hConsole;
 
@@ -846,6 +843,7 @@ VOID Console_GetDeviceStatus(THandle hConsole)
     {
         pConsole->isDeviceOpen = TRUE;
     }
+    return pConsole->isDeviceOpen;
 }
 
 

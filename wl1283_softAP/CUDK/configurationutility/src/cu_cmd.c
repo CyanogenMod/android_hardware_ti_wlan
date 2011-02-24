@@ -6710,6 +6710,100 @@ VOID CuCmd_SendStartCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 #endif
 }
 
+VOID CuCmd_SendSetIntervalCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	if (nParms != 1)
+    {
+        os_error_printf(CU_MSG_INFO2, (PS8)"1 input parameter required - interval: <0..120000> \n");
+        return;
+    }
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_SET_SCAN_INTERVAL;
+	cmd.u.tCmdSetInterval.interval = (unsigned int)(parm[0].value);
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+VOID CuCmd_SendEnableScanCmdToHostapd (THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_ENABLE_SCAN;
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+VOID CuCmd_SendDisableScanCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_DISABLE_SCAN;
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+VOID CuCmd_SendGetApResultsCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_GET_AP_RESULTS;
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+VOID CuCmd_SendStartScanCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_START_SCAN;
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+VOID CuCmd_SendStopScanCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_STOP_SCAN;
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+VOID CuCmd_SendCommitCfgCmdToHostapd(THandle hCuCmd,  ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_COMMIT_CONFIGURATION;
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+VOID CuCmd_SendSetChannelListCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+    if (nParms != 1)
+    {
+        os_error_printf(CU_MSG_INFO2, (PS8)"1 input parameter required - channel list: c1 c2 \n");
+        return;
+    }
+	cmd.eCmdType = HOSTAPD_CLI_CMD_SET_CHANNEL_LIST;
+	os_strlcpy(cmd.u.tCmdSetChannels.channel_list, parm[0].value, os_strlen(parm[0].value)+1);
+	os_error_printf(CU_MSG_INFO2, (PS8)"channel list: %s\n",(PS8)cmd.u.tCmdSetChannels.channel_list);
+
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+VOID CuCmd_SendSetSsidListCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms)
+{
+    THostapdCLICmd cmd;
+
+    if (nParms != 1)
+    {
+        os_error_printf(CU_MSG_INFO2, (PS8)"1 input parameter required - ssid list with types: ap1 h ap2 p \n");
+        return;
+    }
+
+	cmd.eCmdType = HOSTAPD_CLI_CMD_SET_SSID_LIST;
+	os_strlcpy((PVOID)cmd.u.tCmdSetSsid.ssid_list , parm[0].value, os_strlen(parm[0].value)+1);
+	os_error_printf(CU_MSG_INFO2, (PS8)"SSID list: %s\n",(PS8)cmd.u.tCmdSetSsid.ssid_list);
+	HostapdCLI_RunCommand("tiap0", &cmd);
+}
+
+
 VOID CuCmd_SetGenericCmdToFW(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
     CuCmd_t*  pCuCmd = (CuCmd_t*)hCuCmd;

@@ -62,7 +62,15 @@
 /* defines */
 /***********/
 
-#define WLANLINKS_MAX_LINKS         		7
+// Total 10 links:
+
+// 1 Global
+
+// 1 Broadcast
+
+// 8 For regular stations
+
+#define WLANLINKS_MAX_LINKS                 10
 
 #define NUM_OF_CONFIG_PARAMS_IN_SG  	    2
 #define NUM_OF_STATUS_PARAMS_IN_SG  		11

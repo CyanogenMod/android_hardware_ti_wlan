@@ -69,7 +69,8 @@ TI_STATUS cmdBld_CmdStartSPSScan        (TI_HANDLE hCmdBld, TScanParams *pScanVa
 TI_STATUS cmdBld_CmdStopScan            (TI_HANDLE hCmdBld, EScanResultTag eScanTag, void *fScanCommandResponseCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CmdStopSPSScan         (TI_HANDLE hCmdBld, EScanResultTag eScanTag, void *fScanCommandResponseCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CmdSetSplitScanTimeOut (TI_HANDLE hCmdBld, TI_UINT32 uTimeOut);
-TI_STATUS cmdBld_StartPeriodicScan      (TI_HANDLE hCmdBld, TPeriodicScanParams *pPeriodicScanParams, EScanResultTag eScanTag, TI_UINT32 uPassiveScanDfsDwellTimeMs, void* fScanCommandResponseCB, TI_HANDLE hCb);
+TI_STATUS cmdBld_ConfigPeriodicScan     (TI_HANDLE hCmdBld, TPeriodicScanParams *pPeriodicScanParams, EScanResultTag eScanTag, TI_UINT32 uPassiveScanDfsDwellTimeMs, void* fScanCommandResponseCB, TI_HANDLE hCb);
+TI_STATUS cmdBld_StartPeriodicScan      (TI_HANDLE hCmdBld, EScanResultTag eScanTag, void* fScanCommandResponseCB, TI_HANDLE hCb);
 TI_STATUS cmdBld_StopPeriodicScan       (TI_HANDLE hCmdBld, EScanResultTag eScanTag, void* fScanCommandResponseCB, TI_HANDLE hCb);
 TI_STATUS cmdBld_CmdStartJoin           (TI_HANDLE hCmdBld, ScanBssType_e eBssType, void *fJoinCompleteCB, TI_HANDLE hCb);
 TI_STATUS cmdBld_CmdJoinBss             (TI_HANDLE hCmdBld, TJoinBss *pJoinBssParams, void *fCb, TI_HANDLE hCb);

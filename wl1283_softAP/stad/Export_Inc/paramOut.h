@@ -1164,7 +1164,6 @@ typedef struct
 {
     TI_UINT32       uWlanDrvThreadPriority; /* Default setting of the WLAN driver task priority  */
     TI_UINT32       uBusDrvThreadPriority;  /* Default setting of the bus driver thread priority */
-    TI_UINT32       uSdioBlkSizeShift;      /* In block-mode:  uBlkSize = (1 << uBlkSizeShift)   */
 }TDrvMainParams;
 
 

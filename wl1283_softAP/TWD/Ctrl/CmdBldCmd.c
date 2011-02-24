@@ -512,18 +512,17 @@ TI_UINT32 cmdBld_BuildPeriodicScanChannles (TPeriodicScanParams *pPeriodicScanPa
  * \return TI_OK on success, other codes indicate failure
  * \sa     cmdBld_BuildPeriodicScanChannles, cmdBld_StopPeriodicScan
  */ 
-TI_STATUS cmdBld_StartPeriodicScan (TI_HANDLE hCmdBld, TPeriodicScanParams *pPeriodicScanParams,
+TI_STATUS cmdBld_ConfigPeriodicScan (TI_HANDLE hCmdBld, TPeriodicScanParams *pPeriodicScanParams,
                                     EScanResultTag eScanTag, TI_UINT32 uPassiveScanDfsDwellTimeMs,
                                     void* fScanCommandResponseCB, TI_HANDLE hCb)
 {
     TCmdBld                         *pCmdBld = (TCmdBld *)hCmdBld;
     ConnScanParameters_t            tFWPeriodicScanParams;
     ConnScanSSIDList_t              *pFWSsidList;
-    PeriodicScanTag                 tScanStart;
     TI_UINT32                       uIndex;
     TI_STATUS                       tStatus;
 
-    TRACE0(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "Building start periodic scan commands:\n");
+    TRACE0(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "Building config periodic scan commands:\n");
     TRACE0(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "--------------------------------------\n");
     /* copy parameters to FW structure */
     tFWPeriodicScanParams.bssType = (ScanBssType_e)pPeriodicScanParams->eBssType;
@@ -578,28 +577,25 @@ TI_STATUS cmdBld_StartPeriodicScan (TI_HANDLE hCmdBld, TPeriodicScanParams *pPer
         os_memoryFree(pCmdBld->hOs, pFWSsidList, sizeof(ConnScanSSIDList_t));
         if (TI_OK != tStatus)
         {
-            TRACE1(pCmdBld->hReport, REPORT_SEVERITY_ERROR , "cmdBld_StartPeriodicScan: status %d when configuring SSID list", tStatus);
+            TRACE1(pCmdBld->hReport, REPORT_SEVERITY_ERROR , "cmdBld_configPeriodicScan: status %d when configuring SSID list", tStatus);
             return tStatus;
         }
         break;
     }
 
     /* copy channels */
-    tFWPeriodicScanParams.numOfPassive[ 0 ] =  /* build passive B/G channels */
-        cmdBld_BuildPeriodicScanChannles (pPeriodicScanParams, &(tFWPeriodicScanParams.channelList[ 0 ]),
-                                          SCAN_TYPE_NORMAL_PASSIVE, RADIO_BAND_2_4_GHZ, uPassiveScanDfsDwellTimeMs);
+    tFWPeriodicScanParams.numOfPassive[ 0 ] = 0; /* build passive B/G channels */
+
     tFWPeriodicScanParams.numOfActive[ 0 ] = /* build active B/G channels */
         cmdBld_BuildPeriodicScanChannles (pPeriodicScanParams, &(tFWPeriodicScanParams.channelList[ tFWPeriodicScanParams.numOfPassive[ 0 ] ]),
-                                          SCAN_TYPE_NORMAL_ACTIVE, RADIO_BAND_2_4_GHZ, uPassiveScanDfsDwellTimeMs);
-    tFWPeriodicScanParams.numOfPassive[ 1 ] = /* build passive A channels */
-        cmdBld_BuildPeriodicScanChannles (pPeriodicScanParams, &(tFWPeriodicScanParams.channelList[ CONN_SCAN_MAX_CHANNELS_BG ]),
-                                          SCAN_TYPE_NORMAL_PASSIVE, RADIO_BAND_5_0_GHZ, uPassiveScanDfsDwellTimeMs);
-    tFWPeriodicScanParams.numOfDfs = /* build DFS A channels */
-        cmdBld_BuildPeriodicScanChannles (pPeriodicScanParams, &(tFWPeriodicScanParams.channelList[ CONN_SCAN_MAX_CHANNELS_BG + tFWPeriodicScanParams.numOfPassive[ 1 ] ]),
-                                          SCAN_TYPE_PACTSIVE, RADIO_BAND_5_0_GHZ, uPassiveScanDfsDwellTimeMs);
-    tFWPeriodicScanParams.numOfActive[ 1 ] = /* build active A channels */
-        cmdBld_BuildPeriodicScanChannles (pPeriodicScanParams, &(tFWPeriodicScanParams.channelList[ CONN_SCAN_MAX_CHANNELS_BG + tFWPeriodicScanParams.numOfPassive[ 1 ] + tFWPeriodicScanParams.numOfDfs ]),
-                                          SCAN_TYPE_NORMAL_ACTIVE, RADIO_BAND_5_0_GHZ, uPassiveScanDfsDwellTimeMs);
+	SCAN_TYPE_NORMAL_ACTIVE, RADIO_BAND_2_4_GHZ, uPassiveScanDfsDwellTimeMs);
+
+    tFWPeriodicScanParams.numOfPassive[ 1 ] = 0; /* build passive A channels */
+
+    tFWPeriodicScanParams.numOfDfs = 0; /* build DFS A channels */
+
+    tFWPeriodicScanParams.numOfActive[ 1 ] = 0; /* build active A channels */
+
 
     /* until J is supported, mark zero channels for J passive and active */
     tFWPeriodicScanParams.numOfPassive[ 2 ] = 0;
@@ -612,9 +608,31 @@ TI_STATUS cmdBld_StartPeriodicScan (TI_HANDLE hCmdBld, TPeriodicScanParams *pPer
     tStatus = cmdBld_CmdIePeriodicScanParams (hCmdBld, &tFWPeriodicScanParams, NULL, NULL);
     if (TI_OK != tStatus)
     {
-        TRACE1(pCmdBld->hReport, REPORT_SEVERITY_ERROR , "cmdBld_StartPeriodicScan: status %d when configuring periodic scan parameters", tStatus);
+        TRACE1(pCmdBld->hReport, REPORT_SEVERITY_ERROR , "cmdBld_ConfigPeriodicScan: status %d when configuring periodic scan parameters", tStatus);
         return tStatus;
     }
+    return tStatus;
+}
+
+
+/**
+ * \fn     cmdBld_StartPeriodicScan
+ * \brief  send Start command to FW
+ * \param  hCmdBld - handle to the command builder object
+ * \param  eScanTag - scan tag, used for scan complete and result tracking
+ * \param  fScanCommandResponseCB - scan command complete CB
+ * \param  hCb - scan command response handle
+ * \return TI_OK on success, other codes indicate failure
+ */
+TI_STATUS cmdBld_StartPeriodicScan (TI_HANDLE hCmdBld, EScanResultTag eScanTag,
+                                    void* fScanCommandResponseCB, TI_HANDLE hCb)
+{
+    TCmdBld                         *pCmdBld = (TCmdBld *)hCmdBld;
+    PeriodicScanTag                 tScanStart;
+    TI_STATUS                       tStatus;
+
+    TRACE0(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "Sending start periodic scan commands:\n");
+    TRACE0(pCmdBld->hReport, REPORT_SEVERITY_INFORMATION , "--------------------------------------\n");
 
     /* send the periodic scan start command */
     tScanStart.scanTag = eScanTag;

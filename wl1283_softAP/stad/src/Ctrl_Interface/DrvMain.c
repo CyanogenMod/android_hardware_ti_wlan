@@ -986,7 +986,7 @@ static TI_STATUS drvMain_SetDefaults (TI_HANDLE hDrvMain, TI_UINT8 *pBuf, TI_UIN
     PowerMgr_SetDefaults (pDrvMain->tStadHandles.hPowerMgr, &pInitTable->PowerMgrInitParams);
     SoftGemini_SetDefaults (pDrvMain->tStadHandles.hSoftGemini, &pInitTable->SoftGeminiInitParams);
     txDataQ_SetDefaults (pDrvMain->tStadHandles.hTxDataQ, &pInitTable->txDataInitParams);
-    txCtrl_SetDefaults (pDrvMain->tStadHandles.hTxCtrl, &pInitTable->txDataInitParams);
+    txCtrl_SetDefaults (pDrvMain->tStadHandles.hTxCtrl, pInitTable);
     currBSS_SetDefaults (pDrvMain->tStadHandles.hCurrBss, &pInitTable->tCurrBssInitParams);
     mlme_SetDefaults (pDrvMain->tStadHandles.hMlmeSm, &pInitTable->tMlmeInitParams);
 
@@ -1001,7 +1001,7 @@ static TI_STATUS drvMain_SetDefaults (TI_HANDLE hDrvMain, TI_UINT8 *pBuf, TI_UIN
 
 
     /* Set DrvMain local defaults */
-    pDrvMain->tBusDrvCfg.tSdioCfg.uBlkSizeShift         = pInitTable->tDrvMainParams.uSdioBlkSizeShift;
+    pDrvMain->tBusDrvCfg.tSdioCfg.uBlkSizeShift         = pInitTable->twdInitParams.tGeneral.uSdioBlkSizeShift;
     pDrvMain->tBusDrvCfg.tSdioCfg.uBusDrvThreadPriority = pInitTable->tDrvMainParams.uBusDrvThreadPriority;
     os_SetDrvThreadPriority (pDrvMain->tStadHandles.hOs, pInitTable->tDrvMainParams.uWlanDrvThreadPriority);
 

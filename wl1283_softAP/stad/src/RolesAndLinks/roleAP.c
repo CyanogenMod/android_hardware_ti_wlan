@@ -149,6 +149,7 @@ static void FillDeauthTemplate(TI_HANDLE hRoleAP, TSetTemplate *pTemplateStruct)
 static void ConfigureFrameTemplates(TI_HANDLE hRoleAP);
 static void ConfigureRatePolicies(TI_HANDLE hRoleAP);
 static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP);
+static TI_STATUS setProbeReqTemplate(TRoleAP *pRoleAP);
 static void setDeauthTemplate( TRoleAP * pRoleAP );
 static void setQosNullDataTemplate( TRoleAP * pRoleAP);
 static void setNullDataTemplate(TRoleAP * pRoleAP);
@@ -721,7 +722,9 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
     TSecurityKeys    	*pTwdKey;
     TTwdParamInfo    	tTwdParam;
     TI_STATUS  			tRes = TI_NOK;
-
+    TApActiveScanParams *pActiveScanParams = NULL;
+	TPeriodicScanParams *pPeriodicScanParams = NULL;
+	TI_UINT32			 iter;
 
     switch (cmd)
     {
@@ -873,9 +876,17 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
     }
     break;
 
-    case ROLE_AP_STOP:
+	case ROLE_AP_STOP:
+		TWD_StopPeriodicScan(pRoleAP->hTWD, SCAN_RESULT_TAG_DRIVER_PERIODIC, NULL, NULL);
         roleAP_stop(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
         break;
+	case ROLE_AP_STOP_ENTERPRISE_DISCOVER:
+		status = TWD_StopPeriodicScan(pRoleAP->hTWD, SCAN_RESULT_TAG_DRIVER_PERIODIC, NULL, NULL);
+        break;
+	case ROLE_AP_START_ENTERPRISE_DISCOVER:
+		/*start connection scan only if the bss is started*/
+		status = TWD_StartConnectionScan(pRoleAP->hTWD, SCAN_RESULT_TAG_DRIVER_PERIODIC, NULL, NULL);
+		break;
 
     case ROLE_AP_ADD_STATION_PARAM:
         status = AddStation(hRoleAP, pBuffer);
@@ -969,10 +980,88 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         pRoleAP->uTxPower = pGenParams->lValue;
         break;
 
-    case TWD_SET_CONNECTION_PHASE:
-    {
-        TTwdConnPhaseParam	tTwdConnPhaseParam;
-        pGenParams = (TApGeneralParam *)pBuffer;
+	case TWD_SET_ENTERPRISE_DISCOVER_PARAMS:
+		pActiveScanParams = (TApActiveScanParams*)pBuffer;
+		pPeriodicScanParams = os_memoryAlloc(pRoleAP->hOs, sizeof(TPeriodicScanParams));
+		/*-----Copy From TApActiveScanParams to TPeriodicScanParams------*/
+
+		/*Copy SSID's Number*/
+		pPeriodicScanParams->uSsidNum = pActiveScanParams->ssids_num;
+		/*Copy SSID List*/
+		for(iter = 0; iter < pActiveScanParams->ssids_num; iter++) {
+			pPeriodicScanParams->tDesiredSsid[iter].eVisability = pActiveScanParams->ssid_list[iter].type;
+			pPeriodicScanParams->tDesiredSsid[iter].tSsid.len = pActiveScanParams->ssid_list[iter].ssid.iSsidLen;
+			os_memoryCopy(pRoleAP->hOs, pPeriodicScanParams->tDesiredSsid[iter].tSsid.str, pActiveScanParams->ssid_list[iter].ssid.cSsid, AP_MAX_SSID_LEN);
+		}
+		/*Disable Filters*/
+		pPeriodicScanParams->uSsidListFilterEnabled = TI_FALSE;
+		/*Run Infinite Scan Cycles*/
+		pPeriodicScanParams->uCycleNum = 0;
+		/*Set Intervals*/
+		for(iter = 0; iter < PERIODIC_SCAN_MAX_INTERVAL_NUM; iter++) {
+			pPeriodicScanParams->uCycleIntervalMsec[iter] = pActiveScanParams->interval;
+		}
+		/*Set RSSI Threshold*/
+		pPeriodicScanParams->iRssiThreshold = -90;
+		/*Set SNR Threshold*/
+		pPeriodicScanParams->iSnrThreshold = 40;
+		/*Report After 1 Frame Results*/
+		pPeriodicScanParams->uFrameCountReportThreshold = 1;
+		/*Set Terminate On Report To False*/
+		pPeriodicScanParams->bTerminateOnReport = TI_FALSE;
+		/*Set BSS Type*/
+		pPeriodicScanParams->eBssType = BSS_INFRASTRUCTURE;
+		/*Set Number Of Prob Requests Per Channel*/
+		pPeriodicScanParams->uProbeRequestNum = 2;
+		/*Copy Channels Number*/
+		pPeriodicScanParams->uChannelNum = pActiveScanParams->channels_num;
+		/*Set Channels Information*/
+		for(iter = 0; iter < pPeriodicScanParams->uChannelNum; iter++) {
+			pPeriodicScanParams->tChannels[iter].eBand = RADIO_BAND_2_4_GHZ;
+			pPeriodicScanParams->tChannels[iter].eScanType = SCAN_TYPE_NORMAL_ACTIVE;
+			pPeriodicScanParams->tChannels[iter].uChannel = pActiveScanParams->channels_list[iter];
+			pPeriodicScanParams->tChannels[iter].uMaxDwellTimeMs = 15;
+			pPeriodicScanParams->tChannels[iter].uMinDwellTimeMs = 15;
+			pPeriodicScanParams->tChannels[iter].uTxPowerLevelDbm = 250;
+		}
+
+		/*-----------End Of Copying------------*/
+
+		/*----------------Print Parameters---------------------*/
+		os_printf("---------------Print Parameters----------------\n");
+		os_printf("---------------SSID Information----------------\n");
+		os_printf("Number of SSID's: %d\n", pPeriodicScanParams->uSsidNum);
+		for(iter = 0; iter < pActiveScanParams->ssids_num; iter++) {
+			os_printf("SSID: %s Type: %d SSID lenght: %d\n", pPeriodicScanParams->tDesiredSsid[iter].tSsid.str,
+					  pPeriodicScanParams->tDesiredSsid[iter].eVisability, pPeriodicScanParams->tDesiredSsid[iter].tSsid.len);
+		}
+		os_printf("----------------------------------------------\n");
+		os_printf("Number of scan cycles: %d\n", pPeriodicScanParams->uCycleNum);
+		os_printf("Intervals (in Msec) between two sequential  scan cycle: %d\n", pPeriodicScanParams->uCycleIntervalMsec[0]);
+		os_printf("RSSI threshold: %d\n", pPeriodicScanParams->iRssiThreshold);
+		os_printf("SNR threshold %d\n", pPeriodicScanParams->iSnrThreshold);
+		os_printf("Frame count report threshold: %d\n", pPeriodicScanParams->uFrameCountReportThreshold);
+		os_printf("Terminate on report? %d\n", pPeriodicScanParams->bTerminateOnReport);
+		os_printf("BSS scan type: %u\n", pPeriodicScanParams->eBssType);
+		os_printf("Number of prob requests: %d\n", pPeriodicScanParams->uProbeRequestNum);
+		os_printf("Number of Channels: %d\n", pPeriodicScanParams->uChannelNum);
+		os_printf("----------------------------------------------\n");
+		os_printf("-------------------Channel Information-------------------\n");
+		for(iter = 0; iter < pPeriodicScanParams->uChannelNum; iter++) {
+			os_printf("Channel number: %d Band: %d Scan type: %d Min Dwell Time: %d Max Dwell Time: %d Tx power level: %d\n",
+					  pPeriodicScanParams->tChannels[iter].uChannel, pPeriodicScanParams->tChannels[iter].eBand,
+					  pPeriodicScanParams->tChannels[iter].eScanType, pPeriodicScanParams->tChannels[iter].uMinDwellTimeMs,
+					  pPeriodicScanParams->tChannels[iter].uMaxDwellTimeMs, pPeriodicScanParams->tChannels[iter].uTxPowerLevelDbm);
+		}
+		os_printf("-----------------------End Of Print-----------------------\n");
+		tRes = TWD_ConfigConnectionScan (pRoleAP->hTWD, pPeriodicScanParams,
+                                 SCAN_RESULT_TAG_DRIVER_PERIODIC, 15, NULL, NULL);
+
+		break;
+	case TWD_SET_CONNECTION_PHASE:
+	{
+		TTwdConnPhaseParam	tTwdConnPhaseParam;
+		pGenParams = (TApGeneralParam *)pBuffer;
 
         os_memoryCopy(pRoleAP->hOs, tTwdConnPhaseParam.aMacAddr, pGenParams->cMac, AP_MAC_ADDR);
 
@@ -1876,6 +1965,7 @@ static void ConfigureFrameTemplates(TI_HANDLE hRoleAP)
     setDeauthTemplate(pRoleAP);
     setQosNullDataTemplate(pRoleAP);
     setNullDataTemplate(pRoleAP);
+	setProbeReqTemplate(pRoleAP);
 }
 
 /**
@@ -2246,7 +2336,11 @@ static TI_STATUS setKey(TI_HANDLE hRoleAP, TSecurityKeys *pTwdKey)
 
     return tRes;
 }
-
+static TI_STATUS setProbeReqTemplate(TRoleAP *pRoleAP)
+{
+	setDefaultProbeReqTemplate(pRoleAP->hSiteMgr);
+	return TI_OK;
+}
 
 /**
  * \fn     setBeaconProbeRspTempl
