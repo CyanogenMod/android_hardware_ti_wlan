@@ -172,13 +172,11 @@ int wlanDrvWext_Handler (struct net_device *dev,
    void             *copy_to_buf=NULL, *param3=NULL;
    ECmdType         CmdType = CMD_WEXT_CMD_E;
 
-#if 0
    /* abort if the IOCTL is disabled */
    if (!wlanDrvIf_IsIoctlEnabled(drv, info->cmd))
    {
 	   return TI_NOK;
    }
-#endif
 
    os_memoryZero(drv, &my_command, sizeof(ti_private_cmd_t));
    os_memoryZero(drv, &mlme,       sizeof(struct iw_mlme));
@@ -196,13 +194,11 @@ int wlanDrvWext_Handler (struct net_device *dev,
 		 return TI_NOK;
 	   }
 
-#if 0
        /* abort if the private-command is disabled */
        if (!wlanDrvIf_IsCmdEnabled(drv, my_command.cmd))
        {
 		return TI_NOK;
        }
-#endif
 
 	   if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
        {
