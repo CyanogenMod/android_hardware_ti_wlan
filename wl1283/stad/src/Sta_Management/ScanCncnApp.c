@@ -400,6 +400,11 @@ void scanCncnApp_ScanResultCB (TI_HANDLE hScanCncn, EScanCncnResultStatus status
         {
             /* send a scan complete event to the OS scan SM. It will stabliza the table when needed */
              genSM_Event (pScanCncn->hOSScanSm, SCAN_CNCN_OS_SM_EVENT_SCAN_COMPLETE, hScanCncn);
+             pClient = pScanCncn->pScanClients[eScanCncnClient];
+             if (pClient)
+             {
+                 scanCncn_ClientStopped(pScanCncn, pClient);
+             }
         }
         else
         {

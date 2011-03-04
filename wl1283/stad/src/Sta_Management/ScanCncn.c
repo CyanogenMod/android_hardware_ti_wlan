@@ -1858,8 +1858,6 @@ TI_STATUS scanCncn_Suspend(TI_HANDLE hScanCncn)
 
 		scanCncn_StopScan(this, SCAN_SCC_APP_ONE_SHOT);
 		this->pScanClients[SCAN_SCC_APP_ONE_SHOT]->bSuspended = TI_TRUE;
-
-		this->pScanClients[SCAN_SCC_APP_ONE_SHOT]->bCurrentlyRunning = TI_FALSE;
 	}
 	/* stop any periodic scans */
 	else if (this->pScanClients[SCAN_SCC_APP_PERIODIC]->bCurrentlyRunning)
@@ -1868,8 +1866,6 @@ TI_STATUS scanCncn_Suspend(TI_HANDLE hScanCncn)
 
 		scanCncn_StopPeriodicScan(this, SCAN_SCC_APP_PERIODIC);
 		this->pScanClients[SCAN_SCC_APP_PERIODIC]->bSuspended = TI_TRUE;
-
-		this->pScanClients[SCAN_SCC_APP_PERIODIC]->bCurrentlyRunning = TI_FALSE;
 	}
 	/* nothing to do - this module is stopped */
 	else
