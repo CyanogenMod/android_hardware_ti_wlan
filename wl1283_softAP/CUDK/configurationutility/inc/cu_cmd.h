@@ -265,5 +265,6 @@ VOID CuCmd_SendSetIntervalCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nPa
 VOID CuCmd_SendEnableScanCmdToHostapd (THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SendDisableScanCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 VOID CuCmd_SendGetApResultsCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
+VOID CuCmd_SendSetDwellTimeCmdToHostapd(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 #endif  /* _CU_CMD_H_ */
 

@@ -104,6 +104,7 @@ typedef enum
 	HOSTAPD_CLI_CMD_DISABLE_SCAN,
 	HOSTAPD_CLI_CMD_ENABLE_SCAN,
 	HOSTAPD_CLI_CMD_GET_AP_RESULTS,
+	HOSTAPD_CLI_CMD_SET_DWELL_TIME,
 #ifndef CONFIG_NO_TI          
 	HOSTAPD_CLI_CMD_RELOAD_ACL,
 #endif
@@ -133,6 +134,7 @@ static TCmdInfo tCmdsNames[HOSTAPD_CLI_CMD_LAST] =
 	{"DISABLE_DISCOVERY",   "Disable enterprise discovery\n"},	    					/* HOSTAPD_CLI_CMD_DISABLE_SCAN */
 	{"ENABLE_DISCOVERY",   	"Enable enterprise discovery\n"},	    					/* HOSTAPD_CLI_CMD_ENABLE_SCAN       */
 	{"GET_AP_TABLE",   	  	"Get enterprise discovery ap results\n"},	    			/* HOSTAPD_CLI_CMD_ENABLE_SCAN       */
+	{"SET_DWELL_TIME",   	"Set dwell time <0...1000\n"},	    						/* HOSTAPD_CLI_CMD_SET_DWELL_TIME       */
 #ifndef CONFIG_NO_TI
 	{"reload_acl", "reload acl configuration \n"}                           /* HOSTAPD_CLI_CMD_RELOAD_ACL */
 #endif
@@ -147,6 +149,11 @@ typedef struct
 {
 	unsigned int interval;
 }TCmdSetInterval;
+
+typedef struct
+{
+	unsigned int dwell_time;
+}TCmdSetDwellTime;
 
 typedef struct
 {
@@ -185,6 +192,7 @@ typedef struct
 		TCmdSetSsid 	tCmdSetSsid;
 		TCmdSetChannels tCmdSetChannels;
 		TCmdSetInterval tCmdSetInterval;
+		TCmdSetDwellTime	tCmdSetDwellTime; 
     } u;
 } THostapdCLICmd;
 

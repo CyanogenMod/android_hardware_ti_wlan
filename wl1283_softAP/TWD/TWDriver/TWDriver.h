@@ -296,9 +296,9 @@
 #define TWD_RX_INTR_TIMEOUT_MAX         50000
 
 /* Rx aggregation packets number limit (max packets in one aggregation) */
-#define TWD_RX_AGGREG_PKTS_LIMIT_DEF    4
+#define TWD_RX_AGGREG_PKTS_LIMIT_DEF    5
 #define TWD_RX_AGGREG_PKTS_LIMIT_MIN    0 
-#define TWD_RX_AGGREG_PKTS_LIMIT_MAX    4
+#define TWD_RX_AGGREG_PKTS_LIMIT_MAX    5
 
 /* Tx aggregation packets number limit (max packets in one aggregation) */
 #define TWD_TX_AGGREG_PKTS_LIMIT_DEF    8
@@ -2804,7 +2804,9 @@ typedef struct
     TArpIpFilterInitParams              tArpIpFilter;		 /**< ARP IP filter Initialization Parameters	*/
     TMacAddrFilterInitParams            tMacAddrFilter;		 /**< MAC Address Initialization Parameters		*/
     IniFileRadioParam                   tIniFileRadioParams[NUMBER_OF_FEM_TYPES_E];     /**< Radio Initialization Parameters   		*/
+#ifdef TNETW1273
 	IniFileExtendedRadioParam			tIniFileExtRadioParams[NUMBER_OF_FEM_TYPES_E];  /**< Radio Initialization Parameters   		*/
+#endif
     IniFileGeneralParam                 tPlatformGenParams; /**< Radio Initialization Parameters   	        */
     ACXSmartReflexConfigParams_t        tSmartReflexParams;       /**< Smart Refelx Parameters   	        */
     ACXSmartReflexDebugParams_t         tSmartReflexDebugParams;  /**< Smart Refelx Debug Parameters   	    */

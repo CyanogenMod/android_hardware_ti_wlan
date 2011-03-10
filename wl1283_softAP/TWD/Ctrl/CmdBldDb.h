@@ -359,7 +359,9 @@ typedef struct
     TRxDataFiltersTable        rxDataFilters;       /* Rx data filters          */
     IniFileGeneralParam        tPlatformGenParams;  /* platfrom gen params from public_radio.h  */   
     IniFileRadioParam          tRadioIniParams[NUMBER_OF_FEM_TYPES_E];     /* Radio ini params from public_radio.h     */
+#ifdef TNETW1273
     IniFileExtendedRadioParam  tExtRadioIniParams[NUMBER_OF_FEM_TYPES_E];  /* Extended Radio ini params from public_radio.h     */
+#endif
 	TSmartReflexParams         tSmartReflex;
 	TRateMngParams		       tRateMngParams;      /* rate management params */
 } TCmdBldDb;

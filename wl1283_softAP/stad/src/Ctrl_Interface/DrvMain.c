@@ -1435,7 +1435,6 @@ TI_STATUS drvMain_InsertAction (TI_HANDLE hDrvMain, EActionType eAction)
     /* Free signalling object and action structure */
     os_SignalObjectFree (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject);
     os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
-    pNewAction->pSignalObject = NULL;
 
     if (pDrvMain->eSmState == SM_STATE_FAILED)
     {

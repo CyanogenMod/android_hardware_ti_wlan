@@ -1466,7 +1466,7 @@ static TI_STATUS __cfg_radio_params (TI_HANDLE hCmdBld)
                                     hCmdBld);
 }
 
-
+#ifndef TNETW1283
 static TI_STATUS __cfg_extended_radio_params (TI_HANDLE hCmdBld)
 {
 	if (CMD_BLD_IS_INIT_SEQUENCE_CMD_INVALID(hCmdBld, __CFG_EXTENDED_RADIO_PARAMS))
@@ -1477,7 +1477,7 @@ static TI_STATUS __cfg_extended_radio_params (TI_HANDLE hCmdBld)
 											(void *)cmdBld_ConfigSeq,
 											hCmdBld);
 }
-
+#endif
 
 static TI_STATUS __cfg_platform_params (TI_HANDLE hCmdBld)
 {
@@ -2255,7 +2255,9 @@ static const TCmdCfgFunc aCmdIniSeq [] =
 {
     __cfg_platform_params,
     __cfg_radio_params,
+#ifndef TNETW1283
 	__cfg_extended_radio_params,
+#endif
     __cmd_probe_req,
     __cmd_null_data,
     __cmd_disconn,

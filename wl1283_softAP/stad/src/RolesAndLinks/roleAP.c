@@ -209,11 +209,12 @@ TI_STATUS roleAP_destroy(TI_HANDLE hRoleAP)
     {
         pRoleAP = (TRoleAP *)hRoleAP;
 
+        if(pRoleAP->hInvokeAsyncTimer)
+            tmr_DestroyTimer(pRoleAP->hInvokeAsyncTimer);
+
         /* Free pre-allocated control block */
         os_memoryFree(pRoleAP->hOs, pRoleAP, sizeof(TRoleAP));
 
-        if(pRoleAP->hInvokeAsyncTimer)
-            tmr_DestroyTimer(pRoleAP->hInvokeAsyncTimer);
     }
     return TI_OK;
 }
@@ -877,7 +878,6 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
     break;
 
 	case ROLE_AP_STOP:
-		TWD_StopPeriodicScan(pRoleAP->hTWD, SCAN_RESULT_TAG_DRIVER_PERIODIC, NULL, NULL);
         roleAP_stop(hRoleAP, pRoleAP->tBssCapabilities.uBssIndex);
         break;
 	case ROLE_AP_STOP_ENTERPRISE_DISCOVER:
@@ -1002,9 +1002,9 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
 			pPeriodicScanParams->uCycleIntervalMsec[iter] = pActiveScanParams->interval;
 		}
 		/*Set RSSI Threshold*/
-		pPeriodicScanParams->iRssiThreshold = -90;
+		pPeriodicScanParams->iRssiThreshold = -85;
 		/*Set SNR Threshold*/
-		pPeriodicScanParams->iSnrThreshold = 40;
+		pPeriodicScanParams->iSnrThreshold = 5;
 		/*Report After 1 Frame Results*/
 		pPeriodicScanParams->uFrameCountReportThreshold = 1;
 		/*Set Terminate On Report To False*/
@@ -1020,9 +1020,9 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
 			pPeriodicScanParams->tChannels[iter].eBand = RADIO_BAND_2_4_GHZ;
 			pPeriodicScanParams->tChannels[iter].eScanType = SCAN_TYPE_NORMAL_ACTIVE;
 			pPeriodicScanParams->tChannels[iter].uChannel = pActiveScanParams->channels_list[iter];
-			pPeriodicScanParams->tChannels[iter].uMaxDwellTimeMs = 15;
-			pPeriodicScanParams->tChannels[iter].uMinDwellTimeMs = 15;
-			pPeriodicScanParams->tChannels[iter].uTxPowerLevelDbm = 250;
+			pPeriodicScanParams->tChannels[iter].uMaxDwellTimeMs = pActiveScanParams->dwell_time;
+			pPeriodicScanParams->tChannels[iter].uMinDwellTimeMs = pActiveScanParams->dwell_time;
+			pPeriodicScanParams->tChannels[iter].uTxPowerLevelDbm = 250;		
 		}
 
 		/*-----------End Of Copying------------*/
@@ -1881,7 +1881,7 @@ static TI_STATUS FillProbeRespTemplate(TI_HANDLE hRoleAP, TApBeaconParams *pAPBe
                     WPA_GET_BE32(&pPos[2]) == WPS_DEV_OUI_WFA)
             {
                 pWps = pPos;
-                WLAN_OS_REPORT((" FillProbeRespTemplate(): found WPS IE\n"));
+                WLAN_OS_REPORT((" FillProbeRespTemplate(): found WPS IE (len=%d)\n", pPos[1] ));
                 break;
             }
             pPos += 2 + pPos[1];
@@ -2365,10 +2365,17 @@ static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP)
     /* Allocate common buffer for Beacon and ProbeResp templates building,
      * max size is defined by ProbeResp for hidden SSID support
      */
+
     uLen = pRoleAP->tBssCapabilities.tAPBeaconParams.iHeadLen +
            pRoleAP->tBssCapabilities.tAPBeaconParams.iTailLen + sizeof(dot11_SSID_t);
 
+	if (pRoleAP->tWpsIe.iIeLen > 0)
+	{
+        uLen += pRoleAP->tWpsIe.iIeLen;
+	}
+
     tTemplateStruct.ptr = (TI_UINT8 *)os_memoryAlloc (pRoleAP->hOs, uLen );
+
     if (!tTemplateStruct.ptr)
     {
         TRACE0( pRoleAP->hReport, REPORT_SEVERITY_FATAL_ERROR, "setBeaconProbeRspTempl: os_memoryAlloc failed\n");
@@ -2390,6 +2397,12 @@ static TI_STATUS setBeaconProbeRspTempl(TRoleAP *pRoleAP)
     tTemplateStruct.type = AP_PROBE_RESPONSE_TEMPLATE;
     tTemplateStruct.uRateMask = TWD_GetBitmapByRateNumber(pRoleAP->hTWD, pRoleAP->tBssCapabilities.uMinBasicRate);
     FillProbeRespTemplate(pRoleAP, (TApBeaconParams*)&pRoleAP->tBssCapabilities.tAPBeaconParams, &tTemplateStruct);
+
+    if (tTemplateStruct.len > MAX_TEMPLATES_SIZE)
+    {
+        tTemplateStruct.len = MAX_TEMPLATES_SIZE;
+        WLAN_OS_REPORT(("*** \n Error!, template size (%d) is bigger than the limit of %d \n template has been truncated to limit ***\n", tTemplateStruct.len, MAX_TEMPLATES_SIZE));
+    }
 
     tRes = TWD_CmdTemplate (pRoleAP->hTWD, &tTemplateStruct, NULL, NULL);
     if (tRes != TI_OK)

@@ -1016,8 +1016,8 @@ TI_STATUS cmdBld_CmdIeBssStart (TI_HANDLE hCmdBld, BssStartCmd_t *pBssStartParam
 TI_STATUS cmdBld_CmdIeBssStop (TI_HANDLE hCmdBld, TI_UINT8 bssIdx, void *fCb, TI_HANDLE hCb)
 {
     TCmdBld *pCmdBld = (TCmdBld *)hCmdBld;
-    BssStartCmd_t Cmd_BssStart;
-    BssStartCmd_t *pCmd = &Cmd_BssStart;
+    BssStopCmd_t Cmd_BssStop;
+    BssStopCmd_t *pCmd = &Cmd_BssStop;
 
     os_memoryZero (pCmdBld->hOs, (void *)pCmd, sizeof(*pCmd));
 

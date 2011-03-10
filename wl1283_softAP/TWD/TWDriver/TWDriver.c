@@ -620,7 +620,9 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     TWlanParams         		*pWlanParams = &DB_WLAN(pTWD->hCmdBld);
     TKeepAliveList      		*pKlvParams = &DB_KLV(pTWD->hCmdBld);
     IniFileRadioParam   		*pRadioParams = DB_RADIO(pTWD->hCmdBld);
+#ifdef TNETW1273
     IniFileExtendedRadioParam   *pExtRadioParams = DB_EXT_RADIO(pTWD->hCmdBld);
+#endif
     IniFileGeneralParam 		*pGenParams = &DB_GEN(pTWD->hCmdBld);
     TRateMngParams      		*pRateMngParams = &DB_RM(pTWD->hCmdBld);
     TDmaParams          		*pDmaParams = &DB_DMA(pTWD->hCmdBld);
@@ -858,7 +860,9 @@ TI_STATUS TWD_SetDefaults (TI_HANDLE hTWD, TTwdInitParams *pInitParams)
     pWlanParams->tTwdHtCapabilities.uMCSFeedback =           MCS_FEEDBACK_NO;
 
     os_memoryCopy(pTWD->hOs, (void*)pRadioParams, (void*)&pInitParams->tIniFileRadioParams, sizeof(IniFileRadioParam) * NUMBER_OF_FEM_TYPES_E);
+#ifdef TNETW1273
     os_memoryCopy(pTWD->hOs, (void*)pExtRadioParams, (void*)&pInitParams->tIniFileExtRadioParams, sizeof(IniFileExtendedRadioParam) * NUMBER_OF_FEM_TYPES_E);
+#endif
     os_memoryCopy(pTWD->hOs, (void*)pGenParams, (void*)&pInitParams->tPlatformGenParams, sizeof(IniFileGeneralParam));
 
     CMD_BLD_MARK_INIT_SEQUENCE_CMD_AS_VALID(pTWD->hCmdBld, __CFG_PLATFORM_PARAMS)

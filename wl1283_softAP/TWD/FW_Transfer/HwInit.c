@@ -73,6 +73,22 @@ extern void cmdBld_FinalizeDownload (TI_HANDLE hCmdBld, TBootAttr *pBootAttr, Fw
  * Defines
  ************************************************************************/
 
+/* 
+ * New PLL Configuration Algorithm
+ * -------------------------------
+ */
+#define CLOCK_CONFIG_19_2_M      0
+#define CLOCK_CONFIG_26_M        1
+#define CLOCK_CONFIG_38_4_M      2
+#define CLOCK_CONFIG_52_M        3
+#define CLOCK_CONFIG_38_4_M_XTAL 4
+#define CLOCK_CONFIG_16_368_M    4
+#define CLOCK_CONFIG_26_M_XTAL   5
+#define CLOCK_CONFIG_32_736_M    5
+#define CLOCK_CONFIG_16_8_M      6
+#define CLOCK_CONFIG_33_6_M      7
+
+
 /* Download phase partition */
 #define PARTITION_DOWN_MEM_ADDR       0                 
 #define PARTITION_DOWN_MEM_SIZE       0x177C0           
@@ -710,7 +726,8 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
         {/* ref clk: 19.2/38.4/38.4-XTAL */
             clkVal = 0x3;
         }
-        if ((1 == (pGenParams->RefClk & FREF_CLK_FREQ_MASK)) || (3 == (pGenParams->RefClk & FREF_CLK_FREQ_MASK)))
+        if ((1 == (pGenParams->RefClk & FREF_CLK_FREQ_MASK)) || (3 == (pGenParams->RefClk & FREF_CLK_FREQ_MASK))
+        		|| (5 == (pGenParams->RefClk & FREF_CLK_FREQ_MASK)))
         {/* ref clk: 26/52 */
             clkVal = 0x5;
         }
@@ -818,22 +835,34 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
         clkVal = pHwInit->aHwInitTxn[pHwInit->uTxnIndex].uData;
         pHwInit->uTxnIndex = 0; /* Reset index only after getting the last read value! */
 #ifdef TNETW1283 
-WLAN_OS_REPORT(("\n **** in BootSM, setting clkVal,  pHwInit->bIsFREFClock=%d  *****\n", pHwInit->bIsFREFClock));
         if (pHwInit->bIsFREFClock == TI_TRUE)
         {
-            clkVal |= (pGenParams->RefClk << 1) << 4;
+            clkVal |= ((pGenParams->RefClk & 0x3) << 1) << 4;
         }
         else
         {
-            clkVal |= (pWlanParams->TcxoRefClk << 1) << 4;
+            clkVal |= ((pWlanParams->TcxoRefClk & 0x3) << 1) << 4;
         }
 #else
-        clkVal |= (pGenParams->RefClk << 1) << 4;
+        /* XTAL 38.4[MHz] configured */
+        if ((pGenParams->RefClk & 0x7) == CLOCK_CONFIG_38_4_M_XTAL) 
+        {
+            clkVal = (2 << 5);
+        }
+        /* XTAL 26[MHz] configured */
+        else if ((pGenParams->RefClk & 0x7) == CLOCK_CONFIG_26_M_XTAL)
+        {
+            clkVal = (1 << 5);
+        }
+        else
+        {
+            clkVal |= (((pGenParams->RefClk & 0x3) << 1) << 4);
+        }
 #endif
 #ifdef TNETW1283
         if ((pGenParams->GeneralSettings[0] & DRPw_MASK_CHECK) > 0)
 #else
-        if ((pGenParams->GeneralSettings & DRPw_MASK_CHECK) > 0)
+        if ((pGenParams->GeneralSettings[0] & DRPw_MASK_CHECK) > 0)
 #endif            
         {
             clkVal |= DRPw_MASK_SET;
@@ -1098,22 +1127,6 @@ WLAN_OS_REPORT(("\n **** in BootSM, setting clkVal,  pHwInit->bIsFREFClock=%d  *
 }
 
 #ifdef TNETW1283
-/* 
- * New PLL Configuration Algorithm
- * -------------------------------
- */
-#define CLOCK_CONFIG_19_2_M      0
-#define CLOCK_CONFIG_26_M        1
-#define CLOCK_CONFIG_38_4_M      2
-#define CLOCK_CONFIG_52_M        3
-#define CLOCK_CONFIG_38_4_M_XTAL 4
-#define CLOCK_CONFIG_16_368_M    4
-#define CLOCK_CONFIG_26_M_XTAL   5
-#define CLOCK_CONFIG_32_736_M    5
-#define CLOCK_CONFIG_16_8_M      6
-#define CLOCK_CONFIG_33_6_M      7
-
-
 
  /****************************************************************************
  * DESCRIPTION: PLL configuration state machine

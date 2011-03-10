@@ -66,7 +66,7 @@ const EAcTrfcType WMEQosTagToACTable[MAX_NUM_OF_802_1d_TAGS] =
  */
 
 /* Spare blocks written in extraMemBlks field in TxDescriptor for HW use */
-#define BLKS_HW_ALLOC_SPARE             2 
+#define BLKS_HW_ALLOC_SPARE             1 
 
 /* Set queue's backpressure bit (indicates queue state changed from ready to busy or inversely). */
 #define SET_QUEUE_BACKPRESSURE(pBackpressure, uQueueId)   (*pBackpressure |= (1 << uQueueId)) 

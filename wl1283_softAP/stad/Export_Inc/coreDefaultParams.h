@@ -1394,35 +1394,72 @@ IP&Port classification table  */
 
 
 /* Configurable radio parameters */
+#ifdef TNETW1283
+#define RADIO_TX_PER_POWER_LIMITS_2_4_NORMAL_DEF_TABLE      "1d,1f,22,26,27,29,25"
+#define RADIO_TX_PER_POWER_LIMITS_2_4_DEGRADED_DEF_TABLE    "1d,1f,22,26,27,27,24"
+#define RADIO_TX_PER_POWER_LIMITS_2_4_EXTREME_DEF_TABLE     "16,1d,1e,20,24,25,22"
+#else
 #define RADIO_TX_PER_POWER_LIMITS_2_4_NORMAL_DEF_TABLE      "1c,1f,22,24,28,29"
 #define RADIO_TX_PER_POWER_LIMITS_2_4_DEGRADED_DEF_TABLE    "19,1f,22,23,27,28"
 #define RADIO_TX_PER_POWER_LIMITS_2_4_EXTREME_DEF_TABLE     "19,1c,1e,20,24,25"
+#endif
 
 #ifdef TNETW1283
 #define RADIO_GENERAL_SETTING_DEF_TABLE     "01,00,00,00"
+#else
+#define RADIO_GENERAL_SETTING_DEF_TABLE     "01"
 #endif
 
 #define RADIO_TX_PER_POWER_LIMITS_2_4_11B_DEF_TABLE         "50,50,50,50,50,50,50,50,50,50,50,50,50,50"
 #define RADIO_TX_PER_POWER_LIMITS_2_4_OFDM_DEF_TABLE        "50,50,50,50,50,50,50,50,50,50,50,50,50,50"
 #define RADIO_TX_PA_GAIN_VS_BIAS_OFFSET_2_4_DEF_TABLE       "f3,54,55,56,57,58"
-#define RADIO_TX_PD_VS_RATE_OFFSET_2_4_DEF_TABLE            "00,00,00,00,00,00 "
-#define RADIO_TX_BIAS_2_4_DEF_TABLE                         "11,11,15,11,15,15"
+
+#ifdef TNETW1283
+#define RADIO_TX_PD_VS_RATE_OFFSET_2_4_DEF_TABLE            "01,02,02,02,02,00,02"
+#define RADIO_TX_BIAS_2_4_DEF_TABLE                         "17,17,17,1a,16,17,1a,17"
+#else
+#define RADIO_TX_PD_VS_RATE_OFFSET_2_4_DEF_TABLE            "00,00,00,00,00,00"
+#define RADIO_TX_BIAS_2_4_DEF_TABLE                         "15,15,15,19,19,15"
+#endif
 #define RADIO_TX_BIP_REF_VOLTAGE_DEF_TABLE_5G               "173,188,187,18b,18a,186,18c"
 #define GEN_FW_CMD_DEF_TABLE        "00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00"
 #define RADIO_TX_BIP_REF_POWER_DEF_TABLE_5G                 "80,80,80,80,80,80,80"
-#define RADIO_TX_BIP_OFF_BD_5G                              "00,00,00,00,00,00"
+#define RADIO_TX_BIP_OFF_BD_5G                              "00,00,00,00,00,00,00"
 
-
+#ifdef TNETW1283
+#define RADIO_TX_PER_POWER_LIMITS_5_NORMAL_DEF_TABLE        "1c,1e,21,23,25,50,25"
+#define RADIO_TX_PER_POWER_LIMITS_5_DEGRADED_DEF_TABLE      "18,1e,21,23,25,50,24"
+#define RADIO_TX_PER_POWER_LIMITS_5_EXTREME_DEF_TABLE       "16,1c,1e,20,20,50,1e"
+#else
 #define RADIO_TX_PER_POWER_LIMITS_5_NORMAL_DEF_TABLE        "50,50,50,50,50,50"
 #define RADIO_TX_PER_POWER_LIMITS_5_DEGRADED_DEF_TABLE      "50,50,50,50,50,50"
 #define RADIO_TX_PER_POWER_LIMITS_5_EXTREME_DEF_TABLE       "50,50,50,50,50,50"
+#endif
 
 #define RADIO_TX_PER_POWER_LIMITS_5_OFDM_DEF_TABLE          "50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50"
+
+#ifdef TNETW1283
+#define RADIO_TX_PD_VS_RATE_OFFSET_5_DEF_TABLE              "01,02,02,02,02,00,02"
+#else
 #define RADIO_TX_PD_VS_RATE_OFFSET_5_DEF_TABLE              "00,00,00,00,00,00"
+#endif
+
+#ifdef TNETW1283
+#define RADIO_TX_BIAS_5_DEF_TABLE                           "10,10,10,10,10,10,10"
+#else
 #define RADIO_TX_BIAS_5_DEF_TABLE                           "10,10,10,10,10,10"
+#endif
+
 #define RADIO_RX_FEM_INSERT_LOSS_5_DEF_TABLE                "10,10,10,10,10,10,10"
 #define RADIO_RX_TRACE_INSERT_LOSS_5_DEF_TABLE              "00,00,00,00,00,00,00"
-#define RADIO_TX_TRACE_LOSS_5_DEF_TABLE                     "00,00,00,00,00,00,00"
+
+#ifdef TNETW1283
+#define RADIO_TX_TRACE_LOSS_5_DEF_TABLE                     "00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00" /*35*/
+#define RADIO_TX_TRACE_LOSS_2_4_DEF_TABLE                   "00,00,00,00,00,00,00,00,00,00,00,00,00,00" /*14*/
+#else
+#define RADIO_TX_TRACE_LOSS_5_DEF_TABLE                     "00,00,00,00,00,00,00" /*7*/
+#define RADIO_TX_TRACE_LOSS_2_4_DEF_TABLE                   "00"
+#endif
 
 #define RADIO_RX_FEM_INSERT_LOSS_2_4_MIN                    0
 #define RADIO_RX_FEM_INSERT_LOSS_2_4_DEF                    350  /* 0x15e

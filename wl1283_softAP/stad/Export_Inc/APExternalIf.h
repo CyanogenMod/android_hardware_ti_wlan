@@ -362,6 +362,7 @@ typedef struct
 	unsigned int            channels_list[NUM_G_CHANNELS];
 	unsigned int			channels_num;
     unsigned int            interval;
+	unsigned int			dwell_time;
 }TApActiveScanParams;
 
 #endif /*__AP_EXTERNAL_IF_H__*/

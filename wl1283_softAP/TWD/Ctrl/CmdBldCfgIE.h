@@ -101,7 +101,9 @@ TI_STATUS cmdBld_CfgIeSetBaSession              (TI_HANDLE hCmdBld, InfoElement_
 TI_STATUS cmdBld_CfgIeSetFwHtCapabilities       (TI_HANDLE hCmdBld, TI_UINT32 uHtCapabilites, TMacAddr tMacAddress, TI_UINT8 uAmpduMaxLeng, TI_UINT8 uAmpduMinSpac, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeSetFwHtInformation        (TI_HANDLE hCmdBld, TI_UINT8 uRifsMode, TI_UINT8 uHtProtection, TI_UINT8 uGfProtection, TI_UINT8 uHtTxBurstLimit, TI_UINT8 uDualCtsProtection, void *fCb,TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeRadioParams               (TI_HANDLE hCmdBld, IniFileRadioParam *pIniFileRadioParams, void *fCb, TI_HANDLE hCb);
+#ifndef TNETW1283
 TI_STATUS cmdBld_CfgIeExtendedRadioParams       (TI_HANDLE hCmdBld, IniFileExtendedRadioParam *pIniFileExtRadioParams, void *fCb, TI_HANDLE hCb);
+#endif
 TI_STATUS cmdBld_CfgPlatformGenParams           (TI_HANDLE hCmdBld, IniFileGeneralParam *pGenParams, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeCoexActivity              (TI_HANDLE hCmdBld, TCoexActivity *pCoexActivity, void *fCb, TI_HANDLE hCb);
 TI_STATUS cmdBld_CfgIeBurstMode 				(TI_HANDLE hCmdBld, TI_BOOL bEnabled, void *fCb, TI_HANDLE hCb);

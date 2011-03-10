@@ -52,7 +52,7 @@
 
 #define WSPI_PAD_LEN_WRITE          4
 #define WSPI_PAD_LEN_READ           8                    
-#define MAX_XFER_BUFS               4
+#define MAX_XFER_BUFS               5
 
 #define TXN_PARAM_STATUS_OK         0
 #define TXN_PARAM_STATUS_ERROR      1

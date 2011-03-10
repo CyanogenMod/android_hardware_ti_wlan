@@ -239,7 +239,7 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
               Console_AddToken(pTiCon->hConsole, h1, (PS8)"sHow status",  (PS8)"show status", (FuncToken_t) CuCmd_ApRoleShowStatus, aaa );
         }
         {
-              ConParm_t aaa[]  = { { (PS8)"cmdName", CON_PARM_RANGE | CON_PARM_OPTIONAL, 1, 12, 1 },
+              ConParm_t aaa[]  = { { (PS8)"cmdName", CON_PARM_RANGE | CON_PARM_OPTIONAL, 1, 22, 1 },
                                    { (PS8)"param0", CON_PARM_STRING | CON_PARM_OPTIONAL, 0, 32, 0 }, 
                                    { (PS8)"param1", CON_PARM_STRING | CON_PARM_OPTIONAL, 0, 32, 0 },
                                    { (PS8)"param2", CON_PARM_STRING | CON_PARM_OPTIONAL, 0, 32, 0 },
@@ -269,6 +269,10 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 			{
 				ConParm_t aaa[]  = { {(PS8)"Interval", CON_PARM_RANGE | CON_PARM_OPTIONAL, 0, 120000, 0 }, CON_LAST_PARM };
 				Console_AddToken(pTiCon->hConsole,h2, (PS8)"Interval", (PS8)"Set mSec interval between cycles up to 2 sec", (FuncToken_t) CuCmd_SendSetIntervalCmdToHostapd, aaa );
+			}
+			{
+				ConParm_t aaa[]  = { {(PS8)"dWell time", CON_PARM_RANGE | CON_PARM_OPTIONAL, 0, 1000, 0 }, CON_LAST_PARM };
+				Console_AddToken(pTiCon->hConsole,h2, (PS8)"dWell time", (PS8)"Set mSec dwell time between channels", (FuncToken_t) CuCmd_SendSetDwellTimeCmdToHostapd, aaa );
 			}
 		}
 	}

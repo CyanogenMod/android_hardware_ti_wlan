@@ -2010,7 +2010,7 @@ TI_STATUS cmdBld_CfgIeRadioParams (TI_HANDLE hCmdBld, IniFileRadioParam *pIniFil
     return status;
 }
 
-
+#ifdef TNETW1273
 /** 
  * \fn     cmdBld_CfgIeExtendedRadioParams 
  * \brief  configure extended radio parameters setting in the
@@ -2055,7 +2055,7 @@ TI_STATUS cmdBld_CfgIeExtendedRadioParams (TI_HANDLE hCmdBld,
     os_memoryFree(pCmdBld->hOs, pTestCmd, sizeof(TTestCmd));
     return status;
 }
-
+#endif
 
 /****************************************************************************
  *                      interrogate_callback()
