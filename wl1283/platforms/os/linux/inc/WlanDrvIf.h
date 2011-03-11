@@ -129,8 +129,15 @@ typedef struct
 
 #define NETDEV(drv) (((TWlanDrvIfObj*)(drv))->netdev)
 
+enum
+{
+    CMD_DISABLED,
+    CMD_ENABLED,
+    CMD_DONOTHING /* return true but do nothing */
+};
+
 void wlanDrvIf_UpdateDriverState (TI_HANDLE hOs, EDriverSteadyState eDriverState);
 TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl);
-TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd);
+int wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd);
 
 #endif /* WLAN_DRV_IF_H*/

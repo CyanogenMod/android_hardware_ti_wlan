@@ -1287,10 +1287,10 @@ TI_BOOL wlanDrvIf_IsIoctlEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uIoctl)
  * \param	uCmd	the private-command to check
  * \return	TI_TRUE if the driver can accept eCmd now, TI_FALSE otherwise
  */
-TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd)
+int wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd)
 {
 	TWlanDrvIfObj *pWlanDrvIf = (TWlanDrvIfObj*) hWlanDrvIf;
-	TI_BOOL        bEnabled = TI_FALSE;
+	int cmdStatus = CMD_DONOTHING;
 
 	/* PwrState commands are never allowed from user application */
 	switch (uCmd)
@@ -1300,35 +1300,45 @@ TI_BOOL wlanDrvIf_IsCmdEnabled(TI_HANDLE hWlanDrvIf, TI_UINT32 uCmd)
 	case PWR_STATE_SLEEP_PARAM:
 	case PWR_STATE_DOZE_PARAM:
 		printk(KERN_WARNING "TIWLAN: cmd 0x%x is not allowed\n", uCmd);
-		return TI_FALSE;
+		return CMD_DISABLED;
 	}
 
 	/* other commands are enabled/disabled depending on the driver-state */
 	switch (pWlanDrvIf->tCommon.eDriverState)
 	{
 	case DRV_STATE_RUNNING:
-		bEnabled = (uCmd != DRIVER_START_PARAM); /* reject START when driver is running (accepted when driver is stopped) */
+		if(uCmd == DRIVER_START_PARAM)
+			cmdStatus = CMD_DONOTHING;
+		else
+			cmdStatus = CMD_ENABLED;
 		break;
 	case DRV_STATE_FAILED:
 	case DRV_STATE_STOPING:
-		bEnabled = (uCmd == DRIVER_STATUS_PARAM);
+		if(uCmd == DRIVER_STATUS_PARAM)
+			cmdStatus = CMD_ENABLED;
+		else
+			cmdStatus = CMD_DISABLED;
 		break;
 	case DRV_STATE_STOPPED:
-		bEnabled = ( (uCmd == DRIVER_START_PARAM)
-				  || (uCmd == DRIVER_STATUS_PARAM) );
+		if((uCmd == DRIVER_START_PARAM)||(uCmd == DRIVER_STATUS_PARAM))
+			cmdStatus = CMD_ENABLED;
+		else 
+			cmdStatus = CMD_DISABLED;
 		break;
 	case DRV_STATE_IDLE:
-		bEnabled = ( (uCmd == DRIVER_INIT_PARAM) /* used by tiwlan_loader */
-				  || (uCmd == DRIVER_STATUS_PARAM) );
+		if((uCmd == DRIVER_INIT_PARAM)||(uCmd == DRIVER_STATUS_PARAM))
+			cmdStatus = CMD_ENABLED;
+		else 
+			cmdStatus = CMD_DISABLED;
 		break;
 	}
 
-	if (!bEnabled)
+	if (cmdStatus == CMD_DISABLED)
 	{
 		printk(KERN_WARNING "TIWLAN: cmd 0x%x is disabled in state %d\n", uCmd, pWlanDrvIf->tCommon.eDriverState);
 	}
 
-	return bEnabled;
+	return cmdStatus;
 }
 
 module_init (wlanDrvIf_ModuleInit);

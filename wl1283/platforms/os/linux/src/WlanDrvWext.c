@@ -244,7 +244,8 @@ int wlanDrvWext_Handler (struct net_device *dev,
                      void *iw_req, 
                      void *extra)
 {
-   int              rc;
+   int rc;
+   int cmdRet;
    TWlanDrvIfObj   *drv = (TWlanDrvIfObj *)NETDEV_GET_PRIVATE(dev);
    ti_private_cmd_t my_command; 
    struct iw_mlme   mlme;
@@ -273,10 +274,15 @@ int wlanDrvWext_Handler (struct net_device *dev,
 		 return TI_NOK;
 	   }
 
-	/* abort if the private-command is disabled */
-	   if (!wlanDrvIf_IsCmdEnabled(drv, my_command.cmd))
+	   /* abort if the private-command is disabled */
+           cmdRet = wlanDrvIf_IsCmdEnabled(drv, my_command.cmd);
+	   if (cmdRet == CMD_DISABLED)
 	   {
-		   return TI_NOK;
+	      return TI_NOK;
+	   }
+	   else if (cmdRet == CMD_DONOTHING)
+	   {
+	      return TI_OK;
 	   }
 
 	   if (IS_PARAM_FOR_MODULE(my_command.cmd, DRIVER_MODULE_PARAM))
