@@ -1900,7 +1900,8 @@ TI_STATUS rsn_reportMicFailure(TI_HANDLE hRsn, TI_UINT8 *pType, TI_UINT32 Length
 	failureType = *pType;
 
 	if (((pRsn->unicastSuite == TWD_CIPHER_TKIP) && (failureType == KEY_TKIP_MIC_PAIRWISE)) ||
-			((pRsn->broadcastSuite == TWD_CIPHER_TKIP) && (failureType == KEY_TKIP_MIC_GROUP)))
+			(((pRsn->broadcastSuite == TWD_CIPHER_TKIP)||(pRsn->broadcastSuite == TWD_CIPHER_AES_CCMP))
+					&& (failureType == KEY_TKIP_MIC_GROUP)))
 	{
 		/* check if the MIC failure is group and group key update */
 		/* was performed during the last 3 seconds */
