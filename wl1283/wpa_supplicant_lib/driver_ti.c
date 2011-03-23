@@ -28,6 +28,8 @@
 #include "wps_defs.h"
 #endif
 
+#include "TWDriverScan.h"
+
 /*-------------------------------------------------------------------*/
 #define TI2WPA_STATUS(s)	(((s) != 0) ? -1 : 0)
 #define TI_CHECK_DRIVER(f,r)	\
@@ -219,39 +221,6 @@ int wpa_driver_tista_parse_custom(void *ctx, const void *custom)
 	return 0;
 }
 
-static void ti_init_scan_params( scan_Params_t *pScanParams, int scanType,
-					int noOfChan, int scan_probe_flag )
-{
-	u8 i,j;
-	int maxDwellTime = 110000;
-
-	/* init application scan default params */
-	pScanParams->desiredSsid.len = 0;
-	/* all scan, we will use active scan */
-	pScanParams->scanType = scanType;
-	if ((scanType == SCAN_TYPE_NORMAL_ACTIVE) && scan_probe_flag)
-		maxDwellTime = 30000;
-
-	pScanParams->band = RADIO_BAND_2_4_GHZ;
-	pScanParams->probeReqNumber = 3;
-	pScanParams->probeRequestRate = RATE_MASK_UNSPECIFIED; /* Let the FW select */;
-	pScanParams->Tid = 0;
-	pScanParams->numOfChannels = noOfChan;
-	for ( i = 0; i < noOfChan; i++ )
-	{
-		for ( j = 0; j < 6; j++ )
-		{
-			pScanParams->channelEntry[ i ].normalChannelEntry.bssId[ j ] = 0xff;
-		}
-		pScanParams->channelEntry[ i ].normalChannelEntry.earlyTerminationEvent = SCAN_ET_COND_DISABLE;
-		pScanParams->channelEntry[ i ].normalChannelEntry.ETMaxNumOfAPframes = 0;
-		pScanParams->channelEntry[ i ].normalChannelEntry.maxChannelDwellTime = maxDwellTime;
-		pScanParams->channelEntry[ i ].normalChannelEntry.minChannelDwellTime = maxDwellTime;
-		pScanParams->channelEntry[ i ].normalChannelEntry.txPowerDbm = DEF_TX_POWER;
-		pScanParams->channelEntry[ i ].normalChannelEntry.channel = i + 1;
-	}
-}
-
 /*-----------------------------------------------------------------------------
 Routine Name: wpa_driver_tista_scan
 Routine Description: request scan from driver
@@ -282,8 +251,12 @@ static int wpa_driver_tista_scan( void *priv, const u8 *ssid, size_t ssid_len )
 			scan_probe_flag = 1;
 		}
 	}
-	ti_init_scan_params(&scanParams, scan_type, drv->scan_channels,
-				scan_probe_flag);
+
+	scanParams.scanType = scan_type;
+	scanParams.numOfChannels = drv->scan_channels;
+	scanParams.probeReqNumber = SCAN_DEFAULT_PROBE_REQUEST_NUM;
+	scanParams.probeRequestRate = RATE_MASK_UNSPECIFIED; /* Let the FW select */;
+	scanParams.desiredSsid.len = 0;
 
 	drv->force_merge_flag = 0; /* Set merge flag */
 
@@ -298,12 +271,12 @@ static int wpa_driver_tista_scan( void *priv, const u8 *ssid, size_t ssid_len )
 
 	drv->last_scan = scan_type; /* Remember scan type for last scan */
 
-	res = wpa_driver_tista_private_send(priv, TIWLN_802_11_START_APP_SCAN_SET, &scanParams, sizeof(scanParams), NULL, 0);
+	res = wpa_driver_tista_private_send(priv, TIWLN_802_11_START_OS_SCAN_SET, &scanParams, sizeof(scanParams), NULL, 0);
 
 	if (0 != res)
 		wpa_printf(MSG_ERROR, "ERROR - Failed to do tista scan!");
 	else
-		wpa_printf(MSG_DEBUG, "wpa_driver_tista_scan success");
+		wpa_printf(MSG_DEBUG, "wpa_driver_tista_scan OS_SCAN success");
 
 	timeout = 30;
 	wpa_printf(MSG_DEBUG, "Scan requested (ret=%d) - scan timeout %d sec",
