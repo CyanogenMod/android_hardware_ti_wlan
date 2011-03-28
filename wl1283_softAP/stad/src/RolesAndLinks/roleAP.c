@@ -809,7 +809,7 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         break;
 
     case ROLE_AP_CHANGE_BSS_PARAM:
-        /* [LiorC] To be implemented later in hostapd */
+        /* To be implemented later in hostapd */
         break;
 
     case ROLE_AP_SET_TX_PARAM:
@@ -817,7 +817,7 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
         TApTxParams *pTxParams = (TApTxParams*)pBuffer;
         TAcQosParams tAcQosParams;
 
-        tAcQosParams.ac = (TI_UINT8)pTxParams->cQueueId; /* [LiorC] check if need to be converted */
+        tAcQosParams.ac = (TI_UINT8)pTxParams->cQueueId;
         tAcQosParams.aifsn = (TI_UINT8)pTxParams->cAifs;
         tAcQosParams.cwMin = (TI_UINT8)pTxParams->sCwmin;
         tAcQosParams.cwMax = (TI_UINT16)pTxParams->sCwmax;
@@ -858,11 +858,11 @@ TI_STATUS RoleAp_setApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pBuffer)
     break;
 
     case ROLE_AP_SET_INACTIVE_INT:
-        /* [LiorC] To be implemented later in hostapd */
+        /*  To be implemented later in hostapd */
         break;
 
     case ROLE_AP_CHANGE_STATION_PARAM:
-        /* [LiorC] To be implemented later in hostapd */
+        /*  To be implemented later in hostapd */
         break;
 
     case ROLE_AP_SET_PORT_STATUS:
@@ -1091,7 +1091,7 @@ TI_STATUS RoleAp_getApCmd(TI_HANDLE hRoleAP, TI_UINT32 cmd, void *pInBuf, void *
     switch (cmd)
     {
     case ROLE_AP_GET_STATION_PARAM:
-        /* [LiorC] To be implemented later. */
+        /* To be implemented later. */
         break;
 
     case ROLE_AP_GET_STA_INACTIVITY:

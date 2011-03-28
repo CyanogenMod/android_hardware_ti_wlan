@@ -46,7 +46,7 @@
 #define SW_VERSION_STR      "WiLink_Driver_AP_6.2.0.0.50"
 
 #define SW_RELEASE_MONTH    03
-#define SW_RELEASE_DAY      14
+#define SW_RELEASE_DAY      16
 #define SW_RELEASE_YEAR     2011
 
 
