@@ -401,34 +401,27 @@ TI_STATUS mlme_start(TI_HANDLE hMlme, TI_UINT8 connectionType)
 {
 	EConnType econnectionType = (EConnType)connectionType;
 	mlme_t		*pMlme = (mlme_t*)hMlme;
-    paramInfo_t *pParam;
+    paramInfo_t param;
 
 	if (pMlme == NULL)
     {
         return TI_NOK;
     }
 
-    pParam = (paramInfo_t *)os_memoryAlloc(pMlme->hOs, sizeof(paramInfo_t));
-
-    if (pParam == NULL)
-    {
-        return TI_NOK;
-    }
-
 	pMlme->assocInfo.disAssoc = TI_FALSE;
 
-	pParam->paramType = RSN_EXT_AUTHENTICATION_MODE;
-	rsn_getParam(pMlme->hRsn, pParam);
+	param.paramType = RSN_EXT_AUTHENTICATION_MODE;
+	rsn_getParam(pMlme->hRsn, &param);
 	pMlme->legacyAuthType = AUTH_LEGACY_NONE;
     switch (econnectionType)
 	{
 	case CONN_TYPE_FIRST_CONN:
 	case CONN_TYPE_ROAM:
-        if (RSN_AUTH_SHARED_KEY == pParam->content.rsnExtAuthneticationMode)
+        if (RSN_AUTH_SHARED_KEY == param.content.rsnExtAuthneticationMode)
         {
             pMlme->authInfo.authType = AUTH_LEGACY_SHARED_KEY;
         }
-        else if (RSN_AUTH_AUTO_SWITCH == pParam->content.rsnExtAuthneticationMode)
+        else if (RSN_AUTH_AUTO_SWITCH == param.content.rsnExtAuthneticationMode)
         {
             pMlme->authInfo.authType = AUTH_LEGACY_SHARED_KEY;  /* the default of AutoSwitch mode is SHARED mode */
 			pMlme->legacyAuthType = RSN_AUTH_AUTO_SWITCH;   /* legacyAuthType indecate that the auth mode is AutoSwitch */

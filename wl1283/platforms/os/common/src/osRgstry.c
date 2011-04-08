@@ -2093,6 +2093,7 @@ regFillInitTable(
         }
 
         p->tSmeInitParams.uChannelNum = uSmeGChannelsCount;
+        os_memoryFree(pAdapter, uSmeTempList, SME_SCAN_CHANNELS_LIST_G_STRING_MAX_SIZE);
     }
     regReadIntegerParameter(pAdapter, &STRdot11AuthenticationMode,
 							   RSN_AUTH_SUITE_DEF, RSN_AUTH_SUITE_MIN, RSN_AUTH_SUITE_MAX,
