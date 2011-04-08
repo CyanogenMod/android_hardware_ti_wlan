@@ -94,25 +94,29 @@ int sdioAdapt_ConnectBus (void *        fCbFunc,
     *pRxDmaBufLen  = *pTxDmaBufLen  = MAX_BUS_TXN_SIZE;
     /* Init SDIO driver and HW */
     iStatus = sdioDrv_ConnectBus (fCbFunc, hCbArg, uBlkSizeShift,uSdioThreadPriority);
-	if (iStatus) { return iStatus; }
+    if (iStatus) { return iStatus; }
 
     sdioDrv_ClaimHost(SDIO_WLAN_FUNC);
-	iStatus = sdioDrv_EnableFunction(TXN_FUNC_ID_WLAN);
-	if (iStatus) { return iStatus; }
+    iStatus = sdioDrv_EnableFunction(TXN_FUNC_ID_WLAN);
+    if (iStatus) {
+        sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
+        return iStatus;
+    }
 
 #ifdef SDIO_IN_BAND_INTERRUPT
-
-	iStatus = sdioDrv_EnableInterrupt(TXN_FUNC_ID_WLAN);
-	if (iStatus) { return iStatus; }
-
+    iStatus = sdioDrv_EnableInterrupt(TXN_FUNC_ID_WLAN);
+    if (iStatus) { return iStatus; }
 #endif
 
-	iStatus = sdioDrv_SetBlockSize(TXN_FUNC_ID_WLAN, uBlkSize);
-	if (iStatus) { return iStatus; }
+    iStatus = sdioDrv_SetBlockSize(TXN_FUNC_ID_WLAN, uBlkSize);
+    if (iStatus) {
+        sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
+        return iStatus;
+    }
 
-sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
+    sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
 
-	return iStatus;
+    return iStatus;
 }
 
 

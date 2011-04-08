@@ -458,6 +458,9 @@ MODULE_DEVICE_TABLE(sdio, tiwl12xx_devices);
 
 int sdio_tiwlan_suspend(struct device *dev)
 {
+	if(g_drv.sdio_host_claim_ref)
+		return -1;
+
 	return 0;
 }
 
