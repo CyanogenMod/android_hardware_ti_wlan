@@ -2099,6 +2099,7 @@ static TI_STATUS setRxPortStatus(TRoleAP *pRoleAP, portStatus_e ePortStatus)
         return status;
     }
 
+    os_memoryFree(pRoleAP->hOs, pParam, sizeof(paramInfo_t));
     return TI_OK;
 }
 /**
