@@ -849,11 +849,11 @@ RETURN:    void.\n
 static void powerSaveReportCB(TI_HANDLE hPowerMgr, char* str , TI_UINT32 strLen)
 {
     PowerMgr_t *pPowerMgr = (PowerMgr_t*)hPowerMgr;
-	TI_UINT8           PowerSaveStatus;
+    TI_UINT8           PowerSaveStatus;
 
 
-	/*Report was received - stop the timer*/
-	tmr_StopTimer(pPowerMgr->hEnterPsGuardTimer);
+    /*Report was received - stop the timer*/
+    tmr_StopTimer(pPowerMgr->hEnterPsGuardTimer);
 
     /*copy the report status*/
     os_memoryCopy(pPowerMgr->hOS, (void *)&PowerSaveStatus, (void *)str, sizeof(TI_UINT8));
@@ -863,24 +863,27 @@ static void powerSaveReportCB(TI_HANDLE hPowerMgr, char* str , TI_UINT32 strLen)
     /* Handling the event*/
     switch ( (EventsPowerSave_e)PowerSaveStatus )
     {
-		case ENTER_POWER_SAVE_FAIL:
+        case ENTER_POWER_SAVE_FAIL:
             tmr_StartTimer (pPowerMgr->hRetryPsTimer,
-							powerMgrRetryPsTimeout,
-							(TI_HANDLE)pPowerMgr,
-							RE_ENTER_PS_TIMEOUT,
-							TI_FALSE);
-			break;
-
-		case ENTER_POWER_SAVE_SUCCESS:
-            pPowerMgr->psCurrentMode = POWER_SAVE_ON;
-            updatePowerAuthority(pPowerMgr);
-
-            invokeCallback(pPowerMgr->fEnteredPsCb, pPowerMgr->hEnteredPsCb);
+                            powerMgrRetryPsTimeout,
+                            (TI_HANDLE)pPowerMgr,
+                            RE_ENTER_PS_TIMEOUT,
+                            TI_FALSE);
             break;
 
-		default:
-			TRACE1( pPowerMgr->hReport, REPORT_SEVERITY_ERROR, "powerSaveReportCB: invliad status: %d\n", PowerSaveStatus);
-			break;
+        case ENTER_POWER_SAVE_SUCCESS:
+            /* Update mode to PS_ON only if it wasn't followed by PS_OFF request! */
+            if (pPowerMgr->psLastRequest == POWER_SAVE_ON)
+            {
+                pPowerMgr->psCurrentMode = POWER_SAVE_ON;
+                updatePowerAuthority(pPowerMgr);
+                invokeCallback(pPowerMgr->fEnteredPsCb, pPowerMgr->hEnteredPsCb);
+            }
+            break;
+
+        default:
+            TRACE1( pPowerMgr->hReport, REPORT_SEVERITY_ERROR, "powerSaveReportCB: invliad status: %d\n", PowerSaveStatus);
+            break;
     }
 }
 
