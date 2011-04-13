@@ -621,7 +621,7 @@ Return Value:  none
 -----------------------------------------------------------------------------*/
 void os_InterruptServiced (TI_HANDLE OsContext)
 {
-    /* To be implemented with Level IRQ */
+	os_enableIrq(OsContext);
 }
 
 /*-----------------------------------------------------------------------------

@@ -137,6 +137,9 @@ ifeq ($(BMTRACE),y)
    DK_DEFINES += -D TIWLAN_BMTRACE
 endif
 
+# Flag to support level based interrupt in OMAP
+DK_DEFINES += -D OMAP_LEVEL_INT
+
 ##
 ##
 ## Platform Compilation Directives

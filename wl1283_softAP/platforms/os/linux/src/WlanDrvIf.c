@@ -360,6 +360,10 @@ irqreturn_t wlanDrvIf_HandleInterrupt (int irq, void *hDrv, struct pt_regs *cpu_
 {
     TWlanDrvIfObj *drv = (TWlanDrvIfObj *)hDrv;
 
+#ifdef OMAP_LEVEL_INT
+    disable_irq_nosync(drv->irq);
+#endif
+
     TWD_InterruptRequest (drv->tCommon.hTWD);
 
     return IRQ_HANDLED;
@@ -989,7 +993,7 @@ static int wlanDrvIf_Create (void)
     drv->tCommon.eIfRole = IF_ROLE_TYPE_AP;
 #endif
 
-    drv->pWorkQueue = create_singlethread_workqueue(TIWLAN_WQ_NAME);
+    drv->pWorkQueue = create_freezeable_workqueue(TIWLAN_WQ_NAME);
     if (!drv->pWorkQueue)
     {
 		ti_dprintf (TIWLAN_LOG_ERROR, "wlanDrvIf_Create(): Failed to create workQ!\n");
