@@ -230,6 +230,7 @@ ETxnStatus sdioAdapt_TransactBytes (unsigned int  uFuncId,
     }
     if (bMore ==0)
     {
+        sdioDrv_ReleaseHost(SDIO_WLAN_FUNC);
         sdioDrv_start_inact_timer();
     }
 
