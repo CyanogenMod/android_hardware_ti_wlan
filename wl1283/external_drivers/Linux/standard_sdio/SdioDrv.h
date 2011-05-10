@@ -74,7 +74,6 @@
 #define ELP_CTRL_REG_ADDR                   0x1fffc
 
 #define OMAP_MPU_OPP_1GHZ                   1008000000
-#define OMAP_MPU_OPP_300MHZ                 300000000
 
 /********************************************************************/
 /*	SDIO driver functions prototypes                                */

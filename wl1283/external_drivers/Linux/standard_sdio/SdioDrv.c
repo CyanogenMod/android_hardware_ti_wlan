@@ -101,7 +101,6 @@ static void sdioDrv_inact_timer(unsigned long data)
 
 void sdioDrv_start_inact_timer(void)
 {
-	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP_MPU_OPP_1GHZ);
 	mod_timer(&g_drv.inact_timer, jiffies + msecs_to_jiffies(1000));
 	g_drv.inact_timer_running = 1;
 }
@@ -117,7 +116,7 @@ void sdioDrv_cancel_inact_timer(void)
 
 static void sdioDrv_opp_setup(struct work_struct *work)
 {
-	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP_MPU_OPP_300MHZ);
+	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, -1);
 }
 
 void sdioDrv_ClaimHost(unsigned int uFunc)
@@ -131,6 +130,7 @@ void sdioDrv_ClaimHost(unsigned int uFunc)
 
 	g_drv.sdio_host_claim_ref = 1;
 
+	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP_MPU_OPP_1GHZ);
 	sdio_claim_host(tiwlan_func[uFunc]);
 }
 
