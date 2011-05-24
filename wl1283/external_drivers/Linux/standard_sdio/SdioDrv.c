@@ -49,6 +49,7 @@
 #include <linux/mmc/sdio_ids.h>
 #include <linux/mmc/sdio_func.h>
 #include <plat/omap_device.h>
+#include <mach/omap4-common.h>
 
 #include "SdioDrvDbg.h"
 #include "SdioDrv.h"
@@ -117,6 +118,9 @@ void sdioDrv_cancel_inact_timer(void)
 static void sdioDrv_opp_setup(struct work_struct *work)
 {
 	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, -1);
+
+	/* Release DPLL cascading blockers when we are done with Wi-Fi */
+	dpll_cascading_blocker_release(&dummy_cpufreq_dev.dev);
 }
 
 void sdioDrv_ClaimHost(unsigned int uFunc)
@@ -130,7 +134,11 @@ void sdioDrv_ClaimHost(unsigned int uFunc)
 
 	g_drv.sdio_host_claim_ref = 1;
 
+	/* Call to black DPLL when Wi-Fi is in use */
+	dpll_cascading_blocker_hold(&dummy_cpufreq_dev.dev);
+
 	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP_MPU_OPP_1GHZ);
+
 	sdio_claim_host(tiwlan_func[uFunc]);
 }
 
@@ -435,6 +443,7 @@ static void tiwlan_sdio_remove(struct sdio_func *func)
 
 	/* Release all constraints at exit */
 	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, -1);
+	dpll_cascading_blocker_release(&dummy_cpufreq_dev.dev);
 
 	tiwlan_func[SDIO_WLAN_FUNC] = NULL;
 	tiwlan_func[SDIO_CTRL_FUNC] = NULL;
