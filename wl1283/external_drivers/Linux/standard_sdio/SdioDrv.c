@@ -433,6 +433,9 @@ static void tiwlan_sdio_remove(struct sdio_func *func)
 	
 	sdioDrv_cancel_inact_timer();
 
+	/* Release all constraints at exit */
+	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, -1);
+
 	tiwlan_func[SDIO_WLAN_FUNC] = NULL;
 	tiwlan_func[SDIO_CTRL_FUNC] = NULL;
 }
