@@ -27,7 +27,7 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/sdio_ids.h>
 #include <linux/mmc/sdio_func.h>
-
+#include <mach/omap4-common.h>
 
 #include "SdioDrvDbg.h"
 #include "SdioDrv.h"
@@ -52,6 +52,10 @@ int g_sdio_debug_level = SDIO_DEBUGLEVEL_ERR;
 static OMAP3430_sdiodrv_t g_drv;
 static struct sdio_func *tiwlan_func[1 + SDIO_TOTAL_FUNCS];
 
+static struct platform_device dummy_cpufreq_dev = {
+	.name = "wl1283_softap"
+};
+
 void sdioDrv_Register_Notification(void (*notify_sdio_ready)(void))
 {
 	g_drv.notify_sdio_ready = notify_sdio_ready;
@@ -74,6 +78,9 @@ void sdioDrv_ClaimHost(unsigned int uFunc)
 
 	g_drv.sdio_host_claim_ref = 1;
 
+	/* Call to block DPLL when softAP is in use */
+	dpll_cascading_blocker_hold(&dummy_cpufreq_dev.dev);
+
 	sdio_claim_host(tiwlan_func[uFunc]);
 }
 
@@ -90,6 +97,9 @@ void sdioDrv_ReleaseHost(unsigned int uFunc)
 	g_drv.sdio_host_claim_ref = 0;
 
 	sdio_release_host(tiwlan_func[uFunc]);
+
+	/* Release DPLL cascading blockers when we are done with softAP */
+	dpll_cascading_blocker_release(&dummy_cpufreq_dev.dev);
 }
 
 int sdioDrv_ConnectBus(void *fCbFunc,
