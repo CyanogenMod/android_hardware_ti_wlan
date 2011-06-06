@@ -718,31 +718,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 		ret = sprintf(buf,"Scan-Channels = %d\n", drv->scan_channels);
 		wpa_printf(MSG_DEBUG, "buf %s", buf);
 	}
-	else if( os_strcasecmp(cmd, "rssi-approx") == 0 ) {
-		scan_result_t *cur_res;
-		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
-		scan_ssid_t *p_ssid;
-		int rssi, len;
-
-		wpa_printf(MSG_DEBUG,"rssi-approx command");
-
-		if( !wpa_s )
-			return( ret );
-		cur_res = scan_get_by_bssid(drv, wpa_s->bssid);
-		if( cur_res ) {
-			p_ssid = scan_get_ssid(cur_res);
-			if( p_ssid ) {
-				len = (int)(p_ssid->ssid_len);
-				rssi = cur_res->level;
-				if( (len > 0) && (len <= MAX_SSID_LEN) && (len < (int)buf_len)) {
-					os_memcpy((void *)buf, (void *)(p_ssid->ssid), len);
-					ret = len;
-					ret += snprintf(&buf[ret], buf_len-len, " rssi %d\n", rssi);
-				}
-			}
-		}
-	}
-	else if( os_strcasecmp(cmd, "rssi") == 0 ) {
+	else if( os_strncasecmp(cmd, "rssi", 4) == 0 ) {
 		u8 ssid[MAX_SSID_LEN];
 		scan_result_t *cur_res;
 		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
@@ -770,6 +746,31 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 			{
 				wpa_printf(MSG_DEBUG, "Fail to get ssid when reporting rssi");
 				ret = -1;
+			}
+		}
+	}
+	else if( os_strcasecmp(cmd, "rssi-approx") == 0 ) {
+		/* this block is essentially dead now */
+		scan_result_t *cur_res;
+		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
+		scan_ssid_t *p_ssid;
+		int rssi, len;
+
+		wpa_printf(MSG_DEBUG,"rssi-approx command");
+
+		if( !wpa_s )
+			return( ret );
+		cur_res = scan_get_by_bssid(drv, wpa_s->bssid);
+		if( cur_res ) {
+			p_ssid = scan_get_ssid(cur_res);
+			if( p_ssid ) {
+				len = (int)(p_ssid->ssid_len);
+				rssi = cur_res->level;
+				if( (len > 0) && (len <= MAX_SSID_LEN) && (len < (int)buf_len)) {
+					os_memcpy((void *)buf, (void *)(p_ssid->ssid), len);
+					ret = len;
+					ret += snprintf(&buf[ret], buf_len-len, " rssi %d\n", rssi);
+				}
 			}
 		}
 	}
