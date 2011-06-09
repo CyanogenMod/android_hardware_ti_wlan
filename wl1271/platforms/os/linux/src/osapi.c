@@ -860,8 +860,8 @@ int os_SignalObjectWait (TI_HANDLE OsContext, void *signalObject)
 	if (!signalObject)
 		return TI_NOK;
 	if (!wait_for_completion_timeout((struct completion *)signalObject,
-					msecs_to_jiffies(10000))) {
-		printk("tiwlan: 10 sec %s timeout\n", __func__);
+					msecs_to_jiffies(20000))) {
+		printk("tiwlan: 20 sec %s timeout\n", __func__);
 	}
 	return TI_OK;
 }
@@ -882,6 +882,27 @@ int os_SignalObjectSet (TI_HANDLE OsContext, void *signalObject)
 		return TI_NOK;
 	complete ((struct completion *)signalObject);
 	return TI_OK;
+}
+
+
+/*-----------------------------------------------------------------------------
+Routine Name: os_SignalObjectCheck
+
+Routine Description: This function checks the signal status
+
+Arguments: OsContext    - Handle to the OS object
+           signalObject - Pointer to previously created Signaling Object
+
+Return Value: TI_OK
+-----------------------------------------------------------------------------*/
+int os_SignalObjectCheck (TI_HANDLE OsContext, void *signalObject)
+{
+	if (!signalObject)
+		return TI_NOK;
+	if (completion_done ((struct completion *) signalObject) == 1)
+		return TI_OK;
+	else
+		return TI_NOK;
 }
 
 

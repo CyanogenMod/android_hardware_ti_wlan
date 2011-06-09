@@ -587,6 +587,20 @@ int os_SignalObjectWait (TI_HANDLE OsContext, void *ptr);
  */
 int os_SignalObjectSet (TI_HANDLE OsContext, void *ptr);
 
+/** \brief  OS Signaling Object Check
+ *
+ * \param  OsContext    - Handle to the OS object
+ * \param  signalObject - Pointer to Signaling Object previously created by user
+ * \return TI_OK (0) on Success ;       TI_NOK (1) on Failure
+ *
+ * \par Description
+ * This function checks the signal status
+ *
+ * \sa
+ */
+int os_SignalObjectCheck (TI_HANDLE OsContext, void *signalObject);
+
+
 /** \brief  OS Signaling Object Free
  * 
  * \param  OsContext 	- Handle to the OS object

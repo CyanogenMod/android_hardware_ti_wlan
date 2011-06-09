@@ -1057,7 +1057,15 @@ static void drvMain_InvokeAction (TI_HANDLE hDrvMain)
     {
         TRACE1(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_WARNING , "drvMain_InvokeAction(): new action (%d) equals previous one - ignored\n", pNewAction->eAction);
         os_SignalObjectSet (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject);
-        return;
+
+	/* If pSignalObject is NULL, not wait to complete */
+	if(pNewAction->pSignalObject == NULL)
+	{
+	    /* no wait, free action structure */
+	    os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
+	}
+
+	return;
     }
     pDrvMain->eLastAction = pNewAction->eAction;
     pDrvMain->pCurrAction = pNewAction;  /* save for releasing the signal when finished */
@@ -1082,6 +1090,13 @@ static void drvMain_InvokeAction (TI_HANDLE hDrvMain)
 #endif
         default:    
             TRACE1(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "drvMain_InvokeAction(): Action=%d\n", pNewAction->eAction);
+    }
+
+    /* If pSignalObject is NULL, not wait to complete */
+    if(pNewAction->pSignalObject == NULL)
+    {
+	/* signalling object is already freed, Free action structure */
+	os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
     }
 }
 
@@ -1345,32 +1360,32 @@ static void drvMain_ClearActionQueue (TDrvMain *pDrvMain)
 TI_STATUS drvMain_InsertAction (TI_HANDLE hDrvMain, EActionType eAction)
 {
     TDrvMain      *pDrvMain = (TDrvMain *)hDrvMain;
-	TActionObject *pNewAction;
+    TActionObject *pNewAction;
 
     TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_INFORMATION , "drvMain_InsertAction(): Called\n");
 
     /* Allocate action structure */
-	pNewAction = os_memoryAlloc (pDrvMain->tStadHandles.hOs, sizeof(TActionObject));
-	if (pNewAction == NULL)
-	{
+    pNewAction = os_memoryAlloc (pDrvMain->tStadHandles.hOs, sizeof(TActionObject));
+    if (pNewAction == NULL)
+    {
         TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "drvMain_InsertAction(): Couldn't allocate action object!\n");
 		return TI_NOK;
-	}
+    }
     os_memoryZero (pDrvMain->tStadHandles.hOs, (void *)pNewAction, sizeof(TActionObject));
 
-	/* Copy user request and signal object into the action structure structure */
-	pNewAction->eAction = eAction;
-	pNewAction->pSignalObject = os_SignalObjectCreate (pDrvMain->tStadHandles.hOs);
+    /* Copy user request and signal object into the action structure structure */
+    pNewAction->eAction = eAction;
+    pNewAction->pSignalObject = os_SignalObjectCreate (pDrvMain->tStadHandles.hOs);
 
-	/* If creating the signal object failed, free action and exit */
-	if (pNewAction->pSignalObject == NULL)
-	{
-        TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "drvMain_InsertAction(): Couldn't allocate signal object!\n");
-		os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
-		return TI_NOK;
-	}
+    /* If creating the signal object failed, free action and exit */
+    if (pNewAction->pSignalObject == NULL)
+    {
+	TRACE0(pDrvMain->tStadHandles.hReport, REPORT_SEVERITY_ERROR , "drvMain_InsertAction(): Couldn't allocate signal object!\n");
+	os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
+	return TI_NOK;
+    }
 
-	/* Enqueue the action under critical section (can't fail because queue size is unlimited) */
+    /* Enqueue the action under critical section (can't fail because queue size is unlimited) */
     context_EnterCriticalSection (pDrvMain->tStadHandles.hContext);
     que_Enqueue (pDrvMain->hActionQueue, (TI_HANDLE)pNewAction);
     context_LeaveCriticalSection (pDrvMain->tStadHandles.hContext);
@@ -1378,14 +1393,23 @@ TI_STATUS drvMain_InsertAction (TI_HANDLE hDrvMain, EActionType eAction)
     /* Request driver task schedule for action handling */
     context_RequestSchedule (pDrvMain->tStadHandles.hContext, pDrvMain->uContextId);
 
-	/* Wait until the action is executed */
-	os_SignalObjectWait (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject);
+    /* Wait until the action is executed */
+    os_SignalObjectWait (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject);
 
     /* After "wait" - the action has already been processed in the driver's context */
 
+    if(os_SignalObjectCheck (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject) == TI_OK)
+    {
 	/* Free signalling object and action structure */
 	os_SignalObjectFree (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject);
-    os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
+	os_memoryFree (pDrvMain->tStadHandles.hOs, pNewAction, sizeof(TActionObject));
+    }
+    else
+    {
+	/* Free signalling object only */
+	os_SignalObjectFree (pDrvMain->tStadHandles.hOs, pNewAction->pSignalObject);
+	pNewAction->pSignalObject = NULL;
+    }
 
     if (pDrvMain->eSmState == SM_STATE_FAILED)
     {

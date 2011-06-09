@@ -239,6 +239,7 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
     TCmdHndlrObj     *pCmdHndlr = (TCmdHndlrObj *)hCmdHndlr;
 	TConfigCommand   *pNewCmd;
 	TI_STATUS         eStatus;
+	int ret;
 
 	/* Allocated command structure */
 	pNewCmd = os_memoryAlloc (pCmdHndlr->hOs, sizeof (TConfigCommand));
@@ -322,12 +323,15 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
 	/* Copy the return code */
 	eStatus = pNewCmd->return_code;
 
+	/* Check signalling object status */
+	ret = os_SignalObjectCheck (pCmdHndlr->hOs, pNewCmd->pSignalObject);
+
 	/* Free signalling object and command structure */
 	os_SignalObjectFree (pCmdHndlr->hOs, pNewCmd->pSignalObject);
 	pNewCmd->pSignalObject = NULL;
 
-	/* If command not completed in this context (Async) don't free the command memory */
-	if(COMMAND_PENDING != pNewCmd->eCmdStatus)
+	/* If signalling object is not completion, don't free the memory */
+	if( (COMMAND_PENDING != pNewCmd->eCmdStatus) && (ret == TI_OK) )
 	{
 		os_memoryFree (pCmdHndlr->hOs, pNewCmd, sizeof (TConfigCommand));
 	}
