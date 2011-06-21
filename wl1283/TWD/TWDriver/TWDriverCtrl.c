@@ -170,23 +170,6 @@ TI_STATUS TWD_SetParam (TI_HANDLE hTWD, TTwdParamInfo *pParamInfo)
                 return TI_NOK;
             break;
 
-#ifdef XCC_MODULE_INCLUDED
-        case TWD_RSN_XCC_SW_ENC_ENABLE_PARAM_ID:
-        
-            TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD: XCC_SW_ENC_ENABLE %d\n", pParamInfo->content.rsnXCCSwEncFlag);
-
-            /* when SW encryption is ON, HW encryption should be turned OFF and vice versa */
-
-            TRACE1(pTWD->hReport, REPORT_SEVERITY_INFORMATION, "TWD: Set HwEncDecrEnable to %d\n", !pParamInfo->content.rsnXCCSwEncFlag);
-
-            /* Set the Encryption/Decryption on the HW*/
-            if (cmdBld_CfgHwEncDecEnable (pTWD->hCmdBld, !pParamInfo->content.rsnXCCSwEncFlag, NULL, NULL) != TI_OK)
-                return TI_NOK;
-            break;
-             /* not supported - CKIP*/
-        case TWD_RSN_XCC_MIC_FIELD_ENABLE_PARAM_ID:
-            break;
-#endif /* XCC_MODULE_INCLUDED*/
 
         case TWD_TX_POWER_PARAM_ID:
 

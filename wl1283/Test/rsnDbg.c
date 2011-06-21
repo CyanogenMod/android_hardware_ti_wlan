@@ -45,9 +45,6 @@
 #include "report.h"
 #include "paramOut.h"
 #include "rsnDbg.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 
 void printRsnDbgFunctions(void);
 void printRogueApTable(TI_HANDLE hRogueAp);
@@ -129,11 +126,6 @@ void rsnDebugFunction(TI_HANDLE hRsn, TI_UINT32 funcType, void *pParam)
 		rsn_resetPMKIDList(hRsn);
 
 		break;
-#ifdef XCC_MODULE_INCLUDED
-    case DBG_RSN_PRINT_ROGUE_AP_TABLE:
-        printRogueApTable(((XCCMngr_t*)((rsn_t*)hRsn)->hXCCMngr)->hRogueAp);
-        break;
-#endif
 
     case DBG_RSN_SET_PORT_STATUS:
         WLAN_OS_REPORT(("Setting PORT STATUS to open\n"));

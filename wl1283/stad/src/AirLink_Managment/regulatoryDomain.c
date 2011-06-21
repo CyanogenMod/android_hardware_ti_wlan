@@ -1526,7 +1526,7 @@ DESCRIPTION: Get the maximum tx power allowed for the given channel.
 				1) User max value
 				2) Domain restriction - 11d country code IE
 				3) 11h power constraint - only on serving channel
-				4) XCC TPC - only on serving channel
+				4) kkk TPC - only on serving channel
 
 RETURN:     Max power in Dbm/10 for the given channel
 
@@ -1561,7 +1561,7 @@ static TI_UINT8 regulatoryDomain_getMaxPowerAllowed(regulatoryDomain_t	*pRegulat
 			uTxPower -= pRegulatoryDomain->uPowerConstraint;
 		}
         
-        /* Take XCC limitation too */
+        /* Take kkk limitation too */
         uTxPower = TI_MIN(uTxPower, pRegulatoryDomain->uExternTxPowerPreferred);
 
 	}
@@ -1673,7 +1673,7 @@ void regDomainPrintValidTables(TI_HANDLE hRegulatoryDomain)
 		}
 		}
 
-	WLAN_OS_REPORT(("11h PowerConstraint = %d, XCC TPC = %d, User  = %d\n", 
+	WLAN_OS_REPORT(("11h PowerConstraint = %d, kkk TPC = %d, User  = %d\n",
 		pRegulatoryDomain->uPowerConstraint, pRegulatoryDomain->uExternTxPowerPreferred,
 		pRegulatoryDomain->uUserMaxTxPower));
 

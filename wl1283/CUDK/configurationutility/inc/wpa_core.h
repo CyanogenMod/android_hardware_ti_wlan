@@ -63,7 +63,7 @@ S32 WpaCore_Disassociate(THandle hWpaCore);
 S32 WpaCore_SetPrivacyEap(THandle hWpaCore, OS_802_11_EAP_TYPES EapType);
 S32 WpaCore_SetCredentials(THandle hWpaCore, PU8 Identity, PU8 Passward);
 S32 WpaCore_SetCertificate(THandle hWpaCore, PU8 Filepath);
-S32 WpaCore_SetXCC(THandle hWpaCore, U16 XCCConfig);
+S32 WpaCore_Setkkk(THandle hWpaCore, U16 kkkConfig);
 S32 WpaCore_SetApScanMode(THandle hWpaCore, U8 apScanMode);
 
 

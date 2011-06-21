@@ -61,9 +61,6 @@
 #include "CmdDispatcher.h"
 #include "healthMonitor.h"
 #include "currBssApi.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 
 
 /* Set/get params function prototype */
@@ -105,9 +102,6 @@ typedef struct
     TI_HANDLE    hTWD;
     TI_HANDLE    hCurrBss;
     TI_HANDLE    hPwrState;
-#ifdef XCC_MODULE_INCLUDED
-    TI_HANDLE    hXCCMngr;
-#endif
 
     /* Table of params set/get functions */
     TParamAccess paramAccessTable[MAX_PARAM_MODULE_NUMBER]; 
@@ -202,9 +196,6 @@ void cmdDispatch_Init (TStadHandlesList *pStadHandles)
     pCmdDispatch->hTWD              = pStadHandles->hTWD;
     pCmdDispatch->hCurrBss          = pStadHandles->hCurrBss;
     pCmdDispatch->hPwrState         = pStadHandles->hPwrState;
-#ifdef XCC_MODULE_INCLUDED
-    pCmdDispatch->hXCCMngr          = pStadHandles->hXCCMngr;
-#endif
 
 #ifdef TI_DBG
     pCmdDispatch->pStadHandles = pStadHandles;  /* Save modules list pointer just for the debug functions */
@@ -311,12 +302,6 @@ static void cmdDispatch_ConfigParamsAccessTable (TCmdDispatchObj *pCmdDispatch)
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(MEASUREMENT_MODULE_PARAM) - 1].set = measurementMgr_setParam;
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(MEASUREMENT_MODULE_PARAM) - 1].get = measurementMgr_getParam;
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(MEASUREMENT_MODULE_PARAM) - 1].handle = pCmdDispatch->hMeasurementMgr;
-
-#ifdef XCC_MODULE_INCLUDED
-    pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(XCC_MANAGER_MODULE_PARAM) - 1].set = XCCMngr_setParam;
-    pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(XCC_MANAGER_MODULE_PARAM) - 1].get = XCCMngr_getParam;
-    pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(XCC_MANAGER_MODULE_PARAM) - 1].handle = pCmdDispatch->hXCCMngr;
-#endif
 
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(ROAMING_MANAGER_MODULE_PARAM) - 1].set = roamingMngr_setParam;
     pCmdDispatch->paramAccessTable[GET_PARAM_MODULE_NUMBER(ROAMING_MANAGER_MODULE_PARAM) - 1].get = roamingMngr_getParam;

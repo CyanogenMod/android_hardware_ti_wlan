@@ -492,7 +492,7 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
     {
         switch (pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType)
         {
-        case MSR_TYPE_XCC_CCA_LOAD_MEASUREMENT:
+        case MSR_TYPE_kkk_CCA_LOAD_MEASUREMENT:
             /* Clearing the Medium Occupancy Register */
             tTwdParam.paramType = TWD_MEDIUM_OCCUPANCY_PARAM_ID;
             tTwdParam.content.interogateCmdCBParams.fCb = (void *)MacServices_measurementSRV_dummyChannelLoadParamCB;
@@ -519,7 +519,7 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
 
             break;
 
-        case MSR_TYPE_XCC_NOISE_HISTOGRAM_MEASUREMENT:
+        case MSR_TYPE_kkk_NOISE_HISTOGRAM_MEASUREMENT:
             /* Set Noise Histogram Cmd Params */
             pNoiseHistParams.cmd = START_NOISE_HIST;
             pNoiseHistParams.sampleInterval = DEF_SAMPLE_INTERVAL;
@@ -572,7 +572,7 @@ TI_STATUS measurementSRVSM_startMeasureTypes( TI_HANDLE hMeasurementSRV )
             break;
 
         case MSR_TYPE_RRM_BEACON_MEASUREMENT:
-        case MSR_TYPE_XCC_BEACON_MEASUREMENT:
+        case MSR_TYPE_kkk_BEACON_MEASUREMENT:
             /* Set the apDiscoveryIndex so that after all requests are started the event
              * MEASURE_START_REQUEST will be called in order to start the BEACON_MEASURMENT */
             pMeasurementSRV->uApDiscoveryRequestIndex = requestIndex;
@@ -723,7 +723,7 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": request timer 
     /* mark that the timer is not running and that this request has completed
      * except for BEACON_MEASURMENT since it will be marked when the apDiscovery event
      * is received from the firmware*/
-    if (pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType != MSR_TYPE_XCC_BEACON_MEASUREMENT &&
+    if (pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType != MSR_TYPE_kkk_BEACON_MEASUREMENT &&
         pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType != MSR_TYPE_RRM_BEACON_MEASUREMENT)
     {
         pMeasurementSRV->bRequestTimerRunning[ requestIndex ] = TI_FALSE;
@@ -734,15 +734,15 @@ TRACE1( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, ": request timer 
     /* collect results and send stop command if necessary */
     switch (pMeasurementSRV->msrRequest.msrTypes[ requestIndex ].msrType)
     {
-    case MSR_TYPE_XCC_BEACON_MEASUREMENT:
+    case MSR_TYPE_kkk_BEACON_MEASUREMENT:
     case MSR_TYPE_RRM_BEACON_MEASUREMENT:
         measurementSRVHandleBeaconMsrComplete( hMeasurementSRV, requestIndex );
         break;
-    case MSR_TYPE_XCC_CCA_LOAD_MEASUREMENT:
+    case MSR_TYPE_kkk_CCA_LOAD_MEASUREMENT:
         measurementSRVHandleChannelLoadComplete( hMeasurementSRV, requestIndex );
         break;
 
-    case MSR_TYPE_XCC_NOISE_HISTOGRAM_MEASUREMENT:
+    case MSR_TYPE_kkk_NOISE_HISTOGRAM_MEASUREMENT:
         measurementSRVHandleNoiseHistogramComplete( hMeasurementSRV, requestIndex );
         break;
 
@@ -780,7 +780,7 @@ TI_BOOL measurementSRVIsBeaconMeasureIncluded( TI_HANDLE hMeasurementSRV )
 
     for ( i = 0; i < MAX_NUM_OF_MSR_TYPES_IN_PARALLEL; i++ )
     {
-        if (( MSR_TYPE_XCC_BEACON_MEASUREMENT == pMeasurementSRV->msrRequest.msrTypes[ i ].msrType ) ||
+        if (( MSR_TYPE_kkk_BEACON_MEASUREMENT == pMeasurementSRV->msrRequest.msrTypes[ i ].msrType ) ||
             ( MSR_TYPE_RRM_BEACON_MEASUREMENT == pMeasurementSRV->msrRequest.msrTypes[ i ].msrType ) )
         {
             return TI_TRUE;
@@ -999,7 +999,7 @@ TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "result address (
     pMeasurementSRV->pendingParamCBs &= ~MSR_SRV_WAITING_CHANNEL_LOAD_RESULTS;
 
     /* find the request index */
-    requestIndex = measurementSRVFindIndexByType( hMeasurementSRV, MSR_TYPE_XCC_CCA_LOAD_MEASUREMENT );
+    requestIndex = measurementSRVFindIndexByType( hMeasurementSRV, MSR_TYPE_kkk_CCA_LOAD_MEASUREMENT );
     if ( -1 == requestIndex )
     {
         /* indicates we can't find the request in the requets array. Shouldn't happen, but nothing to do */
@@ -1091,7 +1091,7 @@ TRACE2( pMeasurementSRV->hReport, REPORT_SEVERITY_INFORMATION, "result address (
     pMeasurementSRV->pendingParamCBs &= ~MSR_SRV_WAITING_NOISE_HIST_RESULTS;
 
     /* find the request index */
-    requestIndex = measurementSRVFindIndexByType( hMeasurementSRV, MSR_TYPE_XCC_NOISE_HISTOGRAM_MEASUREMENT );
+    requestIndex = measurementSRVFindIndexByType( hMeasurementSRV, MSR_TYPE_kkk_NOISE_HISTOGRAM_MEASUREMENT );
     if ( -1 == requestIndex )
     {
         /* indicates we can't find the request in the requets array. Shouldn't happen, but nothing to do */

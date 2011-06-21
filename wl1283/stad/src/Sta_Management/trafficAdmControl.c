@@ -53,10 +53,6 @@
 #include "trafficAdmControl.h"
 #include "qosMngr_API.h"
 #include "TWDriver.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#include "roamingMngrApi.h"
-#endif
 /* Constants */
 
 extern int WMEQosTagToACTable[MAX_NUM_OF_802_1d_TAGS];
@@ -162,7 +158,7 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
     						     TI_HANDLE hOs,
     						     TI_HANDLE hQosMngr,
     						     TI_HANDLE hCtrlData,
-    						     TI_HANDLE hXCCMgr,
+                                 TI_HANDLE hkkkMgr,
     						     TI_HANDLE hTimer,
     						     TI_HANDLE hTWD,
                                  TI_HANDLE hTxCtrl,
@@ -179,7 +175,7 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
 	pTrafficAdmCtrl->hOs		= hOs;
 	pTrafficAdmCtrl->hQosMngr	= hQosMngr;
 	pTrafficAdmCtrl->hCtrlData	= hCtrlData;
-	pTrafficAdmCtrl->hXCCMgr	= hXCCMgr;
+	pTrafficAdmCtrl->hkkkMgr	= hkkkMgr;
 	pTrafficAdmCtrl->hTimer	    = hTimer;
 	pTrafficAdmCtrl->hTWD	    = hTWD;
 	pTrafficAdmCtrl->hTxCtrl	= hTxCtrl;
@@ -359,23 +355,6 @@ TRACE1(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_WARNING, "dialog token Not foun
 			TRACE2(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "***** admCtrlQos_recv: admission reject [ statusCode = %d ]\n"
 															  "ADDTS Response (reject) userPriority = %d\n",statusCode, tspecInfo.userPriority);
             qosMngr_setAdmissionInfo(pTrafficAdmCtrl->hQosMngr, tspecInfo.AC, &tspecInfo, STATUS_TRAFFIC_ADM_REQUEST_REJECT);
-#ifdef XCC_MODULE_INCLUDED
-
-            if (ADDTS_STATUS_CODE_REFUSED == statusCode)
-            {
-                paramInfo_t *pParam;
-                pParam = (paramInfo_t *)os_memoryAlloc(pTrafficAdmCtrl->hOs, sizeof(paramInfo_t));
-                if (!pParam)
-                {
-                    return TI_NOK;
-                }
-                TRACE0(pTrafficAdmCtrl->hReport, REPORT_SEVERITY_INFORMATION, "trafficAdmCtrl_recv: TSPEC rejected due to insufficient over-the-air bandwidth! \n");
-                pParam->paramType = ROAMING_MNGR_TRIGGER_EVENT;
-                pParam->content.roamingTriggerType = ROAMING_TRIGGER_TSPEC_REJECTED;
-                roamingMngr_setParam(pTrafficAdmCtrl->hRoamMng, pParam);
-                os_memoryFree(pTrafficAdmCtrl->hOs, pParam, sizeof(paramInfo_t));
-            }
-#endif
 		}
 		else
 		{

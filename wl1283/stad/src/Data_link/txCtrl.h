@@ -127,7 +127,7 @@ typedef struct
     TI_HANDLE           hHealthMonitor;
     TI_HANDLE           hTimer;
     TI_HANDLE           hStaCap;
-    TI_HANDLE           hXCCMngr;
+    TI_HANDLE           hkkkMngr;
     TI_HANDLE           hQosMngr;
     TI_HANDLE           hRxData;
     TI_HANDLE           hMeasurementMgr;

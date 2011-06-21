@@ -55,7 +55,7 @@
  * \brief This array holds configuration values for abort others field for different clients.\n
  */
 static EScrClientId abortOthers[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_CID_NUM_OF_CLIENTS ] = 
-/* APP_SCAN           DRV_FG             CONT_SCAN          XCC_MSR            BASIC_MSR          CONNECT                IMMED_SCN              SWITCH_CHNL*/
+/* APP_SCAN           DRV_FG             CONT_SCAN          kkk_MSR            BASIC_MSR          CONNECT                IMMED_SCN              SWITCH_CHNL*/
 {/* Serving channel resource */
  { SCR_CID_NO_CLIENT, SCR_CID_NO_CLIENT, SCR_CID_NO_CLIENT, SCR_CID_NO_CLIENT, SCR_CID_NO_CLIENT, SCR_CID_BASIC_MEASURE, SCR_CID_BASIC_MEASURE, SCR_CID_BASIC_MEASURE },
  /* periodic scan resource */
@@ -73,7 +73,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -82,7 +82,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,     /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -91,7 +91,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -100,7 +100,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_TRUE,     /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -109,7 +109,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_TRUE,     /**< client status for SCR_CID_CONT_SCAN */
-                          TI_TRUE,     /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_TRUE,     /**< client status for SCR_CID_kkk_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -118,7 +118,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_TRUE,     /**< client status for SCR_CID_IMMED_SCAN */
@@ -131,7 +131,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -140,7 +140,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -149,7 +149,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -158,7 +158,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_TRUE,     /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -167,7 +167,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_TRUE,     /**< client status for SCR_CID_CONT_SCAN */
-                          TI_TRUE,     /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_TRUE,     /**< client status for SCR_CID_kkk_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -176,7 +176,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_TRUE,     /**< client status for SCR_CID_IMMED_SCAN */
@@ -189,7 +189,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -198,7 +198,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_TRUE,     /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -207,7 +207,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -216,7 +216,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -225,7 +225,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -234,7 +234,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -247,7 +247,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -256,7 +256,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_TRUE,     /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -265,7 +265,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_TRUE,     /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -274,7 +274,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,     /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -283,7 +283,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */
@@ -292,7 +292,7 @@ static TI_BOOL clientStatus[ SCR_RESOURCE_NUM_OF_RESOURCES ][ SCR_MID_NUM_OF_MOD
                         { TI_FALSE,    /**< client status for SCR_CID_APP_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_DRIVER_FG_SCAN */
                           TI_FALSE,    /**< client status for SCR_CID_CONT_SCAN */
-                          TI_FALSE,    /**< client status for SCR_CID_XCC_MEASURE */
+                          TI_FALSE,    /**< client status for SCR_CID_kkk_MEASURE */
                           TI_FALSE,    /**< client status for SCR_CID_BASIC_MEASURE */
                           TI_TRUE,     /**< client status for SCR_CID_CONNECT */
                           TI_FALSE,    /**< client status for SCR_CID_IMMED_SCAN */

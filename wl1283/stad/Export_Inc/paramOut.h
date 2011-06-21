@@ -51,11 +51,7 @@
 #include "scanMngrTypes.h"
 #include "pwrState_Types.h"
 
-#ifdef XCC_MODULE_INCLUDED
-#include "paramOutXCC.h"
-#else
-#define   XCC_PARAM_FIELDS
-#endif
+#define   kkk_PARAM_FIELDS
 
 #include "InternalCmdCodes.h"
 #include "commonTypes.h"
@@ -88,7 +84,7 @@
 #define VAL_PACKET_BURSTING			106
 #define VAL_MIXED_MODE				107
 #define VAL_PRIVACY_MODE			108
-#define VAL_XCC_SECURITY			109
+#define VAL_kkk_SECURITY			109
 #define VAL_DEFAULT_KEY_ID			110
 #define VAL_AP_SUPPORT_CHANELS 		111
 
@@ -782,8 +778,8 @@ typedef struct
         TI_UINT32							SoftGeminiParamArray[NUM_OF_CONFIG_PARAMS_IN_SG];
         TI_UINT32							CoexActivityParamArray[NUM_OF_COEX_ACTIVITY_PARAMS_IN_SG];
 
-        /* case XCC MODULE INCLUDED */
-        XCC_PARAM_FIELDS
+        /* case kkk MODULE INCLUDED */
+        kkk_PARAM_FIELDS
 
         /* Application Config Parameters Manager */
         TAssocReqBuffer						assocReqBuffer;
@@ -1086,28 +1082,12 @@ typedef struct
     scanControlTable_t          desiredScanControlTable;/* for 5 and 2.4 Ghz*/
 } regulatoryDomainInitParams_t;
 
-#ifdef XCC_MODULE_INCLUDED
-typedef enum
-{
-    XCC_MODE_DISABLED,
-    XCC_MODE_ENABLED,
-    XCC_MODE_STANDBY
-} XCCMngr_mode_t;
-
-typedef struct
-{
-    XCCMngr_mode_t  XCCEnabled;
-} XCCMngrParams_t;
-#endif
 
 /* Measurement module init parameters */
 typedef struct
 {
     TI_UINT16              trafficIntensityThreshold;
     TI_UINT16              maxDurationOnNonServingChannel;
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngr_mode_t      XCCEnabled;
-#endif
     TI_BOOL             rrmEnabled;
 } measurementInitParams_t;
 
@@ -1248,9 +1228,6 @@ typedef struct
     SoftGeminiInitParams_t          SoftGeminiInitParams;
     QosMngrInitParams_t             qosMngrInitParams;
     clsfrParams_t                   clsfrParams;
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngrParams_t                 XCCMngrParams;
-#endif
     SwitchChannelInitParams_t		SwitchChannelInitParams;
     healthMonitorInitParams_t		healthMonitorInitParams;
     apConnParams_t                  apConnParams;

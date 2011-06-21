@@ -72,7 +72,7 @@ typedef struct
 	TI_HANDLE			        hOs;
 	TI_HANDLE			        hQosMngr;
 	TI_HANDLE					hCtrlData;
-	TI_HANDLE					hXCCMgr;
+	TI_HANDLE					hkkkMgr;
 	TI_HANDLE					hTimer;
 	TI_HANDLE					hTWD;
 	TI_HANDLE					hTxCtrl;
@@ -105,7 +105,7 @@ TI_STATUS trafficAdmCtrl_config (TI_HANDLE hTrafficAdmCtrl,
     						     TI_HANDLE hOs,
     						     TI_HANDLE hQosMngr,
     						     TI_HANDLE hCtrlData,
-    						     TI_HANDLE hXCCMgr,
+                                TI_HANDLE hkkkMgr,
     						     TI_HANDLE hTimer,
     						     TI_HANDLE hTWD,
                                  TI_HANDLE hTxCtrl,

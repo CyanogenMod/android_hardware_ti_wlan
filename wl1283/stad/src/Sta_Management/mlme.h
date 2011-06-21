@@ -166,7 +166,7 @@ typedef struct
 	TI_HANDLE			hStaCap;
 	TI_HANDLE			hSme;
 	TI_HANDLE           hTimer;
-    TI_HANDLE           hXCCMngr;
+    TI_HANDLE           hkkkMngr;
 } mlme_t;
 
 

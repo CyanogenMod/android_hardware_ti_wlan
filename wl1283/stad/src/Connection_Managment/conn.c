@@ -161,7 +161,7 @@ void conn_init (TStadHandlesList *pStadHandles)
 	pConn->hMeasurementMgr	= pStadHandles->hMeasurementMgr;
 	pConn->hTrafficMonitor  = pStadHandles->hTrafficMon;
 	pConn->hScr				= pStadHandles->hSCR;
-	pConn->hXCCMngr			= pStadHandles->hXCCMngr;
+	pConn->hkkkMngr			= pStadHandles->hkkkMngr;
 	pConn->hQosMngr			= pStadHandles->hQosMngr;
 	pConn->hTWD		        = pStadHandles->hTWD;
     pConn->hScanCncn        = pStadHandles->hScanCncn;

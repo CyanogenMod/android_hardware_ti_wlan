@@ -372,7 +372,7 @@
 /* Tx packet Control-Block flags bit-mask. */
 #define TX_CTRL_FLAG_XFER_DONE_ISSUED      0x0001  /* Xfer-Done already issued to upper driver   - for WHA. */
 #define TX_CTRL_FLAG_TX_COMPLETE_ISSUED    0x0002  /* Tx-Complete already issued to upper driver - for WHA. */
-#define TX_CTRL_FLAG_LINK_TEST             0x0004  /* XCC link test packet */
+#define TX_CTRL_FLAG_LINK_TEST             0x0004  /* kkk link test packet */
 #define TX_CTRL_FLAG_SENT_TO_FW            0x0008  /* Set after the packet is allowed to be sent to FW (by TxHwQueue) */
 #define TX_CTRL_FLAG_PKT_IN_RAW_BUF        0x0010  /* The input packet is in a raw buffer (as opposed to OS packet) */
 #define TX_CTRL_FLAG_MULTICAST             0x0020  /* A multicast ethernet packet */
@@ -626,10 +626,6 @@ typedef enum
     /*	0x19	*/  TWD_ENABLE_POWER_MANAGEMENT_AUTO_CONFIG_PARAM_ID,	/**< */
     /*	0x1A	*/  TWD_SG_ENABLE_PARAM_ID,							/**< */
     /*	0x1B	*/  TWD_SG_CONFIG_PARAM_ID,							/**< */
-#ifdef XCC_MODULE_INCLUDED
-    /*	0x1C	*/  TWD_RSN_XCC_SW_ENC_ENABLE_PARAM_ID,				/**< */
-    /*	0x1D	*/  TWD_RSN_XCC_MIC_FIELD_ENABLE_PARAM_ID,			/**< */
-#endif /* XCC_MODULE_INCLUDED*/
     /*	0x1E	*/  TWD_TX_OP_LIMIT_PARAM_ID,						/**< */
     /*	0x1F	*/  TWD_NOISE_HISTOGRAM_PARAM_ID,					/**< */
     /*	0x20	*/  TWD_TSF_DTIM_MIB_PARAM_ID,						/**< */
@@ -821,7 +817,7 @@ typedef enum
     /*	1	*/  KEY_WEP,		/**< */
     /*	2	*/  KEY_TKIP,		/**< */
     /*	3	*/  KEY_AES,		/**< */
-    /*	4	*/  KEY_XCC,    	/**< */
+    /*	4	*/  KEY_kkk,    	/**< */
 #ifdef GEM_SUPPORTED
     /*  5   */  KEY_GEM
 #endif
@@ -946,7 +942,7 @@ typedef enum
     /*	3	*/	TWD_CIPHER_AES_WRAP,    		/**< AES WRAP cipher suite  */
     /*	4	*/	TWD_CIPHER_AES_CCMP,    		/**< AES CCMP cipher suite  */
     /*	5	*/	TWD_CIPHER_WEP104,      		/**< WEP-104 cipher suite 	*/
-    /*	6	*/	TWD_CIPHER_CKIP,        		/**< CKIP cipher suite      */
+    /*	6	*/	TWD_CIPHER_jjj,        		/**< jjj cipher suite      */
 #ifdef GEM_SUPPORTED
     /*	7	*/	TWD_CIPHER_GEM,         		/**< GEM cipher suite       */
 #endif
@@ -2012,7 +2008,7 @@ typedef struct
 														* 0 - ACTIVE, 1 - PASSIVE
 														*/
     TI_UINT8               numOfProbRqst;	/**< This field indicates the number of probe requests to send per channel, when active scan is specified
-														* Note: for XCC measurement this value should be set to 1
+														* Note: for kkk measurement this value should be set to 1
 														*/
     EHwRateBitFiled        txdRateSetBandA;		/**< This EHwBitRate format field specifies the rate and modulation to transmit the probe request when
 														* an active scan is specifie */
@@ -2521,10 +2517,6 @@ typedef union
     TQueueTrafficParams                 *pQueueTrafficParams;			/**< */
 
     /* Security related parameters */
-#ifdef XCC_MODULE_INCLUDED
-    TI_BOOL                             rsnXCCSwEncFlag;				/**< */
-    TI_BOOL                             rsnXCCMicFieldFlag;				/**< */
-#endif
     ECipherSuite                        rsnEncryptionStatus;			/**< */
     TI_UINT8                            rsnHwEncDecrEnable; 			/**< 0- disable, 1- enable */
     TSecurityKeys                       *pRsnKey;						/**< */

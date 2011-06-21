@@ -58,9 +58,6 @@
 #include "conn.h"
 #include "connApi.h"
 
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 
 
 static void printPrimarySite(siteMgr_t *pSiteMgr);

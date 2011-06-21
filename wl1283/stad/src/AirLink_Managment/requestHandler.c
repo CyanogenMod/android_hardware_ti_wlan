@@ -53,9 +53,6 @@
 #include "paramOut.h"
 #include "requestHandler.h"
 
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCRMMngrParam.h"
-#endif
 
 /* allocation vector */
 #define REQUEST_HANDLER_INIT_BIT		(1)
@@ -517,7 +514,7 @@ DESCRIPTION: The function inserts measurement request of one received
 INPUT:      hRequestHandler	-	A Handler to the Request Handler Object.
 			frameToken		-	Frame token of the received frame in which
 								This current measurement request IE is included.
-            measurementObjMode - XCC or SPECTRUM_MNGMNT
+            measurementObjMode - kkk or SPECTRUM_MNGMNT
 			dataLen			-	pointer to the data length that is left.
 			pData			-	pointer to the data.
 			

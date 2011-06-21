@@ -75,9 +75,6 @@
 #include "freq.h"
 #include "currBssApi.h"
 #include "CmdBld.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 
 /* External function prototypes */
 extern TI_STATUS wlanDrvIf_getNetwIpByDevName(TIpAddr devIp, char *devName);
@@ -366,7 +363,7 @@ void siteMgr_init (TStadHandlesList *pStadHandles)
     pSiteMgr->hOs                   = pStadHandles->hOs;
     pSiteMgr->hMlme                 = pStadHandles->hMlme;
     pSiteMgr->hReport               = pStadHandles->hReport;
-    pSiteMgr->hXCCMngr              = pStadHandles->hXCCMngr;
+    pSiteMgr->hkkkMngr              = pStadHandles->hkkkMngr;
     pSiteMgr->hApConn               = pStadHandles->hAPConnection;
     pSiteMgr->hCurrBss              = pStadHandles->hCurrBss;
     pSiteMgr->hQosMngr              = pStadHandles->hQosMngr;
@@ -2250,22 +2247,6 @@ static void updateSiteInfo(siteMgr_t *pSiteMgr, mlmeFrameInfo_t *pFrameInfo, sit
                 /*  to connect to it or we are already connected - send the EVENT_GOT_BEACON to the conn module (through the SME module) */
                 /*  so the conn module will be aware of the beacon status of the site it's trying to connect to */
                 
-#ifdef XCC_MODULE_INCLUDED
-                TI_INT8 ExternTxPower;
-
-                if (pFrameInfo->content.iePacket.cellTP != NULL)
-                {
-                    ExternTxPower = pFrameInfo->content.iePacket.cellTP->power;
-                }
-                else	/* Set to maximum possible. Note that we add +1 so that Dbm = 26 and not 25 */
-                {
-                    ExternTxPower = MAX_TX_POWER / DBM_TO_TX_POWER_FACTOR + 1;
-                }
-
-                param.paramType = REGULATORY_DOMAIN_EXTERN_TX_POWER_PREFERRED;
-                param.content.ExternTxPowerPreferred = ExternTxPower;
-                regulatoryDomain_setParam(pSiteMgr->hRegulatoryDomain, &param);
-#endif
 
                 /* Updating the Tx Power according to the received Power Constraint  */
                 if(pFrameInfo->content.iePacket.powerConstraint  != NULL)
@@ -3443,13 +3424,13 @@ DESCRIPTION:    Called by the following functions:
 
 INPUT:      hSiteMgr            -   siteMgr handle.
             capabilities        -   assoc rsp capabilities field.
-			bCiscoAP			-   whether we are connected to a Cisco AP. Used for Tx Power Control adjustment
+			bCAP			-   whether we are connected to. Used for Tx Power Control adjustment
 OUTPUT:
 
 RETURN:     TI_OK on always
 
 ************************************************************************/
-TI_STATUS siteMgr_assocReport(TI_HANDLE hSiteMgr, TI_UINT16 capabilities, TI_BOOL bCiscoAP)
+TI_STATUS siteMgr_assocReport(TI_HANDLE hSiteMgr, TI_UINT16 capabilities, TI_BOOL bCAP)
 {
     siteMgr_t   *pSiteMgr = (siteMgr_t *)hSiteMgr;
     siteEntry_t *pPrimarySite = pSiteMgr->pSitesMgmtParams->pPrimarySite;
@@ -3459,9 +3440,9 @@ TI_STATUS siteMgr_assocReport(TI_HANDLE hSiteMgr, TI_UINT16 capabilities, TI_BOO
 
 	/*
 	 * Enable/Disable the Tx Power Control adjustment.
-	 * When we are connected to Cisco AP - TX Power Control adjustment is disabled.
+	 * When we are connected - TX Power Control adjustment is disabled.
 	 */
-	pSiteMgr->siteMgrTxPowerEnabled = ( !bCiscoAP ) && ( pSiteMgr->pDesiredParams->TxPowerControlOn );
+	pSiteMgr->siteMgrTxPowerEnabled = ( !bCAP ) && ( pSiteMgr->pDesiredParams->TxPowerControlOn );
 
 TRACE1(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Tx Power Control adjustment is %d\n", pSiteMgr->siteMgrTxPowerEnabled);
 

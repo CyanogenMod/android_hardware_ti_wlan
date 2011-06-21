@@ -95,7 +95,7 @@ typedef enum
     SCR_CID_APP_SCAN = 0,    /* lowest priority */
     SCR_CID_DRIVER_FG_SCAN,
     SCR_CID_CONT_SCAN,
-    SCR_CID_XCC_MEASURE,
+    SCR_CID_kkk_MEASURE,
     SCR_CID_BASIC_MEASURE,
     SCR_CID_CONNECT,
     SCR_CID_IMMED_SCAN,

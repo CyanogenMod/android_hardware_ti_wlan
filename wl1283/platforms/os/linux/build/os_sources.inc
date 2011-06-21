@@ -59,15 +59,15 @@ OS_DK_INCS_FILES = \
 	$(EXT_APP)/Linux/bmtrace/Export_Inc \
         $(TESTSRC)/debug.h
 
-#start of OS_DK_INCS_FILES_XCC#   do not remove or change this comment
-ifeq ($(XCC),y)
-    OS_DK_INCS_FILES_XCC = \
-        $(COMMON)/Export_Inc/XCC/paramOutXCC.h \
-        $(UTILS)/XCC/osDot11XCC.h
+#start of OS_DK_INCS_FILES_kkk#   do not remove or change this comment
+ifeq ($(kkk),y)
+    OS_DK_INCS_FILES_kkk = \
+        $(COMMON)/Export_Inc/kkk/paramOutkkk.h \
+        $(UTILS)/kkk/osDot11kkk.h
 
-    OS_DK_INCS_FILES += $(OS_DK_INCS_FILES_XCC)
+    OS_DK_INCS_FILES += $(OS_DK_INCS_FILES_kkk)
 endif
-#end of OS_DK_INCS_FILES_XCC#   do not remove or change this comment
+#end of OS_DK_INCS_FILES_kkk#   do not remove or change this comment
 
 #start of OS_DK_INCS_FILES#   do not remove or change this comment
 
@@ -95,15 +95,15 @@ OS_DK_INCS = \
         $(TESTSRC) \
         $(TXN)
 
-#start of OS_DK_INCS_XCC#   do not remove or change this comment
-ifeq ($(XCC),y)
-    OS_DK_INCS_XCC = \
-        $(COMMON)/Export_Inc/XCC \
-        $(COMSRC)/XCC \
-        $(UTILS)/XCC
+#start of OS_DK_INCS_kkk#   do not remove or change this comment
+ifeq ($(kkk),y)
+    OS_DK_INCS_kkk = \
+        $(COMMON)/Export_Inc/kkk \
+        $(COMSRC)/kkk \
+        $(UTILS)/kkk
 
-        OS_DK_INCS += $(OS_DK_INCS_XCC)
+        OS_DK_INCS += $(OS_DK_INCS_kkk)
 endif
-#end of OS_DK_INCS_XCC#   do not remove or change this comment
+#end of OS_DK_INCS_kkk#   do not remove or change this comment
 
 #start of OS_DK_INCS#   do not remove or change this comment

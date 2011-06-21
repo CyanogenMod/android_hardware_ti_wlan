@@ -53,9 +53,6 @@
 #include "MeasurementSrv.h"
 #include "MacServices_api.h"
 #include "sme.h"
-#ifdef XCC_MODULE_INCLUDED  
-#include "XCCRMMngr.h"
-#endif
 #include "SwitchChannelApi.h"
 #include "TWDriver.h"
 #include "rrmMgr.h"
@@ -100,9 +97,6 @@ RETURN:
 void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChannel, TI_HANDLE hRegulatoryDomain, TI_UINT32 funcType, void *pParam)
 {
 	paramInfo_t		param;
-#ifdef XCC_MODULE_INCLUDED
-    TTwdParamInfo   tTwdParam;
-#endif
 	TI_STATUS	    status = TI_OK;
     TI_UINT8           rangeUpperBound;
     TI_UINT8           rangeIndex;
@@ -120,59 +114,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
     TI_BOOL         isTriggeredReport = TI_FALSE;
     
 
-
-    
-#ifdef XCC_MODULE_INCLUDED
-    TI_UINT8           iappPacket[90] = {0xAA, 0xAA, 0x03, 0x00, 0x40, 0x96, 0x00, 0x00, 
-                                      0x00, 0x20, 0x32, 0x01, 
-                                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                                      0x20, 0x00, 0x01, 0x02, 
-                                      0x26, 0x00, 0x08, 0x00, 0xA1, 0x00, 0x00, 0x01, 
-                                      0x0B, 0x00, 0x26, 0x26};
-    
-    TI_UINT8           iappPacket1[76] = {0xAA, 0xAA, 0x03, 0x00, 0x40, 0x96, 0x00, 0x00, 
-                                       0x00, 0x20, 0x32, 0x01, 
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                                       0x30, 0x00, 0x01, 0x02, 
-                                       0x26, 0x00, 0x08, 0x00, 0xF1, 0x00, 0x00, 0x01, 
-                                       0x06, 0x00, 0x64, 0x00};
-
-    TI_UINT8           iappPacket2[76] = {0xAA, 0xAA, 0x03, 0x00, 0x40, 0x96, 0x00, 0x00, 
-                                       0x00, 0x20, 0x32, 0x01, 
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                                       0x13, 0x00, 0x01, 0x02, 
-                                       0x26, 0x00, 0x08, 0x00, 0xA3, 0x00, 0x00, 0x03, 
-                                       0x0B, 0x02, 0xD1, 0x03};
-
-    TI_UINT8           iappPacket3[76] = {0xAA, 0xAA, 0x03, 0x00, 0x40, 0x96, 0x00, 0x00,
-                                       0x00, 0x38, 0x32, 0x01,
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                       0x20, 0x00, 0x01, 0x02,
-                                       0x26, 0x00, 0x08, 0x00, 0xA1, 0x00, 0x00, 0x03,
-                                       0x03,
-									   0X00, 0XFF, 0X00, 0X26, 0X00, 0X08,
-									   0X00, 0XC1, 0X00, 0X00, 0X02, 0X03,
-									   0X00, 0XFF, 0X00, 0X26, 0X00, 0X08,
-									   0X00, 0XB1, 0X00, 0X00, 0X01, 0X03,
-				                       0X00, 0XFF, 0X00};
-
-    TI_UINT8           iappPacket4[76] = {0xAA, 0xAA, 0x03, 0x00, 0x40, 0x96, 0x00, 0x00,
-                                       0x00, 0x38, 0x32, 0x01,
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                       0x20, 0x00, 0x01, 0x02,
-                                       0x26, 0x00, 0x08, 0x00, 0xA1, 0x00, 0x00, 0x03,
-                                       0x06,
-									   0X00, 0X32, 0X00, 0X26, 0X00, 0X08,
-									   0X00, 0XC1, 0X00, 0X00, 0X02, 0X01,
-									   0X00, 0XFF, 0X00, 0X26, 0X00, 0X08,
-									   0X00, 0XB1, 0X00, 0X01, 0X01, 0X01,
-				                       0X00, 0X96, 0X00};
-#endif
 
 	switch (funcType)
 	{
@@ -227,9 +168,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
         WLAN_OS_REPORT(("beaconInterval = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->beaconInterval));
 		WLAN_OS_REPORT(("dtimPeriod = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->dtimPeriod));
 
-#ifdef XCC_MODULE_INCLUDED        
-        measurementMgr_XCCParse(hMeasurementMgr, iappPacket);
-#endif
 
 	    WLAN_OS_REPORT(("-----------------------------------------------------\n"));
         WLAN_OS_REPORT(("   Measurement Debug Function: END                   \n"));
@@ -280,18 +218,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
 
     case DBG_MEASUREMENT_GET_NOISE_HIST_RESULTS:
 		{
-	#ifdef XCC_MODULE_INCLUDED
-			TNoiseHistogramResults results;
-
-			/* Get measurement results */
-			tTwdParam.paramType = TWD_NOISE_HISTOGRAM_PARAM_ID;
-			tTwdParam.content.interogateCmdCBParams.fCb = (void *)measurement_noiseHistCallBackDbg;
-			tTwdParam.content.interogateCmdCBParams.hCb = ((TTwd *)pMeasurementMgr->hTWD)->hMeasurementSRV;
-			tTwdParam.content.interogateCmdCBParams.pCb = (TI_UINT8 *)&results;
-
-			TWD_GetParam (pMeasurementMgr->hTWD, &tTwdParam);
-	#endif               
-
 			break;
 		}
 
@@ -303,9 +229,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
         WLAN_OS_REPORT(("beaconInterval = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->beaconInterval));
 		WLAN_OS_REPORT(("dtimPeriod = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->dtimPeriod));
 
-#ifdef XCC_MODULE_INCLUDED        
-        measurementMgr_XCCParse(hMeasurementMgr, iappPacket1);
-#endif
 
 	    WLAN_OS_REPORT(("---------------------------------------------------------------\n"));
         WLAN_OS_REPORT(("   Measurement Debug Function: END                             \n"));
@@ -325,10 +248,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
         WLAN_OS_REPORT(("beaconInterval = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->beaconInterval));
 		WLAN_OS_REPORT(("dtimPeriod = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->dtimPeriod));
 
-#ifdef XCC_MODULE_INCLUDED        
-        measurementMgr_XCCParse(hMeasurementMgr, iappPacket2);
-#endif
-
 	    WLAN_OS_REPORT(("---------------------------------------------------------------\n"));
         WLAN_OS_REPORT(("   Measurement Debug Function: END                             \n"));
 	    WLAN_OS_REPORT(("---------------------------------------------------------------\n"));
@@ -346,9 +265,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
         WLAN_OS_REPORT(("beaconInterval = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->beaconInterval));
 		WLAN_OS_REPORT(("dtimPeriod = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->dtimPeriod));
 
-#ifdef XCC_MODULE_INCLUDED        
-        measurementMgr_XCCParse(hMeasurementMgr, iappPacket3);
-#endif
 
 	    WLAN_OS_REPORT(("---------------------------------------------------------------\n"));
         WLAN_OS_REPORT(("   Measurement Debug Function: END                             \n"));
@@ -367,10 +283,6 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
 
         WLAN_OS_REPORT(("beaconInterval = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->beaconInterval));
 		WLAN_OS_REPORT(("dtimPeriod = %d\n", pSiteMgr->pSitesMgmtParams->pPrimarySite->dtimPeriod));
-
-#ifdef XCC_MODULE_INCLUDED        
-        measurementMgr_XCCParse(hMeasurementMgr, iappPacket4);
-#endif
 
 	    WLAN_OS_REPORT(("---------------------------------------------------------------\n"));
         WLAN_OS_REPORT(("   Measurement Debug Function: END                             \n"));

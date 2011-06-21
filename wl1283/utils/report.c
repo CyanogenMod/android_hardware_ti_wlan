@@ -81,12 +81,12 @@ TI_HANDLE report_Create (TI_HANDLE hOs)
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_7  ]),  "SwitchChannel           "  ,  sizeof("SwitchChannel           "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_8  ]),  "roamingMngr             "  ,  sizeof("roamingMngr             "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_9  ]),  "scanMngr                "  ,  sizeof("scanMngr                "));
-    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_10 ]),  "admCtrlXCC              "  ,  sizeof("admCtrlXCC              "));
-    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_11 ]),  "XCCMngr                 "  ,  sizeof("XCCMngr                 "));
-    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_12 ]),  "XCCRMMngr               "  ,  sizeof("XCCRMMngr               "));
-    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_13 ]),  "XCCTSMngr               "  ,  sizeof("XCCTSMngr               "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_10 ]),  "admCtrlkkk              "  ,  sizeof("admCtrlkkk              "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_11 ]),  "kkkMngr                 "  ,  sizeof("kkkMngr                 "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_12 ]),  "kkkRMMngr               "  ,  sizeof("kkkRMMngr               "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_13 ]),  "kkkTSMngr               "  ,  sizeof("kkkTSMngr               "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_14 ]),  "rogueAp                 "  ,  sizeof("rogueAp                 "));
-    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_15 ]),  "TransmitPowerXCC        "  ,  sizeof("TransmitPowerXCC        "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_15 ]),  "TransmitPowerkkk        "  ,  sizeof("TransmitPowerkkk        "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_16 ]),  "admCtrl                 "  ,  sizeof("admCtrl                 "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_17 ]),  "admCtrlNone             "  ,  sizeof("admCtrlNone             "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_18 ]),  "admCtrlWep              "  ,  sizeof("admCtrlWep              "));
@@ -101,7 +101,7 @@ TI_HANDLE report_Create (TI_HANDLE hOs)
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_27 ]),  "connInfra               "  ,  sizeof("connInfra               "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_28 ]),  "keyDerive               "  ,  sizeof("keyDerive               "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_29 ]),  "keyDeriveAes            "  ,  sizeof("keyDeriveAes            "));
-    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_30 ]),  "keyDeriveCkip           "  ,  sizeof("keyDeriveCkip           "));
+    os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_30 ]),  "keyDerivejjj           "  ,  sizeof("keyDerivejjj           "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_31 ]),  "keyDeriveTkip           "  ,  sizeof("keyDeriveTkip           "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_32 ]),  "keyDeriveWep            "  ,  sizeof("keyDeriveWep            "));
     os_memoryCopy(hOs, (void *)(pReport->aFileName[FILE_ID_33 ]),  "keyParser               "  ,  sizeof("keyParser               "));

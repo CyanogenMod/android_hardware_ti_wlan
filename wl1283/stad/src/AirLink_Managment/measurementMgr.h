@@ -52,9 +52,6 @@
 #include "requestHandler.h"
 #include "measurementMgrSM.h"
 #include "rrmMgr.h"
-#ifdef XCC_MODULE_INCLUDED
- #include "XCCRMMngrParam.h"
-#endif
 
 
 /* Functions Pointers Definitions */
@@ -132,9 +129,6 @@ typedef struct
 
     
     /* Report Frame Params */
-#ifdef XCC_MODULE_INCLUDED
-    RM_report_frame_t           XCCFrameReport;
-#endif
     MeasurementReportFrame_t    dot11hFrameReport;
     TI_UINT8                    rrmFrameReportBuff[RRM_REPORT_MAX_SIZE]; /* 802.11k */
     
@@ -150,7 +144,7 @@ typedef struct
     TMeasurementFrameRequest    newFrameRequest;
 
 
-    /* XCC Traffic Stream Metrics measurement parameters */
+    /* kkk Traffic Stream Metrics measurement parameters */
     TI_HANDLE                   hTsMetricsReportTimer[MAX_NUM_OF_AC];
     TI_BOOL                     isTsMetricsEnabled[MAX_NUM_OF_AC];
     /* RRM Fields */
@@ -160,7 +154,7 @@ typedef struct
     /* Handles to other modules */
     TI_HANDLE                   hRequestH;
     TI_HANDLE                   hRegulatoryDomain;
-    TI_HANDLE                   hXCCMngr;
+    TI_HANDLE                   hkkkMngr;
     TI_HANDLE                   hSiteMgr;
     TI_HANDLE                   hTWD;
     TI_HANDLE                   hMlme;

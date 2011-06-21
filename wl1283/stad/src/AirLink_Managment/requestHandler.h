@@ -58,7 +58,7 @@ typedef struct
     TI_BOOL                     bDurationMandatory;
     TI_UINT16                   frameToken; 
     TI_UINT16                   measurementToken;
-    TI_UINT8                    channelSingle; /* To keep supporting the XCC measurements */
+    TI_UINT8                    channelSingle; /* To keep supporting the kkk measurements */
 
     TI_UINT8                    regulatoryClass;
     TI_UINT8                    channelListBandBG[SCAN_MAX_NUM_OF_CHANNELS];

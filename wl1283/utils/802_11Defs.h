@@ -44,9 +44,6 @@
 
 #include "tidef.h"
 #include "osDot11.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "osDot11XCC.h"
-#endif
 
 #define DOT11_OUI_LEN                       4
 #define DOT11_COUNTRY_STRING_LEN            3
@@ -638,28 +635,9 @@ typedef struct
 } dot11_TPC_REPORT_t;
 
 
-#ifdef  XCC_MODULE_INCLUDED
 
-/* Cell Transmit Power Information Element */
-#define DOT11_CELL_TP_ELE_ID            (150)
-#define DOT11_CELL_TP_ELE_LEN           (6)
-
-typedef struct 
-{
-    dot11_eleHdr_t  hdr;
-    TI_UINT8           oui[4];
-    TI_UINT8           power;
-    TI_UINT8           reserved;
-} dot11_CELL_TP_t;
-
-#define   DOT11_CELL_TP \
-    dot11_CELL_TP_t         *cellTP;
-    
-#else   /* XCC_MODULE_INCLUDED */
 
 #define   DOT11_CELL_TP
-
-#endif  /* XCC_MODULE_INCLUDED */
 
 
 /* Channel Supported Information Element */
@@ -910,13 +888,13 @@ typedef struct
 #define WME_TSPEC_IE_OUI_SUB_TYPE               0x02
 #define WME_TSPEC_IE_VERSION                    0x01
 
-/* OUI TYPE values that can be present in management packets inside Cisco vendor specific IE */
+/* OUI TYPE values that can be present in management packets inside vendor specific IE */
 typedef enum
 {
     TS_METRIX_OUI_TYPE = 0x07,
     TS_RATE_SET_OUI_TYPE = 0x08,
     EDCA_LIFETIME_OUI_TYPE = 0x09
-} XCC_IE_OUI_TYPE_t;
+} kkk_IE_OUI_TYPE_t;
 
 #define ADDTS_REQUEST_ACTION                    0x00
 #define ADDTS_RESPONSE_ACTION                   0x01
@@ -963,7 +941,7 @@ typedef enum
 #define FIX_MSDU_SIZE                           0x8000
 
 #define WPA_IE_OUI                              {0x00, 0x50, 0xf2}
-#define XCC_OUI                                 {0x00, 0x40, 0x96}
+#define kkk_OUI                                 {0x00, 0x40, 0x96}
 
 /* Action field structure
     used for extended management action such as spectrum management */ 
@@ -1011,9 +989,9 @@ typedef enum
 	MOBILITY_DOMAIN_IE_ID               = 54,
     HT_INFORMATION_IE_ID                = 61,
     RRM_ENABLED_CAPABILITIES_IE_ID      = 70,
-    XCC_EXT_1_IE_ID                     = 133,
-    XCC_EXT_2_IE_ID                     = 149,  
-    CELL_POWER_IE                       = 150, /*XCC*/
+    kkk_EXT_1_IE_ID                     = 133,
+    kkk_EXT_2_IE_ID                     = 149,
+    CELL_POWER_IE                       = 150, /*kkk*/
     WPA_IE_ID                           = 221
 
 } dot11MgmtIeId_e;
@@ -1066,21 +1044,6 @@ typedef struct
  * Management templates to set to the HAL:
  */
 
-#ifdef XCC_MODULE_INCLUDED
-
-    typedef struct  
-    {
-        dot11_mgmtHeader_t  hdr;
-        char                infoElements[sizeof( dot11_SSID_t ) + 
-                                         sizeof( dot11_RATES_t ) +
-                                         sizeof( dot11_RATES_t ) +
-                                         sizeof( Tdot11HtCapabilitiesUnparse ) +
-                                         DOT11_WSC_PROBE_REQ_MAX_LENGTH +
-                                         sizeof( XCC_radioManagmentCapability_IE_t )
-                                        ];
-    } probeReqTemplate_t;
-
-#else /* XCC_MODULE_INCLUDED */
 
     typedef struct  
     {
@@ -1096,7 +1059,6 @@ typedef struct
                                         ];
     } probeReqTemplate_t;
 
-#endif /* XCC_MODULE_INCLUDED */
 
 
 typedef struct 
@@ -1196,7 +1158,7 @@ typedef struct
     dot11_TSRS_IE_t             *trafficStreamParameter;
     dot11_MSDU_LIFE_TIME_IE_t   *edcaLifetimeParameter;
     dot11_TS_METRICS_IE_t       *tsMetrixParameter;
-} XCCv4IEs_t;
+} nnnIEs_t;
 
 
 #define MAX_NEIGHBOR_REPORT_SUB_ELEMENTS (50)

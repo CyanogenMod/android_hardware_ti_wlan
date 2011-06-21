@@ -216,8 +216,8 @@ static VOID IpcEvent_PrintEvent(IpcEvent_Child_t* pIpcEventChild, U32 EventId, T
             case IPC_EVENT_AUTH_SUCC:
                 os_error_printf(CU_MSG_ERROR, (PS8)"IpcEvent_PrintEvent - received IPC_EVENT_AUTH_SUCC\n");
                 break;
-            case IPC_EVENT_CCKM_START:
-                os_error_printf(CU_MSG_ERROR, (PS8)"IpcEvent_PrintEvent - received IPC_EVENT_CCKM_START\n");
+            case IPC_EVENT_iii_START:
+                os_error_printf(CU_MSG_ERROR, (PS8)"IpcEvent_PrintEvent - received IPC_EVENT_iii_START\n");
                 break;
             case IPC_EVENT_EAPOL:
                 os_error_printf(CU_MSG_ERROR, (PS8)"IpcEvent_PrintEvent - received IPC_EVENT_EAPOL\n");
@@ -349,10 +349,6 @@ static VOID IpcEvent_wext_event_wireless(IpcEvent_Child_t* pIpcEventChild, PS8 d
                 } 
                 else 
                 {
-#ifdef XCC_MODULE_INCLUDED
-                    /* Send a signal to the udhcpc application to trigger the renew request */
-                    system("killall -SIGUSR1 udhcpc"); 
-#endif
                     EventId=IPC_EVENT_ASSOCIATED;
                     IpcEvent_PrintEvent(pIpcEventChild, EventId, NULL,0);
                 }

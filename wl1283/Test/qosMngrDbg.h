@@ -41,5 +41,5 @@
 void qosMngrDebugFunction(TI_HANDLE hQosMngr, TI_UINT32 funcType, void *pParam);
 
 
-#endif /* __XCCMNGR_DBG_H__*/
+#endif /* __kkkMNGR_DBG_H__*/
 

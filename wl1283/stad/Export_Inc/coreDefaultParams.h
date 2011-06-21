@@ -628,15 +628,15 @@ IP&Port classification table  */
 
 
 /*---------------------------
-      XCC Manager parameters
+      kkk Manager parameters
 -----------------------------*/
-#define XCC_MNGR_ENABLE_MIN             XCC_MODE_DISABLED
-#define XCC_MNGR_ENABLE_MAX             XCC_MODE_STANDBY
-#define XCC_MNGR_ENABLE_DEF             XCC_MODE_ENABLED
+#define kkk_MNGR_ENABLE_MIN             kkk_MODE_DISABLED
+#define kkk_MNGR_ENABLE_MAX             kkk_MODE_STANDBY
+#define kkk_MNGR_ENABLE_DEF             kkk_MODE_ENABLED
 
-#define XCC_TEST_IGNORE_DEAUTH_0_DEF            1
-#define XCC_TEST_IGNORE_DEAUTH_0_MIN            0
-#define XCC_TEST_IGNORE_DEAUTH_0_MAX            1
+#define kkk_TEST_IGNORE_DEAUTH_0_DEF            1
+#define kkk_TEST_IGNORE_DEAUTH_0_MIN            0
+#define kkk_TEST_IGNORE_DEAUTH_0_MAX            1
 
 #define SITE_MGR_ROAMING_TX_RATE_PERCENTAGE_MIN         30
 #define SITE_MGR_ROAMING_TX_RATE_PERCENTAGE_MAX         75

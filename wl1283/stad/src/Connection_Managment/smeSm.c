@@ -692,13 +692,6 @@ TI_STATUS sme_StartScan (TI_HANDLE hSme)
             pSme->tScanParams.uSsidNum = 1;
             pSme->tScanParams.uSsidListFilterEnabled = 1;
 
-#ifdef XCC_MODULE_INCLUDED
-            pSme->tScanParams.uSsidListFilterEnabled = (TI_UINT8)TI_FALSE;
-            pSme->tScanParams.uSsidNum = 2;
-            pSme->tScanParams.tDesiredSsid[ 1 ].tSsid.len = 0;
-            pSme->tScanParams.tDesiredSsid[ 1 ].eVisability =  SCAN_SSID_VISABILITY_PUBLIC;
-#endif
-
         }
     }
     /* Country code exists and scan is performed on this band - take country expiry timr into account */

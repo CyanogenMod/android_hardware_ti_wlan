@@ -107,7 +107,7 @@ typedef enum
 	WPA_IE_KEY_MNG_NONE				= 0,		/**< no key management available */
 	WPA_IE_KEY_MNG_801_1X			= 1,		/**< "802.1X" key management - WPA default*/
 	WPA_IE_KEY_MNG_PSK_801_1X		= 2,		/**< "WPA PSK */
-	WPA_IE_KEY_MNG_CCKM			    = 3,		/**< WPA CCKM */
+	WPA_IE_KEY_MNG_iii			    = 3,		/**< WPA iii */
 	WPA_IE_KEY_MNG_NA			    = 4			/**< NA */
 } keyMngSuite_e;
 
@@ -115,11 +115,11 @@ typedef enum
 #define WPA2_IE_KEY_MNG_NONE             0
 #define WPA2_IE_KEY_MNG_801_1X           1
 #define WPA2_IE_KEY_MNG_PSK_801_1X       2
-#define WPA2_IE_KEY_MNG_CCKM			 3
+#define WPA2_IE_KEY_MNG_iii			 3
 #define WPA2_IE_KEY_MNG_NA               4
 
-#define MAX_WPA_UNICAST_SUITES        (TWD_CIPHER_CKIP+1)
-#define	MAX_WPA_KEY_MNG_SUITES   	(WPA_IE_KEY_MNG_CCKM+1)
+#define MAX_WPA_UNICAST_SUITES        (TWD_CIPHER_jjj+1)
+#define	MAX_WPA_KEY_MNG_SUITES   	(WPA_IE_KEY_MNG_iii+1)
 
 /* Typedefs */
 typedef struct _rsn_t   rsn_t;
@@ -169,8 +169,8 @@ typedef struct
 	ERsnKeyMngSuite	    KeyMngSuite[MAX_WPA_KEY_MNG_SUITES];
     TI_UINT8			bcastForUnicatst;
 	TI_UINT8			replayCounters;
-    TI_BOOL             XCCKp;
-    TI_BOOL             XCCMic;
+    TI_BOOL             kkkKp;
+    TI_BOOL             kkkMic;
 
 } wpaIeData_t;
 
@@ -201,7 +201,7 @@ struct _rsn_t
     TI_HANDLE              hSiteMgr;
     TI_HANDLE              hReport;
     TI_HANDLE              hOs;
-    TI_HANDLE              hXCCMngr;
+    TI_HANDLE              hkkkMngr;
     TI_HANDLE              hEvHandler;
     TI_HANDLE              hSmeSm;
     TI_HANDLE              hAPConn;
@@ -210,15 +210,6 @@ struct _rsn_t
     TI_HANDLE              hTimer;
     TI_HANDLE              hCurrBss;
     
-#ifdef XCC_MODULE_INCLUDED
-    OS_XCC_NETWORK_EAP      networkEapMode;
-    TI_BOOL                 XCCSupport;
-    TI_BOOL                 proxyArpEnabled;
-    TI_BOOL                 setSiteFirst;
-    TI_BOOL                 encrInSw;
-    TI_UINT8                aironetIeReserved[8];
-    TI_UINT8                AP_IP_Address[4];
-#endif
 
     TI_BOOL				   bPortStatus;
     TI_BOOL                bMixedMode;
@@ -262,9 +253,6 @@ TI_STATUS rsn_setPortStatus(TI_HANDLE hRsn, TI_BOOL state);
 TI_STATUS rsn_getGenInfoElement(rsn_t *pRsn, TI_UINT8 *out_buff, TI_UINT32 *out_buf_length);
 
 TI_STATUS rsn_parseIe(rsn_t *pRsn, TRsnData *pRsnData, TI_UINT8 **pIe, TI_UINT8 IeId);
-#ifdef XCC_MODULE_INCLUDED
-void rsn_XCCSetSite(rsn_t *pRsn, TRsnData *pRsnData, TI_UINT8 *pAssocIe);
-#endif
 
 #endif
 

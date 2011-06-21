@@ -658,14 +658,7 @@ NDIS_STRING STRReAuthActiveTimeout				= NDIS_STRING_CONST( "ReAuthActiveTimeout"
 NDIS_STRING STRMeasurTrafficThreshold           = NDIS_STRING_CONST( "MeasurTrafficThreshold" );
 NDIS_STRING STRMeasurMaxDurationOnNonServingChannel = NDIS_STRING_CONST( "MeasurMaxDurationOnNonServingChannel" );
 
-/*---------------------------
-      XCC Manager parameters
------------------------------*/
-#ifdef XCC_MODULE_INCLUDED
-NDIS_STRING STRXCCModeEnabled                   = NDIS_STRING_CONST( "XCCModeEnabled" );
-#endif
-
-NDIS_STRING STRXCCTestIgnoreDeAuth0             = NDIS_STRING_CONST( "XCCTestRogeAP" );
+NDIS_STRING STRkkkTestIgnoreDeAuth0             = NDIS_STRING_CONST( "kkkTestRogeAP" );
 
 /*-----------------------------------*/
 /*   EEPROM-less support             */
@@ -3980,22 +3973,11 @@ regReadIntegerParameter(pAdapter, &STRSettings,
 
 
     /*---------------------------
-          XCC Manager parameters
+          kkk Manager parameters
     -----------------------------*/
-#ifdef XCC_MODULE_INCLUDED
 
-    regReadIntegerParameter(pAdapter, &STRXCCModeEnabled,
-                            XCC_MNGR_ENABLE_DEF, XCC_MNGR_ENABLE_MIN, XCC_MNGR_ENABLE_MAX,
-                            sizeof p->XCCMngrParams.XCCEnabled,
-                            (TI_UINT8*)&p->XCCMngrParams.XCCEnabled);
-
-
-    p->measurementInitParams.XCCEnabled = p->XCCMngrParams.XCCEnabled;
-
-#endif
-
-    regReadIntegerParameter(pAdapter, &STRXCCTestIgnoreDeAuth0,
-                            XCC_TEST_IGNORE_DEAUTH_0_DEF, XCC_TEST_IGNORE_DEAUTH_0_MIN, XCC_TEST_IGNORE_DEAUTH_0_MAX,
+    regReadIntegerParameter(pAdapter, &STRkkkTestIgnoreDeAuth0,
+                            kkk_TEST_IGNORE_DEAUTH_0_DEF, kkk_TEST_IGNORE_DEAUTH_0_MIN, kkk_TEST_IGNORE_DEAUTH_0_MAX,
                             sizeof p->apConnParams.ignoreDeauthReason0,
                             (TI_UINT8*)&p->apConnParams.ignoreDeauthReason0);
 

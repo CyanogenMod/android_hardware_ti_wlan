@@ -60,11 +60,6 @@
 #include "TI_IPC_Api.h"
 #include "regulatoryDomainApi.h"
 #include "measurementMgrApi.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#include "TransmitPowerXCC.h"
-#include "XCCRMMngr.h"
-#endif
 #include "rsn.h"
 #include "qosMngr_API.h"
 #include "StaCap.h"
@@ -411,13 +406,6 @@ TI_STATUS systemConfig(siteMgr_t *pSiteMgr)
     TI_BOOL     b11nEnable;
     TI_BOOL     bWmeEnable;
 
-#ifdef XCC_MODULE_INCLUDED
-    TI_UINT8     ExternTxPower;
-    dot11_RSN_t *pRsnIe;
-    TI_UINT16   length;
-    TI_UINT8    rsnIECount=0;
-    TRsnData	rsnData;
-#endif
 	TI_STATUS	status;
 	ESlotTime	slotTime;
 	TI_UINT32	StaTotalRates;
@@ -648,49 +636,6 @@ TI_STATUS systemConfig(siteMgr_t *pSiteMgr)
          txCtrlParams_SetHtControl (pSiteMgr->hTxCtrl, &tHtControl);
      }
 
-
-#ifdef XCC_MODULE_INCLUDED
-     /***************** Config RSN/XCC *************************/
-     /* Get the RSN IE data */
-     pRsnIe = pPrimarySite->pRsnIe;
-     length = 0;
-     rsnIECount = 0;
-     while ((length < pPrimarySite->rsnIeLen) && (pPrimarySite->rsnIeLen < 255)
-    		 && (rsnIECount < MAX_RSN_IE))
-     {
-    	 curRsnData[0+length] = pRsnIe->hdr[0];
-    	 curRsnData[1+length] = pRsnIe->hdr[1];
-    	 os_memoryCopy(pSiteMgr->hOs, &curRsnData[2+length], (void *)pRsnIe->rsnIeData, pRsnIe->hdr[1]);
-    	 length += pRsnIe->hdr[1]+2;
-    	 pRsnIe += 1;
-    	 rsnIECount++;
-     }
-     if (length<pPrimarySite->rsnIeLen)
-     {
-    	 TRACE2(pSiteMgr->hReport, REPORT_SEVERITY_ERROR, "siteMgr_selectSiteFromTable, RSN IE is too long: rsnIeLen=%d, MAX_RSN_IE=%d\n", pPrimarySite->rsnIeLen, MAX_RSN_IE);
-     }
-
-     rsnData.pIe = (pPrimarySite->rsnIeLen==0) ? NULL : curRsnData;
-     rsnData.ieLen = pPrimarySite->rsnIeLen;
-     rsnData.privacy = pPrimarySite->privacy;
-
-     rsn_XCCSetSite(pSiteMgr->hRsn, &rsnData, NULL);
-
-
-     /***************** Config RegulatoryDomain **************************/
-
-	/* set XCC TPC if present */
-	if(XCC_ParseClientTP(pSiteMgr->hOs,pPrimarySite,(TI_INT8 *)&ExternTxPower,pIeBuffer,PktLength) == TI_OK)
-    {
-        TRACE1(pSiteMgr->hReport, REPORT_SEVERITY_INFORMATION, "Select XCC_ParseClientTP == OK: Dbm = %d\n",ExternTxPower);
-        pParam->paramType = REGULATORY_DOMAIN_EXTERN_TX_POWER_PREFERRED;
-        pParam->content.ExternTxPowerPreferred = ExternTxPower;
-        regulatoryDomain_setParam(pSiteMgr->hRegulatoryDomain, pParam);
-    }
-	/* Parse and save the XCC Version Number if exists */
-	XCCMngr_parseXCCVer(pSiteMgr->hXCCMngr, pIeBuffer, PktLength);
-
-#endif
 
 	/* Note: TX Power Control adjustment is now done through siteMgr_assocReport() */
 	if (pPrimarySite->powerConstraint>0)

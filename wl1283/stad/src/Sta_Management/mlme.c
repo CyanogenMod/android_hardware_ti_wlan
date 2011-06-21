@@ -59,11 +59,6 @@
 #include "apConn.h"
 #include "smeApi.h"
 
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#include "XCCRMMngr.h"
-#endif
-
 
 /**
 *
@@ -172,9 +167,6 @@ void mlme_init (TStadHandlesList *pStadHandles)
 	pHandle->hStaCap           = pStadHandles->hStaCap;
 	pHandle->hSme			   = pStadHandles->hSme;
 	pHandle->hTimer            = pStadHandles->hTimer;
-#ifdef XCC_MODULE_INCLUDED
-    pHandle->hXCCMngr          = pStadHandles->hXCCMngr;
-#endif
 
     /*
     debug info
@@ -762,43 +754,6 @@ TI_STATUS mlme_assocRequestMsgBuild(mlme_t *pCtx, TI_UINT8* reqBuf, TI_UINT32* r
     }
 
 
-#ifdef XCC_MODULE_INCLUDED
-    status = rsn_getXCCExtendedInfoElement(pCtx->hRsn, pRequest, (TI_UINT8*)&len);
-    if (status != TI_OK)
-    {
-        return TI_NOK;
-    }
-    pRequest += len;
-    *reqLen += len;
-
-    if (pCtx->reAssoc)
-    {   /* insert CCKM information element only in reassoc */
-        status = XCCMngr_getCckmInfoElement(pCtx->hXCCMngr, pRequest, (TI_UINT8*)&len);
-
-        if (status != TI_OK)
-        {
-            return TI_NOK;
-        }
-        pRequest += len;
-        *reqLen += len;
-    }
-    status = XCCMngr_getXCCVersionInfoElement(pCtx->hXCCMngr, pRequest, (TI_UINT8*)&len);
-    if (status != TI_OK)
-    {
-        return TI_NOK;
-    }
-    pRequest += len;
-    *reqLen += len;
-
-    /* Insert Radio Mngt Capability IE */
-    status = measurementMgr_radioMngtCapabilityBuild(pCtx->hMeasurementMgr, pRequest, (TI_UINT8*)&len);
-    if (status != TI_OK)
-    {
-        return TI_NOK;
-    }
-    pRequest += len;
-    *reqLen += len;
-#endif
 
      /* Get Simple-Config state */
     param.paramType = SITE_MGR_SIMPLE_CONFIG_MODE;
@@ -1433,9 +1388,9 @@ TI_STATUS mlme_assocRecv(TI_HANDLE hMlme, mlmeFrameInfo_t *pFrame)
         }
 
 
-        /* update siteMgr with capabilities and whether we are connected to Cisco AP */
+        /* update siteMgr with capabilities and whether we are connected to AP */
         siteMgr_assocReport(pMlme->hSiteMgr,
-                            pFrame->content.assocRsp.capabilities, pFrame->content.assocRsp.ciscoIEPresent);
+                            pFrame->content.assocRsp.capabilities, pFrame->content.assocRsp.cIEPresent);
 
         /* update QoS Manager - it the QOS active protocol is NONE, or no WME IE present, it will return TI_OK */
         /* if configured by AP, update MSDU lifetime */

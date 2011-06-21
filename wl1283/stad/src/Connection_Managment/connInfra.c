@@ -74,10 +74,6 @@
 #include "SoftGeminiApi.h"
 #include "RxQueue_api.h"
 
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#include "XCCTSMngr.h"
-#endif
 
 /* Local functions prototypes */
 
@@ -409,9 +405,6 @@ static TI_STATUS mlmeWait_to_WaitDisconnect(void *pData)
     /* FW will send the disconn frame according to disConnType */ 
     TWD_CmdFwDisconnect (pConn->hTWD, pConn->disConnType, pConn->disConnReasonToAP); 
 
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngr_updateIappInformation(pConn->hXCCMngr, XCC_DISASSOC);
-#endif
     os_memoryFree(pConn->hOs, pParam, sizeof(paramInfo_t));
     return TI_OK;
 }
@@ -665,9 +658,6 @@ static TI_STATUS configHW_to_connected(void *pData)
     /* Update TxMgmtQueue SM to open Tx path to all packets. */
     txMgmtQ_SetConnState (((conn_t *)pData)->hTxMgmtQ, TX_CONN_STATE_OPEN);
 
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngr_updateIappInformation(pConn->hXCCMngr, XCC_ASSOC_OK);
-#endif
 
     /* Start keep alive process */
     siteMgr_start(pConn->hSiteMgr);
@@ -881,9 +871,6 @@ static TI_STATUS prepare_send_disconnect(void *pData)
     txCtrlParams_setEapolEncryptionStatus(pConn->hTxCtrl, DEF_EAPOL_ENCRYPTION_STATUS);
     qosMngr_disconnect (pConn->hQosMngr, TI_TRUE);
 
-#ifdef XCC_MODULE_INCLUDED
-    measurementMgr_disableTsMetrics(pConn->hMeasurementMgr, MAX_NUM_OF_AC);
-#endif
 
     /* Start the disconnect complete time out timer. 
        Disconect Complete event, which stops the timer. */
@@ -892,9 +879,6 @@ static TI_STATUS prepare_send_disconnect(void *pData)
     /* FW will send the disconn frame according to disConnType */ 
     TWD_CmdFwDisconnect (pConn->hTWD, pConn->disConnType, pConn->disConnReasonToAP); 
 
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngr_updateIappInformation(pConn->hXCCMngr, XCC_DISASSOC);
-#endif
 
     return TI_OK;
 }
@@ -971,9 +955,6 @@ static TI_STATUS connect_to_ScrWait(void *pData)
             pParam->paramType = REGULATORY_DOMAIN_DISCONNECT_PARAM;
             regulatoryDomain_setParam(pConn->hRegulatoryDomain, pParam);
 
-#ifdef XCC_MODULE_INCLUDED
-            XCCMngr_updateIappInformation(pConn->hXCCMngr, XCC_DISASSOC);
-#endif
         /* Must be called AFTER mlme_stop. since De-Auth packet should be sent with the
             supported rates, and stopModules clears all rates. */
             stopModules(pConn, TI_FALSE);

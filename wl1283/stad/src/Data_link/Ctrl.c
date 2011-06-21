@@ -146,11 +146,6 @@ void ctrlData_init (TStadHandlesList *pStadHandles,
     pCtrlData->hStaCap      = pStadHandles->hStaCap;
     pCtrlData->hRsn         = pStadHandles->hRsn;
 
-#ifdef XCC_MODULE_INCLUDED
-	/* Register the link test retries CB */
-	pCtrlData->retriesUpdateCBFunc = retriesUpdateCBFunc;
-	pCtrlData->retriesUpdateCBObj  = retriesUpdateCBObj;
-#endif
     
     TRACE0(pCtrlData->hReport, REPORT_SEVERITY_INIT, ".....Ctrl Data configured successfully ...\n");
 }

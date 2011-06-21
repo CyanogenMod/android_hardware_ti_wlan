@@ -39,9 +39,6 @@
 #include "console.h"
 #include "cu_cmd.h"
 #include "wpa_core.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "cu_XCC.h"
-#endif
 
 /* defines */
 /***********/
@@ -365,9 +362,6 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 	Console_AddToken(pTiCon->hConsole,h1, (PS8)"Get Default Key ID", (PS8)"Get Default Key ID", (FuncToken_t)CuCmd_GetPrivacyDefaultKey, NULL);
 	
 	
-#ifdef XCC_MODULE_INCLUDED
-	CuXCC_AddXCCMenu(pTiCon, h);
-#endif/*XCC_MODULE_INCLUDED*/
 	
     /* -------------------------------------------- Scan -------------------------------------------- */
 	
@@ -894,9 +888,6 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 			Console_AddToken(pTiCon->hConsole, h, (PS8)"Fm_coexistence", (PS8)"FM Coexistence parameters configuration", (FuncToken_t) CuCmd_ConfigFmCoex, aaa );
 	}
 	
-#ifdef XCC_MODULE_INCLUDED
-	CuXCC_AddMeasurementMenu(pTiCon->hConsole);
-#endif /* XCC_MODULE_INCLUDED*/
 
 #ifdef TI_DBG
 	

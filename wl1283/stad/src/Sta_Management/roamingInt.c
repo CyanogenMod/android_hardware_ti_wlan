@@ -32,7 +32,7 @@
  */
 
 /** \file roamingMngr.c
- *  \brief Roaming (Cisco Compatible Extensions for WLAN Devices) Manager
+ *  \brief Roaming Manager
  *
  *  \see roamingMngrApi.h
  */
@@ -48,9 +48,6 @@
 #include "osApi.h"
 
 #include "siteMgrApi.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 #include "roamingMngrApi.h"
 
 

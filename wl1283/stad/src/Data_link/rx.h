@@ -88,7 +88,7 @@ typedef struct
 	TI_HANDLE			hRsn;
 	TI_HANDLE			hReport;
 	TI_HANDLE			hSiteMgr;
-	TI_HANDLE			hXCCMgr;
+	TI_HANDLE			hkkkMgr;
     TI_HANDLE           hEvHandler;
     TI_HANDLE           hTimer;
     TI_HANDLE           RxEventDistributor;

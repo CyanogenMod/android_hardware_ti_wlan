@@ -158,14 +158,6 @@ TI_STATUS mlmeParser_readTPCReport(mlme_t *pMlme,
 								   TI_UINT32 *pReadLen,
 								   dot11_TPC_REPORT_t	*TPCReport);
 
-#ifdef XCC_MODULE_INCLUDED
-TI_STATUS mlmeParser_readCellTP(mlme_t *pMlme, 
-								TI_UINT8 *pData, 
-								TI_UINT32 dataLen, 
-								TI_UINT32 *pReadLen, 
-								dot11_CELL_TP_t *cellTP);
-#endif
-
 TI_STATUS mlmeParser_readQuiet(mlme_t *pMlme,
 							   TI_UINT8 *pData,
 							   TI_UINT32 dataLen,

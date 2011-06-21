@@ -944,7 +944,7 @@ void currBSS_updateConnectedState(TI_HANDLE hCurrBSS, TI_BOOL isConnected, ScanB
 
             /*
              * only configure the null-data keepa-live message if the interval is valid
-             * (either the default interval or the one from teh XCC IE)
+             * (either the default interval or the one from teh kkk IE)
              */
             if (0 != uKeepAlivePreiod)
             {

@@ -194,7 +194,7 @@ typedef struct _apConn_staCapabilities_t
     OS_802_11_ENCRYPTION_TYPES      	encryptionType; 	/**< Encription Type: None, WEP, TKIP, AES */    
     OS_802_11_NETWORK_TYPE          	networkType;  		/**< Network Type: 2.4G, 5G or Dual	*/    
     OS_802_11_RATES_EX              	rateMask;  			/**< An array of 16 octets. Each octet contains a preferred data rate in units of 0.5 Mbps */    
-    TI_BOOL                            	XCCEnabled; 		/**< TI_TRUE - XCC enabled, TI_FALSE - XCC disabled	*/    
+    TI_BOOL                            	kkkEnabled; 		/**< TI_TRUE - kkk enabled, TI_FALSE - kkk disabled	*/    
     TI_BOOL                            	qosEnabled; 		/**< TI_TRUE - QOS enabled, TI_FALSE - QOS disabled */   
     REG_DOMAIN_CAPABILITY           	regDomain;  		/**< Fixed, 802.11D, 802.11H */
 

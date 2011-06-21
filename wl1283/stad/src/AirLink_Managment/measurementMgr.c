@@ -51,15 +51,12 @@
 #include "TrafficMonitorAPI.h"
 #include "smeApi.h"
 #include "sme.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCTSMngr.h"
-#endif
 #include "TWDriver.h"
 
 /* default measurement parameters */
 #define MEASUREMENT_CAPABILITIES_NONE                   0x00
 #define MEASUREMENT_CAPABILITIES_DOT11H                 0x01
-#define MEASUREMENT_CAPABILITIES_XCC_RM                 0x02
+#define MEASUREMENT_CAPABILITIES_kkk_RM                 0x02
 #define MEASUREMENT_CAPABILITIES_RRM                    0x04
 
 
@@ -151,7 +148,7 @@ void measurementMgr_init (TStadHandlesList *pStadHandles)
     
     /* Init Handlers */
     pMeasurementMgr->hRegulatoryDomain  = pStadHandles->hRegulatoryDomain;
-    pMeasurementMgr->hXCCMngr           = pStadHandles->hXCCMngr;
+    pMeasurementMgr->hkkkMngr           = pStadHandles->hkkkMngr;
     pMeasurementMgr->hSiteMgr           = pStadHandles->hSiteMgr;
     pMeasurementMgr->hTWD               = pStadHandles->hTWD;
     pMeasurementMgr->hMlme              = pStadHandles->hMlme;
@@ -203,7 +200,7 @@ void measurementMgr_init (TStadHandlesList *pStadHandles)
     RequestHandler_config(pStadHandles->hMeasurementMgr, pMeasurementMgr->hRequestH, pStadHandles->hReport, pStadHandles->hOs);
 
     /* Register to the SCR module */
-    scr_registerClientCB(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, measurementMgr_scrResponseCB, (TI_HANDLE)pMeasurementMgr);
+    scr_registerClientCB(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, measurementMgr_scrResponseCB, (TI_HANDLE)pMeasurementMgr);
 
     measurementMgrSM_config ((TI_HANDLE)pMeasurementMgr);   
 
@@ -214,9 +211,6 @@ void measurementMgr_init (TStadHandlesList *pStadHandles)
 TI_STATUS measurementMgr_SetDefaults (TI_HANDLE hMeasurementMgr, measurementInitParams_t * pMeasurementInitParams)
 {
     measurementMgr_t * pMeasurementMgr = (measurementMgr_t *) hMeasurementMgr;
-#ifdef XCC_MODULE_INCLUDED
-    TI_UINT32 currAC;
-#endif
 
     pMeasurementMgr->trafficIntensityThreshold = pMeasurementInitParams->trafficIntensityThreshold;
     pMeasurementMgr->maxDurationOnNonServingChannel = pMeasurementInitParams->maxDurationOnNonServingChannel;
@@ -235,27 +229,6 @@ TI_STATUS measurementMgr_SetDefaults (TI_HANDLE hMeasurementMgr, measurementInit
         pMeasurementMgr->Capabilities |= MEASUREMENT_CAPABILITIES_RRM;
     }
     
-    
-#ifdef XCC_MODULE_INCLUDED  
-    /* allocating the per AC TS Metrics report timers */
-    for (currAC = 0; currAC < MAX_NUM_OF_AC; currAC++)
-    {
-        pMeasurementMgr->isTsMetricsEnabled[currAC] = TI_FALSE;
-
-        pMeasurementMgr->hTsMetricsReportTimer[currAC] = tmr_CreateTimer (pMeasurementMgr->hTimer);
-        if (pMeasurementMgr->hTsMetricsReportTimer[currAC] == NULL)
-        {
-            TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_ERROR, "measurementMgr_SetDefaults(): Failed to create hTsMetricsReportTimer!\n");
-            return TI_NOK;
-        }
-    }
-
-    /* Check in the Registry if the station supports XCC RM */
-    if (pMeasurementInitParams->XCCEnabled == XCC_MODE_ENABLED)
-    {
-        pMeasurementMgr->Capabilities |= MEASUREMENT_CAPABILITIES_XCC_RM;
-    }
-#endif
 
     return TI_OK;
 }
@@ -527,14 +500,6 @@ TI_STATUS measurementMgr_setMeasurementMode(TI_HANDLE hMeasurementMgr, TI_UINT16
     else
     {
     
-#ifdef XCC_MODULE_INCLUDED
-
-        if(pMeasurementMgr->Capabilities & MEASUREMENT_CAPABILITIES_XCC_RM)
-        {
-                    pMeasurementMgr->Mode = MSR_MODE_XCC;
-        }
-        else
-#endif
         {
             pMeasurementMgr->Mode = MSR_MODE_NONE;
         }
@@ -694,7 +659,7 @@ TI_STATUS measurementMgr_activateNextRequest(TI_HANDLE hMeasurementMgr)
         
         /* Checking if the current request is Beacon Table */
         if( (numOfRequestsInParallel == 1) && 
-            ((pRequestArr[0]->Type == MSR_TYPE_XCC_BEACON_MEASUREMENT) || (pRequestArr[0]->Type == MSR_TYPE_RRM_BEACON_MEASUREMENT)) &&
+            ((pRequestArr[0]->Type == MSR_TYPE_kkk_BEACON_MEASUREMENT) || (pRequestArr[0]->Type == MSR_TYPE_RRM_BEACON_MEASUREMENT)) &&
             (pRequestArr[0]->ScanMode == MSR_SCAN_MODE_BEACON_TABLE) )
         {
             TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Received Beacon Table request, building a report for it and continuing\n");
@@ -941,24 +906,12 @@ void measurementMgr_mlmeResultCB(TI_HANDLE hMeasurementMgr, TMacAddr * bssid, ml
  */
 static void measurementMgr_releaseModule (measurementMgr_t * pMeasurementMgr)
 {
-#ifdef XCC_MODULE_INCLUDED
-    TI_UINT32 currAC;
-#endif
 
     if (pMeasurementMgr->hActivationDelayTimer)
     {
         tmr_DestroyTimer (pMeasurementMgr->hActivationDelayTimer);
     }
 
-#ifdef XCC_MODULE_INCLUDED
-    for (currAC = 0; currAC < MAX_NUM_OF_AC; currAC++)
-    {
-        if (pMeasurementMgr->hTsMetricsReportTimer[currAC])
-        {
-            tmr_DestroyTimer (pMeasurementMgr->hTsMetricsReportTimer[currAC]);
-        }
-    }
-#endif
 
     if (pMeasurementMgr->pMeasurementMgrSm)
     {
@@ -1098,7 +1051,7 @@ static TI_BOOL  measurementMgr_isRequestValid(TI_HANDLE hMeasurementMgr, Measure
         }
 
         /* For measurement types different than Beacon Table */
-        if ((pRequestArr[requestIndex]->Type != MSR_TYPE_XCC_BEACON_MEASUREMENT) || 
+        if ((pRequestArr[requestIndex]->Type != MSR_TYPE_kkk_BEACON_MEASUREMENT) ||
             (pRequestArr[requestIndex]->ScanMode != MSR_SCAN_MODE_BEACON_TABLE))
         {
             TI_BOOL  bCheckMeasuDuration = TI_FALSE;

@@ -514,11 +514,7 @@ static void roamingMngr_smHandover(TI_HANDLE hRoamingMngr)
 
     requestToApConn.dataBufLength = 0;
 
-#ifdef XCC_MODULE_INCLUDED
-    apConn_connectToAP(pRoamingMngr->hAPConnection, pApToConnect, &requestToApConn, pRoamingMngr->bSendTspecInReassPkt);
-#else
     apConn_connectToAP(pRoamingMngr->hAPConnection, pApToConnect, &requestToApConn, TI_TRUE);
-#endif
 }
 
 /**

@@ -61,7 +61,7 @@ typedef struct
     TI_HANDLE           hRegulatoryDomain;
     TI_HANDLE           hMeasurementMgr;
     TI_HANDLE           hSoftGemini;
-    TI_HANDLE           hXCCMngr;
+    TI_HANDLE           hkkkMngr;
     TI_HANDLE           hRoamingMngr;
     TI_HANDLE           hQosMngr;
     TI_HANDLE           hPowerMgr;

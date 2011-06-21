@@ -57,9 +57,6 @@
 #include "txCtrl.h"
 #include "txCtrl_Api.h"
 #include "DrvMainModules.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 #include "siteMgrApi.h"
 #include "bmtrace_api.h"
 
@@ -101,13 +98,6 @@ static void  txCtrl_UpdateTSMDelayCounters (txCtrl_t  *pTxCtrl,
         TI_UINT8 tid);
 
 
-#ifdef XCC_MODULE_INCLUDED  /* Needed only for XCC-V4 */
-static void   txCtrl_SetTxDelayCounters (txCtrl_t *pTxCtrl,
-        TI_UINT32 ac,
-        TI_UINT32 fwDelay,
-        TI_UINT32 driverDelay,
-        TI_UINT32 mediumDelay);
-#endif /* XCC_MODULE_INCLUDED */
 
 
 /********************************************************************************
@@ -238,7 +228,7 @@ void txCtrl_Init (TStadHandlesList *pStadHandles)
     pTxCtrl->hHealthMonitor = pStadHandles->hHealthMonitor;
     pTxCtrl->hTimer         = pStadHandles->hTimer;
     pTxCtrl->hStaCap        = pStadHandles->hStaCap;
-    pTxCtrl->hXCCMngr       = pStadHandles->hXCCMngr;
+    pTxCtrl->hkkkMngr       = pStadHandles->hkkkMngr;
     pTxCtrl->hQosMngr       = pStadHandles->hQosMngr;
     pTxCtrl->hRxData        = pStadHandles->hRxData;
     pTxCtrl->hMeasurementMgr= pStadHandles->hMeasurementMgr;
@@ -714,15 +704,6 @@ static void txCtrl_TxCompleteCb (TI_HANDLE hTxCtrl, TxResultDescriptor_t *pTxRes
     {
         tokensCalculation(pTxCtrl, pTxResultInfo, ac);
     }
-#ifdef XCC_MODULE_INCLUDED
-    /* If it's a XCC link-test packet, call its handler. */
-    if (pPktCtrlBlk->tTxPktParams.uFlags & TX_CTRL_FLAG_LINK_TEST)
-    {
-        CL_TRACE_START_L4();
-        XCCMngr_LinkTestRetriesUpdate (pTxCtrl->hXCCMngr, pTxResultInfo->ackFailures);
-        CL_TRACE_END_L4("tiwlan_drv.ko", "INHERIT", "TX_Cmplt", ".XCCLinkTest");
-    }
-#endif
 
     /* Add the medium usage time for the specific queue. */
     pTxCtrl->totalUsedTime[ac] += (TI_UINT32)ENDIAN_HANDLE_WORD(pTxResultInfo->mediumUsage);
@@ -736,19 +717,6 @@ static void txCtrl_TxCompleteCb (TI_HANDLE hTxCtrl, TxResultDescriptor_t *pTxRes
 
     if (TI_TRUE == bIsDataPkt)
     {
-#ifdef XCC_MODULE_INCLUDED
-
-        if (TX_SUCCESS == pTxResultInfo->status)
-        {
-            /* update delay histogram */
-            txCtrl_SetTxDelayCounters (pTxCtrl,
-                                       ac,
-                                       ENDIAN_HANDLE_LONG(pTxResultInfo->totalDelay),
-                                       pPktCtrlBlk->tTxPktParams.uDriverDelay,
-                                       ENDIAN_HANDLE_LONG(pTxResultInfo->mediumDelay));
-        }
-
-#endif
         if (pTxCtrl->TSMInProgressBitmap && (0x01 << pPktCtrlBlk->tTxDescriptor.tid))
         {
             txCtrl_UpdateTSMDelayCounters(pTxCtrl, pTxResultInfo, pPktCtrlBlk->tTxDescriptor.tid);
@@ -1291,49 +1259,6 @@ static void txCtrl_UpdatePriorityMap(txCtrl_t *pTxCtrl, TI_UINT32 priorityBitMap
 *
 * RETURNS:
  ****************************************************************************/
-
-#ifdef XCC_MODULE_INCLUDED  /* Needed only for XCC-V4 */
-
-static void txCtrl_SetTxDelayCounters (txCtrl_t *pTxCtrl,
-                                       TI_UINT32 ac,
-                                       TI_UINT32 fwDelay,
-                                       TI_UINT32 driverDelay,
-                                       TI_UINT32 mediumDelay)
-{
-    int     rangeIndex;
-    TI_UINT32  totalTxDelayUsec = fwDelay + driverDelay;
-
-    /* Increment the delay range counter that the current packet Tx delay falls in. */
-    for (rangeIndex = TX_DELAY_RANGE_MIN; rangeIndex <= TX_DELAY_RANGE_MAX; rangeIndex++)
-    {
-        if ( (totalTxDelayUsec >= txDelayRangeStart[rangeIndex]) &&
-                (totalTxDelayUsec <= txDelayRangeEnd  [rangeIndex]) )
-        {
-            pTxCtrl->txDataCounters[ac].txDelayHistogram[rangeIndex]++;
-            break;
-        }
-    }
-
-    /* Update total delay and FW delay sums and packets number for average delay calculation. */
-    /* Note: Accumulate Total-Delay in usec to avoid division per packet (convert to msec
-             only when results are requested by user). */
-    if (pTxCtrl->SumTotalDelayUs[ac] < 0x7FFFFFFF) /* verify we are not close to the edge. */
-    {
-        pTxCtrl->txDataCounters[ac].NumPackets++;
-        pTxCtrl->SumTotalDelayUs[ac] += totalTxDelayUsec;
-        pTxCtrl->txDataCounters[ac].SumFWDelayUs += fwDelay;
-        pTxCtrl->txDataCounters[ac].SumMacDelayUs += mediumDelay;
-    }
-    else  /* If we get close to overflow, restart average accumulation. */
-    {
-        pTxCtrl->txDataCounters[ac].NumPackets = 1;
-        pTxCtrl->SumTotalDelayUs[ac] = totalTxDelayUsec;
-        pTxCtrl->txDataCounters[ac].SumFWDelayUs = fwDelay;
-        pTxCtrl->txDataCounters[ac].SumMacDelayUs = mediumDelay;
-    }
-}
-
-#endif /* XCC_MODULE_INCLUDED */
 
 
 

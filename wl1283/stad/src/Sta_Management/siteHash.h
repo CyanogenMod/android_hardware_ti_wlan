@@ -103,7 +103,7 @@ typedef struct
     TI_HANDLE           hMlme;
     TI_HANDLE           hReport;
     TI_HANDLE           hOs;
-    TI_HANDLE           hXCCMngr;
+    TI_HANDLE           hkkkMngr;
     TI_HANDLE           hApConn;
     TI_HANDLE           hCurrBss;
     TI_HANDLE           hQosMngr;

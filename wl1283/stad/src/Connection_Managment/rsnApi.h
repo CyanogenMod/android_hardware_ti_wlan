@@ -115,7 +115,7 @@ typedef enum
     RSN_KEY_MNG_NONE                = 0,        /**< no key management available */
     RSN_KEY_MNG_802_1X              = 1,        /**< "802.1X" key management */
     RSN_KEY_MNG_WPA                 = 2,        /**< "WPA 4 way handshake" key management */
-    RSN_KEY_MNG_XCC                 = 3,        /**< "XCC" key management */
+    RSN_KEY_MNG_kkk                 = 3,        /**< "kkk" key management */
     RSN_KEY_MNG_UNKNOWN             = 255       /**< UNKNOWN key management available */
 
 } ERsnKeyMngSuite;
@@ -253,9 +253,6 @@ TI_STATUS rsn_setSite(TI_HANDLE hRsn, TRsnData *pRsnData, TI_UINT8 *pAssocIe, TI
 
 TI_STATUS rsn_getInfoElement(TI_HANDLE hRsn, TI_UINT8 *pRsnIe, TI_UINT32 *pRsnIeLen);
 
-#ifdef XCC_MODULE_INCLUDED
-TI_STATUS rsn_getXCCExtendedInfoElement(TI_HANDLE hRsn, TI_UINT8 *pRsnIe, TI_UINT8 *pRsnIeLen);
-#endif
 
 TI_STATUS rsn_reportAuthFailure(TI_HANDLE hRsn, EAuthStatus authStatus);
 

@@ -383,7 +383,7 @@ TI_STATUS measurementSRVSM_waitApDiscovery(TI_HANDLE hMeasurementSRV)
         pApDiscoveryParams.ConfigOptions = RX_CONFIG_OPTION_FOR_SCAN;
 
     }
-    else /* MSR_TYPE_XCC_BEACON_MEASUREMENT */
+    else /* MSR_TYPE_kkk_BEACON_MEASUREMENT */
     {
         pApDiscoveryParams.numOfProbRqst = 1;
     }
@@ -601,7 +601,7 @@ TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV 
             /* if necessary, stop measurement type */
             switch ( pMeasurementSRV->msrRequest.msrTypes[ i ].msrType )
             {
-            case MSR_TYPE_XCC_BEACON_MEASUREMENT:
+            case MSR_TYPE_kkk_BEACON_MEASUREMENT:
             case MSR_TYPE_RRM_BEACON_MEASUREMENT:
                 /* send stop AP discovery command */
                 status = cmdBld_CmdApDiscoveryStop (pMeasurementSRV->hCmdBld, NULL, NULL);
@@ -611,7 +611,7 @@ TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV 
                 }
                 break;
 
-            case MSR_TYPE_XCC_NOISE_HISTOGRAM_MEASUREMENT:
+            case MSR_TYPE_kkk_NOISE_HISTOGRAM_MEASUREMENT:
                 /* Set Noise Histogram Cmd Params */
                 pNoiseHistParams.cmd = STOP_NOISE_HIST;
                 pNoiseHistParams.sampleInterval = 0;
@@ -628,7 +628,7 @@ TI_STATUS measurementSRVSM_stopFromMeasureInProgress( TI_HANDLE hMeasurementSRV 
 
             /* These are just to avoid compilation warnings, nothing is actualy done here! */
             case MSR_TYPE_BASIC_MEASUREMENT:
-            case MSR_TYPE_XCC_CCA_LOAD_MEASUREMENT:
+            case MSR_TYPE_kkk_CCA_LOAD_MEASUREMENT:
             case MSR_TYPE_FRAME_MEASUREMENT:
             case MSR_TYPE_MAX_NUM_OF_MEASURE_TYPES:
             default:

@@ -44,11 +44,6 @@ S32  CuCmd_GetDeviceStatus(THandle hCuCmd);
 VOID CuCmd_StartDriver(THandle hCuCmd);
 VOID CuCmd_StopDriver(THandle hCuCmd);
 
-#ifdef XCC_MODULE_INCLUDED
-THandle CuCmd_GetCuCommonHandle(THandle hCuCmd);
-THandle CuCmd_GetCuWpaHandle (THandle hCuCmd);
-#endif
-
 
 VOID CuCmd_Show_Status(THandle hCuCmd, ConParm_t parm[], U16 nParms);
 

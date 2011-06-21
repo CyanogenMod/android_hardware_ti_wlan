@@ -62,9 +62,6 @@
 #include "PowerMgr_API.h"
 #include "TrafficMonitorAPI.h"
 #include "qosMngr_API.h"
-#ifdef XCC_MODULE_INCLUDED
- #include "XCCMngr.h"
-#endif
 #include "measurementMgrApi.h"
 #include "connApi.h"
 #include "EvHandler.h"
@@ -121,7 +118,7 @@ typedef enum
     AP_CONNECT_STATE_WAIT_ROAM,         /**< Connected to AP, waiting for start roaming command */
     AP_CONNECT_STATE_SWITCHING_CHANNEL, /**< Connected to AP, switch channel in progress */
     AP_CONNECT_STATE_WAIT_CONNECT_CMD,  /**< SCR allocated, PS mode entered; wait for cmd from Roam Mngr */
-    AP_CONNECT_STATE_PREPARE_HAND_OFF,  /**< Request CCKM for new AP, wait for response */
+    AP_CONNECT_STATE_PREPARE_HAND_OFF,  /**< Request for new AP, wait for response */
     AP_CONNECT_STATE_CONNECTING,        /**< Performing Connection to new AP; wait for response from Conn SM */
     AP_CONNECT_STATE_DISCONNECTING,     /**< Wait for completion of current link disconnection */
     AP_CONNECT_STATE_REESTABLISH_VOICE, /**< Wait for completion of voice TSPEC re-negotiation */
@@ -142,7 +139,7 @@ typedef enum
     AP_CONNECT_EVENT_START_ROAM,            /**< Sent by Roam MNGR when it wishes to roam to new AP */
     AP_CONNECT_EVENT_START_SWITCH_CHANNEL,  /**< Sent by Switch channel module when starting switch channel process (tx enabled) */
     AP_CONNECT_EVENT_FINISHED_SWITCH_CH,    /**< Sent by Switch channel module when finishing switch channel process (tx enabled) */
-    AP_CONNECT_EVENT_FINISHED_HAND_OVER,    /**< Sent by XCC module when finishing hand-over */
+    AP_CONNECT_EVENT_FINISHED_HAND_OVER,    /**< Sent by kkk module when finishing hand-over */
     AP_CONNECT_EVENT_STOP,                  /**< Disconnect current link, send stop indication to other modules */
     AP_CONNECT_EVENT_LAST
 } apConn_smEvents;
@@ -188,7 +185,7 @@ typedef struct _apConn_t
     TI_BOOL                 isConsTxFailureMaskedOut;
     TI_BOOL                 islowRateTriggerMaskedOut;
     TI_BOOL                 removeKeys;         /**< Indicates whether keys should be removed after disconnect or not */
-    TI_BOOL                 ignoreDeauthReason0;/**< Indicates whether to ignore DeAuth with reason 0, required for Rogue AP test XCC-V2 */
+    TI_BOOL                 ignoreDeauthReason0;/**< Indicates whether to ignore DeAuth with reason 0, required for Rogue AP test mmm */
     TI_BOOL                 sendDeauthPacket;   /**< Indicates whether to send DEAUTH packet when discommecting or not */
     TI_UINT8                deauthPacketReasonCode;   /**< Indicates what error code to indicate in the DEAUTH packet  */
     TI_BOOL                 voiceTspecConfigured;/**< Shall be set to TI_TRUE before roaming in case the TSPEC is configured */
@@ -212,7 +209,7 @@ typedef struct _apConn_t
     TI_HANDLE               hRoamMng;
     TI_HANDLE               hSme;
     TI_HANDLE               hSiteMgr;
-    TI_HANDLE               hXCCMngr;
+    TI_HANDLE               hkkkMngr;
     TI_HANDLE               hConnSm;
     TI_HANDLE               hPrivacy;
     TI_HANDLE               hQos;
@@ -256,15 +253,12 @@ static void apConn_smStopConnection(void *pData);
 static void apConn_smInvokeConnectionToNewAp(void *pData);
 static void apConn_smReportDisconnected(void *pData);
 static void apConn_smRetainAP(void *pData);
-static void apConn_smRequestCCKM(void *pData);
+static void apConn_smRequestiii(void *pData);
 static void apConn_smReportConnFail(void *pData);
 static void apConn_smSwChFinished(void *pData);
 static void apConn_smHandleTspecReneg (void *pData);
 
 /* other functions */
-#ifdef XCC_MODULE_INCLUDED
-static void apConn_calcNewTsf(apConn_t *hAPConnection, TI_UINT8 *tsfTimeStamp, TI_UINT32 newSiteOsTimeStamp, TI_UINT32 beaconInterval);
-#endif
 static TI_STATUS apConn_qosMngrReportResultCallb (TI_HANDLE hApConn, trafficAdmRequestStatus_e result);
 static void		 apConn_reportConnStatusToSME	 (apConn_t *pAPConnection);
 
@@ -400,7 +394,7 @@ static TGenSM_actionCell apConnSM_matrix[AP_CONNECT_NUM_STATES][AP_CONNECT_NUM_E
             {AP_CONNECT_STATE_WAIT_CONNECT_CMD, apConn_smUnexpected},   /* FINISHED_NOT_OK      */
             {AP_CONNECT_STATE_WAIT_ROAM, apConn_smRetainAP},            /* RETAIN_CURRENT_AP    */ 
             {AP_CONNECT_STATE_WAIT_CONNECT_CMD, apConn_smUnexpected},   /* START                */ 
-            {AP_CONNECT_STATE_PREPARE_HAND_OFF, apConn_smRequestCCKM},  /* START_ROAM           */ 
+            {AP_CONNECT_STATE_PREPARE_HAND_OFF, apConn_smRequestiii},  /* START_ROAM           */
             {AP_CONNECT_STATE_WAIT_CONNECT_CMD, apConn_smUnexpected},   /* START_SWITCH_CHANNEL */ 
             {AP_CONNECT_STATE_WAIT_CONNECT_CMD, apConn_smUnexpected},   /* FINISHED_SWITCH_CH   */ 
             {AP_CONNECT_STATE_WAIT_CONNECT_CMD, apConn_smUnexpected},   /* FINISHED_HAND_OVER   */ 
@@ -484,7 +478,7 @@ void apConn_init (TStadHandlesList *pStadHandles)
     pAPConnection->hRoamMng     = pStadHandles->hRoamingMngr;
     pAPConnection->hSme         = pStadHandles->hSme;
     pAPConnection->hSiteMgr     = pStadHandles->hSiteMgr;
-    pAPConnection->hXCCMngr     = pStadHandles->hXCCMngr;
+    pAPConnection->hkkkMngr     = pStadHandles->hkkkMngr;
     pAPConnection->hConnSm      = pStadHandles->hConn;
     pAPConnection->hPrivacy     = pStadHandles->hRsn;
     pAPConnection->hQos         = pStadHandles->hQosMngr;
@@ -824,7 +818,7 @@ TI_STATUS apConn_getStaCapabilities(TI_HANDLE hAPConnection,
             pList->encryptionType = OS_ENCRYPTION_TYPE_WEP;
             break;
         case TWD_CIPHER_TKIP:
-        case TWD_CIPHER_CKIP:
+        case TWD_CIPHER_jjj:
             pList->encryptionType = OS_ENCRYPTION_TYPE_TKIP;
             break;
         case TWD_CIPHER_AES_WRAP:
@@ -865,14 +859,8 @@ TI_STATUS apConn_getStaCapabilities(TI_HANDLE hAPConnection,
     }
 
 
-    /* Get XCC status */
-#ifdef XCC_MODULE_INCLUDED
-    param.paramType = XCC_ENABLED;
-    XCCMngr_getParam(pAPConnection->hXCCMngr, &param);
-    pList->XCCEnabled = (param.content.XCCEnabled==XCC_MODE_ENABLED)? TI_TRUE : TI_FALSE;
-#else
-    pList->XCCEnabled = TI_FALSE;
-#endif
+    /* Get kkk status */
+    pList->kkkEnabled = TI_FALSE;
 
     /* Get QoS type */
     param.paramType = QOS_MNGR_ACTIVE_PROTOCOL;
@@ -1237,7 +1225,7 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
                (pAPConnection->APDisconnect.uStatusCode == 0))
         {   /* This is required for Rogue AP test,
                 When Rogue AP due to invalid User name, deauth with reason 0 arrives before the Rogue AP,
-                and this XCC test fails.*/
+                and this kkk test fails.*/
             TRACE0(pAPConnection->hReport, REPORT_SEVERITY_INFORMATION, "apConn_reportRoamingEvent, Ignore DeAuth with reason 0 \n");
             return TI_OK;
         }
@@ -1245,11 +1233,6 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
 
         if (pAPConnection->APDisconnect.uStatusCode == STATUS_CODE_802_1X_AUTHENTICATION_FAILED)
         {
-          #ifdef XCC_MODULE_INCLUDED
-
-            /* Raise the EAP-Failure as event */
-            XCCMngr_rogueApDetected (pAPConnection->hXCCMngr, RSN_AUTH_STATUS_CHALLENGE_FROM_AP_FAILED);
-          #endif
 
             
             /* Remove AP from candidate list for a specified amount of time */
@@ -1359,7 +1342,7 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
 *
 * \b Description: 
 *
-* Called when XCC module receives response from the supplicant or recognizes 
+* Called when kkk module receives response from the supplicant or recognizes
 * timeout while waiting for the response 
 *
 * \b ARGS:
@@ -1416,7 +1399,7 @@ void apConn_DisconnCompleteInd(TI_HANDLE hAPConnection, mgmtStatus_e status, TI_
 *
 * \b Description: 
 *
-* Called by XCC Manager when Priority APs are found  
+* Called by kkk Manager when Priority APs are found
 *
 * \b ARGS:
 *
@@ -1443,7 +1426,7 @@ void apConn_updateNeighborAPsList(TI_HANDLE hAPConnection, neighborAPList_t *pLi
 *
 * \b Description: 
 *
-* Called from Measurement XCC sub-module when preparing TSM report to the AP. 
+* Called from Measurement kkk sub-module when preparing TSM report to the AP.
 *
 * \b ARGS: AP Connection handle
 *
@@ -1476,7 +1459,7 @@ void apConn_getRoamingStatistics(TI_HANDLE hAPConnection, TI_UINT8 *roamingCount
 *
 * \b Description: 
 *
-* Called from Measurement XCC sub-module in order to re-start roaming statistics. 
+* Called from Measurement kkk sub-module in order to re-start roaming statistics.
 *
 * \b ARGS: AP Connection handle
 *
@@ -1939,12 +1922,12 @@ static void apConn_smRetainAP(void *data)
 
 /**
 *
-* apConn_smRequestCCKM
+* apConn_smRequestiii
 *
 * \b Description: 
 *
 * Roaming Manager requests to roaming.
-* Get CCKM (prepare hand-off).
+* Get iii (prepare hand-off).
 *
 * \b ARGS:
 *
@@ -1956,96 +1939,14 @@ static void apConn_smRetainAP(void *data)
 *
 * \sa 
 */
-static void apConn_smRequestCCKM(void *data)
+static void apConn_smRequestiii(void *data)
 {
     apConn_t    *pAPConnection;
     pAPConnection = (apConn_t *)data;
 	
-#ifdef XCC_MODULE_INCLUDED
-        /* Send request to XCC module */
-   
-    apConn_calcNewTsf(pAPConnection, (TI_UINT8 *)&(pAPConnection->newAP->lastRxTSF), pAPConnection->newAP->lastRxHostTimestamp, pAPConnection->newAP->beaconInterval);
-    XCCMngr_startCckm(pAPConnection->hXCCMngr, &(pAPConnection->newAP->BSSID), (TI_UINT8 *)&(pAPConnection->newAP->lastRxTSF));
-#else
     apConn_RoamHandoffFinished(pAPConnection);
-#endif
 }
 
-
-#ifdef XCC_MODULE_INCLUDED
-/**
-*
-* calcNewTsfTimestamp - Calculates the TSF
-*
-* \b Description: 
-*
-* Calculates the TSF according to the delta of the TSF from the last Beacon/Probe Resp and the current time.
-*
-* \b ARGS:
-*
-*  I   - hRoamingMngr - pointer to the roamingMngr SM context  \n
-*  I/O - tsfTimeStamp - the TSF field in the site entry of the roaming candidate AP
-*  I   - newSiteOsTimeStamp - the TS field in the site entry of the roaming candidate AP
-*
-* \b RETURNS:
-*
-*  Nothing.
-*
-* 
-*/
-static void apConn_calcNewTsf(apConn_t *hAPConnection, TI_UINT8 *tsfTimeStamp, TI_UINT32 newSiteOsTimeStamp, TI_UINT32 beaconInterval)
-{
-    apConn_t    *pAPConnection = hAPConnection;
-    TI_UINT32      osTimeStamp = os_timeStampMs(pAPConnection->hOs);
-    TI_UINT32      deltaTimeStamp; 
-    TI_UINT32      tsfLsdw,tsfMsdw, newOsTimeStamp; 
-    TI_UINT32      remainder;
-    TI_UINT8       newTsfTimestamp[TIME_STAMP_LEN];
-
-    /* get the delta TS between the TS of the last Beacon/ProbeResp-from the site table
-    and the current TS */
-    deltaTimeStamp = osTimeStamp - newSiteOsTimeStamp;
-    tsfLsdw = *((TI_UINT32*)&tsfTimeStamp[0]); 
-    tsfMsdw = *((TI_UINT32*)&tsfTimeStamp[4]);
-    
-    TRACE2(pAPConnection->hReport, REPORT_SEVERITY_INFORMATION, " TSF time LSDW reversed=%x, TSF time MSDW reversed=%x\n", tsfLsdw, tsfMsdw);
-
-    deltaTimeStamp = deltaTimeStamp*1000;/* from mSec to uSec*/
-    /* Before adding, save remainder */
-    remainder = tsfTimeStamp[3] + ((deltaTimeStamp & 0xff000000) >> 24);
-
-    /* The LS DW of the TS is the TSF taken from the last Beacon/Probe Resp
-        + the delta TS from the time the Beacon/Probe Resp arrive till now. */
-    newOsTimeStamp = deltaTimeStamp+tsfLsdw;
-
-    /* substracting one beacon interval */
-    newOsTimeStamp -= (beaconInterval * 1024); /* im usec */
-
-    /* save just for debug printout */
-    deltaTimeStamp +=osTimeStamp; /* uMsec */
-    /* update the LSB of the TSF */
-    newTsfTimestamp[0] = newOsTimeStamp & 0x000000ff;
-    newTsfTimestamp[1] = (newOsTimeStamp & 0x0000ff00) >> 8;
-    newTsfTimestamp[2] = (newOsTimeStamp & 0x00ff0000) >> 16;
-    newTsfTimestamp[3] = (newOsTimeStamp & 0xff000000) >> 24;
-
-    /* increase the MSB in case of overflow */
-    if (remainder > 0xff)
-    {
-        tsfMsdw++;
-        
-    }
-    /* update the MSB of the TSF */
-    newTsfTimestamp[4] = tsfMsdw & 0x000000ff;
-    newTsfTimestamp[5] = (tsfMsdw & 0x0000ff00) >> 8;
-    newTsfTimestamp[6] = (tsfMsdw & 0x00ff0000) >> 16;
-    newTsfTimestamp[7] = (tsfMsdw & 0xff000000) >> 24;
-
-    TRACE11(pAPConnection->hReport, REPORT_SEVERITY_INFORMATION, " NEW TSF time: reversedTsfTimeStamp= 0x%x, New deltaTimeStamp= 0x%x, \n remainder=0x%x, new tsfTimeStamp=%x-%x-%x-%x-%x-%x-%x-%x\n", newOsTimeStamp, deltaTimeStamp, remainder, newTsfTimestamp[0], newTsfTimestamp[1], newTsfTimestamp[2], newTsfTimestamp[3], newTsfTimestamp[4], newTsfTimestamp[5], newTsfTimestamp[6], newTsfTimestamp[7]);
-
-    os_memoryCopy(pAPConnection->hOs, tsfTimeStamp, newTsfTimestamp, TIME_STAMP_LEN);
-}
-#endif
 
 
 /**
@@ -2054,7 +1955,7 @@ static void apConn_calcNewTsf(apConn_t *hAPConnection, TI_UINT8 *tsfTimeStamp, T
 *
 * \b Description: 
 *
-* Got CCKM (hand-off), start re-connection to another AP
+* Got iii (hand-off), start re-connection to another AP
 *
 * \b ARGS:
 *
@@ -2123,19 +2024,6 @@ static void apConn_smInvokeConnectionToNewAp(void *data)
         connType = CONN_TYPE_FIRST_CONN;
     }
 
-#ifdef XCC_MODULE_INCLUDED
-    /* Check the need in TSPEC re-negotiation */
-    if ( (pAPConnection->voiceTspecConfigured || pAPConnection->videoTspecConfigured) && pAPConnection->reNegotiateTSPEC )
-    {
-        /* If the candidate AP is at least XCCver4 AP, try to re-negotiate TSPECs */
-        if (XCCMngr_parseXCCVer(pAPConnection->hXCCMngr, 
-                                pAPConnection->newAP->pBuffer, 
-                                pAPConnection->newAP->bufferLength) >= 4)
-        {
-            renegotiateTspec = TI_TRUE;
-        }
-    }
-#endif
 
     TRACE2(pAPConnection->hReport, REPORT_SEVERITY_INFORMATION, ": calls conn_start, removeKeys=%d, renegotiateTSPEC=%d\n", pAPConnection->removeKeys, renegotiateTspec);
 
@@ -2304,12 +2192,9 @@ static void apConn_smHandleTspecReneg (void *pData)
 
     
     if (pAPConnection->voiceTspecConfigured
-#ifndef XCC_MODULE_INCLUDED
           && pAPConnection->reNegotiateTSPEC
-#endif
         )
         {
-#ifndef XCC_MODULE_INCLUDED        
         param.paramType = QOS_MNGR_VOICE_RE_NEGOTIATE_TSPEC;
         qosMngr_getParams(pAPConnection->hQos, &param);
 
@@ -2319,7 +2204,6 @@ static void apConn_smHandleTspecReneg (void *pData)
             apConn_smEvent(&(pAPConnection->currentState), AP_CONNECT_EVENT_FINISHED_OK, pAPConnection);
         }
         else
-#endif
         {
             param.paramType = QOS_MNGR_RESEND_TSPEC_REQUEST;
             param.content.qosRenegotiateTspecRequest.callback = (void *)apConn_qosMngrReportResultCallb;

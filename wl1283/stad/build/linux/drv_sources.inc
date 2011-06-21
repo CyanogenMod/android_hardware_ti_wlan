@@ -22,17 +22,17 @@ TNETW_INCS = \
     $(TWD)/TWDriver \
     $(TXN)
 
-ifeq ($(XCC),y)
-#start of TNETW_INCS_XCC#   do not remove or change this comment
+ifeq ($(kkk),y)
+#start of TNETW_INCS_kkk#   do not remove or change this comment
     TNETW_INCS += \
-        $(COMMON)/Export_Inc/XCC \
-        $(DK_ROOT)/utils/XCC
+        $(COMMON)/Export_Inc/kkk \
+        $(DK_ROOT)/utils/kkk
 
-    TNETW_INCS_XCC = \
-        $(COMMON)/Export_Inc/XCC
+    TNETW_INCS_kkk = \
+        $(COMMON)/Export_Inc/kkk
 
-    TNETW_INCS += $(TNETW_INCS_XCC)
-#end of TNETW_INCS_XCC#    do not remove or change this comment
+    TNETW_INCS += $(TNETW_INCS_kkk)
+#end of TNETW_INCS_kkk#    do not remove or change this comment
 endif
 
 #end of TNETW_INCS#    do not remove or change this comment
@@ -42,7 +42,7 @@ endif
 CORE_INCS = \
     $(COMSRC)/AirLink_Managment \
     $(COMSRC)/Application \
-    $(COMSRC)/XCC \
+    $(COMSRC)/kkk \
     $(COMSRC)/Connection_Managment \
     $(COMSRC)/Ctrl_Interface \
     $(COMSRC)/Data_link \
@@ -55,14 +55,14 @@ ifeq ($(DEBUG),y)
         $(TESTSRC)/
 endif 
 
-#start of CORE_INCS_XCC#     do not remove or change this comment
-ifeq ($(XCC),y)
-    CORE_INCS_XCC += \
-        $(COMSRC)/XCC
+#start of CORE_INCS_kkk#     do not remove or change this comment
+ifeq ($(kkk),y)
+    CORE_INCS_kkk += \
+        $(COMSRC)/kkk
 
-    CORE_INCS += $(CORE_INCS_XCC)
+    CORE_INCS += $(CORE_INCS_kkk)
 endif
-#end of CORE_INCS_XCC#   do not remove or change this comment
+#end of CORE_INCS_kkk#   do not remove or change this comment
 
 #end of CORE_INCS#   do not remove or change this comment
 
@@ -125,8 +125,8 @@ ifeq ($(WSPI),n)
 	$(TXN)/SdioBusDrv.c 
 endif
 
-#start of TNETW_SRCS_XCC#   do not remove or change this comment
-#end of TNETW_SRCS_XCC#   do not remove or change this comment
+#start of TNETW_SRCS_kkk#   do not remove or change this comment
+#end of TNETW_SRCS_kkk#   do not remove or change this comment
 
 #end of TNETW_SRCS#    do not remove or change this comment
 
@@ -216,19 +216,19 @@ ifeq ($(DEBUG),y)
 		$(TESTSRC)/TwIfDebug.c
 endif
 
-#start of CORE_SRCS_XCC#   do not remove or change this comment
-ifeq ($(XCC),y)
-    CORE_SRCS_XCC += \
-        $(COMSRC)/XCC/admCtrlXCC.c \
-        $(COMSRC)/XCC/XCCRMMngr.c \
-        $(COMSRC)/XCC/XCCTSMngr.c \
-        $(COMSRC)/XCC/XCCMngr.c \
-        $(COMSRC)/XCC/rogueAp.c \
-        $(COMSRC)/XCC/TransmitPowerXCC.c 
+#start of CORE_SRCS_kkk#   do not remove or change this comment
+ifeq ($(kkk),y)
+    CORE_SRCS_kkk += \
+        $(COMSRC)/kkk/admCtrlkkk.c \
+        $(COMSRC)/kkk/kkkRMMngr.c \
+        $(COMSRC)/kkk/kkkTSMngr.c \
+        $(COMSRC)/kkk/kkkMngr.c \
+        $(COMSRC)/kkk/rogueAp.c \
+        $(COMSRC)/kkk/TransmitPowerkkk.c
 
-    CORE_SRCS += $(CORE_SRCS_XCC)
+    CORE_SRCS += $(CORE_SRCS_kkk)
 endif
-#end of CORE_SRCS_XCC#   do not remove or change this comment
+#end of CORE_SRCS_kkk#   do not remove or change this comment
 
 #end of CORE_SRCS#   do not remove or change this comment
 

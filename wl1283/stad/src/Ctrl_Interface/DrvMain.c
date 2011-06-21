@@ -66,9 +66,6 @@
 #include "scanMngrApi.h"
 #include "regulatoryDomainApi.h"
 #include "measurementMgrApi.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 #include "TxnQueue.h"
 #include "TWDriver.h"
 #include "debug.h"
@@ -432,16 +429,7 @@ TI_STATUS drvMain_Create (TI_HANDLE  hOs,
         return TI_NOK;
     }
 
-#ifdef XCC_MODULE_INCLUDED
-    pDrvMain->tStadHandles.hXCCMngr = XCCMngr_create (hOs);
-    if (pDrvMain->tStadHandles.hXCCMngr == NULL)
-    {
-        drvMain_Destroy (pDrvMain);
-        return TI_NOK;
-    }
-#else
-    pDrvMain->tStadHandles.hXCCMngr = NULL;
-#endif
+    pDrvMain->tStadHandles.hkkkMngr = NULL;
 
     pDrvMain->tStadHandles.hRoamingMngr = roamingMngr_create (hOs);
     if (pDrvMain->tStadHandles.hRoamingMngr == NULL)
@@ -682,13 +670,6 @@ TI_STATUS drvMain_Destroy (TI_HANDLE  hDrvMain)
         SoftGemini_destroy (pDrvMain->tStadHandles.hSoftGemini);
     }
 
-#ifdef XCC_MODULE_INCLUDED
-    if (pDrvMain->tStadHandles.hXCCMngr != NULL)
-    {
-        XCCMngr_unload (pDrvMain->tStadHandles.hXCCMngr);
-    }
-#endif
-
     if (pDrvMain->tStadHandles.hRoamingMngr != NULL)
     {
         roamingMngr_unload (pDrvMain->tStadHandles.hRoamingMngr);
@@ -819,11 +800,7 @@ static void drvMain_Init (TI_HANDLE hDrvMain)
     scr_init (pModules);
     conn_init (pModules);
     ctrlData_init (pModules,
-                 #ifdef XCC_MODULE_INCLUDED
-                   XCCMngr_LinkTestRetriesUpdate, pModules->hXCCMngr);
-                 #else
                    NULL, NULL);
-                 #endif                 
     siteMgr_init (pModules);
     regulatoryDomain_init (pModules);
     scanCncn_Init (pModules);
@@ -837,9 +814,6 @@ static void drvMain_Init (TI_HANDLE hDrvMain)
     sme_Init (pModules);
     rsn_init (pModules);
     measurementMgr_init (pModules);
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngr_init (pModules);
-#endif
     scanMngr_init (pModules);
     currBSS_init (pModules); 
     apConn_init (pModules);
@@ -912,9 +886,6 @@ static TI_STATUS drvMain_SetDefaults (TI_HANDLE hDrvMain, TI_UINT8 *pBuf, TI_UIN
     sme_SetDefaults (pDrvMain->tStadHandles.hSme, &pInitTable->tSmeModifiedInitParams, &pInitTable->tSmeInitParams);
     rsn_SetDefaults (pDrvMain->tStadHandles.hRsn, &pInitTable->rsnInitParams);
     measurementMgr_SetDefaults (pDrvMain->tStadHandles.hMeasurementMgr, &pInitTable->measurementInitParams);
-#ifdef XCC_MODULE_INCLUDED
-    XCCMngr_SetDefaults (pDrvMain->tStadHandles.hXCCMngr, &pInitTable->XCCMngrParams);
-#endif /*XCC_MODULE_INCLUDED*/
     apConn_SetDefaults (pDrvMain->tStadHandles.hAPConnection, &pInitTable->apConnParams);
     qosMngr_SetDefaults (pDrvMain->tStadHandles.hQosMngr, &pInitTable->qosMngrInitParams);
     switchChannel_SetDefaults (pDrvMain->tStadHandles.hSwitchChannel, &pInitTable->SwitchChannelInitParams);

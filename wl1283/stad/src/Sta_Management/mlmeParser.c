@@ -105,11 +105,7 @@ TI_STATUS mlmeParser_recv(TI_HANDLE hMlme, void *pBuffer, TRxAttr* pRxAttr)
     TMacAddr               recvSa;
     TI_UINT8               rsnIeIdx = 0;
     TI_UINT8               wpaIeOuiIe[] = WPA_IE_OUI;
-#ifdef XCC_MODULE_INCLUDED
-	TI_UINT8			   XCC_oui[] = XCC_OUI;
-	XCCv4IEs_t			   *pXCCIeParameter;
-#endif
-    TI_BOOL				   ciscoIEPresent = TI_FALSE;
+    TI_BOOL				   cIEPresent = TI_FALSE;
 
     if ((hMlme == NULL) || (pBuffer == NULL))
     {
@@ -284,7 +280,7 @@ TRACE1(pHandle->hReport, REPORT_SEVERITY_SM, "MLME_PARSER: recieved ASSOC_RESPON
             case WPA_IE_ID:
                 /* Note : WPA, WME, TSRS and msdu lifetime use the same Element ID */
                 /*  Its assumes that:
-                        TSRS and msdu lifetime use OUI = 0x00,0x40,0x96 (=Cisco) but
+                        TSRS and msdu lifetime use OUI = 0x00,0x40,0x96 but
                         use different OUI Type:
                             TSRS          uses OUI Type 8
                             msdu lifetime uses OUI Type 9;
@@ -308,14 +304,6 @@ TRACE1(pHandle->hReport, REPORT_SEVERITY_SM, "MLME_PARSER: recieved ASSOC_RESPON
                         goto mlme_recv_end;
                     }
                 }
-#ifdef XCC_MODULE_INCLUDED
-				/* check if this is XCC vendor specific OUI */
-				else if (os_memoryCompare(pHandle->hOs, XCC_oui, pData+2, DOT11_OUI_LEN - 1) == 0) 
-				{
-					pXCCIeParameter = &(pHandle->tempFrameInfo.frame.content.assocRsp.XCCIEs[WMEQosTagToACTable[*(pData+6)]]);
-					mlmeParser_readXCCOui(pData, bodyDataLen, &readLen, pXCCIeParameter);
-				}
-#endif
 				else
                 {
                     /* skip this IE */
@@ -323,14 +311,14 @@ TRACE1(pHandle->hReport, REPORT_SEVERITY_SM, "MLME_PARSER: recieved ASSOC_RESPON
                 }
                 break;
 
-            case XCC_EXT_1_IE_ID:
-				ciscoIEPresent = TI_TRUE;
+            case kkk_EXT_1_IE_ID:
+				cIEPresent = TI_TRUE;
                 pHandle->tempFrameInfo.frame.content.assocRsp.pRsnIe = &(pHandle->tempFrameInfo.rsnIe[0]);
                 status = mlmeParser_readRsnIe(pHandle, pData, bodyDataLen, &readLen, 
                                               &(pHandle->tempFrameInfo.rsnIe[rsnIeIdx]));
                 if (status != TI_OK)
                 {
-                    TRACE0(pHandle->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: error reading XCC EXT1 IE\n");
+                    TRACE0(pHandle->hReport, REPORT_SEVERITY_ERROR, "MLME_PARSER: error reading kkk EXT1 IE\n");
                     goto mlme_recv_end;
                 }
     
@@ -338,8 +326,8 @@ TRACE1(pHandle->hReport, REPORT_SEVERITY_SM, "MLME_PARSER: recieved ASSOC_RESPON
                 rsnIeIdx ++;
                 break;
 
-            case XCC_EXT_2_IE_ID:
-				ciscoIEPresent = TI_TRUE;
+            case kkk_EXT_2_IE_ID:
+				cIEPresent = TI_TRUE;
                 pHandle->tempFrameInfo.frame.content.assocRsp.pRsnIe   = &(pHandle->tempFrameInfo.rsnIe[0]);
                 status = mlmeParser_readRsnIe(pHandle, pData, bodyDataLen, &readLen,
                                               &(pHandle->tempFrameInfo.rsnIe[rsnIeIdx]));
@@ -400,12 +388,11 @@ TRACE1(pHandle->hReport, REPORT_SEVERITY_SM, "MLME_PARSER: recieved ASSOC_RESPON
         /***************************/
 
 		/* set the appropriate flag in the association response frame */
-		/* to indicate whether or not we encountered a Cisco IE, i.e., */
+		/* to indicate whether or not we encountered, i.e., */
 		/* if we have any indication as to whether the AP we've associated */
-		/* with is a Cisco AP. */
-		pHandle->tempFrameInfo.frame.content.assocRsp.ciscoIEPresent = ciscoIEPresent;
+		pHandle->tempFrameInfo.frame.content.assocRsp.cIEPresent = cIEPresent;
 
-        TRACE1(pHandle->hReport, REPORT_SEVERITY_INFORMATION, "MLME_PARSER: ciscoIEPresent = %d\n", ciscoIEPresent);
+        TRACE1(pHandle->hReport, REPORT_SEVERITY_INFORMATION, "MLME_PARSER: cIEPresent = %d\n", cIEPresent);
 
         status = mlme_assocRecv(pHandle, &(pHandle->tempFrameInfo.frame));
         break;
@@ -934,40 +921,6 @@ TI_STATUS mlmeParser_getFrameType(mlme_t *pMlme, TI_UINT16* pFrameCtrl, dot11Mgm
     return TI_OK;
 }
 
-
-#ifdef XCC_MODULE_INCLUDED
-void mlmeParser_readXCCOui (TI_UINT8 *pData, TI_UINT32 dataLen, TI_UINT32 *pReadLen, XCCv4IEs_t *XCCIEs)
-{
-    TI_UINT8 ieLen;
-	TI_UINT8 ouiType;
-
-    ieLen = *(pData+1) + 2;
-
-    if (dataLen < ieLen)
-    {
-		/* Wrong length of info-element, skip to the end of the packet */
-		*pReadLen = dataLen;
-		return;
-    }
-
-    *pReadLen = ieLen;
-	ouiType = *(pData+5);
-
-	switch (ouiType) 
-	{
-		case TS_METRIX_OUI_TYPE:
-			XCCIEs->tsMetrixParameter = (dot11_TS_METRICS_IE_t *)pData;
-			break;
-		case TS_RATE_SET_OUI_TYPE:
-			XCCIEs->trafficStreamParameter = (dot11_TSRS_IE_t *)pData;
-			break;
-		case EDCA_LIFETIME_OUI_TYPE:
-			XCCIEs->edcaLifetimeParameter = (dot11_MSDU_LIFE_TIME_IE_t *)pData;
-			break;
-	}
-    return;
-}
-#endif
 
 
 TI_STATUS mlmeParser_readERP(mlme_t *pMlme, TI_UINT8 *pData, TI_UINT32 dataLen, TI_UINT32 *pReadLen,
@@ -1556,36 +1509,6 @@ TI_STATUS mlmeParser_readTPCReport(mlme_t *pMlme,TI_UINT8 *pData, TI_UINT32 data
 }
 
 
-#ifdef XCC_MODULE_INCLUDED
-TI_STATUS mlmeParser_readCellTP(mlme_t *pMlme, TI_UINT8 *pData, TI_UINT32 dataLen, TI_UINT32 *pReadLen, dot11_CELL_TP_t *cellTP)
-{
-    TI_UINT8 XCC_OUI[] = XCC_OUI;
-
-    cellTP->hdr[0] = *pData++;
-    cellTP->hdr[1] = *pData++;
-
-    *pReadLen = cellTP->hdr[1] + 2;
-
-    if ((dataLen < 2) || (dataLen < (TI_UINT32)(cellTP->hdr[1] + 2)))
-    {
-        return TI_NOK;
-    }
-
-    if (cellTP->hdr[1] > DOT11_CELL_TP_ELE_LEN)
-    {
-        return TI_NOK;
-    }
-
-	os_memoryCopy(pMlme->hOs, (void*)cellTP->oui, pData, cellTP->hdr[1]);
-
-    if (os_memoryCompare(pMlme->hOs, (void*)cellTP->oui, XCC_OUI, 3) != 0)
-    {
-		return TI_NOK;
-    }
-
-    return TI_OK;
-}
-#endif
 
 #if CHECK_PARSING_ERROR_CONDITION_PRINT
 	#define CHECK_PARSING_ERROR_CONDITION(x, msg, bDump)	   \
@@ -1614,9 +1537,6 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
     TI_UINT8 			 wpaIeOuiIe[4] = { 0x00, 0x50, 0xf2, 0x01};
 	beacon_probeRsp_t 	*frame = &(params->frame.content.iePacket);
 	mlme_t 				*pHandle = (mlme_t *)hMlme;
-#ifdef XCC_MODULE_INCLUDED
-	TI_BOOL				allowCellTP = TI_TRUE;
-#endif
 #if CHECK_PARSING_ERROR_CONDITION_PRINT
 	TI_INT32				packetLength = bodyDataLen;
 	TI_UINT8				*pPacketBody = pData;
@@ -1716,9 +1636,6 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
 
 		/* read Power Constraint */
 		case POWER_CONSTRAINT_IE_ID:
-#ifdef XCC_MODULE_INCLUDED
-			allowCellTP = TI_FALSE;
-#endif
 			frame->powerConstraint = &params->powerConstraint;
 			status = mlmeParser_readPowerConstraint(pHandle, pData, bodyDataLen, &readLen, frame->powerConstraint);
 			CHECK_PARSING_ERROR_CONDITION((status != TI_OK), ("MLME_PARSER: error reading Power Constraint parameters\n"),TI_TRUE);
@@ -1763,7 +1680,7 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
 			CHECK_PARSING_ERROR_CONDITION((status != TI_OK), ("MLME_PARSER: error reading TPC report parameters\n"),TI_TRUE);
 			break;
 
-		case XCC_EXT_1_IE_ID:
+		case kkk_EXT_1_IE_ID:
 			frame->pRsnIe   = &params->rsnIe[0];
 			status = mlmeParser_readRsnIe(pHandle, pData, bodyDataLen, &readLen, &params->rsnIe[rsnIeIdx]);
 			CHECK_PARSING_ERROR_CONDITION((status != TI_OK), ("MLME_PARSER: error reading RSN IE\n"),TI_TRUE);
@@ -1870,21 +1787,6 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
 			}
 
 			break;
-
-#ifdef XCC_MODULE_INCLUDED
-		case CELL_POWER_IE:
-			/* We mustn't take the Cell Transmit Power IE into account if */
-			/* there's a Power Constraint IE. Since the IEs must be in increasing */
-			/* order, it's enough to perform the check here, because if the Power */
-			/* Constraint IE is present it must have already been processed. */ 
-			if (allowCellTP)
-			{
-				frame->cellTP = &params->cellTP;
-				status = mlmeParser_readCellTP(pHandle, pData, bodyDataLen, &readLen, frame->cellTP);
-				CHECK_PARSING_ERROR_CONDITION((status != TI_OK), ("MLME_PARSER: error reading Cell Transmit Power params.\n"),TI_TRUE);
-			}
-			break;
-#endif
 
 		default:
 			TRACE1(pHandle->hReport, REPORT_SEVERITY_INFORMATION, "MLME_PARSER: unknown IE found (%d)\n", pData[0]);

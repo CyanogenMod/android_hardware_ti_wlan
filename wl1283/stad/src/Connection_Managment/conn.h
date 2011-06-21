@@ -107,7 +107,7 @@ typedef struct
 	TI_HANDLE				hMeasurementMgr;
 	TI_HANDLE				hScr;
 	TI_HANDLE				hTrafficMonitor;
-	TI_HANDLE				hXCCMngr;
+	TI_HANDLE				hkkkMngr;
     TI_HANDLE               hScanCncn;
 	TI_HANDLE				hCurrBss;
 	TI_HANDLE				hSwitchChannel;

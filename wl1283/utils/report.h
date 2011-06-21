@@ -81,12 +81,12 @@ typedef enum
 	FILE_ID_7	   ,    /*   SwitchChannel            */
 	FILE_ID_8	   ,    /*   roamingMngr              */
 	FILE_ID_9	   ,    /*   scanMngr                 */
-	FILE_ID_10	   ,    /*   admCtrlXCC               */
-	FILE_ID_11	   ,    /*   XCCMngr                  */
-	FILE_ID_12	   ,    /*   XCCRMMngr                */
-	FILE_ID_13	   ,    /*   XCCTSMngr                */
+	FILE_ID_10	   ,    /*   admCtrlkkk               */
+	FILE_ID_11	   ,    /*   kkkMngr                  */
+	FILE_ID_12	   ,    /*   kkkRMMngr                */
+	FILE_ID_13	   ,    /*   kkkTSMngr                */
 	FILE_ID_14	   ,    /*   rogueAp                  */
-	FILE_ID_15	   ,    /*   TransmitPowerXCC         */
+	FILE_ID_15	   ,    /*   TransmitPowerkkk         */
 	FILE_ID_16	   ,    /*   admCtrl                  */
 	FILE_ID_17	   ,    /*   admCtrlNone              */
 	FILE_ID_18	   ,    /*   admCtrlWep               */
@@ -101,7 +101,7 @@ typedef enum
 	FILE_ID_27	   ,    /*   connInfra                */
 	FILE_ID_28	   ,    /*   keyDerive                */
 	FILE_ID_29	   ,    /*   keyDeriveAes             */
-	FILE_ID_30	   ,    /*   keyDeriveCkip            */
+	FILE_ID_30	   ,    /*   keyDerivejjj            */
 	FILE_ID_31	   ,    /*   keyDeriveTkip            */
 	FILE_ID_32	   ,    /*   keyDeriveWep             */
 	FILE_ID_33	   ,    /*   keyParser                */

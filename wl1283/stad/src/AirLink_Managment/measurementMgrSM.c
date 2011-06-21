@@ -45,10 +45,6 @@
 #include "measurementMgrSM.h"
 #include "measurementMgr.h"
 #include "802_11Defs.h"
-#ifdef XCC_MODULE_INCLUDED
- #include "XCCMngr.h"
- #include "XCCRMMngr.h"
-#endif
 #include "spectrumMngmntMgr.h"
 #include "siteMgrApi.h"
 #include "MacServices_api.h"
@@ -325,9 +321,6 @@ static TI_STATUS measurementMgrSM_acConnected(void * pData)
 	measurementMgr_t * pMeasurementMgr = (measurementMgr_t *) pData;
 	paramInfo_t param;
 
-#ifdef XCC_MODULE_INCLUDED
-	iappParsingRegistrationTable_t iappParsingRegistration;
-#endif
 
     TRACE1(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, "measurementMgrSM_acConnected: measurement mode=%d\n", pMeasurementMgr->Mode);    
     
@@ -352,41 +345,6 @@ static TI_STATUS measurementMgrSM_acConnected(void * pData)
 	siteMgr_getParam(pMeasurementMgr->hSiteMgr, &param);
 	pMeasurementMgr->servingChannelID = param.content.siteMgrCurrentChannel;
 	    
-#ifdef XCC_MODULE_INCLUDED
-	if(pMeasurementMgr->Mode == MSR_MODE_XCC)
-	{
-        TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": MeasurementMgr set to XCC mode\n");
-
-        if(pMeasurementMgr->isModuleRegistered == TI_FALSE)
-        {
-            /* Registering to the XCCMngr */
-            iappParsingRegistration.handler = pMeasurementMgr;
-            iappParsingRegistration.iappParsingRegistrationProcedure = measurementMgr_XCCParse;
-
-            if (XCCMngr_registerForRecvIappPacket(pMeasurementMgr->hXCCMngr,
-				iappParsingRegistration, IAPP_RADIO_MEASUREMENT) != TI_OK)
-            {
-                TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_WARNING, ": Could not register to receive IAPP packets\n");
-
-                return TI_NOK;
-            }
-
-            pMeasurementMgr->isModuleRegistered = TI_TRUE;
-        }
-        
-        pMeasurementMgr->parserFrameReq = measurementMgr_XCCParseFrameReq;
-
-        
-        pMeasurementMgr->isTypeValid = measurementMgr_XCCIsTypeValid;
-		pMeasurementMgr->buildReport = measurementMgr_XCCBuildReport;
-		pMeasurementMgr->buildRejectReport = measurementMgr_XCCBuildRejectReport;
-		pMeasurementMgr->sendReportAndCleanObj = measurementMgr_XCCSendReportAndCleanObject;
-
-
-        requestHandler_setRequestParserFunction(pMeasurementMgr->hRequestH, measurementMgr_XCCParseReq);
-	}
-	else
-#endif
 	{
 		if(pMeasurementMgr->Mode == MSR_MODE_RRM)
 		{
@@ -520,8 +478,8 @@ static TI_STATUS measurementMgrSM_acFrameReceived_fromIdle(void * pData)
     TRACE1(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, "measurementMgrSM_acFrameReceived_fromIdle: measMode = %d\n", pMeasurementMgr->Mode);
     
 
-    /* Only XCC measurements considers the activation delay. Every other measurement start immediately. */ 
-    if (MSR_MODE_XCC == pMeasurementMgr->Mode) 
+    /* Only kkk measurements considers the activation delay. Every other measurement start immediately. */
+    if (MSR_MODE_kkk == pMeasurementMgr->Mode)
     {
         /* converting beacon interval to msec */
         tbtt = (param.content.beaconInterval * 1024) / 1000;	/* from TU to msec */   
@@ -534,7 +492,7 @@ static TI_STATUS measurementMgrSM_acFrameReceived_fromIdle(void * pData)
     }
     else
     {
-        TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, "measurementMgrSM_acFrameReceived_fromIdle: Not XCC mode - Setting Activation delay to default of 0\n");
+        TRACE0(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, "measurementMgrSM_acFrameReceived_fromIdle: Not kkk mode - Setting Activation delay to default of 0\n");
         
         activationDelay = 0;
     }
@@ -721,7 +679,7 @@ static TI_STATUS measurementMgrSM_acRequestSCR(void * pData)
     EScePendReason scrPendReason;
 
 	/* Request the channel */
-    scrStatus = scr_clientRequest(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, 
+    scrStatus = scr_clientRequest(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE,
                                   SCR_RESOURCE_SERVING_CHANNEL, &scrPendReason);
 	
     if (scrStatus == SCR_CRS_RUN)
@@ -769,7 +727,7 @@ static TI_STATUS measurementMgrSM_acDisconnected_fromWaitForSCR(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* Release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -794,7 +752,7 @@ static TI_STATUS measurementMgrSM_acDisable_fromWaitForSCR(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* Release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -821,7 +779,7 @@ static TI_STATUS measurementMgrSM_acFrameReceived_fromWaitForSCR(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* Release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -844,7 +802,7 @@ static TI_STATUS measurementMgrSM_acAbort_fromWaitForSCR(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* Release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
 	/* Build a reject report */
 	measurementMgr_rejectPendingRequests(pMeasurementMgr, MSR_REJECT_SCR_UNAVAILABLE);
@@ -954,7 +912,7 @@ TRACE1(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Measured Channe
     
 	for (requestIndex = 0; requestIndex < numOfRequestsInParallel; requestIndex++)
 	{   
-        if ((pRequestArr[requestIndex]->Type == MSR_TYPE_XCC_BEACON_MEASUREMENT) || 
+        if ((pRequestArr[requestIndex]->Type == MSR_TYPE_kkk_BEACON_MEASUREMENT) ||
             (pRequestArr[requestIndex]->Type == MSR_TYPE_RRM_BEACON_MEASUREMENT))
         {
 			requestedBeaconMeasurement = TI_TRUE;
@@ -1059,7 +1017,7 @@ TRACE1(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Measured Channe
 
                 ssid.len = pRequestArr[requestIndex]->tSSID.len;
             } 
-            else /* MSR_TYPE_XCC_BEACON_MEASUREMENT */
+            else /* MSR_TYPE_kkk_BEACON_MEASUREMENT */
             {
                 ssid.len = 0; /* broadcast ssid */
             }
@@ -1073,15 +1031,6 @@ TRACE1(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Measured Channe
                 buildProbeReqTemplate( pMeasurementMgr->hSiteMgr, &templateStruct, &ssid, RADIO_BAND_2_4_GHZ);
                
                 
-#ifdef XCC_MODULE_INCLUDED
-            {	/* Insert Radio Mngt Capability IE according XCC4*/
-                TI_UINT32				len = 0;
-                measurementMgr_radioMngtCapabilityBuild (pMeasurementMgr, 
-                                                         templateStruct.ptr + templateStruct.len, 
-                                                         (TI_UINT8*)&len);
-                templateStruct.len += len;
-            }
-#endif                
                 TWD_CmdTemplate (pMeasurementMgr->hTWD, &templateStruct, NULL, NULL);
             }
 
@@ -1089,15 +1038,6 @@ TRACE1(pMeasurementMgr->hReport, REPORT_SEVERITY_INFORMATION, ": Measured Channe
             {
                 templateStruct.eBand =  RADIO_BAND_5_0_GHZ;
                 buildProbeReqTemplate( pMeasurementMgr->hSiteMgr, &templateStruct, &ssid, RADIO_BAND_5_0_GHZ);
-#ifdef XCC_MODULE_INCLUDED
-            {	/* Insert Radio Mngt Capability IE according XCC4*/
-                TI_UINT32				len = 0;
-                measurementMgr_radioMngtCapabilityBuild (pMeasurementMgr, 
-                                                         templateStruct.ptr + templateStruct.len, 
-                                                         (TI_UINT8*)&len);
-                templateStruct.len += len;
-            }
-#endif                    
                 TWD_CmdTemplate (pMeasurementMgr->hTWD, &templateStruct, NULL, NULL);
             }
 
@@ -1155,7 +1095,7 @@ static TI_STATUS measurementMgrSM_acDisconnected_fromMeasuring(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -1174,7 +1114,7 @@ static TI_STATUS measurementMgrSM_acDisable_fromMeasuring(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -1195,7 +1135,7 @@ static TI_STATUS measurementMgrSM_acFrameReceived_fromMeasuring(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -1213,7 +1153,7 @@ static TI_STATUS measurementMgrSM_acAbort_fromMeasuring(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -1249,7 +1189,7 @@ static TI_STATUS measurementMgrSM_acMeasurementComplete(void * pData)
     sme_MeansurementScanResult (pMeasurementMgr->hSme, SCAN_CRS_SCAN_COMPLETE_OK, NULL);
 
     /* release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
 	/* Process New Frame */
 	return measurementMgr_activateNextRequest(pData);
@@ -1271,7 +1211,7 @@ static TI_STATUS measurementMgrSM_acFirmwareReset(void * pData)
     setDefaultProbeReqTemplate (pMeasurementMgr->hSiteMgr);
 
     /* release the SCR */
-    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_XCC_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
+    scr_clientComplete(pMeasurementMgr->hScr, SCR_CID_kkk_MEASURE, SCR_RESOURCE_SERVING_CHANNEL);
 
     /* Clear Measurement fields */
     measurementMgrSM_resetParams(pMeasurementMgr);
@@ -1335,10 +1275,6 @@ static void measurementMgrSM_resetParams(measurementMgr_t *pMeasurementMgr)
 	requestHandler_clearRequests(pMeasurementMgr->hRequestH);	
 
 	/* clearing reports data base */
-#ifdef XCC_MODULE_INCLUDED
-	os_memoryZero(pMeasurementMgr->hOs,&(pMeasurementMgr->XCCFrameReport),
-			sizeof(RM_report_frame_t));
-#endif
     os_memoryZero(pMeasurementMgr->hOs,&(pMeasurementMgr->dot11hFrameReport),
 			sizeof(MeasurementReportFrame_t));
 

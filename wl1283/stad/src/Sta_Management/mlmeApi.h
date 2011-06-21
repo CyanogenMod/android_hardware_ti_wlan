@@ -98,7 +98,7 @@ typedef struct
     dot11_RATES_t               *pRates;    
     dot11_RATES_t               *pExtRates;
     TI_UINT8                    useProtection;
-    TI_BOOL                     ciscoIEPresent;
+    TI_BOOL                     cIEPresent;
     EPreamble                   barkerPreambleMode;
     TI_UINT8                    NonErpPresent;  
     dot11_WME_PARAM_t           *WMEParams;
@@ -109,7 +109,7 @@ typedef struct
 	Tdot11HtInformationUnparse	*pHtInformation;
     TI_UINT8                    *tspecVoiceParameters;  /* dot11_WME_TSPEC_IE_t is unpacked so need to access as bytes. */
     TI_UINT8                    *tspecSignalParameters; /* dot11_WME_TSPEC_IE_t is unpacked so need to access as bytes. */
-    XCCv4IEs_t                  XCCIEs[MAX_NUM_OF_AC];
+    nnnIEs_t                  kkkIEs[MAX_NUM_OF_AC];
 }  assocRsp_t;
 
 
@@ -129,9 +129,6 @@ typedef struct
     dot11_QUIET_t               *quiet;
     dot11_TPC_REPORT_t          *TPCReport;
 
-#ifdef XCC_MODULE_INCLUDED
-    dot11_CELL_TP_t             *cellTP;
-#endif
 
     dot11_WME_PARAM_t           *WMEParams;
     dot11_WSC_t                 *WSCParams;
@@ -221,9 +218,6 @@ typedef struct
     dot11_CHANNEL_SWITCH_t  channelSwitch;
     dot11_QUIET_t           quiet;
     dot11_TPC_REPORT_t      TPCReport;
-#ifdef XCC_MODULE_INCLUDED
-    dot11_CELL_TP_t         cellTP;
-#endif
     dot11_RSN_t             rsnIe[3];
     dot11_TIM_t             tim;
     dot11_QOS_CAPABILITY_IE_t   QosCapParams;
@@ -297,13 +291,6 @@ TI_STATUS mlmeParser_parseIEs(TI_HANDLE hMlme,
                               TI_INT32 bodyDataLen,
                               mlmeIEParsingParams_t *params);
 TI_BOOL mlmeParser_ParseIeBuffer (TI_HANDLE hMlme, TI_UINT8 *pIeBuffer, TI_UINT32 length, TI_UINT8 desiredIeId, TI_UINT8 **pDesiredIe, TI_UINT8 *pMatchBuffer, TI_UINT32 matchBufferLen);
-
-#ifdef XCC_MODULE_INCLUDED
-void mlmeParser_readXCCOui (TI_UINT8 *pData, 
-                            TI_UINT32 dataLen, 
-                            TI_UINT32 *pReadLen, 
-                            XCCv4IEs_t *XCCIEs);
-#endif
 
 mlmeIEParsingParams_t *mlmeParser_getParseIEsBuffer(TI_HANDLE *hMlme);
 

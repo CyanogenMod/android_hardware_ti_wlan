@@ -28,9 +28,9 @@ TXN         := $(DK_ROOT)/Txn
 FW ?= 1283
 
 #
-# Compile with XCC support or not
+# Compile with kkk support or not
 #
-XCC ?= n
+kkk ?= n
 
 
 #
@@ -80,8 +80,8 @@ TI_TRACE_BUFFER ?= n
 ## Driver Compilation Directives
 ##
 ##
-ifeq ($(XCC),y)
-    DK_DEFINES += -D XCC_MODULE_INCLUDED
+ifeq ($(kkk),y)
+    DK_DEFINES += -D kkk_MODULE_INCLUDED
 endif
 
 ifeq ($(GEM),y)

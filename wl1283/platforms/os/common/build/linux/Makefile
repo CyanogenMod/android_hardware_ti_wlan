@@ -108,7 +108,7 @@ all: .depend $(OUTPUT_FILE)
 #
 .PHONY: help
 help:
-	@echo Default Compilation:	PLATFORM=$(PLATFORM) DEBUG=$(DEBUG) INTR=$(INTR) WSPI=$(WSPI) XCC=$(XCC) EXTRA CFLAGS: $(EXTRA_CFLAGS)
+	@echo Default Compilation:	PLATFORM=$(PLATFORM) DEBUG=$(DEBUG) INTR=$(INTR) WSPI=$(WSPI) kkk=$(kkk) EXTRA CFLAGS: $(EXTRA_CFLAGS)
 
 
 #

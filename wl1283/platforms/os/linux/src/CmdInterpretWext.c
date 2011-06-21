@@ -60,9 +60,7 @@
 static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData);
 static int cmdInterpret_setSecurityParams (TI_HANDLE hCmdInterpret);
 static int cmdInterpret_initEvents(TI_HANDLE hCmdInterpret);
-#ifndef XCC_MODULE_INCLUDED
 static void sendEventBeaconIe(cmdInterpret_t *pCmdInterpret, paramInfo_t *pParam);
-#endif
 
 #define WEXT_FREQ_CHANNEL_NUM_MAX_VAL	1000
 #define WEXT_FREQ_KHZ_CONVERT			3
@@ -77,17 +75,6 @@ static void sendEventBeaconIe(cmdInterpret_t *pCmdInterpret, paramInfo_t *pParam
 static const char *ieee80211_modes[] = {
     "?", "IEEE 802.11 B", "IEEE 802.11 A", "IEEE 802.11 BG", "IEEE 802.11 ABG"
 };
-#ifdef XCC_MODULE_INCLUDED
-typedef struct
-{
-
-   TI_UINT8        *assocRespBuffer;
-    TI_UINT32       assocRespLen;
-} cckm_assocInformation_t;
-
-#define BEACON_HEADER_FIX_SIZE    12
-#define CCKM_START_EVENT_SIZE     23 /* cckm-start string + timestamp + bssid + null */
-#endif
 
 /* Initialize the CmdInterpreter module */
 TI_HANDLE cmdInterpret_Create (TI_HANDLE hOs)
@@ -1551,13 +1538,6 @@ static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData)
     union iwreq_data wrqu;
     char *memptr;
     int TotalLength,res = TI_OK;
-#ifdef XCC_MODULE_INCLUDED
-    cckm_assocInformation_t cckm_assoc;
-    unsigned char beaconIE[MAX_BEACON_BODY_LENGTH];
-    unsigned char Cckmstart[CCKM_START_EVENT_SIZE * 2];
-    int i,len,n;
-    OS_802_11_BSSID_EX *my_current;
-#endif
     /* indicate to the OS */
     os_IndicateEvent (pCmdInterpret->hOs, pData);
 
@@ -1629,64 +1609,8 @@ static TI_INT32 cmdInterpret_Event(IPC_EV_DATA* pData)
                 }
             }
 
-#ifdef XCC_MODULE_INCLUDED
-            /* 
-               the driver must provide BEACON IE for calculate MIC in case of fast roaming 
-               the data is an ASCII NUL terminated string 
-            */
- 
-
-            my_current = os_memoryAlloc (pCmdInterpret->hOs,MAX_BEACON_BODY_LENGTH);
-            if (!my_current)
-            {
-                res = TI_NOK;
-                goto event_end;
-            }
-            pParam->paramType   = SITE_MGR_GET_SELECTED_BSSID_INFO_EX;
-            pParam->content.pSiteMgrSelectedSiteInfo = my_current;
-            pParam->paramLength = MAX_BEACON_BODY_LENGTH;
-            cmdDispatch_GetParam(pCmdInterpret->hCmdDispatch, pParam);
-
-            len = pParam->content.pSiteMgrSelectedSiteInfo->IELength - BEACON_HEADER_FIX_SIZE;
-           
-            n = sprintf(beaconIE, "BEACONIE=");
-            for (i = 0; i < len; i++)
-            {
-              n += sprintf(beaconIE + n, "%02x", pParam->content.pSiteMgrSelectedSiteInfo->IEs[BEACON_HEADER_FIX_SIZE+i] & 0xff);
-            }
-
-            os_memorySet (pCmdInterpret->hOs,&wrqu, 0, sizeof(wrqu));
-            wrqu.data.length = n;
-            wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVCUSTOM, &wrqu, beaconIE);
-            os_memoryFree(pCmdInterpret->hOs,my_current,MAX_BEACON_BODY_LENGTH);
-
-
-            /*
-              The driver should be sending the Association Resp IEs 
-              This informs the supplicant of the IEs used in the association exchanged which are required to proceed with CCKM. 
-            */  
-
-            
-            pParam->paramType   = MLME_ASSOCIATION_RESP_PARAM;
-            pParam->paramLength = sizeof(TAssocReqBuffer);
-            cmdDispatch_GetParam(pCmdInterpret->hCmdDispatch, pParam);
-
-            cckm_assoc.assocRespLen = pParam->content.assocReqBuffer.bufferSize - ASSOC_RESP_FIXED_DATA_LEN ;
-            cckm_assoc.assocRespBuffer = os_memoryAlloc (pCmdInterpret->hOs, cckm_assoc.assocRespLen);
-
-            if (!cckm_assoc.assocRespBuffer)
-            {
-                res = TI_NOK;
-                goto event_end;
-            }
-            memcpy(cckm_assoc.assocRespBuffer,(pParam->content.assocReqBuffer.buffer)+ASSOC_RESP_FIXED_DATA_LEN,cckm_assoc.assocRespLen);
-            wrqu.data.length = cckm_assoc.assocRespLen;
-            wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVASSOCRESPIE, &wrqu, (TI_UINT8*)cckm_assoc.assocRespBuffer);
-            os_memoryFree(pCmdInterpret->hOs,cckm_assoc.assocRespBuffer,cckm_assoc.assocRespLen);
-#else
            /* send the supplicant the Beacon Ie of the target AP in case of roaming */
            sendEventBeaconIe(pCmdInterpret,pParam);
-#endif            
            /* Send associated event (containing BSSID of AP) */
 
             os_memorySet (pCmdInterpret->hOs,&wrqu, 0, sizeof(wrqu));
@@ -1800,21 +1724,6 @@ event_end:
         }
 
         break;
-#ifdef XCC_MODULE_INCLUDED
-    case IPC_EVENT_CCKM_START:
-
-        n = sprintf(Cckmstart, "CCKM-Start=");
-        for (i = 0; i < 14; i++)
-        {
-          n += sprintf(Cckmstart + n, "%02x", pData->uBuffer[i] & 0xff);
-        }
-
-        os_memorySet (pCmdInterpret->hOs,&wrqu, 0, sizeof(wrqu));
-        wrqu.data.length = n;
-        wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVCUSTOM, &wrqu, Cckmstart);
-        
-        break;
-#endif 
     default:
         /* Other event? probably private and does not need interface-specific conversion */
         /* Send as "custom" event */
@@ -1969,7 +1878,6 @@ void *cmdInterpret_GetStat (TI_HANDLE hCmdInterpret)
     return (void *)NULL;
 }
 
-#ifndef XCC_MODULE_INCLUDED
 static void sendEventBeaconIe(cmdInterpret_t *pCmdInterpret, paramInfo_t *pParam)
 {
     TI_UINT8* beaconBuffer;
@@ -2014,4 +1922,3 @@ static void sendEventBeaconIe(cmdInterpret_t *pCmdInterpret, paramInfo_t *pParam
     os_memoryFree(pCmdInterpret->hOs, beaconBuffer, bufferLen + lengthOfString);
 }
 
-#endif

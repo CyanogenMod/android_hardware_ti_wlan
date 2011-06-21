@@ -135,7 +135,7 @@ TI_BOOL siteMgr_isCurrentBand24(TI_HANDLE  hSiteMgr);
 
 TI_STATUS pbccAlgorithm(TI_HANDLE hSiteMgr);
 
-TI_STATUS siteMgr_assocReport(TI_HANDLE hSiteMgr, TI_UINT16 capabilities, TI_BOOL bCiscoAP);
+TI_STATUS siteMgr_assocReport(TI_HANDLE hSiteMgr, TI_UINT16 capabilities, TI_BOOL bCAP);
 
 void siteMgr_setCurrentTable(TI_HANDLE hSiteMgr, ERadioBand radioBand);
 

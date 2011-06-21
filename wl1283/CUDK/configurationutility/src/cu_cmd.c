@@ -142,9 +142,6 @@ static named_value_t event_type[] = {
     { IPC_EVENT_AUTH_SUCC,              (PS8)"Authentication Success" },
     { IPC_EVENT_SCAN_COMPLETE,          (PS8)"ScanComplete" },
     { IPC_EVENT_SCAN_STOPPED,           (PS8)"ScanStopped" },
-#ifdef XCC_MODULE_INCLUDED
-    { IPC_EVENT_CCKM_START,             (PS8)"CCKM_Start" },
-#endif
     { IPC_EVENT_MEDIA_SPECIFIC,         (PS8)"Media_Specific" },
     { IPC_EVENT_EAPOL,                  (PS8)"EAPOL" },
     { IPC_EVENT_RE_AUTH_STARTED,		(PS8)"IPC_EVENT_RE_AUTH_STARTED" },
@@ -181,12 +178,12 @@ static named_value_t report_module[] =
     { FILE_ID_7   ,  (PS8)"SwitchChannel           " },
     { FILE_ID_8   ,  (PS8)"roamingMngr             " },
     { FILE_ID_9   ,  (PS8)"scanMngr                " },
-    { FILE_ID_10  ,  (PS8)"admCtrlXCC              " },
-    { FILE_ID_11  ,  (PS8)"XCCMngr                 " },
-    { FILE_ID_12  ,  (PS8)"XCCRMMngr               " },
-    { FILE_ID_13  ,  (PS8)"XCCTSMngr               " },
+    { FILE_ID_10  ,  (PS8)"admCtrlkkk              " },
+    { FILE_ID_11  ,  (PS8)"kkkMngr                 " },
+    { FILE_ID_12  ,  (PS8)"kkkRMMngr               " },
+    { FILE_ID_13  ,  (PS8)"kkkTSMngr               " },
     { FILE_ID_14  ,  (PS8)"rogueAp                 " },
-    { FILE_ID_15  ,  (PS8)"TransmitPowerXCC        " },
+    { FILE_ID_15  ,  (PS8)"TransmitPowerkkk        " },
     { FILE_ID_16  ,  (PS8)"admCtrl                 " },
     { FILE_ID_17  ,  (PS8)"admCtrlNone             " },
     { FILE_ID_18  ,  (PS8)"admCtrlWep              " },
@@ -201,7 +198,7 @@ static named_value_t report_module[] =
     { FILE_ID_27  ,  (PS8)"connInfra               " },
     { FILE_ID_28  ,  (PS8)"keyDerive               " },
     { FILE_ID_29  ,  (PS8)"keyDeriveAes            " },
-    { FILE_ID_30  ,  (PS8)"keyDeriveCkip           " },
+    { FILE_ID_30  ,  (PS8)"keyDerivejjj           " },
     { FILE_ID_31  ,  (PS8)"keyDeriveTkip           " },
     { FILE_ID_32  ,  (PS8)"keyDeriveWep            " },
     { FILE_ID_33  ,  (PS8)"keyParser               " },
@@ -1027,23 +1024,6 @@ VOID CuCmd_StopDriver(THandle hCuCmd)
         os_error_printf(CU_MSG_ERROR, (PS8)"ERROR - Failed to stop driver!\n");
     }
 }
-
-#ifdef XCC_MODULE_INCLUDED
-THandle CuCmd_GetCuCommonHandle(THandle hCuCmd)
-{
-    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
-
-    return pCuCmd->hCuCommon;
-}
-
-THandle CuCmd_GetCuWpaHandle (THandle hCuCmd)
-{
-    CuCmd_t* pCuCmd = (CuCmd_t*)hCuCmd;
-
-    return pCuCmd->hWpaCore;
-
-}
-#endif
 
 VOID CuCmd_Show_Status(THandle hCuCmd, ConParm_t parm[], U16 nParms)
 {
@@ -2065,9 +2045,6 @@ VOID CuCmd_ShowStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms)
     U32 DefaultKeyId;
     U32 WepStatus;
     S8 dRssi, bRssi;
-#ifdef XCC_MODULE_INCLUDED
-    U32 XCCNetEap;
-#endif
 
     if(OK != CuCommon_GetBuffer(pCuCmd->hCuCommon, CTRL_DATA_MAC_ADDRESS,
             Mac, sizeof(TMacAddr))) return;     
@@ -2101,9 +2078,6 @@ VOID CuCmd_ShowStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms)
     if(OK != CuCommon_GetU8(pCuCmd->hCuCommon, TIWLN_GET_RX_DATA_RATE, &CurrentRxRate)) return;
     CuCmd_CreateRateStr(CurrentRxRateStr, CurrentRxRate);       
     
-#ifdef XCC_MODULE_INCLUDED
-    if(OK != CuCommon_GetU32(pCuCmd->hCuCommon, RSN_XCC_NETWORK_EAP, &XCCNetEap)) return;
-#endif
 
     os_error_printf(CU_MSG_INFO2, (PS8)"******************\n");
     os_error_printf(CU_MSG_INFO2, (PS8)"Driver Statistics:\n");
@@ -2146,9 +2120,6 @@ VOID CuCmd_ShowStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms)
     /**/
     /* other statistics*/
     /**/
-#ifdef XCC_MODULE_INCLUDED
-    os_error_printf(CU_MSG_INFO2, (PS8)"        dwSecuritySuit : %d\n", XCCNetEap);
-#endif
 }
 
 VOID CuCmd_ShowTxStatistics(THandle hCuCmd, ConParm_t parm[], U16 nParms)
@@ -6647,16 +6618,13 @@ VOID CuCmd_ShowAbout(THandle hCuCmd, ConParm_t parm[], U16 nParms)
     os_error_printf(CU_MSG_INFO2, (PS8)"\nMCP version:   %s\n", 
                                                 MCP_WL7_VERSION_STR);
 
-#ifdef XCC_MODULE_INCLUDED
-    os_error_printf(CU_MSG_INFO2, (PS8)"WLAN Driver:   %s_XCC\n", 
-                                                SW_VERSION_STR);
-#elif GEM_SUPPORTED
+#if GEM_SUPPORTED
     os_error_printf(CU_MSG_INFO2, (PS8)"WLAN Driver:   %s_GEM\n", 
                                                 SW_VERSION_STR);
 #else
     os_error_printf(CU_MSG_INFO2, (PS8)"WLAN Driver:   %s_NOCCX\n", 
                                                 SW_VERSION_STR);
-#endif/* XCC_MODULE_INCLUDED*/
+#endif
     os_error_printf(CU_MSG_INFO2, (PS8)"WLAN Firmware: %s\n", 
                                                 FwVesrion);
 

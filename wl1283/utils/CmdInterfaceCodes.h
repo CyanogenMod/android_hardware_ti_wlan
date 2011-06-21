@@ -148,7 +148,7 @@ typedef enum
     MLME_SM_MODULE_PARAM            	= 0x0D00,	/**< 802.11 MLME State-Machine Module Number  		*/
     REGULATORY_DOMAIN_MODULE_PARAM  	= 0x0E00,	/**< Regulatory Domain Module Number 				*/
     MEASUREMENT_MODULE_PARAM        	= 0x0F00,	/**< Measurement Module Number						*/
-    XCC_MANAGER_MODULE_PARAM        	= 0x1000,	/**< XCC Manager Module Number 						*/
+    kkk_MANAGER_MODULE_PARAM        	= 0x1000,	/**< kkk Manager Module Number 						*/
     ROAMING_MANAGER_MODULE_PARAM    	= 0x1100,	/**< Roaming Manager Module Number					*/
     SOFT_GEMINI_PARAM               	= 0x1200,	/**< Soft Gemini Module Number						*/
     QOS_MANAGER_PARAM               	= 0x1300,	/**< Quality Of Service (QoS) Manager Module Number	*/
@@ -983,8 +983,8 @@ typedef enum
 																																* GET Bit: ON	\n
 																																* SET Bit: ON	\n
 																																*/
-	RSN_XCC_NETWORK_EAP								=	SET_BIT | GET_BIT | RSN_MODULE_PARAM | 0x0A,							/**< Robust Security NW (RSN) XCC NW EAP Parameter (RSN Module Set/Get Command): \n  
-                                                                                                                                * Used for setting/getting RSN XCC NW EAP to/from RSN Module\n
+	RSN_kkk_NETWORK_EAP								=	SET_BIT | GET_BIT | RSN_MODULE_PARAM | 0x0A,							/**< Robust Security NW (RSN) kkk NW EAP Parameter (RSN Module Set/Get Command): \n  
+                                                                                                                                * Used for setting/getting RSN kkk NW EAP to/from RSN Module\n
                                                                                                                                 * Done Sync with no memory allocation\n 
                                                                                                                                 * Parameter Number:	0x0B	\n
                                                                                                                                 * Module Number: RSN Module Number \n
@@ -1501,12 +1501,12 @@ typedef enum
 																											* SET Bit: ON	\n
 																											*/
 
-	/* XCC */    
-    XCC_CONFIGURATION							=	SET_BIT | GET_BIT | XCC_MANAGER_MODULE_PARAM | 0x01,	/**< XCC Manager Configuration Parameter (XCC Manager Module Set/Get Command): \n  
-																											* Used for setting or getting XCC configuration (RogueAP, CCKM, CKIP, All)\n
+	/* kkk */
+    kkk_CONFIGURATION							=	SET_BIT | GET_BIT | kkk_MANAGER_MODULE_PARAM | 0x01,	/**< kkk Manager Configuration Parameter (kkk Manager Module Set/Get Command): \n  
+																											* Used for setting or getting kkk configuration (RogueAP, All)\n
 																											* Done Sync with no memory allocation\n 
 																											* Parameter Number:	0x01	\n
-																											* Module Number: XCC Manager Module Number \n
+																											* Module Number: kkk Manager Module Number \n
 																											* Async Bit: OFF	\n
 																											* Allocate Bit: OFF	\n
 																											* GET Bit: ON	\n

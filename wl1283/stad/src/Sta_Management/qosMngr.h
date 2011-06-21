@@ -138,7 +138,7 @@ typedef struct
     TI_HANDLE           hMeasurementMngr;
     TI_HANDLE           hSmeSm;
     TI_HANDLE           hCtrlData;
-    TI_HANDLE           hXCCMgr;
+    TI_HANDLE           hkkkMgr;
 
     TI_HANDLE           hReport;
     TI_HANDLE           hOs;
@@ -147,7 +147,7 @@ typedef struct
 
     TI_BOOL             WMEEnable;                           /* driver supports WME protocol       */
     TI_BOOL             WMESiteSupport;                      /* site support WME protocol          */
-    EQosProtocol        activeProtocol;                      /* active protocol: XCC,WME or none.  */
+    EQosProtocol        activeProtocol;                      /* active protocol: kkk,WME or none.  */
     TI_BOOL             tagZeroConverHeader;                 /* converting tag zero headers        */
         
     TI_UINT8            qosPacketBurstEnable;                /* Packet Burst is Enable or NOT      */

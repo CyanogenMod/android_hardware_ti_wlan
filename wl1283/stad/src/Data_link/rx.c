@@ -54,9 +54,6 @@
 #include "siteMgrApi.h"
 #include "GeneralUtil.h"   
 #include "EvHandler.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#endif
 #include "TWDriver.h"
 #include "RxBuf.h"
 #include "DrvMainModules.h" 
@@ -105,9 +102,6 @@ static TI_STATUS rxData_addRxDataFilter(TI_HANDLE hRxData, TRxDataFilterRequest*
 static TI_STATUS rxData_removeRxDataFilter(TI_HANDLE hRxData, TRxDataFilterRequest* request);
 
 
-#ifdef XCC_MODULE_INCLUDED
-static void rxData_rcvPacketIapp(TI_HANDLE hRxData, void *pBuffer, TRxAttr* pRxAttr);
-#endif
 #ifdef TI_DBG
 static void rxData_printRxThroughput(TI_HANDLE hRxData, TI_BOOL bTwdInitOccured);
 #endif
@@ -181,7 +175,7 @@ void rxData_init (TStadHandlesList *pStadHandles)
     pRxData->hSiteMgr   = pStadHandles->hSiteMgr;
     pRxData->hOs        = pStadHandles->hOs;
     pRxData->hReport    = pStadHandles->hReport;
-    pRxData->hXCCMgr    = pStadHandles->hXCCMngr;
+    pRxData->hkkkMgr    = pStadHandles->hkkkMngr;
     pRxData->hEvHandler = pStadHandles->hEvHandler;
     pRxData->hTimer     = pStadHandles->hTimer;
     pRxData->hPowerMgr  = pStadHandles->hPowerMgr;
@@ -217,11 +211,7 @@ void rxData_init (TStadHandlesList *pStadHandles)
     /* port status open */
     pRxData->rxData_dispatchBuffer[OPEN][DATA_DATA_PACKET]  = &rxData_rcvPacketData;    /* data  */ 
     pRxData->rxData_dispatchBuffer[OPEN][DATA_EAPOL_PACKET] = &rxData_rcvPacketEapol;   /* eapol */ 
-#ifdef XCC_MODULE_INCLUDED
-    pRxData->rxData_dispatchBuffer[OPEN][DATA_IAPP_PACKET]  = &rxData_rcvPacketIapp;    /* Iapp  */ 
-#else
     pRxData->rxData_dispatchBuffer[OPEN][DATA_IAPP_PACKET]  = &rxData_rcvPacketData;    /* Iapp  */ 
-#endif
     pRxData->rxData_dispatchBuffer[OPEN][DATA_VLAN_PACKET]  = &rxData_discardPacketVlan;/* VLAN  */
 
     /* register CB's for request buffer and receive CB to the lower layers */
@@ -1108,18 +1098,6 @@ static void rxData_dataPacketDisptcher (TI_HANDLE hRxData, void *pBuffer, TRxAtt
 
     pRxData->uLastDataPktRate = pRxAttr->Rate;  /* save Rx packet rate for statistics */
 
-#ifdef XCC_MODULE_INCLUDED
-    if (XCCMngr_isIappPacket (pRxData->hXCCMgr, pBuffer) == TI_TRUE)
-    {
-        TRACE0(pRxData->hReport, REPORT_SEVERITY_INFORMATION, " rxData_dataPacketDisptcher() : Received Iapp Buffer  \n");
-
-        DataPacketType = DATA_IAPP_PACKET;
-
-        /* dispatch Buffer according to packet type and current rx data port status */
-        pRxData->rxData_dispatchBuffer[DataPortStatus][DataPacketType] (hRxData, pBuffer, pRxAttr);
-    }
-    else
-#endif
     {
         /* A-MSDU ? */
         if (TAG_CLASS_AMSDU == pRxAttr->ePacketType)
@@ -1418,25 +1396,6 @@ static void rxData_rcvPacketData(TI_HANDLE hRxData, void *pBuffer, TRxAttr* pRxA
 * 
 * RETURNS:      
 ***************************************************************************/
-#ifdef XCC_MODULE_INCLUDED
-
-static void rxData_rcvPacketIapp(TI_HANDLE hRxData, void *pBuffer, TRxAttr* pRxAttr)
-{
-    rxData_t *pRxData = (rxData_t *)hRxData;
-
-    TRACE0(pRxData->hReport, REPORT_SEVERITY_INFORMATION, " rxData_rcvPacketIapp() : Received IAPP frame tranferred to XCCMgr\n");
-
-    TRACE0(pRxData->hReport, REPORT_SEVERITY_INFORMATION, " rxData_rcvPacketIapp() : Received IAPP frame tranferred to XCCMgr\n");
-
-    /* tranfer packet to XCCMgr */
-    XCCMngr_recvIAPPPacket (pRxData->hXCCMgr, pBuffer, pRxAttr);
-
-    /* free Buffer */
-    RxBufFree(pRxData->hOs, pBuffer); 
-}
-
-#endif
-
 
 /****************************************************************************
 *                       rxData_convertWlanToEthHeader                       *

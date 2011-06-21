@@ -69,9 +69,9 @@
 typedef enum 
 {
 /*	0	*/	MSR_TYPE_BASIC_MEASUREMENT  = 0,			                    /**< */
-/*	1	*/	MSR_TYPE_XCC_CCA_LOAD_MEASUREMENT,				                /**< */
-/*	2	*/	MSR_TYPE_XCC_NOISE_HISTOGRAM_MEASUREMENT,		                /**< */
-/*	3	*/	MSR_TYPE_XCC_BEACON_MEASUREMENT,				                /**< */
+/*	1	*/	MSR_TYPE_kkk_CCA_LOAD_MEASUREMENT,				                /**< */
+/*	2	*/	MSR_TYPE_kkk_NOISE_HISTOGRAM_MEASUREMENT,		                /**< */
+/*	3	*/	MSR_TYPE_kkk_BEACON_MEASUREMENT,				                /**< */
 /*	4	*/	MSR_TYPE_FRAME_MEASUREMENT,					                    /**< */
 /*	5	*/	MSR_TYPE_RRM_BEACON_MEASUREMENT = 5,                            /**< */
 /*	6	*/	MSR_TYPE_RRM_TS_TC_MEASUREMENT = 9,                             /**< */
@@ -122,7 +122,7 @@ typedef enum
 typedef enum
 {
 /*	0	*/	MSR_MODE_NONE = 0,				/**< */
-/*	1	*/	MSR_MODE_XCC,					/**< */
+/*	1	*/	MSR_MODE_kkk,					/**< */
 /*	2	*/	MSR_MODE_SPECTRUM_MANAGEMENT,	/**< */
 /*	3	*/	MSR_MODE_RRM	                /**< */
 
@@ -261,7 +261,7 @@ typedef struct
 
 
 
-/* XCC Type */
+/* kkk Type */
 typedef struct
 {
     TI_UINT16  dialogToken;

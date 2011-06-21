@@ -96,7 +96,7 @@ TI_STATUS apConn_reportRoamingEvent(TI_HANDLE hAPConnection,
 									apConn_roamingTrigger_e roamingEventType,
 									roamingEventData_u *pRoamingEventData);
 
-/* Called by XCC Manager */
+/* Called by kkk Manager */
 void apConn_RoamHandoffFinished(TI_HANDLE hAPConnection);
 void apConn_getRoamingStatistics(TI_HANDLE hAPConnection, TI_UINT8 *roamingCount, TI_UINT16 *roamingDelay);
 void apConn_resetRoamingStatistics(TI_HANDLE hAPConnection);

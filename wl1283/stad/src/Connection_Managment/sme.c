@@ -640,12 +640,10 @@ void sme_ScanResultCB (TI_HANDLE hSme, EScanCncnResultStatus eStatus,
         {
             if (SSID_TYPE_SPECIFIC == pSme->eSsidType)
             {
-#ifndef XCC_MODULE_INCLUDED
                 if ((pSme->tSsid.len == pFrameInfo->parsedIEs->content.iePacket.pSsid->hdr[ 1 ]) &&
                     (0 == os_memoryCompare (pSme->hOS, (TI_UINT8 *)&(pSme->tSsid.str[ 0 ]),
                                             (TI_UINT8 *)&(pFrameInfo->parsedIEs->content.iePacket.pSsid->serviceSetId[ 0 ]),
                                             pSme->tSsid.len)))
-#endif
                 {
 
                     if (TI_OK != scanResultTable_UpdateEntry (pSme->hScanResultTable, pFrameInfo->bssId, pFrameInfo))

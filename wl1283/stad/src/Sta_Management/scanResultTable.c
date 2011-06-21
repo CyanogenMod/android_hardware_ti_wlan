@@ -1167,7 +1167,7 @@ TI_STATUS scanResultTable_GetBssidList (TI_HANDLE hScanResultTable,
                 pBssid->IELength += pSiteEntry->rsnIeLen;
             }
 
-            /* QOS_WME/XCC */
+            /* QOS_WME/kkk */
             if (TI_TRUE == pSiteEntry->WMESupported)
             {
                 /* oui */

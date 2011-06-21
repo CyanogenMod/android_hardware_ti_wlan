@@ -53,10 +53,6 @@
 #include "qosMngr_API.h"
 #include "sme.h"
 #include "EvHandler.h"
-#ifdef XCC_MODULE_INCLUDED
-#include "XCCMngr.h"
-#include "XCCTSMngr.h"
-#endif
 #include "TWDriver.h"
 #include "DrvMainModules.h"
 #include "StaCap.h"
@@ -76,10 +72,6 @@ const TI_UINT32 WMEQosMateTid[MAX_NUM_OF_802_1d_TAGS] = { 3, 2, 1, 0, 5, 4, 7, 6
 
 #define FIXED_NOMINAL_MSDU_SIZE_MASK 0x8000
 
-#ifdef XCC_MODULE_INCLUDED
-#define VOICE_SERVICE_INTERVAL 20000
-#define VOICE_INACTIVITY_INTERVAL 10000000
-#endif
 
 /********************************************************************************/
 /*						Internal functions prototypes.							*/
@@ -242,7 +234,7 @@ void qosMngr_init (TStadHandlesList *pStadHandles)
     pQosMngr->hSmeSm           = pStadHandles->hSme;
     pQosMngr->hCtrlData        = pStadHandles->hCtrlData;
 	pQosMngr->hEvHandler       = pStadHandles->hEvHandler;
-	pQosMngr->hXCCMgr          = pStadHandles->hXCCMngr;
+	pQosMngr->hkkkMgr          = pStadHandles->hkkkMngr;
 	pQosMngr->hTimer           = pStadHandles->hTimer;
     pQosMngr->hStaCap          = pStadHandles->hStaCap;
     pQosMngr->hRoamMng         = pStadHandles->hRoamingMngr;
@@ -296,7 +288,7 @@ TI_STATUS qosMngr_SetDefaults (TI_HANDLE hQosMngr, QosMngrInitParams_t *pQosMngr
                                     pQosMngr->hOs,
                                     pQosMngr,
                                     pQosMngr->hCtrlData,
-                                    pQosMngr->hXCCMgr,
+                                    pQosMngr->hkkkMgr,
                                     pQosMngr->hTimer,
                                     pQosMngr->hTWD,
                                     pQosMngr->hTxCtrl,
@@ -623,9 +615,6 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite:failed to init
 
 TRACE0(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_disconnect : QoS disconnect complete!");
 
-#ifdef XCC_MODULE_INCLUDED
-	measurementMgr_stopTsMetrics(pQosMngr->hMeasurementMngr);
-#endif
 
 	return TI_OK;
 }
@@ -1403,7 +1392,7 @@ TI_STATUS qosMngr_selectActiveProtocol(TI_HANDLE  hQosMngr)
    	qosMngr_t *pQosMngr = (qosMngr_t *)hQosMngr;
 
 	/* decide qos protocol */
-	/* NOTE: if both XCC qnd wme supported wme is chosen */
+	/* NOTE: if both kkk qnd wme supported wme is chosen */
 	if(pQosMngr->WMESiteSupport && pQosMngr->WMEEnable)
 	{
 		pQosMngr->activeProtocol = QOS_WME;
@@ -1510,15 +1499,6 @@ TI_STATUS qosMngr_getQosCapabiltyInfeElement(TI_HANDLE  hQosMngr, TI_UINT8 *pQos
 
 		*pLen = dot11_QOS_CAPABILITY_IE->hdr[1] + sizeof(dot11_eleHdr_t);
 		
-#ifdef XCC_MODULE_INCLUDED
-		/* If required, add XCC info-elements to the association request packets */
-		if (pQosMngr->performTSPECRenegotiation == TI_TRUE)
-		{
-            TRACE0(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_getQosCapabiltyInfeElement: performing TSPEC renegotiation\n");
-
-			status = XCCMngr_getXCCQosIElements(pQosMngr->hXCCMgr, (pQosIe+(*pLen)), &extraIeLen);
-		}
-#endif
 		*pLen += extraIeLen;
 	}
 	else
@@ -1655,18 +1635,12 @@ void qosMngr_checkTspecRenegResults(TI_HANDLE hQosMngr, assocRsp_t *assocRsp)
 {
 	tspecInfo_t	tspecInfo;
 	qosMngr_t *pQosMngr = (qosMngr_t *)hQosMngr;
-#ifdef XCC_MODULE_INCLUDED
-	TI_UINT32 acCount;
-#endif
 
 TRACE2(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_checkTspecRenegResults: performTSPECRenegotiation = %d, tspecParams received= %x\n",		pQosMngr->performTSPECRenegotiation, assocRsp->tspecVoiceParameters);
 
 	if (pQosMngr->performTSPECRenegotiation != TI_TRUE)
 	{
 		/* If no re-negotiation was requested, no parsing shall be done */
-#ifdef XCC_MODULE_INCLUDED
-		measurementMgr_disableTsMetrics(pQosMngr->hMeasurementMngr, MAX_NUM_OF_AC);
-#endif
 		return;
 	}
 
@@ -1683,9 +1657,6 @@ TRACE2(pQosMngr->hReport, REPORT_SEVERITY_INFORMATION, "qosMngr_checkTspecRenegR
 									 &pQosMngr->resourceMgmtTable.candidateTspecInfo[USER_PRIORITY_4], 
 									 STATUS_TRAFFIC_ADM_REQUEST_REJECT);
 		}
-#ifdef XCC_MODULE_INCLUDED
-        measurementMgr_disableTsMetrics(pQosMngr->hMeasurementMngr, MAX_NUM_OF_AC);
-#endif
 		return;
 	}
 
@@ -1716,13 +1687,6 @@ TRACE0(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "qosMngr_setSite: Signal TSPEC 
 								 STATUS_TRAFFIC_ADM_REQUEST_REJECT);
 	}
 
-#ifdef XCC_MODULE_INCLUDED
-	/* If XCC IEs are present for one or more ACs, update other modules with received parameters */
-	for (acCount = 0; acCount < MAX_NUM_OF_AC; acCount++)
-	{
-		XCCMngr_setXCCQoSParams(pQosMngr->hXCCMgr, &assocRsp->XCCIEs[acCount], acCount);
-	}
-#endif
 }
 
 
@@ -2519,9 +2483,6 @@ static void deleteTspecConfiguration(qosMngr_t *pQosMngr, TI_UINT8 acID)
 	ctrlData_setParam(pQosMngr->hCtrlData, &param);
 
 	/* stop TS metrix for this ac */
-#ifdef XCC_MODULE_INCLUDED
-	measurementMgr_disableTsMetrics(pQosMngr->hMeasurementMngr, acID);
-#endif
 
 	/* update medium time and rate adaptation event only when init admission bit was 0 */
 	if( pQosMngr->acParams[acID].apInitAdmissionState == ADMISSION_REQUIRED )
@@ -2928,36 +2889,6 @@ TRACE3(pQosMngr->hReport, REPORT_SEVERITY_ERROR, "QosMngr_receiveActionFrames: D
 
 		if (trafficAdmCtrl_recv(pQosMngr->pTrafficAdmCtrl, pData, action) == TI_OK)
 		{
-#ifdef XCC_MODULE_INCLUDED
-			/* Check if XCC IEs present, if so, parse them and update relevant modules; 
-               skip the TSPEC IE;
-               do not forget 2 bytes of status and dialog code that must be skipped as well */
-			XCCv4IEs_t			XCCIE;
-			TI_UINT32 				readLen;
-
-			XCCIE.edcaLifetimeParameter = NULL;
-			XCCIE.trafficStreamParameter = NULL;
-			XCCIE.tsMetrixParameter = NULL;
-
-			userPriority = GET_USER_PRIORITY_FROM_WME_TSPEC_IE(pData+2);
-			acID = WMEQosTagToACTable[userPriority];
-
-			/* The length is in the second byte of the IE header, after the token and status. */
-			readLen = (TI_UINT32)(*(pData + 3)); 
-
-			/* 4 stands for 1 byte of token + 1 byte of status + 1 byte of EID + 1 byte of len */
-			bodyLen = bodyLen - 4 - readLen; 
-			pData = pData + 4 + readLen;
-
-			while (bodyLen) 
-			{
-				mlmeParser_readXCCOui(pData, bodyLen, &readLen, &XCCIE);
-				bodyLen -= readLen;
-				pData += readLen;
-			}
-
-			XCCMngr_setXCCQoSParams(pQosMngr->hXCCMgr, &XCCIE, acID);
-#endif  /* XCC_MODULE_INCLUDED */
 		}
 	}
 	else
@@ -3067,14 +2998,6 @@ static void qosMngr_storeTspecCandidateParams (tspecInfo_t *pCandidateParams, OS
     pCandidateParams->uMinimumServiceInterval = 0;
     pCandidateParams->uMaximumServiceInterval = 0;
     pCandidateParams->uInactivityInterval = 0;
-#ifdef XCC_MODULE_INCLUDED
-    if (pCandidateParams->AC == QOS_AC_VO)
-    {
-        pCandidateParams->uMinimumServiceInterval = VOICE_SERVICE_INTERVAL;
-        pCandidateParams->uMaximumServiceInterval = VOICE_SERVICE_INTERVAL;
-	pCandidateParams->uInactivityInterval = VOICE_INACTIVITY_INTERVAL;
-    }
-#endif
 }
 
 
