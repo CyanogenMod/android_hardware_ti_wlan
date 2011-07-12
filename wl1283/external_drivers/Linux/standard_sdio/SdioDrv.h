@@ -73,7 +73,9 @@
 #define VDD_VOLTAGE_WINDOW                  0xffffc0
 #define ELP_CTRL_REG_ADDR                   0x1fffc
 
-#define OMAP_MPU_OPP_1GHZ                   1008000000
+/* The OPP values are different between OMAP 4430 and 4460 */
+#define OMAP443X_MPU_OPP_1GHZ               1008000000
+#define OMAP446X_MPU_OPP_1GHZ                920000000
 
 /********************************************************************/
 /*	SDIO driver functions prototypes                                */

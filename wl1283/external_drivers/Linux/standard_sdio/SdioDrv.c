@@ -50,6 +50,7 @@
 #include <linux/mmc/sdio_func.h>
 #include <plat/omap_device.h>
 #include <mach/omap4-common.h>
+#include <plat/cpu.h>
 
 #include "SdioDrvDbg.h"
 #include "SdioDrv.h"
@@ -137,7 +138,11 @@ void sdioDrv_ClaimHost(unsigned int uFunc)
 	/* Call to black DPLL when Wi-Fi is in use */
 	dpll_cascading_blocker_hold(&dummy_cpufreq_dev.dev);
 
-	omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP_MPU_OPP_1GHZ);
+	if (cpu_is_omap443x())
+		omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP443X_MPU_OPP_1GHZ);
+
+	if (cpu_is_omap446x())
+		omap_pm_set_min_mpu_freq(&dummy_cpufreq_dev.dev, OMAP446X_MPU_OPP_1GHZ);
 
 	sdio_claim_host(tiwlan_func[uFunc]);
 }
