@@ -252,8 +252,8 @@ static bool ieee80211_prep_hw_scan(struct ieee80211_local *local)
 	local->hw_scan_req->n_channels = n_chans;
 
 	ielen = ieee80211_build_preq_ies(local, (u8 *)local->hw_scan_req->ie,
-					 req->ie, req->ie_len, band, (u32) -1,
-					 0);
+					 req->ie, req->ie_len, band,
+					 req->rates[band], 0);
 	local->hw_scan_req->ie_len = ielen;
 
 	return true;
@@ -653,13 +653,15 @@ static void ieee80211_scan_state_send_probe(struct ieee80211_local *local,
 {
 	int i;
 	struct ieee80211_sub_if_data *sdata = local->scan_sdata;
+	enum ieee80211_band band = local->hw.conf.channel->band;
 
 	for (i = 0; i < local->scan_req->n_ssids; i++)
 		ieee80211_send_probe_req(
 			sdata, NULL,
 			local->scan_req->ssids[i].ssid,
 			local->scan_req->ssids[i].ssid_len,
-			local->scan_req->ie, local->scan_req->ie_len);
+			local->scan_req->ie, local->scan_req->ie_len,
+			local->scan_req->rates[band]);
 
 	/*
 	 * After sending probe requests, wait for probe responses
