@@ -184,10 +184,6 @@ int hPlatform_DevicePowerOn (void)
 		return -1;
 	}
 
-    /* let the mmc core finish enumeration + initialization before we continue */
-    set_current_state(TASK_INTERRUPTIBLE);
-    schedule_timeout(HZ);
-
 	return 0;
 }
 
