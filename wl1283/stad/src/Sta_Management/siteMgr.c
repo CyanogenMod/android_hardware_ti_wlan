@@ -322,6 +322,8 @@ TI_HANDLE siteMgr_create(TI_HANDLE hOs)
         return NULL;
     }
 
+    os_memoryZero(hOs, pSiteMgr->pSitesMgmtParams, sizeof(sitesMgmtParams_t));
+
     initVec |= (1 << MGMT_PARAMS_INIT_BIT);
 
     pSiteMgr->hOs = hOs;

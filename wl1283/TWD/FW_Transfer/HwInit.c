@@ -732,7 +732,7 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
         }
         else
         {
-            WLAN_OS_REPORT (("Error!! Found unknown Chip Id = 0x%, HW Init Failed. \n", pHwInit->uChipId));
+            WLAN_OS_REPORT (("Error!! Found unknown Chip Id = 0x%x, HW Init Failed. \n", pHwInit->uChipId));
             status = TI_NOK;
             EXCEPT (pHwInit, status)
         }
@@ -963,7 +963,7 @@ static TI_STATUS hwInit_BootSm (TI_HANDLE hHwInit)
             pHwInit->uEEPROMCurLen = DEF_NVS_SIZE;
             pHwInit->pEEPROMBuf = (TI_UINT8*)(&pHwInit->aDefaultNVS[0]);
             WLAN_OS_REPORT (("pHwInit->uEEPROMCurLen: %x\n", pHwInit->uEEPROMCurLen));
-            WLAN_OS_REPORT (("ERROR: If you are not calibating the device, you will soon get errors !!!\n"));
+            WLAN_OS_REPORT (("ERROR: If you are not calibrating the device, you will soon get errors !!!\n"));
 
         }
 

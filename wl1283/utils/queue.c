@@ -109,7 +109,8 @@ static INLINE void AddToTail( TQueNodeHdr *pNode, TQueNodeHdr *pListHead)
  */
 static INLINE void DelFromTail (TQueNodeHdr *pNode)
 {
-	RemoveNode (pNode->pPrev, pNode->pNext);
+	if(pNode)
+		RemoveNode (pNode->pPrev, pNode->pNext);
 }
 
 
