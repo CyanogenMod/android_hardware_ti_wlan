@@ -295,7 +295,39 @@ TI_STATUS cmdHndlr_InsertCommand (TI_HANDLE     hCmdHndlr,
 	context_RequestSchedule (pCmdHndlr->hContext, pCmdHndlr->uContextId);
 
 	/* Wait until the command is executed */
-	os_SignalObjectWait (pCmdHndlr->hOs, pNewCmd->pSignalObject);
+	if(os_SignalObjectWait (pCmdHndlr->hOs, pNewCmd->pSignalObject) != TI_OK)
+	{
+		ti_private_cmd_t *pPcommand = (ti_private_cmd_t *)param3;
+		printk("!!!The timeout cmd is %d\n", cmd);
+
+		if(pPcommand)
+			printk("!!!The timeout priv cmd is %d\n", pPcommand->cmd);
+
+		/* panic-prevention-start
+		 * try to discard the cmd if it has been Dequeue yet
+		 */
+		{
+			TConfigCommand   *ptmpCmd;
+			context_EnterCriticalSection (pCmdHndlr->hContext);
+			do {
+				ptmpCmd = (TConfigCommand *)que_Dequeue(pCmdHndlr->hCmdQueue);
+				if(ptmpCmd == NULL)
+				{
+					break;
+				}
+				if(ptmpCmd == pNewCmd)
+				{
+					os_printf("cmdHndlr_InsertCommand : %x dequeued\n",ptmpCmd );
+				}
+				else
+				{
+					os_printf("cmdHndlr_InsertCommand : %x dequeued and signal set\n", ptmpCmd);
+					os_SignalObjectSet (pCmdHndlr->hOs, ptmpCmd->pSignalObject);
+				}
+			} while (ptmpCmd != NULL);
+			context_LeaveCriticalSection (pCmdHndlr->hContext);
+		} /* panic-prevention-stop */
+	}
 
 	/* After "wait" - the command has already been processed by the drivers' context */
     /* Indicate the end of command process, from adding it to the queue until get return status form it */  
