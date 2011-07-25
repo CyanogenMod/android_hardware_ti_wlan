@@ -1712,6 +1712,21 @@ TI_STATUS qosMngr_setSite(TI_HANDLE hQosMngr, assocRsp_t *assocRsp)
 	if(hQosMngr == NULL)
         return TI_NOK;
 
+	/* This fix was added to solve a bug with PBC connection to Ralink AP.
+	 * Ralink AP sends beacons with WMM enabled, but sends association
+	 * response with WMM disabled, so the driver sends deauth.
+	 * Now, if the beacons with WMM enabled, and the assoc resp without,
+	 * then we connect as none WMM, and then after keys changing we
+	 * connect with WMM (after Keys changing Ralink AP send assoc resp with WMM).
+	 */
+
+	status = verifyWmeIeParams(pQosMngr, (TI_UINT8 *)assocRsp->WMEParams);
+	if((status !=  TI_OK) && (pQosMngr->activeProtocol == QOS_WME))
+	{
+		pQosMngr->activeProtocol = QOS_NONE ;
+	}
+
+
 	/* checking active protocol */
 	switch(pQosMngr->activeProtocol)
 	{
