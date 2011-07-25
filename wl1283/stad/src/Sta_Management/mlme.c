@@ -1289,7 +1289,15 @@ TI_STATUS mlme_authRecv(TI_HANDLE hMlme, mlmeFrameInfo_t *pFrame)
 	if ((pMlme == NULL) || (pFrame->subType != AUTH) || (pMlme->authInfo.authType == AUTH_LEGACY_NONE))
 		return TI_NOK;
 
-	if (pFrame->content.auth.authAlgo != pMlme->authInfo.authType)
+	/*
+	 * If we asked for shared, the failure response can come back as open
+	 * Note this code assumes we try shared first.
+	 */
+	if (pFrame->content.auth.authAlgo != pMlme->authInfo.authType &&
+		!(pFrame->content.auth.status != STATUS_SUCCESSFUL &&
+		  pFrame->content.auth.authAlgo == AUTH_LEGACY_OPEN_SYSTEM &&
+		  pMlme->authInfo.authType == AUTH_LEGACY_SHARED_KEY &&
+		  pMlme->legacyAuthType == RSN_AUTH_AUTO_SWITCH))
 	{
 		return TI_NOK;
 	}
