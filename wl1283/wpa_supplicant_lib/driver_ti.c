@@ -38,6 +38,9 @@
 		return( r ); \
 	}
 
+#define RATE_2_MBPS(a)		((F32)((a) & (NET_BASIC_MASK-1))/2)
+#define NET_BASIC_MASK		0x80
+
 /*-----------------------------------------------------------------------------
 Routine Name: check_and_get_build_channels
 Routine Description: get number of allowed channels according to a build var.
@@ -569,6 +572,21 @@ static int wpa_driver_tista_set_driver_ip(void *priv, u32 ip)
 	return res;
 }
 
+static u8 wpa_driver_tista_get_rate( void *priv)
+{
+	struct wpa_driver_ti_data *drv = (struct wpa_driver_ti_data *)priv;
+	u8 val=0;
+	int res;
+
+	res = wpa_driver_tista_private_send(priv, TIWLN_802_11_CURRENT_RATES_GET,
+					    NULL, 0, &val, sizeof(u8));
+	if (0 != res)
+		wpa_printf(MSG_ERROR, "ERROR - Failed to get current rate");
+	else
+		wpa_printf(MSG_DEBUG, "%s success: rate=%u", __func__, val);
+
+	return (RATE_2_MBPS(val));
+}
 /*-----------------------------------------------------------------------------
 Routine Name: wpa_driver_tista_driver_cmd
 Routine Description: executes driver-specific commands
@@ -643,8 +661,8 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 	else if( os_strcasecmp(cmd, "linkspeed") == 0 ) {
 		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
 
- 		wpa_printf(MSG_DEBUG,"Link Speed command");
-		drv->link_speed = wpa_s->link_speed / 1000000;
+		wpa_printf(MSG_DEBUG,"Link Speed command");
+		drv->link_speed = wpa_driver_tista_get_rate(priv);
 		ret = sprintf(buf,"LinkSpeed %u\n", drv->link_speed);
 		wpa_printf(MSG_DEBUG, "buf %s", buf);
 	}
