@@ -4,15 +4,22 @@ ifeq ($(TARGET_SIMULATOR),true)
   $(error This makefile must not be included when building the simulator)
 endif
 
-ifneq ($(WPA_SUPPLICANT_VERSION),VER_0_6_X)
-  $(error wpa_supplicant_6 is required for this driver)
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_6_X)
+    WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
 endif
 
-WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
+    WPA_SUPPL_DIR = external/wpa_supplicant_8/wpa_supplicant
+endif
 
 include $(WPA_SUPPL_DIR)/.config
 
+ifneq ($(BOARD_WPA_SUPPLICANT_DRIVER),)
+  CONFIG_DRIVER_$(BOARD_WPA_SUPPLICANT_DRIVER) := y
+endif
+
 L_CFLAGS = -DCONFIG_DRIVER_CUSTOM -DWPA_SUPPLICANT_$(WPA_SUPPLICANT_VERSION)
+L_SRC :=
 
 ifdef CONFIG_NO_STDOUT_DEBUG
 L_CFLAGS += -DCONFIG_NO_STDOUT_DEBUG
@@ -34,6 +41,14 @@ ifdef CONFIG_WPS
 L_CFLAGS += -DCONFIG_WPS
 endif
 
+ifdef CONFIG_DRIVER_WEXT
+L_SRC += driver_mac80211.c
+endif
+
+ifdef CONFIG_DRIVER_NL80211
+L_SRC += driver_mac80211_nl.c
+endif
+
 INCLUDES = $(WPA_SUPPL_DIR) \
     $(WPA_SUPPL_DIR)/src \
     $(WPA_SUPPL_DIR)/src/common \
@@ -44,10 +59,10 @@ INCLUDES = $(WPA_SUPPL_DIR) \
     system/core/libnl_2/include
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := libCustomWifi
+LOCAL_MODULE := lib_driver_cmd_wl12xx
 LOCAL_MODULE_TAGS := eng
 LOCAL_SHARED_LIBRARIES := libc libcutils libnl
 LOCAL_CFLAGS := $(L_CFLAGS)
-LOCAL_SRC_FILES := driver_mac80211.c
+LOCAL_SRC_FILES := $(L_SRC)
 LOCAL_C_INCLUDES := $(INCLUDES)
 include $(BUILD_STATIC_LIBRARY)
