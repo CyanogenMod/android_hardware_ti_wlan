@@ -266,7 +266,7 @@ unsigned int scan_merge( struct wpa_driver_ti_data *mydrv,
 #ifdef WPA_SUPPLICANT_VER_0_6_X
 	    p_ssid = scan_get_ssid(res_ptr);
             if (p_ssid && IS_HIDDEN_AP(p_ssid)) {
-                new_ptr = scan_dup(&(scan_ptr->scanres));
+                new_ptr = scan_dup(res_ptr);
                 if (new_ptr) {
                     results[i] = new_ptr;
                     os_free(res_ptr);
