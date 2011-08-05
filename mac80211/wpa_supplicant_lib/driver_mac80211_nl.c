@@ -53,6 +53,81 @@ static void wpa_driver_send_hang_msg(struct wpa_driver_nl80211_data *drv)
 	}
 }
 
+static int get_link_signal(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *sinfo[NL80211_STA_INFO_MAX + 1];
+	static struct nla_policy policy[NL80211_STA_INFO_MAX + 1] = {
+		[NL80211_STA_INFO_SIGNAL] = { .type = NLA_U8 },
+	};
+	struct nlattr *rinfo[NL80211_RATE_INFO_MAX + 1];
+	static struct nla_policy rate_policy[NL80211_RATE_INFO_MAX + 1] = {
+		[NL80211_RATE_INFO_BITRATE] = { .type = NLA_U16 },
+		[NL80211_RATE_INFO_MCS] = { .type = NLA_U8 },
+		[NL80211_RATE_INFO_40_MHZ_WIDTH] = { .type = NLA_FLAG },
+		[NL80211_RATE_INFO_SHORT_GI] = { .type = NLA_FLAG },
+	};
+	struct wpa_signal_info *sig_change = arg;
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+	if (!tb[NL80211_ATTR_STA_INFO] ||
+	    nla_parse_nested(sinfo, NL80211_STA_INFO_MAX,
+			     tb[NL80211_ATTR_STA_INFO], policy))
+		return NL_SKIP;
+	if (!sinfo[NL80211_STA_INFO_SIGNAL])
+		return NL_SKIP;
+
+	sig_change->current_signal =
+		(s8) nla_get_u8(sinfo[NL80211_STA_INFO_SIGNAL]);
+
+	if (sinfo[NL80211_STA_INFO_TX_BITRATE]) {
+		if (nla_parse_nested(rinfo, NL80211_RATE_INFO_MAX,
+				     sinfo[NL80211_STA_INFO_TX_BITRATE],
+				     rate_policy)) {
+			sig_change->current_txrate = 0;
+		} else {
+			if (rinfo[NL80211_RATE_INFO_BITRATE]) {
+				sig_change->current_txrate =
+					nla_get_u16(rinfo[
+					     NL80211_RATE_INFO_BITRATE]) * 100;
+			}
+		}
+	}
+
+	return NL_SKIP;
+}
+
+static int wpa_driver_get_link_signal(void *priv, struct wpa_signal_info *sig)
+{
+	struct i802_bss *bss = priv;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
+	struct nl_msg *msg;
+	int ret = -1;
+
+	sig->current_signal = -9999;
+	sig->current_txrate = 0;
+
+	msg = nlmsg_alloc();
+	if (!msg)
+		return -1;
+
+	genlmsg_put(msg, 0, 0, genl_family_get_id(drv->nl80211), 0,
+		    0, NL80211_CMD_GET_STATION, 0);
+
+	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, drv->ifindex);
+	NLA_PUT(msg, NL80211_ATTR_MAC, ETH_ALEN, drv->bssid);
+
+	ret = send_and_recv_msgs(drv, msg, get_link_signal, sig);
+	msg = NULL;
+	if (ret < 0)
+		wpa_printf(MSG_ERROR, "nl80211: get link signal fail: %d", ret);
+nla_put_failure:
+	nlmsg_free(msg);
+	return ret;
+}
+
 static int wpa_driver_toggle_btcoex_state(char state)
 {
 	int ret;
@@ -137,6 +212,36 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 		} else {
 			wpa_printf(MSG_DEBUG, "invalid btcoex mode: %d", mode);
 			ret = -1;
+		}
+	} else if ((os_strcasecmp(cmd, "RSSI") == 0) || (os_strcasecmp(cmd, "RSSI-APPROX") == 0)) {
+		struct wpa_signal_info sig;
+		int rssi;
+
+		if (!drv->associated)
+			return -1;
+
+		ret = wpa_driver_get_link_signal(priv, &sig);
+		if (ret < 0) {
+			wpa_driver_send_hang_msg(drv);
+		} else {
+			rssi = sig.current_signal;
+			wpa_printf(MSG_DEBUG, "%s rssi %d\n", drv->ssid, rssi);
+			ret = os_snprintf(buf, buf_len, "%s rssi %d\n", drv->ssid, rssi);
+		}
+	} else if (os_strcasecmp(cmd, "LINKSPEED") == 0) {
+		struct wpa_signal_info sig;
+		int linkspeed;
+
+		if (!drv->associated)
+			return -1;
+
+		ret = wpa_driver_get_link_signal(priv, &sig);
+		if (ret < 0) {
+			wpa_driver_send_hang_msg(drv);
+		} else {
+			linkspeed = sig.current_txrate / 1000;
+			wpa_printf(MSG_DEBUG, "LinkSpeed %d\n", linkspeed);
+			ret = os_snprintf(buf, buf_len, "LinkSpeed %d\n", linkspeed);
 		}
 	} else if (os_strcasecmp(cmd, "MACADDR") == 0) {
 		u8 macaddr[ETH_ALEN] = {};
