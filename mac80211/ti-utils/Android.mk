@@ -15,7 +15,7 @@ LOCAL_SRC_FILES := \
 LOCAL_CFLAGS := -DCONFIG_LIBNL20
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) \
-    system/core/libnl_2/include
+    external/libnl-headers
 
 LOCAL_STATIC_LIBRARIES := libnl_2
 LOCAL_MODULE_TAGS := eng

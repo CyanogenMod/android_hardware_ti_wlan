@@ -56,7 +56,7 @@ INCLUDES = $(WPA_SUPPL_DIR) \
     $(WPA_SUPPL_DIR)/src/l2_packet \
     $(WPA_SUPPL_DIR)/src/utils \
     $(WPA_SUPPL_DIR)/src/wps \
-    system/core/libnl_2/include
+    external/libnl-headers
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := lib_driver_cmd_wl12xx
