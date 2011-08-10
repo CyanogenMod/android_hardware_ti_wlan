@@ -807,6 +807,11 @@ TI_STATUS drvMain_Destroy (TI_HANDLE  hDrvMain)
         StaCap_Destroy (pDrvMain->tStadHandles.hStaCap);
     }
 
+    if (pDrvMain->tStadHandles.hApCmd != NULL)
+    {
+        apCmd_destroy(pDrvMain->tStadHandles.hApCmd);
+    }
+
     if (pDrvMain->tStadHandles.hTxnQ != NULL)
     {
         txnQ_Destroy (pDrvMain->tStadHandles.hTxnQ);
