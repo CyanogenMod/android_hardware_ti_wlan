@@ -2110,6 +2110,7 @@ static void __wl1271_op_remove_interface(struct wl1271 *wl,
 	wl->rate_set = CONF_TX_RATE_MASK_BASIC;
 	wl->vif = NULL;
 	wl->filters = 0;
+	wl->tx_spare_blocks = TX_HW_BLOCK_SPARE_DEFAULT;
 	wl1271_free_ap_keys(wl);
 	memset(wl->ap_hlid_map, 0, sizeof(wl->ap_hlid_map));
 	wl->ap_fw_ps_map = 0;
@@ -2773,6 +2774,17 @@ static int wl1271_set_key(struct wl1271 *wl, u16 action, u8 id, u8 key_type,
 		static const u8 bcast_addr[ETH_ALEN] = {
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 		};
+
+		/*
+		 * A STA set to GEM cipher requires 2 tx spare blocks.
+		 * Return to default value when GEM cipher key is removed
+		 */
+		if (key_type == KEY_GEM) {
+			if (action == KEY_ADD_OR_REPLACE)
+				wl->tx_spare_blocks = 2;
+			else if (action == KEY_REMOVE)
+				wl->tx_spare_blocks = TX_HW_BLOCK_SPARE_DEFAULT;
+		}
 
 		addr = sta ? sta->addr : bcast_addr;
 
@@ -4990,6 +5002,7 @@ struct ieee80211_hw *wl1271_alloc_hw(void)
 	wl->tx_security_seq = 0;
 	wl->tx_security_last_seq_lsb = 0;
 	wl->active_sta_count = 0;
+	wl->tx_spare_blocks = TX_HW_BLOCK_SPARE_DEFAULT;
 
 	setup_timer(&wl->rx_streaming_timer, wl1271_rx_streaming_timer,
 		    (unsigned long) wl);
