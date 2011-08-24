@@ -57,3 +57,13 @@ LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 
 ########################
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := wifical.sh
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_PATH := $(TARGET_OUT)/bin
+LOCAL_SRC_FILES := WLAN_Calibration_Script.sh
+LOCAL_MODULE_CLASS := SCRIPT
+include $(BUILD_PREBUILT)
+
+########################

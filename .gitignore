@@ -35,6 +35,10 @@ Module.markers
 Module.symvers
 !.gitignore
 
+# MAC80211 generated files
+modules
+compat_autoconf.h
+
 # stgit generated dirs
 patches-*
 
