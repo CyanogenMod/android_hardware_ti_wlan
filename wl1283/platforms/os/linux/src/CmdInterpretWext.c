@@ -1636,6 +1636,16 @@ event_end:
 
         break;
 
+    case IPC_EVENT_HANG:
+       {
+           TI_UINT8 eventSrting[18];
+           os_printf("**TI_WLAN:HANG EVENT**\n");
+           os_memorySet (pCmdInterpret->hOs,&wrqu, 0, sizeof(wrqu));
+           wrqu.data.length = sprintf(eventSrting, "HANG");
+           wireless_send_event(NETDEV(pCmdInterpret->hOs), IWEVCUSTOM, &wrqu, (TI_UINT8 *)eventSrting);
+       }
+       break;
+
     case IPC_EVENT_SCAN_COMPLETE:
         {
 			TI_INT32 *pClient;
