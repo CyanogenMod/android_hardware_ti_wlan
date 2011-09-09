@@ -247,7 +247,12 @@ void scanCncnOsSm_ActionStartGScan (TI_HANDLE hScanCncn)
                                        SCAN_OID_DEFAULT_EARLY_TERMINATION_EVENT_ACTIVE_G,
                                        SCAN_OID_DEFAULT_EARLY_TERMINATION_COUNT_ACTIVE_G);
     }
-    pScanCncn->tOsScanParams.numOfChannels = uValidChannelsCount;
+    if (uValidChannelsCount < pScanCncn->tOsScanParams.numOfChannels) /* there are channels requested by upper layers that are not allowed according to RegDomain */
+    {
+        pScanCncn->tOsScanParams.numOfChannels = uValidChannelsCount;
+    }
+
+    TRACE1(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncnOsSm_ActionStartGScan: numOfChannels is %d regardless of RegDomain\n", pScanCncn->tOsScanParams.numOfChannels);
 
     /* check that some channels are available */
     if ( uValidChannelsCount > 0 )

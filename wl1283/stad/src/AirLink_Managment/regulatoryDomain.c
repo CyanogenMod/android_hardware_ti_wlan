@@ -1143,7 +1143,7 @@ static void setSupportedChannelsAccording2ScanControlTable(regulatoryDomain_t  *
 		/* Calculate Domain Tx Power - channelMask units are in Dbm. */
 		pRegulatoryDomain->supportedChannels_band_2_4[channelIndex].uMaxTxPowerDomain = 
 						DBM2DBMDIV10(channelMask & MASK_TX_POWER);
-		if (channelMask & (MASK_ACTIVE_ALLOWED | MASK_FREQ_ALLOWED))
+		if (channelMask & MASK_ACTIVE_ALLOWED)
 		{	/* The channel is allowed for Active & Passive scans */
 			if (pRegulatoryDomain->regulatoryDomainEnabled)
 			{	/* All channels should be invalid for Active scan */
@@ -1183,7 +1183,7 @@ static void setSupportedChannelsAccording2ScanControlTable(regulatoryDomain_t  *
 			DBM2DBMDIV10(channelMask & MASK_TX_POWER);
 
 		pRegulatoryDomain->supportedChannels_band_5[channelIndexInBand5].bChanneInCountryIe = TI_FALSE;
-		if (channelMask & (MASK_ACTIVE_ALLOWED | MASK_FREQ_ALLOWED))
+		if (channelMask & MASK_ACTIVE_ALLOWED)
 		{	 /* The channel is allowed for Active & Passive scans */
 			if (pRegulatoryDomain->regulatoryDomainEnabled)
 			{	/* All channels should be invalid for Active scan */

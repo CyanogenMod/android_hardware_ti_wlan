@@ -216,6 +216,9 @@ TI_STATUS scanCncnApp_SetParam (TI_HANDLE hScanCncn, paramInfo_t *pParam)
 
 		pScanCncn->tOsScanParams.scanType = pParam->content.pScanParams->scanType;
         pScanCncn->tOsScanParams.eScanClient = pParam->content.pScanParams->eScanClient;
+		pScanCncn->tOsScanParams.numOfChannels = pParam->content.pScanParams->numOfChannels;
+
+		TRACE2(pScanCncn->hReport, REPORT_SEVERITY_INFORMATION , "scanCncnApp_SetParam: scanType is %d and numOfChannels is %d\n", pParam->content.pScanParams->scanType, pParam->content.pScanParams->numOfChannels);
 
 
         /* Perform aging process before the scan */

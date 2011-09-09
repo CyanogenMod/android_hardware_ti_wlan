@@ -606,6 +606,7 @@ int cmdInterpret_convertAndExecute(TI_HANDLE hCmdInterpret, TConfigCommand *cmdO
                 pParam->content.pScanParams->scanType = SCAN_TYPE_TRIGGERED_ACTIVE;
 			}
 
+            pParam->content.pScanParams->numOfChannels = scanReq.num_channels;
             pParam->paramType = SCAN_CNCN_BSSID_LIST_SCAN_PARAM;
             pParam->paramLength = sizeof(TScanParams);
             res = cmdDispatch_SetParam (pCmdInterpret->hCmdDispatch, pParam );
