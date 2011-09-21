@@ -929,12 +929,6 @@ void ieee80211_send_auth(struct ieee80211_sub_if_data *sdata,
 	ieee80211_tx_skb(sdata, skb);
 }
 
-static inline bool is_11b_bitrate(u16 bitrate)
-{
-	return (bitrate == 10 || bitrate == 20 || bitrate == 55 ||
-		bitrate == 110);
-}
-
 int ieee80211_build_preq_ies(struct ieee80211_local *local, u8 *buffer,
 			     const u8 *ie, size_t ie_len,
 			     enum ieee80211_band band, u32 rate_mask,
@@ -947,21 +941,15 @@ int ieee80211_build_preq_ies(struct ieee80211_local *local, u8 *buffer,
 	u8 rates[32];
 	int num_rates;
 	int ext_rates_len;
-	bool is_p2p;
 
 	sband = local->hw.wiphy->bands[band];
 
 	pos = buffer;
 
-	is_p2p = !!cfg80211_find_vendor_ie(WLAN_OUI_WFA, WLAN_OUI_TYPE_WFA_P2P,
-					   ie, ie_len);
-
 	num_rates = 0;
 	for (i = 0; i < sband->n_bitrates; i++) {
 		if ((BIT(i) & rate_mask) == 0)
 			continue; /* skip rate */
-		if (is_p2p && is_11b_bitrate(sband->bitrates[i].bitrate))
-			continue;
 		rates[num_rates++] = (u8) (sband->bitrates[i].bitrate / 5);
 	}
 
