@@ -415,6 +415,7 @@ static int __ieee80211_start_scan(struct ieee80211_sub_if_data *sdata,
 			req->n_channels * sizeof(req->channels[0]);
 		local->hw_scan_req->ie = ies;
 
+		local->hw_scan_req->no_cck = req->no_cck;
 		local->hw_scan_band = 0;
 
 		/*
