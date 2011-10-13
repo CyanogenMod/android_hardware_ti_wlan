@@ -95,6 +95,11 @@ ifdef CONFIG_WPS
 L_CFLAGS += -DCONFIG_WPS
 endif
 
+# used to fix wifi signal refresh on rssi-approx
+ifeq ($(WPA_SUPPL_APPROX_USE_RSSI),true)
+L_CFLAGS += -DAPPROX_USE_RSSI_COMMAND
+endif
+
 ########################
  
 include $(CLEAR_VARS)

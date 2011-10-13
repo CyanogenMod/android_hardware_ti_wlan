@@ -676,6 +676,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 		ret = sprintf(buf,"Scan-Channels = %d\n", drv->scan_channels);
 		wpa_printf(MSG_DEBUG, "buf %s", buf);
 	}
+#ifndef APPROX_USE_RSSI_COMMAND
 	else if( os_strcasecmp(cmd, "rssi-approx") == 0 ) {
 		scan_result_t *cur_res;
 		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
@@ -698,13 +699,14 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 			}
 		}
 	}
-	else if( os_strcasecmp(cmd, "rssi") == 0 ) {
+#endif
+	else if( os_strncasecmp(cmd, "rssi", 4) == 0 ) {
 		u8 ssid[MAX_SSID_LEN];
 		scan_result_t *cur_res;
 		struct wpa_supplicant *wpa_s = (struct wpa_supplicant *)(drv->ctx);
 		int rssi_data, rssi_beacon, len;
 
-		wpa_printf(MSG_DEBUG,"rssi command");
+		wpa_printf(MSG_DEBUG,"%s command", cmd);
 
 		ret = wpa_driver_tista_get_rssi(priv, &rssi_data, &rssi_beacon);
 		if( ret == 0 ) {
