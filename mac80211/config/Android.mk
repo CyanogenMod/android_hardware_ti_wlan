@@ -18,16 +18,6 @@ LOCAL_PATH := $(call my-dir)
 ########################
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := wpa_supplicant.conf
-LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := ETC
-LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/wifi
-LOCAL_SRC_FILES := $(LOCAL_MODULE)
-include $(BUILD_PREBUILT)
-
-########################
-
-include $(CLEAR_VARS)
 LOCAL_MODULE := hostapd.conf
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
@@ -75,5 +65,22 @@ LOCAL_MODULE_PATH := $(TARGET_OUT)/bin
 LOCAL_SRC_FILES := WLAN_Calibration_Script.sh
 LOCAL_MODULE_CLASS := SCRIPT
 include $(BUILD_PREBUILT)
+
+########################
+
+#
+# wpa_supplicant.conf is now generated on the fly
+#
+
+WIFI_DRIVER_SOCKET_IFACE := wlan0
+ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_8_X)
+  include external/wpa_supplicant_8/wpa_supplicant/wpa_supplicant_conf.mk
+else
+ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_6_X)
+  include external/wpa_supplicant_6/wpa_supplicant/wpa_supplicant_conf.mk
+else
+  include external/wpa_supplicant/wpa_supplicant_conf.mk
+endif
+endif
 
 ########################
