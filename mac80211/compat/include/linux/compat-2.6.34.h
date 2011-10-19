@@ -262,6 +262,11 @@ static inline int usb_disable_autosuspend(struct usb_device *udev)
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
 #define round_down(x, y) ((x) & ~__round_mask(x, y))
 
+static inline int rcu_read_lock_held(void)
+{
+	return 1;
+}
+
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34)) */
 
 #endif /* LINUX_26_34_COMPAT_H */

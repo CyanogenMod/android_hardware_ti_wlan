@@ -33,4 +33,8 @@ compat-$(CONFIG_COMPAT_KERNEL_2_6_38) += compat-2.6.38.o
 compat-$(CONFIG_COMPAT_KERNEL_2_6_39) += \
 	compat-2.6.39.o \
 	kstrtox.o
+compat-$(CONFIG_COMPAT_KERNEL_3_0) += compat-3.0.o
+compat-$(CONFIG_COMPAT_KERNEL_3_1) += \
+	cordic.o \
+	crc8.o
 

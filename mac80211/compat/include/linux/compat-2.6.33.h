@@ -138,6 +138,12 @@ static inline bool pci_is_pcie(struct pci_dev *dev)
 #endif
 }
 
+#ifdef __GNUC__
+#define __always_unused			__attribute__((unused))
+#else
+#define __always_unused			/* unimplemented */
+#endif
+
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33)) */
 
 #endif /* LINUX_26_33_COMPAT_H */

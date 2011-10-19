@@ -250,6 +250,12 @@ static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep)
 	return ep->speed;
 }
 
+/**
+ * lower_32_bits - return bits 0-31 of a number
+ * @n: the number we're accessing
+ */
+#define lower_32_bits(n) ((u32)(n))
+
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27)) */
 
 #endif /* LINUX_26_27_COMPAT_H */
