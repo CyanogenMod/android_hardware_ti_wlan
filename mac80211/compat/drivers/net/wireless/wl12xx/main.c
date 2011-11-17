@@ -2296,6 +2296,9 @@ static int wl1271_sta_handle_idle(struct wl1271 *wl, bool idle)
 {
 	int ret;
 
+	if (idle == !!test_bit(WL1271_FLAG_IDLE, &wl->flags))
+		return 0;
+
 	if (idle) {
 		if (test_bit(WL1271_FLAG_ROC, &wl->flags)) {
 			ret = wl1271_croc(wl, wl->dev_role_id);
