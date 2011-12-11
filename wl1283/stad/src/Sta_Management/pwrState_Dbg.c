@@ -55,8 +55,10 @@
 
 static void printBinDump(TI_UINT8* buf, TI_UINT32 len)
 {
+#ifdef REPORT_LOG
 	static char* nibbleToStr[] = {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
 			                      "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111",};
+#endif
 	TI_UINT32 offset = 0;
 	TI_UINT8  nibble;
 

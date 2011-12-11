@@ -104,6 +104,11 @@ else
     DK_DEFINES += -U REPORT_LOG
     DK_DEFINES += -O2
 endif
+
+ifeq ($(REPORT_LOG),n)
+    DK_DEFINES += -U REPORT_LOG
+endif
+
 ifeq ($(KERNEL_DEBUGGER),y)
     DK_DEFINES += -g -O2
 	STRIP = n

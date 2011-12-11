@@ -224,7 +224,9 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
     TI_UINT32            TailIndex=0;
     TI_UINT32            ModuleIndex=0;
 
+#ifdef REPORT_LOG
     PRINTF(DBG_INIT_LOUD, (" EvHandlerSendEvent %d  \n", EvType));
+#endif
 
     if(hEvHandler == NULL){
         PRINT(DBG_INIT_ERROR, "EvHandlerSendEvent Bad Handle passed \n");
@@ -270,9 +272,11 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
             
             if(pNewEvent->EvParams.uDeliveryType ==  DELIVERY_PUSH)
             {
+#ifdef REPORT_LOG
                     PRINTF(DBG_INIT_LOUD, (" EvHandlerSendEvent %d to OS \n", EvType));                
                     PRINTF(DBG_INIT_LOUD, ("EvHandlerSendEvent Matching OS Registered event found at EvType = %d,"
                                           "ModuleIndex = %d  \n", EvType, ModuleIndex));
+#endif
                     IPC_EventSend (pEvHandler->hOs,(TI_UINT8*)pNewEvent,sizeof(IPC_EV_DATA));
             }
             else {
@@ -281,9 +285,11 @@ TI_UINT32 EvHandlerSendEvent(TI_HANDLE hEvHandler, TI_UINT32 EvType, TI_UINT8* p
                 pEvHandler->SendEventArray.TailIndex = (TailIndex+1) % MAX_SEND_EVENTS;
                 pEvHandler->SendEventArray.Counter++;
                 TailIndex   = pEvHandler->SendEventArray.TailIndex;
+#ifdef REPORT_LOG
                 PRINTF(DBG_INIT_LOUD, (" EvHandlerSendEvent %d to User Mode \n", EvType));
                 PRINTF(DBG_INIT_LOUD, ("EvHandlerSendEvent Matching User Mode Registered event found at EvType = %d,"
                                        "ModuleIndex = %d  \n", EvType, ModuleIndex));
+#endif
                 if (pEvHandler->SendEventArray.Counter == 1)
                 {
                     IPC_EventSend (pEvHandler->hOs,NULL,0);

@@ -277,9 +277,11 @@ static TI_STATUS rsnWait_to_connected(void *pData)
     /* Update current BSS connection type and mode */
     currBSS_updateConnectedState(pConn->hCurrBss, TI_TRUE, BSS_INDEPENDENT);
 
+#ifdef REPORT_LOG
     WLAN_OS_REPORT(("************ NEW CONNECTION ************\n"));
     siteMgr_printPrimarySiteDesc(pConn->hSiteMgr);
     WLAN_OS_REPORT(("****************************************\n"));
+#endif
 
 	sme_ReportConnStatus(((conn_t *)pData)->hSmeSm, STATUS_SUCCESSFUL, 0);
 

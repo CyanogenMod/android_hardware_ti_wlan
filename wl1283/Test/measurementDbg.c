@@ -104,7 +104,9 @@ void measurementDebugFunction(TI_HANDLE hMeasurementMgr, TI_HANDLE hSwitchChanne
     TNoiseHistogram pNoiseHistParams;
 	measurementMgr_t * pMeasurementMgr = (measurementMgr_t *) hMeasurementMgr;
 	TI_UINT8			SwitchChannelParam = *(TI_UINT8*)pParam;
+#ifdef REPORT_LOG
 	siteMgr_t		*pSiteMgr = (siteMgr_t *) pMeasurementMgr->hSiteMgr;
+#endif
     TI_UINT32       bufferLen = 0;
     TI_UINT8        channel = 0;
     TI_UINT8        mode = 0; /* 0 = passive, 1=active, 2=table */
