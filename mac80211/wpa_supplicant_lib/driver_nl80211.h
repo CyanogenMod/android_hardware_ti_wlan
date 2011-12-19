@@ -67,6 +67,7 @@
 
 struct nl80211_global {
 	struct dl_list interfaces;
+	int if_add_ifindex;
 };
 
 struct i802_bss {
@@ -91,6 +92,7 @@ struct wpa_driver_nl80211_data {
 	int ifindex;
 	int if_removed;
 	int if_disabled;
+	int ignore_if_down_event;
 	struct rfkill_data *rfkill;
 	struct wpa_driver_capa capa;
 	int has_capability;
@@ -113,14 +115,13 @@ struct wpa_driver_nl80211_data {
 	int associated;
 	u8 ssid[32];
 	size_t ssid_len;
-	int nlmode;
-	int ap_scan_as_station;
+	enum nl80211_iftype nlmode;
+	enum nl80211_iftype ap_scan_as_station;
 	unsigned int assoc_freq;
 
 	int monitor_sock;
 	int monitor_ifidx;
 	int no_monitor_iface_capab;
-	int disable_11b_rates;
 
 	unsigned int pending_remain_on_chan:1;
 
@@ -128,6 +129,7 @@ struct wpa_driver_nl80211_data {
 	u64 send_action_cookie;
 
 	unsigned int last_mgmt_freq;
+	unsigned int ap_oper_freq;
 
 	struct wpa_driver_scan_filter *filter_ssids;
 	size_t num_filter_ssids;
