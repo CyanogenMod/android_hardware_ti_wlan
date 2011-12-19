@@ -401,8 +401,10 @@ static int __devinit wl1271_probe(struct spi_device *spi)
 		goto out_free;
 	}
 
-	wl->ref_clock = pdata->board_ref_clock;
-	wl->tcxo_clock = pdata->board_tcxo_clock;
+	if (wl->ref_clock < 0)
+		wl->ref_clock = pdata->board_ref_clock;
+	if (wl->tcxo_clock < 0)
+		wl->tcxo_clock = pdata->board_tcxo_clock;
 	wl->platform_quirks = pdata->platform_quirks;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)

@@ -249,7 +249,8 @@
  *	passed, all channels allowed for the current regulatory domain
  *	are used.  Extra IEs can also be passed from the userspace by
  *	using the %NL80211_ATTR_IE attribute.
- * @NL80211_CMD_STOP_SCHED_SCAN: stop a scheduled scan
+ * @NL80211_CMD_STOP_SCHED_SCAN: stop a scheduled scan.  Returns -ENOENT
+ *	if scheduled scan is not running.
  * @NL80211_CMD_SCHED_SCAN_RESULTS: indicates that there are scheduled scan
  *	results available.
  * @NL80211_CMD_SCHED_SCAN_STOPPED: indicates that the scheduled scan has
@@ -487,6 +488,19 @@
  *	more background information, see
  *	http://wireless.kernel.org/en/users/Documentation/WoWLAN.
  *
+ * @NL80211_CMD_SCAN_CANCEL: Stop currently running scan (both sw and hw).
+ *	This operation will eventually invoke %NL80211_CMD_SCAN_ABORTED
+ *	event, partial scan results will be available. Returns -ENOENT
+ *	if scan is not running.
+ *
+ * @NL80211_CMD_IM_SCAN_RESULT: Intermediate scan result notification event,
+ *	this event could be enabled with @NL80211_ATTR_IM_SCAN_RESULT
+ *	flag during @NL80211_CMD_TRIGGER_SCAN. This event contains
+ *	%NL80211_BSS_BSSID which is used to specify the BSSID of received
+ *	scan result and %NL80211_BSS_SIGNAL_MBM to indicate signal strength.
+ *	On reception of this notification, userspace may decide to stop earlier
+ *	currently running scan with (@NL80211_CMD_SCAN_CANCEL).
+ *
  * @NL80211_CMD_MAX: highest used command number
  * @__NL80211_CMD_AFTER_LAST: internal use
  */
@@ -608,6 +622,10 @@ enum nl80211_commands {
 	NL80211_CMD_STOP_SCHED_SCAN,
 	NL80211_CMD_SCHED_SCAN_RESULTS,
 	NL80211_CMD_SCHED_SCAN_STOPPED,
+
+	NL80211_CMD_SCAN_CANCEL,
+
+	NL80211_CMD_IM_SCAN_RESULT,
 
 	/* add new commands above here */
 
@@ -749,8 +767,14 @@ enum nl80211_commands {
  *
  * @NL80211_ATTR_MAX_NUM_SCAN_SSIDS: number of SSIDs you can scan with
  *	a single scan request, a wiphy attribute.
+ * @NL80211_ATTR_MAX_NUM_SCHED_SCAN_SSIDS: number of SSIDs you can
+ *	scan with a single scheduled scan request, a wiphy attribute.
  * @NL80211_ATTR_MAX_SCAN_IE_LEN: maximum length of information elements
  *	that can be added to a scan request
+ * @NL80211_ATTR_MAX_SCHED_SCAN_IE_LEN: maximum length of information
+ *	elements that can be added to a scheduled scan request
+ * @NL80211_ATTR_MAX_MATCH_SETS: maximum number of sets that can be
+ *	used with @NL80211_ATTR_SCHED_SCAN_MATCH, a wiphy attribute.
  *
  * @NL80211_ATTR_SCAN_FREQUENCIES: nested attribute with frequencies (in MHz)
  * @NL80211_ATTR_SCAN_SSIDS: nested attribute with SSIDs, leave out for passive
@@ -991,6 +1015,24 @@ enum nl80211_commands {
 
  * @NL80211_ATTR_SCHED_SCAN_INTERVAL: Interval between scheduled scan
  *	cycles, in msecs.
+
+ * @NL80211_ATTR_SCHED_SCAN_MATCH: Nested attribute with one or more
+ *	sets of attributes to match during scheduled scans.  Only BSSs
+ *	that match any of the sets will be reported.  These are
+ *	pass-thru filter rules.
+ *	For a match to succeed, the BSS must match all attributes of a
+ *	set.  Since not every hardware supports matching all types of
+ *	attributes, there is no guarantee that the reported BSSs are
+ *	fully complying with the match sets and userspace needs to be
+ *	able to ignore them by itself.
+ *	Thus, the implementation is somewhat hardware-dependent, but
+ *	this is only an optimization and the userspace application
+ *	needs to handle all the non-filtered results anyway.
+ *	If the match attributes don't make sense when combined with
+ *	the values passed in @NL80211_ATTR_SCAN_SSIDS (eg. if an SSID
+ *	is included in the probe request, but the match attributes
+ *	will never let it go through), -EINVAL may be returned.
+ *	If ommited, no filtering is done.
  *
  * @NL80211_ATTR_INTERFACE_COMBINATIONS: Nested attribute listing the supported
  *	interface combinations. In each nested item, it contains attributes
@@ -1002,6 +1044,34 @@ enum nl80211_commands {
  *
  * @NL80211_ATTR_STA_WME: Nested attribute containing the wme configuration
  *	of the station, see &enum nl80211_sta_wme_attr.
+ *
+ * @%NL80211_ATTR_IM_SCAN_RESULT: Flag attribute to enable intermediate
+ *	scan result notification event (%NL80211_CMD_IM_SCAN_RESULT)
+ *	for the %NL80211_CMD_TRIGGER_SCAN command.
+ *	When set: will notify on each new scan result in the cache.
+ * @%NL80211_ATTR_IM_SCAN_RESULT_MIN_RSSI: Intermediate event filtering.
+ *	When set: will notify only those new scan result whose signal
+ *	strength of probe response/beacon (in dBm) is stronger than this
+ *	negative value (usually: -20 dBm > X > -95 dBm).
+ *
+ * @%NL80211_ATTR_CAPABILITIES: Flags (u32) attribute to expose device
+ *	capabilities flags which defined in nl80211_device_capabilities.
+ *
+ * @%NL80211_ATTR_SCAN_MIN_DWELL: Minimum scan dwell time (in TUs), u32
+ *	attribute to setup minimum time to wait on each channel, if received
+ *	at least one probe response during this period will continue waiting
+ *	%NL80211_ATTR_SCAN_MAX_DWELL, otherwise will move to next channel.
+ *	Relevant only for active scan, used with %NL80211_CMD_TRIGGER_SCAN
+ *	command. This is optional attribute, so if it's not set driver should
+ *	use hardware default values.
+ * @%NL80211_ATTR_SCAN_MAX_DWELL: Maximum scan dwell time (in TUs), u32
+ *	attribute to setup maximum time to wait on each channel.
+ *	Relevant only for active scan, used with %NL80211_CMD_TRIGGER_SCAN
+ *	command. This is optional attribute, so if it's not set driver should
+ *	use hardware default values.
+ * @%NL80211_ATTR_SCAN_NUM_PROBE:  Attribute (u8) to setup number of probe
+ *	requests to transmit on each active scan channel, used with
+ *	%NL80211_CMD_TRIGGER_SCAN command.
  *
  * @NL80211_ATTR_SCAN_SUPP_RATES: rates per to be advertised as supported in scan,
  *	nested array attribute containing an entry for each band, with the entry
@@ -1216,6 +1286,24 @@ enum nl80211_attrs {
 	NL80211_ATTR_SOFTWARE_IFTYPES,
 
 	NL80211_ATTR_STA_WME,
+
+	/* FIXME: just do it here now, because I want to keep the
+	   changes in my hostap.  This must be moved below
+	   NL80211_ATTR_SCAN_NUM_PROBE */
+	NL80211_ATTR_MAX_NUM_SCHED_SCAN_SSIDS,
+	NL80211_ATTR_MAX_SCHED_SCAN_IE_LEN,
+	NL80211_ATTR_SCHED_SCAN_MATCH,
+	NL80211_ATTR_MAX_MATCH_SETS,
+
+	NL80211_ATTR_IM_SCAN_RESULT,
+	NL80211_ATTR_IM_SCAN_RESULT_MIN_RSSI,
+
+	NL80211_ATTR_CAPABILITIES,
+
+	NL80211_ATTR_SCAN_MIN_DWELL,
+	NL80211_ATTR_SCAN_MAX_DWELL,
+	NL80211_ATTR_SCAN_NUM_PROBE,
+
 	NL80211_ATTR_SCAN_SUPP_RATES,
 
 	NL80211_ATTR_TX_NO_CCK_RATE,
@@ -1320,6 +1408,7 @@ enum nl80211_iftype {
  * @NL80211_STA_FLAG_MFP: station uses management frame protection
  * @NL80211_STA_FLAG_AUTHENTICATED: station is authenticated
  * @NL80211_STA_FLAG_MAX: highest station flag number currently defined
+ * @NL80211_STA_FLAG_PRE_ASSOC: station is pre-associated
  * @__NL80211_STA_FLAG_AFTER_LAST: internal use
  */
 enum nl80211_sta_flags {
@@ -1329,6 +1418,8 @@ enum nl80211_sta_flags {
 	NL80211_STA_FLAG_WME,
 	NL80211_STA_FLAG_MFP,
 	NL80211_STA_FLAG_AUTHENTICATED,
+	NL80211_STA_FLAG_TDLS_PEER,
+	NL80211_STA_FLAG_PRE_ASSOC,
 
 	/* keep last */
 	__NL80211_STA_FLAG_AFTER_LAST,
@@ -1678,6 +1769,26 @@ enum nl80211_reg_rule_attr {
 	/* keep last */
 	__NL80211_REG_RULE_ATTR_AFTER_LAST,
 	NL80211_REG_RULE_ATTR_MAX = __NL80211_REG_RULE_ATTR_AFTER_LAST - 1
+};
+
+/**
+ * enum nl80211_sched_scan_match_attr - scheduled scan match attributes
+ * @__NL80211_SCHED_SCAN_MATCH_ATTR_INVALID: attribute number 0 is reserved
+ * @NL80211_SCHED_SCAN_MATCH_ATTR_SSID: SSID to be used for matching,
+ * only report BSS with matching SSID.
+ * @NL80211_SCHED_SCAN_MATCH_ATTR_MAX: highest scheduled scan filter
+ *	attribute number currently defined
+ * @__NL80211_SCHED_SCAN_MATCH_ATTR_AFTER_LAST: internal use
+ */
+enum nl80211_sched_scan_match_attr {
+	__NL80211_SCHED_SCAN_MATCH_ATTR_INVALID,
+
+	NL80211_ATTR_SCHED_SCAN_MATCH_SSID,
+
+	/* keep last */
+	__NL80211_SCHED_SCAN_MATCH_ATTR_AFTER_LAST,
+	NL80211_SCHED_SCAN_MATCH_ATTR_MAX =
+		__NL80211_SCHED_SCAN_MATCH_ATTR_AFTER_LAST - 1
 };
 
 /**
@@ -2406,5 +2517,23 @@ enum nl80211_sta_wme_attr {
 	__NL80211_STA_WME_AFTER_LAST,
 	NL80211_STA_WME_MAX = __NL80211_STA_WME_AFTER_LAST - 1
 };
+
+/**
+ * enum nl80211_device_capabilities - device capabilities flags.
+ * @NL80211_DEV_CAPA_SUPPORTS_CANCEL_SCAN: device supports cancel scan command.
+ * @NL80211_DEV_CAPA_SUPPORTS_IM_SCAN_EVENT: device supports intermediate scan
+ * events.
+ */
+enum nl80211_device_capabilities {
+	NL80211_DEV_CAPA_SUPPORTS_CANCEL_SCAN	= (1<<0),
+	NL80211_DEV_CAPA_SUPPORTS_IM_SCAN_EVENT	= (1<<1),
+
+	/* add new flags above here */
+
+	/* keep last */
+	NUM_NL80211_DEV_CAPA,
+	MAX_NL80211_DEV_CAPA = NUM_NL80211_DEV_CAPA - 1
+};
+
 
 #endif /* __LINUX_NL80211_H */

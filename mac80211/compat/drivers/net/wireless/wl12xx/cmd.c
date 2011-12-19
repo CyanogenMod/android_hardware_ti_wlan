@@ -1197,28 +1197,31 @@ out:
 
 int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, __be32 ip_addr)
 {
-	int ret;
-	struct wl12xx_arp_rsp_template tmpl;
+	int ret, extra;
+	u16 fc;
+	struct sk_buff *skb;
+	struct wl12xx_arp_rsp_template *tmpl;
 	struct ieee80211_hdr_3addr *hdr;
 	struct arphdr *arp_hdr;
 
-	memset(&tmpl, 0, sizeof(tmpl));
+	skb = dev_alloc_skb(sizeof(*hdr) + sizeof(__le16) + sizeof(*tmpl) +
+			    WL1271_EXTRA_SPACE_MAX);
+	if (!skb) {
+		wl1271_error("failed to allocate buffer for arp rsp template");
+		return -ENOMEM;
+	}
 
-	/* mac80211 header */
-	hdr = &tmpl.hdr;
-	hdr->frame_control = cpu_to_le16(IEEE80211_FTYPE_DATA |
-					 IEEE80211_STYPE_DATA |
-					 IEEE80211_FCTL_TODS);
-	memcpy(hdr->addr1, wl->vif->bss_conf.bssid, ETH_ALEN);
-	memcpy(hdr->addr2, wl->vif->addr, ETH_ALEN);
-	memset(hdr->addr3, 0xff, ETH_ALEN);
+	skb_reserve(skb, sizeof(*hdr) + WL1271_EXTRA_SPACE_MAX);
+
+	tmpl = (struct wl12xx_arp_rsp_template *)skb_put(skb, sizeof(*tmpl));
+	memset(tmpl, 0, sizeof(tmpl));
 
 	/* llc layer */
-	memcpy(tmpl.llc_hdr, rfc1042_header, sizeof(rfc1042_header));
-	tmpl.llc_type = cpu_to_be16(ETH_P_ARP);
+	memcpy(tmpl->llc_hdr, rfc1042_header, sizeof(rfc1042_header));
+	tmpl->llc_type = cpu_to_be16(ETH_P_ARP);
 
 	/* arp header */
-	arp_hdr = &tmpl.arp_hdr;
+	arp_hdr = &tmpl->arp_hdr;
 	arp_hdr->ar_hrd = cpu_to_be16(ARPHRD_ETHER);
 	arp_hdr->ar_pro = cpu_to_be16(ETH_P_IP);
 	arp_hdr->ar_hln = ETH_ALEN;
@@ -1226,13 +1229,59 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, __be32 ip_addr)
 	arp_hdr->ar_op = cpu_to_be16(ARPOP_REPLY);
 
 	/* arp payload */
-	memcpy(tmpl.sender_hw, wl->vif->addr, ETH_ALEN);
-	tmpl.sender_ip = ip_addr;
+	memcpy(tmpl->sender_hw, wl->vif->addr, ETH_ALEN);
+	tmpl->sender_ip = ip_addr;
+
+	/* encryption space */
+	switch (wl->encryption_type) {
+	case KEY_TKIP:
+		extra = WL1271_EXTRA_SPACE_TKIP;
+		break;
+	case KEY_AES:
+		extra = WL1271_EXTRA_SPACE_AES;
+		break;
+	case KEY_NONE:
+	case KEY_WEP:
+	case KEY_GEM:
+		extra = 0;
+		break;
+	default:
+		wl1271_warning("Unknown encryption type: %d",
+			       wl->encryption_type);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (extra) {
+		u8 *space = skb_push(skb, extra);
+		memset(space, 0, extra);
+	}
+
+	/* QoS header - BE */
+	if (wl->qos)
+		memset(skb_push(skb, sizeof(__le16)), 0, sizeof(__le16));
+
+	/* mac80211 header */
+	hdr = (struct ieee80211_hdr_3addr *)skb_push(skb, sizeof(*hdr));
+	memset(hdr, 0, sizeof(hdr));
+	fc = IEEE80211_FTYPE_DATA | IEEE80211_FCTL_TODS;
+	if (wl->qos)
+		fc |= IEEE80211_STYPE_QOS_DATA;
+	else
+		fc |= IEEE80211_STYPE_DATA;
+	if (wl->encryption_type != KEY_NONE)
+		fc |= IEEE80211_FCTL_PROTECTED;
+
+	hdr->frame_control = cpu_to_le16(fc);
+	memcpy(hdr->addr1, wl->vif->bss_conf.bssid, ETH_ALEN);
+	memcpy(hdr->addr2, wl->vif->addr, ETH_ALEN);
+	memset(hdr->addr3, 0xff, ETH_ALEN);
 
 	ret = wl1271_cmd_template_set(wl, CMD_TEMPL_ARP_RSP,
-				      &tmpl, sizeof(tmpl), 0,
+				      skb->data, skb->len, 0,
 				      wl->basic_rate);
-
+out:
+	dev_kfree_skb(skb);
 	return ret;
 }
 

@@ -792,6 +792,9 @@ struct cfg80211_ssid {
  * @wiphy: the wiphy this was for
  * @dev: the interface
  * @aborted: (internal) scan request was notified as aborted
+ * @min_dwell: minimum time to wait on each channel for active scans
+ * @max_dwell: maximum time to wait on each channel for active scans
+ * @num_probe: number of probe requests to transmit on each active scan channel
  * @no_cck: used to send probe requests at non CCK rate in 2GHz band
  */
 struct cfg80211_scan_request {
@@ -809,8 +812,21 @@ struct cfg80211_scan_request {
 	bool aborted;
 	bool no_cck;
 
+	u32 min_dwell;
+	u32 max_dwell;
+	u8 num_probe;
+
 	/* keep last */
 	struct ieee80211_channel *channels[0];
+};
+
+/**
+ * struct cfg80211_match_set - sets of attributes to match
+ *
+ * @ssid: SSID to be matched
+ */
+struct cfg80211_match_set {
+	struct cfg80211_ssid ssid;
 };
 
 /**
@@ -822,6 +838,11 @@ struct cfg80211_scan_request {
  * @interval: interval between each scheduled scan cycle
  * @ie: optional information element(s) to add into Probe Request or %NULL
  * @ie_len: length of ie in octets
+ * @match_sets: sets of parameters to be matched for a scan result
+ * 	entry to be considered valid and to be passed to the host
+ * 	(others are filtered out).
+ *	If ommited, all results are passed.
+ * @n_match_sets: number of match sets
  * @wiphy: the wiphy this was for
  * @dev: the interface
  * @channels: channels to scan
@@ -833,6 +854,8 @@ struct cfg80211_sched_scan_request {
 	u32 interval;
 	const u8 *ie;
 	size_t ie_len;
+	struct cfg80211_match_set *match_sets;
+	int n_match_sets;
 
 	/* internal */
 	struct wiphy *wiphy;
@@ -1254,6 +1277,7 @@ struct cfg80211_wowlan {
  *	the driver, and will be valid until passed to cfg80211_scan_done().
  *	For scan results, call cfg80211_inform_bss(); you can call this outside
  *	the scan/scan_done bracket too.
+ * @scan_cancel: Stop currently running scan (both sw and hw).
  *
  * @auth: Request to authenticate with the specified peer
  * @assoc: Request to (re)associate with the specified peer
@@ -1415,6 +1439,7 @@ struct cfg80211_ops {
 
 	int	(*scan)(struct wiphy *wiphy, struct net_device *dev,
 			struct cfg80211_scan_request *request);
+	void    (*scan_cancel)(struct wiphy *wiphy, struct net_device *dev);
 
 	int	(*auth)(struct wiphy *wiphy, struct net_device *dev,
 			struct cfg80211_auth_request *req);
@@ -1556,6 +1581,9 @@ struct cfg80211_ops {
  * @WIPHY_FLAG_MESH_AUTH: The device supports mesh authentication by routing
  *	auth frames to userspace. See @NL80211_MESH_SETUP_USERSPACE_AUTH.
  * @WIPHY_FLAG_SCHED_SCAN: The device supports scheduled scans.
+ * @WIPHY_FLAG_SUPPORTS_CANCEL_SCAN: The device supports cancel scan.
+ * @WIPHY_FLAG_SUPPORTS_IM_SCAN_EVENT: The device supports intermediate scan
+ * event.
  */
 enum wiphy_flags {
 	WIPHY_FLAG_CUSTOM_REGULATORY		= BIT(0),
@@ -1570,6 +1598,8 @@ enum wiphy_flags {
 	WIPHY_FLAG_MESH_AUTH			= BIT(10),
 	WIPHY_FLAG_SUPPORTS_SCHED_SCAN		= BIT(11),
 	WIPHY_FLAG_ENFORCE_COMBINATIONS		= BIT(12),
+	WIPHY_FLAG_SUPPORTS_CANCEL_SCAN		= BIT(13),
+	WIPHY_FLAG_SUPPORTS_IM_SCAN_EVENT	= BIT(14),
 };
 
 /**
@@ -1733,9 +1763,16 @@ struct wiphy_wowlan_support {
  *	this variable determines its size
  * @max_scan_ssids: maximum number of SSIDs the device can scan for in
  *	any given scan
+ * @max_sched_scan_ssids: maximum number of SSIDs the device can scan
+ *	for in any given scheduled scan
+ * @max_match_sets: maximum number of match sets the device can handle
+ *	when performing a scheduled scan, 0 if filtering is not
+ *	supported.
  * @max_scan_ie_len: maximum length of user-controlled IEs device can
  *	add to probe request frames transmitted during a scan, must not
  *	include fixed IEs like supported rates
+ * @max_sched_scan_ie_len: same as max_scan_ie_len, but for scheduled
+ *	scans
  * @coverage_class: current coverage class
  * @fw_version: firmware version for ethtool reporting
  * @hw_version: hardware version for ethtool reporting
@@ -1787,7 +1824,10 @@ struct wiphy {
 
 	int bss_priv_size;
 	u8 max_scan_ssids;
+	u8 max_sched_scan_ssids;
+	u8 max_match_sets;
 	u16 max_scan_ie_len;
+	u16 max_sched_scan_ie_len;
 
 	int n_cipher_suites;
 	const u32 *cipher_suites;
@@ -2498,6 +2538,16 @@ void cfg80211_sched_scan_results(struct wiphy *wiphy);
  * is then called back via the sched_scan_stop operation when done.
  */
 void cfg80211_sched_scan_stopped(struct wiphy *wiphy);
+
+/**
+ * cfg80211_send_intermediate_result - inform userspace about new
+ * scan result.
+ *
+ * @dev: network device
+ * @cbss: bss info to report.
+ */
+void cfg80211_send_intermediate_result(struct net_device *dev,
+				       struct cfg80211_bss *cbss);
 
 /**
  * cfg80211_inform_bss_frame - inform cfg80211 of a received BSS frame

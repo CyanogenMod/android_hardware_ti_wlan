@@ -470,11 +470,11 @@ void for_each_sta_info_type_check(struct ieee80211_local *local,
 		nxt = _sta ? rcu_dereference(_sta->hnext) : NULL	\
 	     )								\
 	/* run code only if address matches and it's not a dummy sta */	\
-	if (memcmp(_sta->sta.addr, (_addr), ETH_ALEN) == 0 &&\
+	if (memcmp(_sta->sta.addr, (_addr), ETH_ALEN) == 0 &&		\
 		!_sta->dummy)
 
 #define for_each_sta_info_rx(local, _addr, _sta, nxt)			\
-	for (/* initialise loop */\
+	for (	/* initialise loop */					\
 		_sta = rcu_dereference(local->sta_hash[STA_HASH(_addr)]),\
 		nxt = _sta ? rcu_dereference(_sta->hnext) : NULL;	\
 		/* typecheck */						\
@@ -484,7 +484,7 @@ void for_each_sta_info_type_check(struct ieee80211_local *local,
 		/* advance loop */					\
 		_sta = nxt,						\
 		nxt = _sta ? rcu_dereference(_sta->hnext) : NULL	\
-		)							   \
+	     )								\
 	/* compare address and run code only if it matches */		\
 	if (memcmp(_sta->sta.addr, (_addr), ETH_ALEN) == 0)
 
@@ -510,7 +510,7 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
 int sta_info_insert(struct sta_info *sta);
 int sta_info_insert_rcu(struct sta_info *sta) __acquires(RCU);
 int sta_info_insert_atomic(struct sta_info *sta);
-int sta_info_insert_notify(struct sta_info *sta)  __acquires(RCU);
+int sta_info_reinsert(struct sta_info *sta);
 
 int sta_info_destroy_addr(struct ieee80211_sub_if_data *sdata,
 			  const u8 *addr);

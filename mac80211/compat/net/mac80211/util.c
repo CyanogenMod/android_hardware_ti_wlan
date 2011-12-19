@@ -1256,7 +1256,8 @@ int ieee80211_reconfig(struct ieee80211_local *local)
 
 		switch (sdata->vif.type) {
 		case NL80211_IFTYPE_STATION:
-			changed |= BSS_CHANGED_ASSOC;
+			changed |= BSS_CHANGED_ASSOC |
+				   BSS_CHANGED_ARP_FILTER;
 			mutex_lock(&sdata->u.mgd.mtx);
 			ieee80211_bss_info_change_notify(sdata, changed);
 			mutex_unlock(&sdata->u.mgd.mtx);
@@ -1287,6 +1288,8 @@ int ieee80211_reconfig(struct ieee80211_local *local)
 			break;
 		}
 	}
+
+	ieee80211_recalc_ps(local, -1);
 
 	/*
 	 * Clear the WLAN_STA_BLOCK_BA flag so new aggregation

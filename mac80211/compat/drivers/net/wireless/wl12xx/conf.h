@@ -66,7 +66,8 @@ enum {
 };
 
 enum {
-	CONF_HW_RXTX_RATE_MCS7 = 0,
+	CONF_HW_RXTX_RATE_MCS7_SGI = 0,
+	CONF_HW_RXTX_RATE_MCS7,
 	CONF_HW_RXTX_RATE_MCS6,
 	CONF_HW_RXTX_RATE_MCS5,
 	CONF_HW_RXTX_RATE_MCS4,
@@ -90,6 +91,10 @@ enum {
 	CONF_HW_RXTX_RATE_MAX,
 	CONF_HW_RXTX_RATE_UNSUPPORTED = 0xff
 };
+
+/* Rates between and including these are MCS rates */
+#define CONF_HW_RXTX_RATE_MCS_MIN CONF_HW_RXTX_RATE_MCS7_SGI
+#define CONF_HW_RXTX_RATE_MCS_MAX CONF_HW_RXTX_RATE_MCS0
 
 enum {
 	CONF_SG_DISABLE = 0,
@@ -806,6 +811,19 @@ struct conf_conn_settings {
 	 *        1-255 for x beacons
 	 */
 	u8 listen_interval;
+
+	/*
+	 * Firmware wakeup conditions during suspend
+	 * Range: CONF_WAKE_UP_EVENT_*
+	 */
+	u8 suspend_wake_up_event;
+
+	/*
+	 * Listen interval during suspend.
+	 * Currently will be in DTIMs (1-10)
+	 *
+	 */
+	u8 suspend_listen_interval;
 
 	/*
 	 * Enable or disable the beacon filtering.

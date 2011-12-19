@@ -66,11 +66,9 @@ static void wl1271_rx_status(struct wl1271 *wl,
 
 	status->rate_idx = wl1271_rate_to_idx(desc->rate, status->band);
 
-#ifdef CONFIG_WL12XX_HT
 	/* 11n support */
 	if (desc->rate <= CONF_HW_RXTX_RATE_MCS0)
 		status->flag |= RX_FLAG_HT;
-#endif
 
 	status->signal = desc->rssi;
 
@@ -297,5 +295,66 @@ void wl1271_set_default_filters(struct wl1271 *wl)
 	} else {
 		wl->rx_config = WL1271_DEFAULT_STA_RX_CONFIG;
 		wl->rx_filter = WL1271_DEFAULT_STA_RX_FILTER;
+	}
+}
+
+/*
+ * Global on / off for RX packet filtering in firmware
+ */
+int wl1271_rx_data_filtering_enable(struct wl1271 *wl, bool enable,
+				    enum rx_data_filter_action policy)
+{
+	int ret;
+
+	if (policy < FILTER_DROP || policy > FILTER_FW_HANDLE) {
+		wl1271_warning("filter policy value is not in valid range");
+		return -ERANGE;
+	}
+
+	if (enable < 0 || enable > 1) {
+		wl1271_warning("filter enable value is not in valid range");
+		return -ERANGE;
+	}
+
+	ret = wl1271_acx_toggle_rx_data_filter(wl, enable, policy);
+
+	return ret;
+}
+
+int wl1271_rx_data_filter_enable(struct wl1271 *wl,
+				 int index,
+				 bool enable,
+				 struct wl12xx_rx_data_filter *filter)
+{
+	int ret;
+
+	if (wl->rx_data_filters_status[index] == enable) {
+		wl1271_debug(DEBUG_ACX, "Request to enable an already "
+			     "enabled rx filter %d", index);
+		return 0;
+	}
+
+	ret = wl1271_acx_set_rx_data_filter(wl, index, enable, filter);
+
+	if (ret) {
+		wl1271_error("Failed to %s rx data filter %d (err=%d)",
+			     enable ? "enable" : "disable", index, ret);
+		return ret;
+	}
+
+	wl->rx_data_filters_status[index] = enable;
+
+	return 0;
+}
+
+/* Unset any active filters */
+void wl1271_rx_data_filters_clear_all(struct wl1271 *wl)
+{
+	int i;
+
+	for (i = 0; i < WL1271_MAX_RX_DATA_FILTERS; i++) {
+		if (!wl->rx_data_filters_status[i])
+			continue;
+		wl1271_rx_data_filter_enable(wl, i, 0, NULL);
 	}
 }

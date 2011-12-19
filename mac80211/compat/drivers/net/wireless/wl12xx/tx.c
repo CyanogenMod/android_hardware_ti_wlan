@@ -456,7 +456,7 @@ static int wl1271_prepare_tx_frame(struct wl1271 *wl, struct sk_buff *skb,
 
 	if (info->control.hw_key &&
 	    info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP)
-		extra = WL1271_TKIP_IV_SPACE;
+		extra = WL1271_EXTRA_SPACE_TKIP;
 
 	if (info->control.hw_key) {
 		bool is_wep;
@@ -541,7 +541,6 @@ u32 wl1271_tx_enabled_rates_get(struct wl1271 *wl, u32 rate_set,
 		rate_set >>= 1;
 	}
 
-#ifdef CONFIG_WL12XX_HT
 	/* MCS rates indication are on bits 16 - 23 */
 	rate_set >>= HW_HT_RATES_OFFSET - band->n_bitrates;
 
@@ -550,7 +549,6 @@ u32 wl1271_tx_enabled_rates_get(struct wl1271 *wl, u32 rate_set,
 			enabled_rates |= (CONF_HW_BIT_RATE_MCS_0 << bit);
 		rate_set >>= 1;
 	}
-#endif
 
 	return enabled_rates;
 }
@@ -808,6 +806,18 @@ out:
 	mutex_unlock(&wl->mutex);
 }
 
+static u8 wl1271_tx_get_rate_flags(u8 rate_class_index)
+{
+	u8 flags = 0;
+
+	if (rate_class_index >= CONF_HW_RXTX_RATE_MCS_MIN &&
+	    rate_class_index <= CONF_HW_RXTX_RATE_MCS_MAX)
+		flags |= IEEE80211_TX_RC_MCS;
+	if (rate_class_index == CONF_HW_RXTX_RATE_MCS7_SGI)
+		flags |= IEEE80211_TX_RC_SHORT_GI;
+	return flags;
+}
+
 static void wl1271_tx_complete_packet(struct wl1271 *wl,
 				      struct wl1271_tx_hw_res_descr *result)
 {
@@ -815,6 +825,7 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 	struct sk_buff *skb;
 	int id = result->id;
 	int rate = -1;
+	u8 rate_flags = 0;
 	u8 retries = 0;
 
 	/* check for id legality */
@@ -836,6 +847,7 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 		if (!(info->flags & IEEE80211_TX_CTL_NO_ACK))
 			info->flags |= IEEE80211_TX_STAT_ACK;
 		rate = wl1271_rate_to_idx(result->rate_class_index, wl->band);
+		rate_flags = wl1271_tx_get_rate_flags(result->rate_class_index);
 		retries = result->ack_failures;
 	} else if (result->status == TX_RETRY_EXCEEDED) {
 		wl->stats.excessive_retries++;
@@ -844,7 +856,7 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 
 	info->status.rates[0].idx = rate;
 	info->status.rates[0].count = retries;
-	info->status.rates[0].flags = 0;
+	info->status.rates[0].flags = rate_flags;
 	info->status.ack_signal = -1;
 
 	wl->stats.retry_count += result->ack_failures;
@@ -875,8 +887,9 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 	if (info->control.hw_key &&
 	    info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP) {
 		int hdrlen = ieee80211_get_hdrlen_from_skb(skb);
-		memmove(skb->data + WL1271_TKIP_IV_SPACE, skb->data, hdrlen);
-		skb_pull(skb, WL1271_TKIP_IV_SPACE);
+		memmove(skb->data + WL1271_EXTRA_SPACE_TKIP, skb->data,
+			hdrlen);
+		skb_pull(skb, WL1271_EXTRA_SPACE_TKIP);
 	}
 
 	wl1271_debug(DEBUG_TX, "tx status id %u skb 0x%p failures %u rate 0x%x"
@@ -1027,9 +1040,9 @@ void wl1271_tx_reset(struct wl1271 *wl, bool reset_tx_queues)
 			    info->control.hw_key->cipher ==
 			    WLAN_CIPHER_SUITE_TKIP) {
 				int hdrlen = ieee80211_get_hdrlen_from_skb(skb);
-				memmove(skb->data + WL1271_TKIP_IV_SPACE,
+				memmove(skb->data + WL1271_EXTRA_SPACE_TKIP,
 					skb->data, hdrlen);
-				skb_pull(skb, WL1271_TKIP_IV_SPACE);
+				skb_pull(skb, WL1271_EXTRA_SPACE_TKIP);
 			}
 
 			info->status.rates[0].idx = -1;

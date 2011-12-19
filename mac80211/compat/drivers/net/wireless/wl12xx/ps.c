@@ -152,7 +152,10 @@ int wl1271_ps_set_mode(struct wl1271 *wl, enum wl1271_cmd_ps_mode mode,
 	case STATION_POWER_SAVE_MODE:
 		wl1271_debug(DEBUG_PSM, "entering psm");
 
-		ret = wl1271_acx_wake_up_conditions(wl);
+		ret = wl1271_acx_wake_up_conditions(wl,
+				    wl->conf.conn.wake_up_event,
+				    wl->conf.conn.listen_interval);
+
 		if (ret < 0) {
 			wl1271_error("couldn't set wake up conditions");
 			return ret;

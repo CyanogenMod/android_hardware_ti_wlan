@@ -1578,10 +1578,9 @@ static bool ieee80211_assoc_success(struct ieee80211_work *wk,
 	if (elems.wmm_param)
 		set_sta_flags(sta, WLAN_STA_WME);
 
-	err = sta_info_insert_notify(sta);
+	/* sta_info_reinsert will also unlock the mutex lock */
+	err = sta_info_reinsert(sta);
 	sta = NULL;
-	/* sta_info_insert_notify changed the mutex lock with rcu lock */
-	rcu_read_unlock();
 	if (err) {
 		printk(KERN_DEBUG "%s: failed to insert STA entry for"
 		       " the AP (error %d)\n", sdata->name, err);

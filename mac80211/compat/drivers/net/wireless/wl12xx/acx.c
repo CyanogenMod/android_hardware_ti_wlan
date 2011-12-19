@@ -33,12 +33,15 @@
 #include "reg.h"
 #include "ps.h"
 
-int wl1271_acx_wake_up_conditions(struct wl1271 *wl)
+int wl1271_acx_wake_up_conditions(struct wl1271 *wl,
+				  u8 wake_up_event, u8 listen_interval)
 {
 	struct acx_wake_up_condition *wake_up;
 	int ret;
 
-	wl1271_debug(DEBUG_ACX, "acx wake up conditions");
+	wl1271_debug(DEBUG_ACX, "acx wake up conditions "
+		     "(wake_up_event %d listen_interval %d)",
+		     wake_up_event, listen_interval);
 
 	wake_up = kzalloc(sizeof(*wake_up), GFP_KERNEL);
 	if (!wake_up) {
@@ -47,8 +50,8 @@ int wl1271_acx_wake_up_conditions(struct wl1271 *wl)
 	}
 
 	wake_up->role_id = wl->role_id;
-	wake_up->wake_up_event = wl->conf.conn.wake_up_event;
-	wake_up->listen_interval = wl->conf.conn.listen_interval;
+	wake_up->wake_up_event = wake_up_event;
+	wake_up->listen_interval = listen_interval;
 
 	ret = wl1271_cmd_configure(wl, ACX_WAKE_UP_CONDITIONS,
 				   wake_up, sizeof(*wake_up));
@@ -1749,4 +1752,109 @@ out:
 	kfree(acx);
 	return ret;
 
+}
+
+int wl1271_acx_toggle_rx_data_filter(struct wl1271 *wl, bool enable,
+				     u8 default_action)
+{
+	struct acx_rx_data_filter_state *acx;
+	int ret;
+
+	wl1271_debug(DEBUG_ACX, "acx toggle rx data filter en: %d act: %d",
+		     enable, default_action);
+
+	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
+	if (!acx) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	acx->enable = enable ? 1 : 0;
+	acx->default_action = default_action;
+
+	ret = wl1271_cmd_configure(wl, ACX_ENABLE_RX_DATA_FILTER, acx,
+				   sizeof(*acx));
+	if (ret < 0) {
+		wl1271_warning("toggling rx data filter failed: %d", ret);
+		goto out;
+	}
+
+out:
+	kfree(acx);
+	return ret;
+}
+
+int wl1271_acx_set_rx_data_filter(struct wl1271 *wl, u8 index, bool enable,
+				  struct wl12xx_rx_data_filter *filter)
+{
+	struct acx_rx_data_filter_cfg *acx;
+	int fields_size = 0;
+	int acx_size;
+	int ret;
+
+	if (enable && !filter) {
+		wl1271_warning("acx_set_rx_data_filter: enable but no filter");
+		return -EINVAL;
+	}
+
+	if (index >= WL1271_MAX_RX_DATA_FILTERS) {
+		wl1271_warning("acx_set_rx_data_filter: invalid filter idx(%d)",
+			       index);
+		return -EINVAL;
+	}
+
+	if (filter) {
+		if (filter->action < FILTER_DROP ||
+		    filter->action > FILTER_FW_HANDLE) {
+			wl1271_warning("invalid filter action (%d)",
+				       filter->action);
+			return -EINVAL;
+		}
+
+		if (filter->num_fields != 1 &&
+		    filter->num_fields != 2) {
+			wl1271_warning("invalid filter num_fields (%d)",
+				       filter->num_fields);
+			return -EINVAL;
+		}
+	}
+
+	wl1271_debug(DEBUG_ACX, "acx set rx data filter idx: %d, enable: %d",
+		     index, enable);
+
+	if (enable) {
+		fields_size = filter->fields_size;
+
+		wl1271_debug(DEBUG_ACX, "act: %d num_fields: %d field_size: %d",
+		      filter->action, filter->num_fields, fields_size);
+	}
+
+	acx_size = roundup(sizeof(*acx) + fields_size, 4);
+	acx = kzalloc(acx_size, GFP_KERNEL);
+
+	if (!acx)
+		return -ENOMEM;
+
+	acx->enable = enable ? 1 : 0;
+	acx->index = index;
+
+	if (enable) {
+		acx->num_fields = filter->num_fields;
+		acx->action = filter->action;
+
+		memcpy(acx->fields, filter->fields, filter->fields_size);
+	}
+
+	wl1271_dump(DEBUG_ACX, "RX_FILTER: ", acx, acx_size);
+
+	ret = wl1271_cmd_configure(wl, ACX_SET_RX_DATA_FILTER, acx,
+				   acx_size);
+	if (ret < 0) {
+		wl1271_warning("setting rx data filter failed: %d", ret);
+		goto out;
+	}
+
+out:
+	kfree(acx);
+	return ret;
 }

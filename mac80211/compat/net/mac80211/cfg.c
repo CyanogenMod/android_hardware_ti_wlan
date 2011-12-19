@@ -786,7 +786,12 @@ static int ieee80211_add_station(struct wiphy *wiphy, struct net_device *dev,
 	if (!sta)
 		return -ENOMEM;
 
-	sta->flags = WLAN_STA_AUTH | WLAN_STA_ASSOC;
+	set_sta_flags(sta, WLAN_STA_AUTH);
+	if (params->sta_flags_mask & BIT(NL80211_STA_FLAG_PRE_ASSOC) &&
+	    params->sta_flags_set & BIT(NL80211_STA_FLAG_PRE_ASSOC))
+		sta->dummy = true;
+	else
+		set_sta_flags(sta, WLAN_STA_ASSOC);
 
 	sta_apply_parameters(local, sta, params);
 
@@ -824,6 +829,43 @@ static int ieee80211_del_station(struct wiphy *wiphy, struct net_device *dev,
 	return 0;
 }
 
+static int ieee80211_reinsert_pre_assoc(struct ieee80211_sub_if_data *sdata,
+					u8 *mac)
+{
+	struct sta_info *sta;
+	int err;
+
+	mutex_lock(&sdata->local->sta_mtx);
+	/*
+	 * station info was already allocated and inserted before
+	 * the association and should be available to us
+	 */
+	sta = sta_info_get_rx(sdata, mac);
+	if (WARN_ON(!sta)) {
+		mutex_unlock(&sdata->local->sta_mtx);
+		return -ENOENT;
+	}
+
+	if (!sta->dummy) {
+		/* sta was already reinserted */
+		mutex_unlock(&sdata->local->sta_mtx);
+		return 0;
+	}
+
+	/* sta is not associated */
+	set_sta_flags(sta, WLAN_STA_ASSOC);
+
+	/* sta_info_reinsert will also unlock the mutex lock */
+	err = sta_info_reinsert(sta);
+	sta = NULL;
+	if (err) {
+		printk(KERN_DEBUG "%s: failed to insert STA entry for"
+		       " the AP (error %d)\n", sdata->name, err);
+		return err;
+	}
+	return 0;
+
+}
 static int ieee80211_change_station(struct wiphy *wiphy,
 				    struct net_device *dev,
 				    u8 *mac,
@@ -833,10 +875,11 @@ static int ieee80211_change_station(struct wiphy *wiphy,
 	struct ieee80211_local *local = wiphy_priv(wiphy);
 	struct sta_info *sta;
 	struct ieee80211_sub_if_data *vlansdata;
+	bool is_dummy = false;
 
 	rcu_read_lock();
 
-	sta = sta_info_get_bss(sdata, mac);
+	sta = sta_info_get_bss_rx(sdata, mac);
 	if (!sta) {
 		rcu_read_unlock();
 		return -ENOENT;
@@ -864,9 +907,16 @@ static int ieee80211_change_station(struct wiphy *wiphy,
 		ieee80211_send_layer2_update(sta);
 	}
 
+	if (sta->dummy)
+		is_dummy = true;
+
 	sta_apply_parameters(local, sta, params);
 
 	rcu_read_unlock();
+	if (is_dummy &&
+	    (params->sta_flags_mask & BIT(NL80211_STA_FLAG_PRE_ASSOC)) &&
+	    !(params->sta_flags_set & BIT(NL80211_STA_FLAG_PRE_ASSOC)))
+		ieee80211_reinsert_pre_assoc(sdata, mac);
 
 	if (sdata->vif.type == NL80211_IFTYPE_STATION &&
 	    params->sta_flags_mask & BIT(NL80211_STA_FLAG_AUTHORIZED))
@@ -1429,6 +1479,13 @@ ieee80211_sched_scan_stop(struct wiphy *wiphy, struct net_device *dev)
 		return -EOPNOTSUPP;
 
 	return ieee80211_request_sched_scan_stop(sdata);
+}
+
+static void ieee80211_scan_cancel_req(struct wiphy *wiphy,
+					struct net_device *dev)
+{
+	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	ieee80211_scan_cancel(sdata->local);
 }
 
 static int ieee80211_auth(struct wiphy *wiphy, struct net_device *dev,
@@ -2176,6 +2233,7 @@ struct cfg80211_ops mac80211_config_ops = {
 	.suspend = ieee80211_suspend,
 	.resume = ieee80211_resume,
 	.scan = ieee80211_scan,
+	.scan_cancel = ieee80211_scan_cancel_req,
 	.sched_scan_start = ieee80211_sched_scan_start,
 	.sched_scan_stop = ieee80211_sched_scan_stop,
 	.auth = ieee80211_auth,

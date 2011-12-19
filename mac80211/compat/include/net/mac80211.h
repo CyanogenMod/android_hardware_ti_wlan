@@ -1115,7 +1115,12 @@ enum ieee80211_tkip_key_type {
  *
  * @IEEE80211_HW_TX_AMPDU_IN_HW_ONLY: The device handles TX aggregation
  *	strictly in HW. Packets should not be aggregated in software.
- */
+ *
+ * @IEEE80211_HW_SUPPORTS_CANCEL_SCAN: Hardware supports cancel scan operation.
+ *
+ * @IEEE80211_HW_SUPPORTS_IM_SCAN_EVENT: Hardware supports intemediate scan
+ *	event.
+*/
 enum ieee80211_hw_flags {
 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
 	IEEE80211_HW_RX_INCLUDES_FCS			= 1<<1,
@@ -1141,6 +1146,9 @@ enum ieee80211_hw_flags {
 	IEEE80211_HW_SUPPORTS_PER_STA_GTK		= 1<<21,
 	IEEE80211_HW_AP_LINK_PS				= 1<<22,
 	IEEE80211_HW_TX_AMPDU_IN_HW_ONLY		= 1<<23,
+	IEEE80211_HW_SUPPORTS_CANCEL_SCAN		= 1<<24,
+	IEEE80211_HW_SUPPORTS_IM_SCAN_EVENT		= 1<<25,
+	IEEE80211_HW_SCAN_WHILE_IDLE                    = 1<<26,
 };
 
 /**

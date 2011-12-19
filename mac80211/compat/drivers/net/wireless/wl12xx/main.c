@@ -215,6 +215,8 @@ static struct conf_drv_settings default_conf = {
 	.conn = {
 		.wake_up_event               = CONF_WAKE_UP_EVENT_DTIM,
 		.listen_interval             = 1,
+		.suspend_wake_up_event       = CONF_WAKE_UP_EVENT_N_DTIM,
+		.suspend_listen_interval     = 3,
 		.bcn_filt_mode               = CONF_BCN_FILT_MODE_ENABLED,
 		.bcn_filt_ie_count           = 2,
 		.bcn_filt_ie = {
@@ -266,8 +268,8 @@ static struct conf_drv_settings default_conf = {
 	},
 	.sched_scan = {
 		/* sched_scan requires dwell times in TU instead of TU/1000 */
-		.min_dwell_time_active = 8,
-		.max_dwell_time_active = 30,
+		.min_dwell_time_active = 30,
+		.max_dwell_time_active = 60,
 		.dwell_time_passive    = 100,
 		.num_probe_reqs        = 2,
 		.rssi_threshold        = -90,
@@ -372,6 +374,8 @@ static struct conf_drv_settings default_conf = {
 };
 
 static char *fwlog_param;
+static char *fref_param;
+static char *tcxo_param;
 
 static void __wl1271_op_remove_interface(struct wl1271 *wl,
 					 bool reset_tx_queues);
@@ -638,6 +642,46 @@ static void wl1271_conf_init(struct wl1271 *wl)
 		} else {
 			wl1271_error("Unknown fwlog parameter %s", fwlog_param);
 		}
+	}
+
+	wl->ref_clock = -1;
+	if (fref_param) {
+		if (!strcmp(fref_param, "19.2"))
+			wl->ref_clock = WL12XX_REFCLOCK_19;
+		else if (!strcmp(fref_param, "26"))
+			wl->ref_clock = WL12XX_REFCLOCK_26;
+		else if (!strcmp(fref_param, "26x"))
+			wl->ref_clock = WL12XX_REFCLOCK_26_XTAL;
+		else if (!strcmp(fref_param, "38.4"))
+			wl->ref_clock = WL12XX_REFCLOCK_38;
+		else if (!strcmp(fref_param, "38.4x"))
+			wl->ref_clock = WL12XX_REFCLOCK_38_XTAL;
+		else if (!strcmp(fref_param, "52"))
+			wl->ref_clock = WL12XX_REFCLOCK_52;
+		else
+			wl1271_error("Invalid fref parameter %s", fref_param);
+	}
+
+	wl->tcxo_clock = -1;
+	if (tcxo_param) {
+		if (!strcmp(tcxo_param, "19.2"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_19_2;
+		else if (!strcmp(tcxo_param, "26"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_26;
+		else if (!strcmp(tcxo_param, "38.4"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_38_4;
+		else if (!strcmp(tcxo_param, "52"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_52;
+		else if (!strcmp(tcxo_param, "16.368"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_16_368;
+		else if (!strcmp(tcxo_param, "32.736"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_32_736;
+		else if (!strcmp(tcxo_param, "16.8"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_16_8;
+		else if (!strcmp(tcxo_param, "33.6"))
+			wl->tcxo_clock = WL12XX_TCXOCLOCK_33_6;
+		else
+			wl1271_error("Invalid tcxo parameter %s", tcxo_param);
 	}
 }
 
@@ -1638,7 +1682,178 @@ static struct notifier_block wl1271_dev_notifier = {
 	.notifier_call = wl1271_dev_notify,
 };
 
-static int wl1271_configure_suspend_sta(struct wl1271 *wl)
+int wl1271_validate_wowlan_pattern(struct cfg80211_wowlan_trig_pkt_pattern *p)
+{
+	if (p->pattern_len > WL1271_RX_DATA_FILTER_MAX_PATTERN_SIZE) {
+		wl1271_warning("WoWLAN pattern too big");
+		return -E2BIG;
+	}
+
+	if (!p->mask) {
+		wl1271_warning("No mask in WoWLAN pattern");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+int wl1271_build_rx_filter_field(struct wl12xx_rx_data_filter_field *field,
+				 u8 *pattern, u8 len, u8 offset,
+				 u8 *bitmask, u8 flags)
+{
+	u8 *mask;
+	int i;
+
+	field->flags = flags | WL1271_RX_DATA_FILTER_FLAG_MASK;
+
+	/* Not using the capability to set offset within an RX filter field.
+	 * The offset param is used to access pattern and bitmask.
+	 */
+	field->offset = 0;
+	field->len = len;
+	memcpy(field->pattern, &pattern[offset], len);
+
+	/* Translate the WowLAN bitmask (in bits) to the FW RX filter field
+	   mask which is in bytes */
+
+	mask = field->pattern + len;
+
+	for (i = offset; i < (offset+len); i++) {
+		if (test_bit(i, (unsigned long *)bitmask))
+			*mask = 0xFF;
+
+		mask++;
+	}
+
+	return sizeof(*field) + len + (bitmask ? len : 0);
+}
+
+/* Allocates an RX filter returned through f
+   which needs to be freed using kfree() */
+int wl1271_convert_wowlan_pattern_to_rx_filter(
+	struct cfg80211_wowlan_trig_pkt_pattern *p,
+	struct wl12xx_rx_data_filter **f)
+{
+	int filter_size, num_fields, fields_size;
+	int first_field_size;
+	int ret = 0;
+	struct wl12xx_rx_data_filter_field *field;
+	struct wl12xx_rx_data_filter *filter;
+
+	/* If pattern is longer then the ETHERNET header we split it into
+	 * 2 fields in the rx filter as you can't have a single
+	 * field across ETH header boundary. The first field will filter
+	 * anything in the ETH header and the 2nd one from the IP header.
+	 * Each field will contain pattern bytes and mask bytes
+	 */
+	if (p->pattern_len > WL1271_RX_DATA_FILTER_ETH_HEADER_SIZE)
+		num_fields = 2;
+	else
+		num_fields = 1;
+
+	fields_size = (sizeof(*field) * num_fields) + (2 * p->pattern_len);
+	filter_size = sizeof(*filter) + fields_size;
+
+	filter = kzalloc(filter_size, GFP_KERNEL);
+	if (!filter) {
+		wl1271_warning("Failed to alloc rx filter");
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	field = &filter->fields[0];
+	first_field_size = wl1271_build_rx_filter_field(field,
+			p->pattern,
+			min(p->pattern_len,
+			    WL1271_RX_DATA_FILTER_ETH_HEADER_SIZE),
+			0,
+			p->mask,
+			WL1271_RX_DATA_FILTER_FLAG_ETHERNET_HEADER);
+
+	field = (struct wl12xx_rx_data_filter_field *)
+		  (((u8 *)filter->fields) + first_field_size);
+
+	if (num_fields > 1) {
+		wl1271_build_rx_filter_field(field,
+		     p->pattern,
+		     p->pattern_len - WL1271_RX_DATA_FILTER_ETH_HEADER_SIZE,
+		     WL1271_RX_DATA_FILTER_ETH_HEADER_SIZE,
+		     p->mask,
+		     WL1271_RX_DATA_FILTER_FLAG_IP_HEADER);
+	}
+
+	filter->action = FILTER_SIGNAL;
+	filter->num_fields = num_fields;
+	filter->fields_size = fields_size;
+
+	*f = filter;
+	return 0;
+
+err:
+	kfree(filter);
+	*f = NULL;
+
+	return ret;
+}
+
+static int wl1271_configure_wowlan(struct wl1271 *wl,
+				   struct cfg80211_wowlan *wow)
+{
+	int i, ret;
+
+	if (!wow) {
+		wl1271_rx_data_filtering_enable(wl, 0, FILTER_SIGNAL);
+		wl1271_rx_data_filters_clear_all(wl);
+		return 0;
+	}
+
+	WARN_ON(wow->n_patterns > WL1271_MAX_RX_DATA_FILTERS);
+	if (wow->any || !wow->n_patterns)
+		return 0;
+
+	/* Translate WoWLAN patterns into filters */
+	for (i = 0; i < wow->n_patterns; i++) {
+		struct cfg80211_wowlan_trig_pkt_pattern *p;
+		struct wl12xx_rx_data_filter *filter = NULL;
+
+		p = &wow->patterns[i];
+
+		ret = wl1271_validate_wowlan_pattern(p);
+		if (ret) {
+			wl1271_warning("validate_wowlan_pattern "
+				       "failed (%d)", ret);
+			goto out;
+		}
+
+		ret = wl1271_convert_wowlan_pattern_to_rx_filter(p, &filter);
+		if (ret) {
+			wl1271_warning("convert_wowlan_pattern_to_rx_filter "
+				       "failed (%d)", ret);
+			goto out;
+		}
+
+		ret = wl1271_rx_data_filter_enable(wl, i, 1, filter);
+
+		kfree(filter);
+		if (ret) {
+			wl1271_warning("rx_data_filter_enable "
+				       " failed (%d)", ret);
+			goto out;
+		}
+	}
+
+	ret = wl1271_rx_data_filtering_enable(wl, 1, FILTER_DROP);
+	if (ret) {
+		wl1271_warning("rx_data_filtering_enable failed (%d)", ret);
+		goto out;
+	}
+
+out:
+	return ret;
+}
+
+static int wl1271_configure_suspend_sta(struct wl1271 *wl,
+					struct cfg80211_wowlan *wow)
 {
 	int ret = 0;
 
@@ -1680,13 +1895,27 @@ static int wl1271_configure_suspend_sta(struct wl1271 *wl)
 		if (ret < 0)
 			goto out_unlock;
 	}
+
+	ret = wl1271_configure_wowlan(wl, wow);
+	if (ret < 0)
+		wl1271_error("suspend: Could not configure WoWLAN: %d", ret);
+
+	/* In any case set wake up conditions to suspend values to conserve
+	 *  more power while willing to lose some broadcast traffic
+	 */
+	ret = wl1271_acx_wake_up_conditions(wl,
+			    wl->conf.conn.suspend_wake_up_event,
+			    wl->conf.conn.suspend_listen_interval);
+
+	if (ret < 0)
+		wl1271_error("suspend: set wake up conditions failed: %d", ret);
+
 out_sleep:
 	wl1271_ps_elp_sleep(wl);
 out_unlock:
 	mutex_unlock(&wl->mutex);
 out:
 	return ret;
-
 }
 
 static int wl1271_configure_suspend_ap(struct wl1271 *wl)
@@ -1708,13 +1937,13 @@ static int wl1271_configure_suspend_ap(struct wl1271 *wl)
 out_unlock:
 	mutex_unlock(&wl->mutex);
 	return ret;
-
 }
 
-static int wl1271_configure_suspend(struct wl1271 *wl)
+static int wl1271_configure_suspend(struct wl1271 *wl,
+				    struct cfg80211_wowlan *wow)
 {
 	if (wl->bss_type == BSS_TYPE_STA_BSS)
-		return wl1271_configure_suspend_sta(wl);
+		return wl1271_configure_suspend_sta(wl, wow);
 	if (wl->bss_type == BSS_TYPE_AP_BSS)
 		return wl1271_configure_suspend_ap(wl);
 	return 0;
@@ -1739,6 +1968,18 @@ static void wl1271_configure_resume(struct wl1271 *wl)
 		if (!test_bit(WL1271_FLAG_PSM_REQUESTED, &wl->flags))
 			wl1271_ps_set_mode(wl, STATION_ACTIVE_MODE,
 					   wl->basic_rate, true);
+
+		/* Remove WoWLAN filtering */
+		wl1271_configure_wowlan(wl, NULL);
+
+		/* switch back to normal wake up conditions */
+		ret = wl1271_acx_wake_up_conditions(wl,
+				    wl->conf.conn.wake_up_event,
+				    wl->conf.conn.listen_interval);
+
+		if (ret < 0)
+			wl1271_error("resume: wake up conditions failed: %d",
+				     ret);
 	} else if (is_ap) {
 		wl1271_acx_beacon_filter_opt(wl, false);
 	}
@@ -1755,10 +1996,10 @@ static int wl1271_op_suspend(struct ieee80211_hw *hw,
 	int ret;
 
 	wl1271_debug(DEBUG_MAC80211, "mac80211 suspend wow=%d", !!wow);
-	WARN_ON(!wow || !wow->any);
+	WARN_ON(!wow);
 
 	wl->wow_enabled = true;
-	ret = wl1271_configure_suspend(wl);
+	ret = wl1271_configure_suspend(wl, wow);
 	if (ret < 0) {
 		wl1271_warning("couldn't prepare device to suspend");
 		return ret;
@@ -2222,6 +2463,9 @@ static int wl1271_join(struct wl1271 *wl, bool set_assoc)
 	if (test_bit(WL1271_FLAG_STA_ASSOCIATED, &wl->flags))
 		wl1271_info("JOIN while associated.");
 
+	/* clear encryption type */
+	wl->encryption_type = KEY_NONE;
+
 	if (set_assoc)
 		set_bit(WL1271_FLAG_STA_ASSOCIATED, &wl->flags);
 
@@ -2320,12 +2564,6 @@ static int wl1271_sta_handle_idle(struct wl1271 *wl, bool idle)
 			goto out;
 		set_bit(WL1271_FLAG_IDLE, &wl->flags);
 	} else {
-		/* The current firmware only supports sched_scan in idle */
-		if (wl->sched_scanning) {
-			wl1271_scan_sched_scan_stop(wl);
-			ieee80211_sched_scan_stopped(wl->hw);
-		}
-
 		ret = wl1271_cmd_role_start_dev(wl);
 		if (ret < 0)
 			goto out;
@@ -2903,6 +3141,17 @@ static int wl1271_op_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			wl1271_error("Could not add or replace key");
 			goto out_sleep;
 		}
+
+		/* reconfiguring arp response (data packet) */
+		if (wl->bss_type == BSS_TYPE_STA_BSS &&
+		    wl->encryption_type != key_type) {
+			wl->encryption_type = key_type;
+			ret = wl1271_cmd_build_arp_rsp(wl, wl->ip_addr);
+			if (ret < 0) {
+				wl1271_warning("build arp rsp failed: %d", ret);
+				goto out_sleep;
+			}
+		}
 		break;
 
 	case DISABLE_KEY:
@@ -2970,8 +3219,6 @@ static int wl1271_op_hw_scan(struct ieee80211_hw *hw,
 			ret = -EBUSY;
 			goto out_sleep;
 		}
-		wl1271_croc(wl, wl->dev_role_id);
-		wl1271_cmd_role_stop_dev(wl);
 	}
 
 	ret = wl1271_scan(hw->priv, ssid, len, req);
@@ -3319,8 +3566,12 @@ static int wl1271_bss_beacon_info_changed(struct wl1271 *wl,
 
 	if ((changed & BSS_CHANGED_AP_PROBE_RESP) && is_ap) {
 		ret = wl1271_ap_set_probe_resp_tmpl(wl,
-			wl1271_tx_min_rate_get(wl, wl->basic_rate_set));
-		if (ret < 0)
+			      wl1271_tx_min_rate_get(wl, wl->basic_rate_set));
+
+		/* if BSS_CHANGED_BEACON is also marked then fall through
+		 * and the probe response will be set from the beacon */
+		if ((ret < 0) &&
+		    !(changed & BSS_CHANGED_BEACON))
 			goto out;
 	}
 
@@ -3805,34 +4056,6 @@ sta_not_found:
 	if (ret < 0)
 		goto out;
 
-	if (changed & BSS_CHANGED_ARP_FILTER) {
-		__be32 addr = bss_conf->arp_addr_list[0];
-		WARN_ON(wl->bss_type != BSS_TYPE_STA_BSS);
-
-		if (bss_conf->arp_addr_cnt == 1 &&
-		    bss_conf->arp_filter_enabled) {
-			/*
-			 * The template should have been configured only upon
-			 * association. however, it seems that the correct ip
-			 * isn't being set (when sending), so we have to
-			 * reconfigure the template upon every ip change.
-			 */
-			ret = wl1271_cmd_build_arp_rsp(wl, addr);
-			if (ret < 0) {
-				wl1271_warning("build arp rsp failed: %d", ret);
-				goto out;
-			}
-
-			ret = wl1271_acx_arp_ip_filter(wl,
-				ACX_ARP_FILTER_ARP_FILTERING,
-				addr);
-		} else
-			ret = wl1271_acx_arp_ip_filter(wl, 0, addr);
-
-		if (ret < 0)
-			goto out;
-	}
-
 	if (do_join) {
 		ret = wl1271_join(wl, set_assoc);
 		if (ret < 0) {
@@ -3852,7 +4075,7 @@ sta_not_found:
 		 * stop device role if started (we might already be in
 		 * STA role). TODO: make it better.
 		 */
-		if (wl->dev_role_id != WL1271_INVALID_ROLE_ID) {
+		if (wl->dev_hlid != WL1271_INVALID_LINK_ID) {
 			ret = wl1271_croc(wl, wl->dev_role_id);
 			if (ret < 0)
 				goto out;
@@ -3913,6 +4136,41 @@ sta_not_found:
 			wl1271_warning("Set ht information failed %d", ret);
 			goto out;
 		}
+	}
+
+	/* Handle arp filtering. Done after join. */
+	if ((changed & BSS_CHANGED_ARP_FILTER) ||
+	    (!is_ibss && (changed & BSS_CHANGED_QOS))) {
+		__be32 addr = bss_conf->arp_addr_list[0];
+		wl->qos = bss_conf->qos;
+		WARN_ON(wl->bss_type != BSS_TYPE_STA_BSS);
+
+		if (bss_conf->arp_addr_cnt == 1 &&
+		    bss_conf->arp_filter_enabled) {
+			wl->ip_addr = addr;
+			/*
+			 * The template should have been configured only upon
+			 * association. however, it seems that the correct ip
+			 * isn't being set (when sending), so we have to
+			 * reconfigure the template upon every ip change.
+			 */
+			ret = wl1271_cmd_build_arp_rsp(wl, addr);
+			if (ret < 0) {
+				wl1271_warning("build arp rsp failed: %d", ret);
+				goto out;
+			}
+
+			ret = wl1271_acx_arp_ip_filter(wl,
+				(ACX_ARP_FILTER_ARP_FILTERING |
+				 ACX_ARP_FILTER_AUTO_ARP),
+				addr);
+		} else {
+			wl->ip_addr = 0;
+			ret = wl1271_acx_arp_ip_filter(wl, 0, addr);
+		}
+
+		if (ret < 0)
+			goto out;
 	}
 
 out:
@@ -4474,6 +4732,7 @@ static struct ieee80211_channel wl1271_channels[] = {
 /* mapping to indexes for wl1271_rates */
 static const u8 wl1271_rate_to_idx_2ghz[] = {
 	/* MCS rates are used only with 11n */
+	7,                            /* CONF_HW_RXTX_RATE_MCS7_SGI */
 	7,                            /* CONF_HW_RXTX_RATE_MCS7 */
 	6,                            /* CONF_HW_RXTX_RATE_MCS6 */
 	5,                            /* CONF_HW_RXTX_RATE_MCS5 */
@@ -4504,7 +4763,6 @@ static const u8 wl1271_rate_to_idx_2ghz[] = {
 /* 11n STA capabilities */
 #define HW_RX_HIGHEST_RATE	72
 
-#ifdef CONFIG_WL12XX_HT
 #define WL12XX_HT_CAP { \
 	.cap = IEEE80211_HT_CAP_GRN_FLD | IEEE80211_HT_CAP_SGI_20 | \
 	       (1 << IEEE80211_HT_CAP_RX_STBC_SHIFT), \
@@ -4517,11 +4775,6 @@ static const u8 wl1271_rate_to_idx_2ghz[] = {
 		.tx_params = IEEE80211_HT_MCS_TX_DEFINED, \
 		}, \
 }
-#else
-#define WL12XX_HT_CAP { \
-	.ht_supported = false, \
-}
-#endif
 
 /* can't be const, mac80211 writes to this */
 static struct ieee80211_supported_band wl1271_band_2ghz = {
@@ -4601,6 +4854,7 @@ static struct ieee80211_channel wl1271_channels_5ghz[] = {
 /* mapping to indexes for wl1271_rates_5ghz */
 static const u8 wl1271_rate_to_idx_5ghz[] = {
 	/* MCS rates are used only with 11n */
+	7,                            /* CONF_HW_RXTX_RATE_MCS7_SGI */
 	7,                            /* CONF_HW_RXTX_RATE_MCS7 */
 	6,                            /* CONF_HW_RXTX_RATE_MCS6 */
 	5,                            /* CONF_HW_RXTX_RATE_MCS5 */
@@ -4904,7 +5158,7 @@ int wl1271_init_ieee80211(struct wl1271 *wl)
 	};
 
 	/* The tx descriptor buffer and the TKIP space. */
-	wl->hw->extra_tx_headroom = WL1271_TKIP_IV_SPACE +
+	wl->hw->extra_tx_headroom = WL1271_EXTRA_SPACE_TKIP +
 		sizeof(struct wl1271_tx_hw_descr);
 
 	/* unit us */
@@ -4923,7 +5177,8 @@ int wl1271_init_ieee80211(struct wl1271 *wl)
 		IEEE80211_HW_SPECTRUM_MGMT |
 		IEEE80211_HW_AP_LINK_PS |
 		IEEE80211_HW_AMPDU_AGGREGATION |
-		IEEE80211_HW_TX_AMPDU_IN_HW_ONLY;
+		IEEE80211_HW_TX_AMPDU_IN_HW_ONLY |
+		IEEE80211_HW_SCAN_WHILE_IDLE;
 
 	wl->hw->wiphy->cipher_suites = cipher_suites;
 	wl->hw->wiphy->n_cipher_suites = ARRAY_SIZE(cipher_suites);
@@ -4932,6 +5187,8 @@ int wl1271_init_ieee80211(struct wl1271 *wl)
 		BIT(NL80211_IFTYPE_ADHOC) | BIT(NL80211_IFTYPE_AP) |
 		BIT(NL80211_IFTYPE_P2P_CLIENT) | BIT(NL80211_IFTYPE_P2P_GO);
 	wl->hw->wiphy->max_scan_ssids = 1;
+	wl->hw->wiphy->max_sched_scan_ssids = 16;
+	wl->hw->wiphy->max_match_sets = 16;
 	/*
 	 * Maximum length of elements in scanning probe request templates
 	 * should be the maximum length possible for a template, without
@@ -4939,6 +5196,9 @@ int wl1271_init_ieee80211(struct wl1271 *wl)
 	 */
 	wl->hw->wiphy->max_scan_ie_len = WL1271_CMD_TEMPL_DFLT_SIZE -
 			sizeof(struct ieee80211_header);
+
+	wl->hw->wiphy->max_sched_scan_ie_len = WL1271_CMD_TEMPL_DFLT_SIZE -
+		sizeof(struct ieee80211_header);
 
 	/* make sure all our channels fit in the scanned_ch bitmask */
 	BUILD_BUG_ON(ARRAY_SIZE(wl1271_channels) +
@@ -5237,6 +5497,13 @@ MODULE_PARM_DESC(bug_on_recovery, "BUG() on fw recovery");
 module_param_named(fwlog, fwlog_param, charp, 0);
 MODULE_PARM_DESC(keymap,
 		 "FW logger options: continuous, ondemand, dbgpins or disable");
+
+module_param_named(fref, fref_param, charp, 0);
+MODULE_PARM_DESC(fref, "FREF clock: 19.2, 26, 26x, 38.4, 38.4x, 52");
+
+module_param_named(tcxo, tcxo_param, charp, 0);
+MODULE_PARM_DESC(tcxo,
+		 "TCXO clock: 19.2, 26, 38.4, 52, 16.368, 32.736, 16.8, 33.6");
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Luciano Coelho <coelho@ti.com>");

@@ -844,7 +844,7 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
 		     rx->sdata->vif.type != NL80211_IFTYPE_WDS &&
 		     (!rx->sta || !test_sta_flags(rx->sta, WLAN_STA_ASSOC)))) {
 		if (rx->sta && rx->sta->dummy &&
-		    ieee80211_is_data(hdr->frame_control)) {
+		    ieee80211_is_data_present(hdr->frame_control)) {
 			u16 ethertype;
 			u8 *payload;
 
@@ -852,7 +852,7 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
 				ieee80211_hdrlen(hdr->frame_control);
 			ethertype = (payload[6] << 8) | payload[7];
 			if (cpu_to_be16(ethertype) ==
-				rx->sdata->control_port_protocol)
+			    rx->sdata->control_port_protocol)
 				return RX_CONTINUE;
 		}
 		return RX_DROP_MONITOR;
