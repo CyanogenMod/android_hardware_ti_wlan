@@ -8,21 +8,23 @@ LIBS += -lnl -lnl-genl -lm
 OBJS = nvs.o misc_cmds.o calibrator.o plt.o ini.o
 
 %.o: %.c calibrator.h nl80211.h plt.h nvs_dual_band.h
-    $(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 all: $(OBJS) 
-    $(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o calibrator
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o calibrator
 
 uim:
-    $(CC) $(CFLAGS) $(LDFLAGS) uim_rfkill/$@.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) uim_rfkill/$@.c -o $@
 
 static: $(OBJS) 
-    $(CC) $(LDFLAGS) --static $(OBJS) $(LIBS) -o calibrator
+	$(CC) $(LDFLAGS) --static $(OBJS) $(LIBS) -o calibrator
 
 install:
-    @echo Copy files to $(NFSROOT)/home/root
-    @cp -f ./calibrator $(NFSROOT)/home/root
-    @cp -f ./scripts/go.sh $(NFSROOT)/home/root
+	@echo Copy files to $(NFSROOT)/home/root
+	@cp -f ./calibrator $(NFSROOT)/home/root
+	@chmod 755 $(NFSROOT)/home/root/calibrator
+	@cp -f ./scripts/wl12xx-tool.sh $(NFSROOT)/home/root
+	@chmod 755 $(NFSROOT)/home/root/wl12xx-tool.sh
 
 clean:
-    @rm -f *.o calibrator uim
+	@rm -f *.o calibrator uim
