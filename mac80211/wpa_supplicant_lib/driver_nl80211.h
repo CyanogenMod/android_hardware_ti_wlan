@@ -146,6 +146,9 @@ struct wpa_driver_nl80211_data {
 	int last_freq;
 	int last_freq_ht;
 #endif /* HOSTAPD */
+
+	u8 wowlan_triggers;
+	u8 wowlan_enabled;
 };
 
 #endif
