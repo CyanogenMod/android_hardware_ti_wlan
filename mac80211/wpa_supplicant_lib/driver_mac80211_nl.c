@@ -118,53 +118,124 @@ nla_put_failure:
 	return ret;
 }
 
-#define RX_SELF_FILTER			0
-#define RX_BROADCAST_FILTER		1
-#define RX_IPV4_MULTICAST_FILTER	2
-#define RX_IPV6_MULTICAST_FILTER	3
-#define NR_RX_FILTERS			4
+#define MAX_PATTERN_SIZE        256
+#define MAX_MASK_SIZE           (MAX_PATTERN_SIZE/8)
 
-static const u8 filter_bcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
-static const u8 filter_ipv4mc[] = {0x01,0x00,0x5e};
-static const u8 filter_ipv6mc[] = {0x33,0x33};
+/* Describes a single RX filter configuration */
+struct rx_filter {
+	/* name - A human recongmizable name for the filter */
+	char *name;
 
-static int nl80211_get_wowlan_pat(struct i802_bss *bss, u8 *buf, int buflen,
-				  u8* mask, int filter)
+	/* get_pattern_handler - A handler which enables the user to configure
+	 * the pattern dynamically (For example filter according to the HW addr).
+	 * If NULL the static pattern configured will be used.
+	 * buf - the pattern will be copied to buf
+	 * buflen - the size of buf
+	 * arg - A generic input argumet which can be passed to the handler
+	 */
+	int (* get_pattern_handler) (u8 *buf, int buflen, void* arg);
+
+	/* pattern - A static pattern to filter
+	 * This array contains the bytes of the pattern. The mask field
+	 * indicates which bytes should be used in the filter and which
+	 * can be discarded
+	 */
+	u8 pattern[MAX_PATTERN_SIZE];
+
+	/* pattern_len - The number of bytes used in pattern */
+	u8 pattern_len;
+
+	/* mask - A bit mask indicating which bytes in pattern should be
+	 * used for filtering. Each bit here corresponds to a byte in pattern
+	 */
+	u8 mask[MAX_MASK_SIZE];
+
+	/* mask_len - The number of bytes used in mask */
+	u8 mask_len;
+};
+
+static u8 *nl80211_rx_filter_get_pattern(struct rx_filter *filter, void *arg)
 {
-	int len = 0, ret;
-	if (buflen < ETH_ALEN)
-		return -1;
-
-	switch(filter) {
-	case RX_SELF_FILTER:
-		ret = linux_get_ifhwaddr(bss->drv->ioctl_sock,
-					 bss->ifname, buf);
-		if (ret)
-			return -1;
-		len = ETH_ALEN;
-		*mask = 0x3F;
-		break;
-	case RX_BROADCAST_FILTER:
-		memcpy(buf, filter_bcast, sizeof(filter_bcast));
-		len = ETH_ALEN;
-		*mask = 0x3F;
-		break;
-	case RX_IPV4_MULTICAST_FILTER:
-		memcpy(buf, filter_ipv4mc, sizeof(filter_ipv4mc));
-		len = sizeof(filter_ipv4mc);
-		*mask = 0x7; /* 3 bytes */
-		break;
-	case RX_IPV6_MULTICAST_FILTER:
-		memcpy(buf, filter_ipv6mc, sizeof(filter_ipv6mc));
-		len = sizeof(filter_ipv6mc);
-		*mask = 0x3; /* 2 bytes */
-		break;
-	default:
-		len = -1;
-		break;
+	if (filter->get_pattern_handler) {
+		if (filter->get_pattern_handler(filter->pattern,
+					        filter->pattern_len, arg)) {
+			return NULL;
+		}
 	}
-	return len;
+
+	return filter->pattern;
 }
+
+static int nl80211_self_filter_get_pattern_handler(u8 *buf, int buflen, void *arg)
+{
+	int ret;
+	struct i802_bss *bss = (struct i802_bss *)arg;
+
+	ret = linux_get_ifhwaddr(bss->drv->ioctl_sock,
+				 bss->ifname, buf);
+	if (ret) {
+		wpa_printf(MSG_ERROR, "Failed to get own HW addr (%d)", ret);
+		return -1;
+	}
+	return 0;
+}
+
+static struct rx_filter rx_filters[] = {
+	{.name = "self",
+	 .pattern = {},
+	 .pattern_len = 6,
+	 .mask = { BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) },
+	 .mask_len = 1,
+	 .get_pattern_handler = nl80211_self_filter_get_pattern_handler,
+	},
+
+	{.name = "bcast",
+	 .pattern = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
+	 .pattern_len = 6,
+	 .mask = { BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) },
+	 .mask_len = 1,
+	},
+
+	{.name = "ipv4mc",
+	 .pattern = {0x01,0x00,0x5E},
+	 .pattern_len = 3,
+	 .mask = { BIT(0) | BIT(1) | BIT(2) },
+	 .mask_len = 1,
+	},
+
+	{.name = "ipv6mc",
+	 .pattern = {0x33,0x33},
+	 .pattern_len = 2,
+	 .mask = { BIT(0) | BIT(1) },
+	 .mask_len = 1,
+	},
+
+	{.name = "arp",
+	 .pattern = {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		     0   , 0   , 0   , 0   , 0x08, 0x06},
+	 .pattern_len = 14,
+	 .mask = { 0,                                 /* OCTET 1 */
+		   BIT(4) | BIT(5) },                 /* OCTET 2 */
+	 .mask_len = 2,
+	},
+
+	{.name = "dhcp",
+	 .pattern = {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		     0   , 0   , 0   , 0   , 0   , 0   , 0x45, 0   ,
+		     0   , 0   , 0   , 0   , 0   , 0   , 0   , 0x11,
+		     0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		     0   , 0   , 0   , 0   , 0x00, 0x44},
+	 .pattern_len = 38,
+	 .mask = { 0,                                 /* OCTET 1 */
+		   BIT(6),                            /* OCTET 2 */
+		   BIT(7),                            /* OCTET 3 */
+		   0,                                 /* OCTET 4 */
+		   BIT(4) | BIT(5) },                 /* OCTET 5 */
+	 .mask_len = 5,
+	},
+};
+
+#define NR_RX_FILTERS			(sizeof(rx_filters) / sizeof(struct rx_filter))
 
 static int nl80211_set_wowlan_triggers(struct i802_bss *bss, int enable)
 {
@@ -200,25 +271,21 @@ static int nl80211_set_wowlan_triggers(struct i802_bss *bss, int enable)
 
 		for (i = 0; i < NR_RX_FILTERS; i++) {
 			if (bss->drv->wowlan_triggers & (1 << i)) {
-				u8 patbuf[ETH_ALEN], patmask;
-				int patlen;
+				struct rx_filter *rx_filter = &rx_filters[i];
 				int patnr = 1;
-				int j;
+				u8 *pattern = nl80211_rx_filter_get_pattern(rx_filter,bss);
 
-				patlen = nl80211_get_wowlan_pat(bss, patbuf,
-						      sizeof(patbuf),
-				                      &patmask, i);
-				if (!patlen)
+				if (!pattern)
 					continue;
-				else if (patlen < 0) {
-					ret = -1;
-					break;
-				}
+
 				pat = nla_nest_start(pats, patnr++);
 				NLA_PUT(pats, NL80211_WOWLAN_PKTPAT_MASK,
-						  1, &patmask);
+					rx_filter->mask_len,
+					rx_filter->mask);
 				NLA_PUT(pats, NL80211_WOWLAN_PKTPAT_PATTERN,
-						   patlen, patbuf);
+					rx_filter->pattern_len,
+					pattern);
+
 				nla_nest_end(pats, pat);
 			}
 		}
