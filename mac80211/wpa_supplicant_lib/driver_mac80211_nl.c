@@ -210,15 +210,6 @@ static struct rx_filter rx_filters[] = {
 	 .mask_len = 1,
 	},
 
-	{.name = "arp",
-	 .pattern = {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
-		     0   , 0   , 0   , 0   , 0x08, 0x06},
-	 .pattern_len = 14,
-	 .mask = { 0,                                 /* OCTET 1 */
-		   BIT(4) | BIT(5) },                 /* OCTET 2 */
-	 .mask_len = 2,
-	},
-
 	{.name = "dhcp",
 	 .pattern = {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
 		     0   , 0   , 0   , 0   , 0   , 0   , 0x45, 0   ,
