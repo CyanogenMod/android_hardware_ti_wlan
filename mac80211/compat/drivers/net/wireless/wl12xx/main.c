@@ -3142,8 +3142,10 @@ static int wl1271_op_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			goto out_sleep;
 		}
 
-		/* reconfiguring arp response (data packet) */
-		if (wl->bss_type == BSS_TYPE_STA_BSS &&
+		/* reconfiguring arp response if the unicast encryption
+		 * type was changed
+		*/
+		if (sta && wl->bss_type == BSS_TYPE_STA_BSS &&
 		    wl->encryption_type != key_type) {
 			wl->encryption_type = key_type;
 			ret = wl1271_cmd_build_arp_rsp(wl, wl->ip_addr);
