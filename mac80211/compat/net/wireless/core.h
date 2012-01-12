@@ -128,7 +128,6 @@ static inline void assert_cfg80211_lock(void)
 
 struct cfg80211_internal_bss {
 	struct list_head list;
-	struct list_head list_aliases;
 	struct rb_node rbn;
 	unsigned long ts;
 	struct kref ref;
