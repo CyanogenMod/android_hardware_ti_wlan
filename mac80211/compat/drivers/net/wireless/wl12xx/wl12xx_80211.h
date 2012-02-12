@@ -77,7 +77,7 @@ struct wl12xx_ie_header {
 
 struct wl12xx_ie_ssid {
 	struct wl12xx_ie_header header;
-	char ssid[IW_ESSID_MAX_SIZE];
+	char ssid[IEEE80211_MAX_SSID_LEN];
 } __packed;
 
 struct wl12xx_ie_rates {
@@ -114,11 +114,6 @@ struct wl12xx_ps_poll_template {
 	__le16 aid;
 	u8 bssid[ETH_ALEN];
 	u8 ta[ETH_ALEN];
-} __packed;
-
-struct wl12xx_qos_null_data_template {
-	struct ieee80211_header header;
-	__le16 qos_ctl;
 } __packed;
 
 struct wl12xx_arp_rsp_template {

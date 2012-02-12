@@ -26,6 +26,9 @@ static inline wait_queue_head_t *sk_sleep(struct sock *sk)
 
 #define sdio_writeb_readb(func, write_byte, addr, err_ret) sdio_readb(func, addr, err_ret)
 
+/* mask hex_to_bin as RHEL6 backports this */
+#define hex_to_bin(a) compat_hex_to_bin(a)
+
 int hex_to_bin(char ch);
 
 extern loff_t noop_llseek(struct file *file, loff_t offset, int origin);

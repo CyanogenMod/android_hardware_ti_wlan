@@ -46,6 +46,9 @@
 #define netdev_info(dev, format, args...)			\
 	netdev_printk(KERN_INFO, dev, format, ##args)
 
+/* mask netdev_dbg as RHEL6 backports this */
+#if !defined(netdev_dbg)
+
 #if defined(DEBUG)
 #define netdev_dbg(__dev, format, args...)			\
 	netdev_printk(KERN_DEBUG, __dev, format, ##args)
@@ -64,6 +67,11 @@ do {								\
 })
 #endif
 
+#endif
+
+/* mask netdev_vdbg as RHEL6 backports this */
+#if !defined(netdev_dbg)
+
 #if defined(VERBOSE_DEBUG)
 #define netdev_vdbg	netdev_dbg
 #else
@@ -74,6 +82,8 @@ do {								\
 		netdev_printk(KERN_DEBUG, dev, format, ##args);	\
 	0;							\
 })
+#endif
+
 #endif
 
 /*
@@ -107,6 +117,9 @@ do {					  			\
 #define netif_info(priv, type, dev, fmt, args...)		\
 	netif_printk(priv, type, KERN_INFO, (dev), fmt, ##args)
 
+/* mask netif_dbg as RHEL6 backports this */
+#if !defined(netif_dbg)
+
 #if defined(DEBUG)
 #define netif_dbg(priv, type, dev, format, args...)		\
 	netif_printk(priv, type, KERN_DEBUG, dev, format, ##args)
@@ -127,6 +140,11 @@ do {								\
 })
 #endif
 
+#endif
+
+/* mask netif_vdbg as RHEL6 backports this */
+#if !defined(netif_vdbg)
+
 #if defined(VERBOSE_DEBUG)
 #define netif_vdbg	netdev_dbg
 #else
@@ -136,6 +154,7 @@ do {								\
 		netif_printk(KERN_DEBUG, dev, format, ##args);	\
 	0;							\
 })
+#endif
 #endif
 /* source: include/linux/netdevice.h */
 
@@ -212,6 +231,8 @@ do {							\
 #define usb_alloc_coherent(dev, size, mem_flags, dma) usb_buffer_alloc(dev, size, mem_flags, dma)
 #define usb_free_coherent(dev, size, addr, dma) usb_buffer_free(dev, size, addr, dma)
 
+/* only include this if DEFINE_DMA_UNMAP_ADDR is not set as debian squeeze also backports this  */
+#ifndef DEFINE_DMA_UNMAP_ADDR
 #ifdef CONFIG_NEED_DMA_MAP_STATE
 #define DEFINE_DMA_UNMAP_ADDR(ADDR_NAME)        dma_addr_t ADDR_NAME
 #define DEFINE_DMA_UNMAP_LEN(LEN_NAME)          __u32 LEN_NAME
@@ -227,6 +248,10 @@ do {							\
 #define dma_unmap_len(PTR, LEN_NAME)             (0)
 #define dma_unmap_len_set(PTR, LEN_NAME, VAL)    do { } while (0)
 #endif
+#endif
+
+/* mask dma_set_coherent_mask as debian squeeze also backports this */
+#define dma_set_coherent_mask(a, b) compat_dma_set_coherent_mask(a, b)
 
 static inline int dma_set_coherent_mask(struct device *dev, u64 mask)
 {

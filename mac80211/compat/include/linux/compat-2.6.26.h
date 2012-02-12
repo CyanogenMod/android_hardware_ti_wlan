@@ -447,6 +447,9 @@ static inline u64 div_u64(u64 dividend, u32 divisor)
 #endif
 /* source: include/math64.h */
 
+#define hex_asc_lo(x)	hex_asc((x) & 0x0f)
+#define hex_asc_hi(x)	hex_asc(((x) & 0xf0) >> 4)
+
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,26)) */
 
 #endif /* LINUX_26_26_COMPAT_H */

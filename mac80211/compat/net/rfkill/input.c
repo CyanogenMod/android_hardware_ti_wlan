@@ -15,6 +15,7 @@
 
 #include <linux/input.h>
 #include <linux/slab.h>
+#include <linux/moduleparam.h>
 #include <linux/workqueue.h>
 #include <linux/init.h>
 #include <linux/rfkill.h>
@@ -232,7 +233,7 @@ static int rfkill_connect(struct input_handler *handler, struct input_dev *dev,
 
 	handle->dev = dev;
 	handle->handler = handler;
-	handle->name = "rfkill";
+	handle->name = "rfkill_backport";
 
 	/* causes rfkill_start() to be called */
 	error = input_register_handle(handle);

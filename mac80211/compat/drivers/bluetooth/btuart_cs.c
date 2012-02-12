@@ -589,9 +589,7 @@ static int btuart_close(btuart_info_t *info)
 
 	spin_unlock_irqrestore(&(info->lock), flags);
 
-	if (hci_unregister_dev(hdev) < 0)
-		BT_ERR("Can't unregister HCI device %s", hdev->name);
-
+	hci_unregister_dev(hdev);
 	hci_free_dev(hdev);
 
 	return 0;
@@ -796,7 +794,7 @@ static void btuart_release(struct pcmcia_device *link)
 	pcmcia_disable_device(link);
 }
 
-static struct pcmcia_device_id btuart_ids[] = {
+static const struct pcmcia_device_id btuart_ids[] = {
 	/* don't use this driver. Use serial_cs + hci_uart instead */
 	PCMCIA_DEVICE_NULL
 };

@@ -5,6 +5,8 @@
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0))
 
+#include <linux/rcupdate.h>
+
 /*
  * since commit 1c5cae815d19ffe02bdfda1260949ef2b1806171
  * "net: call dev_alloc_name from register_netdevice" dev_alloc_name is
@@ -78,6 +80,50 @@ static inline int __must_check kstrtos32_from_user(const char __user *s, size_t 
 {
 	return kstrtoint_from_user(s, count, base, res);
 }
+
+/* 
+ * This adds a nested function everywhere kfree_rcu() was called. This
+ * function frees the memory and is given as a function to call_rcu().
+ * The rcu callback could happen every time also after the module was
+ *  unloaded and this will cause problems.
+ */
+#define kfree_rcu(data, rcuhead)		do {			\
+		void __kfree_rcu_fn(struct rcu_head *rcu_head)		\
+		{							\
+			void *___ptr;					\
+			___ptr = container_of(rcu_head, typeof(*(data)), rcuhead);\
+			kfree(___ptr);					\
+		}							\
+		call_rcu(&(data)->rcuhead, __kfree_rcu_fn);		\
+	} while (0)
+
+#ifdef MODULE
+
+/*
+ * The define overwriting module_exit is based on the original module_exit
+ * which looks like this:
+ * #define module_exit(exitfn)                                    \
+ *         static inline exitcall_t __exittest(void)               \
+ *         { return exitfn; }                                      \
+ *         void cleanup_module(void) __attribute__((alias(#exitfn)));
+ *
+ * We replaced the call to the actual function exitfn() with a call to our
+ * function which calls the original exitfn() and then rcu_barrier()
+ *
+ * As a module will not be unloaded that ofter it should not have a big
+ * performance impact when rcu_barrier() is called on every module exit,
+ * also when no kfree_rcu() backport is used in that module.
+ */
+#undef module_exit
+#define module_exit(exitfn)						\
+	static void __exit __exit_compat(void)				\
+	{								\
+		exitfn();						\
+		rcu_barrier();						\
+	}								\
+	void cleanup_module(void) __attribute__((alias("__exit_compat")));
+
+#endif
 
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)) */
 

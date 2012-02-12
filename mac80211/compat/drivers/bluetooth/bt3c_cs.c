@@ -652,9 +652,7 @@ static int bt3c_close(bt3c_info_t *info)
 
 	bt3c_hci_close(hdev);
 
-	if (hci_unregister_dev(hdev) < 0)
-		BT_ERR("Can't unregister HCI device %s", hdev->name);
-
+	hci_unregister_dev(hdev);
 	hci_free_dev(hdev);
 
 	return 0;
@@ -860,7 +858,7 @@ static void bt3c_release(struct pcmcia_device *link)
 }
 
 
-static struct pcmcia_device_id bt3c_ids[] = {
+static const struct pcmcia_device_id bt3c_ids[] = {
 	PCMCIA_DEVICE_PROD_ID13("3COM", "Bluetooth PC Card", 0xefce0a31, 0xd4ce9b02),
 	PCMCIA_DEVICE_NULL
 };

@@ -5,6 +5,7 @@ extern const struct ieee80211_regdomain *cfg80211_regdomain;
 
 bool is_world_regdom(const char *alpha2);
 bool reg_is_valid_request(const char *alpha2);
+bool reg_supported_dfs_region(u8 dfs_region);
 
 int regulatory_hint_user(const char *alpha2);
 
@@ -15,6 +16,8 @@ int __init regulatory_init(void);
 void regulatory_exit(void);
 
 int set_regdom(const struct ieee80211_regdomain *rd);
+
+void regulatory_update(struct wiphy *wiphy, enum nl80211_reg_initiator setby);
 
 /**
  * regulatory_hint_found_beacon - hints a beacon was found on a channel

@@ -28,8 +28,9 @@ obj-$(CONFIG_COMPAT_WIRELESS) += net/wireless/ net/mac80211/
 obj-$(CONFIG_COMPAT_WIRELESS_MODULES) += drivers/net/wireless/
 
 
-obj-$(CONFIG_COMPAT_NETWORK_MODULES) += drivers/net/
-obj-$(CONFIG_COMPAT_VAR_MODULES) +=  drivers/ssb/ drivers/misc/eeprom/
+obj-$(CONFIG_COMPAT_NETWORK_MODULES) += drivers/net/ethernet/atheros/
+obj-$(CONFIG_COMPAT_NETWORK_MODULES) += drivers/net/ethernet/broadcom/
+
 
 ifeq ($(CONFIG_STAGING_EXCLUDE_BUILD),)
 endif
@@ -323,14 +324,12 @@ uninstall:
 	@rm -rf $(KLIB)/$(KMODDIR)/net/mac80211/
 	@rm -rf $(KLIB)/$(KMODDIR)/net/rfkill/
 	@rm -rf $(KLIB)/$(KMODDIR)/net/wireless/
-	@rm -rf $(KLIB)/$(KMODDIR)/drivers/ssb/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/net/usb/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/net/wireless/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/staging/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/net/atl*
 	@# Lets only remove the stuff we are sure we are providing
 	@# on the misc directory.
-	@rm -f $(KLIB)/$(KMODDIR)/drivers/misc/eeprom/eeprom_93cx6.ko*
 	@rm -f $(KLIB)/$(KMODDIR)/drivers/misc/eeprom_93cx6.ko*
 	@rm -f $(KLIB)/$(KMODDIR)/drivers/net/b44.ko*
 	@/sbin/depmod -a

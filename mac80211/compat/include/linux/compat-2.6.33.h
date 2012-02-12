@@ -13,10 +13,13 @@
 #include <pcmcia/ds.h>
 #endif
 #include <linux/firmware.h>
+#include <linux/input.h>
 
+#if defined(CONFIG_COMPAT_FIRMWARE_CLASS)
 #define release_firmware compat_release_firmware
 #define request_firmware compat_request_firmware
 #define request_firmware_nowait compat_request_firmware_nowait
+#endif
 
 #if defined(CONFIG_FW_LOADER) || defined(CONFIG_FW_LOADER_MODULE)
 int compat_request_firmware(const struct firmware **fw, const char *name,
@@ -47,13 +50,19 @@ static inline void compat_release_firmware(const struct firmware *fw)
 }
 #endif
 
+/* mask KEY_RFKILL as RHEL6 backports this */
+#if !defined(KEY_RFKILL)
 #define KEY_RFKILL		247	/* Key that controls all radios */
+#endif
 
 #define IFF_DONT_BRIDGE 0x800		/* disallow bridging this ether dev */
 /* source: include/linux/if.h */
 
 /* this will never happen on older kernels */
 #define NETDEV_POST_INIT 0xffff
+
+/* mask netdev_alloc_skb_ip_align as debian squeeze also backports this */
+#define netdev_alloc_skb_ip_align(a, b) compat_netdev_alloc_skb_ip_align(a, b)
 
 static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
                 unsigned int length)
@@ -107,6 +116,9 @@ int pccard_loop_tuple(struct pcmcia_socket *s, unsigned int function,
 
 #define sock_recv_ts_and_drops(msg, sk, skb) sock_recv_timestamp(msg, sk, skb)
 
+/* mask pci_pcie_cap as debian squeeze also backports this */
+#define pci_pcie_cap(a) compat_pci_pcie_cap(a)
+
 /**
  * pci_pcie_cap - get the saved PCIe capability offset
  * @dev: PCI device
@@ -122,6 +134,9 @@ static inline int pci_pcie_cap(struct pci_dev *dev)
 {
 	return pci_find_capability(dev, PCI_CAP_ID_EXP);
 }
+
+/* mask pci_is_pcie as RHEL6 backports this */
+#define pci_is_pcie(a) compat_pci_is_pcie(a)
 
 /**
  * pci_is_pcie - check if the PCI device is PCI Express capable
@@ -143,6 +158,14 @@ static inline bool pci_is_pcie(struct pci_dev *dev)
 #else
 #define __always_unused			/* unimplemented */
 #endif
+
+/* mask IS_ERR_OR_NULL as debian squeeze also backports this */
+#define IS_ERR_OR_NULL(a) compat_IS_ERR_OR_NULL(a)
+
+static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
+{
+	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+}
 
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33)) */
 

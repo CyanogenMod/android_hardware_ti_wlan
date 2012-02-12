@@ -18,7 +18,7 @@
  * hex_to_bin() converts one hex digit to its actual value or -1 in case of bad
  * input.
  */
-int hex_to_bin(char ch)
+int compat_hex_to_bin(char ch)
 {
 	if ((ch >= '0') && (ch <= '9'))
 		return ch - '0';
@@ -27,7 +27,7 @@ int hex_to_bin(char ch)
 		return ch - 'a' + 10;
 	return -1;
 }
-EXPORT_SYMBOL(hex_to_bin);
+EXPORT_SYMBOL(compat_hex_to_bin);
 
 /**
  * noop_llseek - No Operation Performed llseek implementation

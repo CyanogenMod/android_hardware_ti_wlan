@@ -180,82 +180,38 @@ static int hci_sock_release(struct socket *sock)
 	return 0;
 }
 
-struct bdaddr_list *hci_blacklist_lookup(struct hci_dev *hdev, bdaddr_t *bdaddr)
-{
-	struct list_head *p;
-
-	list_for_each(p, &hdev->blacklist) {
-		struct bdaddr_list *b;
-
-		b = list_entry(p, struct bdaddr_list, list);
-
-		if (bacmp(bdaddr, &b->bdaddr) == 0)
-			return b;
-	}
-
-	return NULL;
-}
-
-static int hci_blacklist_add(struct hci_dev *hdev, void __user *arg)
+static int hci_sock_blacklist_add(struct hci_dev *hdev, void __user *arg)
 {
 	bdaddr_t bdaddr;
-	struct bdaddr_list *entry;
+	int err;
 
 	if (copy_from_user(&bdaddr, arg, sizeof(bdaddr)))
 		return -EFAULT;
 
-	if (bacmp(&bdaddr, BDADDR_ANY) == 0)
-		return -EBADF;
+	hci_dev_lock(hdev);
 
-	if (hci_blacklist_lookup(hdev, &bdaddr))
-		return -EEXIST;
+	err = hci_blacklist_add(hdev, &bdaddr);
 
-	entry = kzalloc(sizeof(struct bdaddr_list), GFP_KERNEL);
-	if (!entry)
-		return -ENOMEM;
+	hci_dev_unlock(hdev);
 
-	bacpy(&entry->bdaddr, &bdaddr);
-
-	list_add(&entry->list, &hdev->blacklist);
-
-	return 0;
+	return err;
 }
 
-int hci_blacklist_clear(struct hci_dev *hdev)
-{
-	struct list_head *p, *n;
-
-	list_for_each_safe(p, n, &hdev->blacklist) {
-		struct bdaddr_list *b;
-
-		b = list_entry(p, struct bdaddr_list, list);
-
-		list_del(p);
-		kfree(b);
-	}
-
-	return 0;
-}
-
-static int hci_blacklist_del(struct hci_dev *hdev, void __user *arg)
+static int hci_sock_blacklist_del(struct hci_dev *hdev, void __user *arg)
 {
 	bdaddr_t bdaddr;
-	struct bdaddr_list *entry;
+	int err;
 
 	if (copy_from_user(&bdaddr, arg, sizeof(bdaddr)))
 		return -EFAULT;
 
-	if (bacmp(&bdaddr, BDADDR_ANY) == 0)
-		return hci_blacklist_clear(hdev);
+	hci_dev_lock(hdev);
 
-	entry = hci_blacklist_lookup(hdev, &bdaddr);
-	if (!entry)
-		return -ENOENT;
+	err = hci_blacklist_del(hdev, &bdaddr);
 
-	list_del(&entry->list);
-	kfree(entry);
+	hci_dev_unlock(hdev);
 
-	return 0;
+	return err;
 }
 
 /* Ioctls that require bound socket */
@@ -290,12 +246,12 @@ static inline int hci_sock_bound_ioctl(struct sock *sk, unsigned int cmd, unsign
 	case HCIBLOCKADDR:
 		if (!capable(CAP_NET_ADMIN))
 			return -EACCES;
-		return hci_blacklist_add(hdev, (void __user *) arg);
+		return hci_sock_blacklist_add(hdev, (void __user *) arg);
 
 	case HCIUNBLOCKADDR:
 		if (!capable(CAP_NET_ADMIN))
 			return -EACCES;
-		return hci_blacklist_del(hdev, (void __user *) arg);
+		return hci_sock_blacklist_del(hdev, (void __user *) arg);
 
 	default:
 		if (hdev->ioctl)
@@ -387,8 +343,11 @@ static int hci_sock_bind(struct socket *sock, struct sockaddr *addr, int addr_le
 	if (haddr.hci_channel > HCI_CHANNEL_CONTROL)
 		return -EINVAL;
 
-	if (haddr.hci_channel == HCI_CHANNEL_CONTROL && !enable_mgmt)
-		return -EINVAL;
+	if (haddr.hci_channel == HCI_CHANNEL_CONTROL) {
+		if (!enable_mgmt)
+			return -EINVAL;
+		set_bit(HCI_PI_MGMT_INIT, &hci_pi(sk)->flags);
+	}
 
 	lock_sock(sk);
 
@@ -579,10 +538,10 @@ static int hci_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
 
 		if (test_bit(HCI_RAW, &hdev->flags) || (ogf == 0x3f)) {
 			skb_queue_tail(&hdev->raw_q, skb);
-			tasklet_schedule(&hdev->tx_task);
+			queue_work(hdev->workqueue, &hdev->tx_work);
 		} else {
 			skb_queue_tail(&hdev->cmd_q, skb);
-			tasklet_schedule(&hdev->cmd_task);
+			queue_work(hdev->workqueue, &hdev->cmd_work);
 		}
 	} else {
 		if (!capable(CAP_NET_RAW)) {
@@ -591,7 +550,7 @@ static int hci_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
 		}
 
 		skb_queue_tail(&hdev->raw_q, skb);
-		tasklet_schedule(&hdev->tx_task);
+		queue_work(hdev->workqueue, &hdev->tx_work);
 	}
 
 	err = len;
@@ -764,7 +723,7 @@ static struct proto hci_sk_proto = {
 	.obj_size	= sizeof(struct hci_pinfo)
 };
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,32))
+#if defined(CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN)
 static int hci_sock_create(struct net *net, struct socket *sock, int protocol,
 			   int kern)
 #else

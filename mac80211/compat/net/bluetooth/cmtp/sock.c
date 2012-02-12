@@ -190,7 +190,7 @@ static struct proto cmtp_proto = {
 	.obj_size	= sizeof(struct bt_sock)
 };
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,32))
+#if defined(CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN)
 static int cmtp_sock_create(struct net *net, struct socket *sock, int protocol,
 			    int kern)
 #else

@@ -332,6 +332,17 @@ struct wiphy *wiphy_new(const struct cfg80211_ops *ops, int sizeof_priv)
 	struct cfg80211_registered_device *rdev;
 	int alloc_size;
 
+	/*
+	 * Make sure the padding is >= the rest of the struct so that we
+	 * always keep it large enough to pad out the entire original
+	 * kernel's struct. We really only need to make sure it's larger
+	 * than the kernel compat is compiled against, but since it'll
+	 * only increase in size make sure it's larger than the current
+	 * version of it. Subtract since it's included.
+	 */
+	BUILD_BUG_ON(WIPHY_COMPAT_PAD_SIZE <
+		     sizeof(struct wiphy) - WIPHY_COMPAT_PAD_SIZE);
+
 	WARN_ON(ops->add_key && (!ops->del_key || !ops->set_default_key));
 	WARN_ON(ops->auth && (!ops->assoc || !ops->deauth || !ops->disassoc));
 	WARN_ON(ops->connect && !ops->disconnect);
@@ -368,6 +379,7 @@ struct wiphy *wiphy_new(const struct cfg80211_ops *ops, int sizeof_priv)
 
 	mutex_init(&rdev->mtx);
 	mutex_init(&rdev->devlist_mtx);
+	mutex_init(&rdev->sched_scan_mtx);
 	INIT_LIST_HEAD(&rdev->netdev_list);
 	spin_lock_init(&rdev->bss_lock);
 	INIT_LIST_HEAD(&rdev->bss_list);
@@ -487,6 +499,14 @@ int wiphy_register(struct wiphy *wiphy)
 	int i;
 	u16 ifmodes = wiphy->interface_modes;
 
+	if (WARN_ON((wiphy->wowlan.flags & WIPHY_WOWLAN_GTK_REKEY_FAILURE) &&
+		    !(wiphy->wowlan.flags & WIPHY_WOWLAN_SUPPORTS_GTK_REKEY)))
+		return -EINVAL;
+
+	if (WARN_ON(wiphy->ap_sme_capa &&
+		    !(wiphy->flags & WIPHY_FLAG_HAVE_AP_SME)))
+		return -EINVAL;
+
 	if (WARN_ON(wiphy->addresses && !wiphy->n_addresses))
 		return -EINVAL;
 
@@ -587,7 +607,7 @@ int wiphy_register(struct wiphy *wiphy)
 	}
 
 	/* set up regulatory info */
-	wiphy_update_regulatory(wiphy, NL80211_REGDOM_SET_BY_CORE);
+	regulatory_update(wiphy, NL80211_REGDOM_SET_BY_CORE);
 
 	list_add_rcu(&rdev->list, &cfg80211_rdev_list);
 	cfg80211_rdev_list_generation++;
@@ -621,6 +641,9 @@ int wiphy_register(struct wiphy *wiphy)
 	if (res)
 		goto out_rm_dev;
 
+	rtnl_lock();
+	rdev->wiphy.registered = true;
+	rtnl_unlock();
 	return 0;
 
 out_rm_dev:
@@ -651,6 +674,10 @@ EXPORT_SYMBOL(wiphy_rfkill_stop_polling);
 void wiphy_unregister(struct wiphy *wiphy)
 {
 	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
+
+	rtnl_lock();
+	rdev->wiphy.registered = false;
+	rtnl_unlock();
 
 	rfkill_unregister(rdev->rfkill);
 
@@ -711,6 +738,7 @@ void cfg80211_dev_free(struct cfg80211_registered_device *rdev)
 	rfkill_destroy(rdev->rfkill);
 	mutex_destroy(&rdev->mtx);
 	mutex_destroy(&rdev->devlist_mtx);
+	mutex_destroy(&rdev->sched_scan_mtx);
 	list_for_each_entry_safe(scan, tmp, &rdev->bss_list, list)
 		cfg80211_put_bss(&scan->pub);
 	cfg80211_rdev_free_wowlan(rdev);
@@ -747,12 +775,16 @@ static void wdev_cleanup_work(struct work_struct *work)
 		___cfg80211_scan_done(rdev, true);
 	}
 
+	cfg80211_unlock_rdev(rdev);
+
+	mutex_lock(&rdev->sched_scan_mtx);
+
 	if (WARN_ON(rdev->sched_scan_req &&
 		    rdev->sched_scan_req->dev == wdev->netdev)) {
 		__cfg80211_stop_sched_scan(rdev, false);
 	}
 
-	cfg80211_unlock_rdev(rdev);
+	mutex_unlock(&rdev->sched_scan_mtx);
 
 	mutex_lock(&rdev->devlist_mtx);
 	rdev->opencount--;
@@ -853,9 +885,9 @@ static int cfg80211_netdev_notifier_call(struct notifier_block * nb,
 			break;
 		case NL80211_IFTYPE_P2P_CLIENT:
 		case NL80211_IFTYPE_STATION:
-			cfg80211_lock_rdev(rdev);
+			mutex_lock(&rdev->sched_scan_mtx);
 			__cfg80211_stop_sched_scan(rdev, false);
-			cfg80211_unlock_rdev(rdev);
+			mutex_unlock(&rdev->sched_scan_mtx);
 
 			wdev_lock(wdev);
 #ifdef CONFIG_CFG80211_WEXT

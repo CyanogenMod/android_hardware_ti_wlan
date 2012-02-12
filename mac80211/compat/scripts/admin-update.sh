@@ -18,7 +18,7 @@
 GIT_URL="git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git"
 GIT_COMPAT_URL="git://git.kernel.org/pub/scm/linux/kernel/git/mcgrof/compat.git"
 
-INCLUDE_NET_BT="hci_core.h l2cap.h bluetooth.h rfcomm.h hci.h mgmt.h"
+INCLUDE_NET_BT="hci_core.h l2cap.h bluetooth.h rfcomm.h hci.h mgmt.h smp.h"
 NET_BT_DIRS="bluetooth bluetooth/bnep bluetooth/cmtp bluetooth/rfcomm bluetooth/hidp"
 
 INCLUDE_LINUX="ieee80211.h nl80211.h"
@@ -32,7 +32,7 @@ INCLUDE_LINUX_USB="usbnet.h rndis_host.h"
 INCLUDE_LINUX_SPI="libertas_spi.h"
 
 # The good new yummy stuff
-INCLUDE_NET="cfg80211.h ieee80211_radiotap.h"
+INCLUDE_NET="cfg80211.h ieee80211_radiotap.h cfg80211-wext.h"
 INCLUDE_NET="$INCLUDE_NET mac80211.h lib80211.h regulatory.h"
 
 # Pretty colors
@@ -218,10 +218,18 @@ fi
 DRIVERS="drivers/net/wireless/ath"
 DRIVERS="$DRIVERS drivers/net/wireless/ath/carl9170"
 DRIVERS="$DRIVERS drivers/net/wireless/ath/ath5k"
+DRIVERS="$DRIVERS drivers/net/wireless/ath/ath6kl"
 DRIVERS="$DRIVERS drivers/net/wireless/ath/ath9k"
 DRIVERS="$DRIVERS drivers/ssb"
+DRIVERS="$DRIVERS drivers/bcma"
 DRIVERS="$DRIVERS drivers/net/wireless/b43"
 DRIVERS="$DRIVERS drivers/net/wireless/b43legacy"
+DRIVERS="$DRIVERS drivers/net/wireless/brcm80211"
+DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/brcmfmac"
+DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/brcmsmac"
+DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/brcmsmac/phy"
+DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/brcmutil"
+DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/include"
 DRIVERS="$DRIVERS drivers/net/wireless/iwlegacy"
 DRIVERS="$DRIVERS drivers/net/wireless/iwlwifi"
 DRIVERS="$DRIVERS drivers/net/wireless/rt2x00"
@@ -236,6 +244,7 @@ DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192c"
 DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192ce"
 DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192cu"
 DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192se"
+DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192de"
 DRIVERS="$DRIVERS drivers/net/wireless/libertas_tf"
 DRIVERS="$DRIVERS drivers/net/wireless/ipw2x00"
 DRIVERS="$DRIVERS drivers/net/wireless/wl12xx"
@@ -245,13 +254,13 @@ DRIVERS="$DRIVERS drivers/net/wireless/orinoco"
 DRIVERS="$DRIVERS drivers/net/wireless/mwifiex"
 
 # Staging drivers
-STAGING_DRIVERS="drivers/staging/ath6kl"
-STAGING_DRIVERS="$STAGING_DRIVERS drivers/staging/brcm80211"
+STAGING_DRIVERS=""
 
 # Ethernet drivers
-DRIVERS="$DRIVERS drivers/net/atl1c"
-DRIVERS="$DRIVERS drivers/net/atl1e"
-DRIVERS="$DRIVERS drivers/net/atlx"
+DRIVERS="$DRIVERS drivers/net/ethernet/atheros"
+DRIVERS="$DRIVERS drivers/net/ethernet/atheros/atl1c"
+DRIVERS="$DRIVERS drivers/net/ethernet/atheros/atl1e"
+DRIVERS="$DRIVERS drivers/net/ethernet/atheros/atlx"
 
 # Bluetooth drivers
 DRIVERS_BT="drivers/bluetooth"
@@ -259,7 +268,7 @@ DRIVERS_BT="drivers/bluetooth"
 # Drivers that belong the the wireless directory
 DRIVER_FILES="adm8211.c  adm8211.h"
 DRIVER_FILES="$DRIVER_FILES rndis_wlan.c"
-DRIVER_FILES="$DRIVER_FILES mac80211_hwsim.c"
+DRIVER_FILES="$DRIVER_FILES mac80211_hwsim.c mac80211_hwsim.h"
 DRIVER_FILES="$DRIVER_FILES at76c50x-usb.c at76c50x-usb.h"
 DRIVER_FILES="$DRIVER_FILES mwl8k.c"
 
@@ -270,11 +279,15 @@ mkdir -p include/linux/ include/net/ include/linux/usb \
 	include/linux/spi \
 	include/trace \
 	include/pcmcia \
+	include/crypto \
 	net/mac80211/ net/wireless/ \
 	net/rfkill/ \
 	drivers/ssb/ \
+	drivers/bcma/ \
 	drivers/net/usb/ \
-	drivers/net/wireless/
+	drivers/net/wireless/ \
+	drivers/net/ethernet/atheros \
+	drivers/net/ethernet/broadcom
 mkdir -p include/net/bluetooth/
 
 # include/linux
@@ -285,6 +298,7 @@ for i in $INCLUDE_LINUX; do
 done
 
 cp -a $GIT_TREE/include/linux/ssb include/linux/
+cp -a $GIT_TREE/include/linux/bcma include/linux/
 cp -a $GIT_TREE/include/linux/rfkill.h include/linux/rfkill_backport.h
 
 # include/net
@@ -320,6 +334,10 @@ for i in $NET_DIRS; do
 	rm -f net/$i/*.mod.c
 done
 
+# Copy files needed for statically compiled regulatory rules database
+cp $GIT_TREE/net/wireless/db.txt net/wireless/
+cp $GIT_TREE/net/wireless/genregdb.awk net/wireless/
+
 # net/bluetooth
 for i in $NET_BT_DIRS; do
 	mkdir -p net/$i
@@ -332,9 +350,18 @@ done
 # Drivers in their own directory
 for i in $DRIVERS; do
 	mkdir -p $i
-	echo "Copying $GIT_TREE/$i/*.[ch]"
-	cp $GIT_TREE/$i/*.[ch] $i/
-	cp $GIT_TREE/$i/Makefile $i/
+
+	# -print -quit will just print once, so we don't burden
+	# this script with searching for further files if one is
+	# found
+	FILES_FOUND=$(find $GIT_TREE/$i/ -maxdepth 1 -type f -name \*.[ch] -print -quit | wc -l)
+	if [ $FILES_FOUND -eq 1 ]; then
+		echo "Copying $GIT_TREE/$i/*.[ch]"
+		cp $GIT_TREE/$i/*.[ch] $i/
+	fi
+	if [ -f $GIT_TREE/$i/Makefile ]; then
+		cp $GIT_TREE/$i/Makefile $i/
+	fi
 	if [ -f $GIT_TREE/$i/Kconfig ]; then
 		cp $GIT_TREE/$i/Kconfig $i/
 	fi
@@ -371,15 +398,11 @@ for i in $RNDIS_REQS; do
 	cp $GIT_TREE/$DIR/$i $DIR/
 done
 
-DIR="drivers/net"
+DIR="drivers/net/ethernet/broadcom"
 echo > $DIR/Makefile
 cp $GIT_TREE/$DIR/b44.[ch] $DIR
 # Not yet
 echo "obj-\$(CONFIG_B44) += b44.o" >> $DIR/Makefile
-echo "obj-\$(CONFIG_ATL1) += atlx/" >> $DIR/Makefile
-echo "obj-\$(CONFIG_ATL2) += atlx/" >> $DIR/Makefile
-echo "obj-\$(CONFIG_ATL1E) += atl1e/" >> $DIR/Makefile
-echo "obj-\$(CONFIG_ATL1C) += atl1c/" >> $DIR/Makefile
 
 # Misc
 mkdir -p drivers/misc/eeprom/
@@ -407,6 +430,7 @@ cp -a $GIT_COMPAT_TREE/include/linux/* include/linux/
 cp -a $GIT_COMPAT_TREE/include/net/* include/net/
 cp -a $GIT_COMPAT_TREE/include/trace/* include/trace/
 cp -a $GIT_COMPAT_TREE/include/pcmcia/* include/pcmcia/
+cp -a $GIT_COMPAT_TREE/include/crypto/* include/crypto/
 rm -f $COMPAT/*.mod.c
 
 # files we suck in for compat-wireless

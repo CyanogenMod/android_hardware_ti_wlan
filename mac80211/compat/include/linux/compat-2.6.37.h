@@ -12,6 +12,9 @@
 
 extern struct kobj_ns_type_operations net_ns_type_operations;
 
+/* mask skb_checksum_none_assert as RHEL6 backports this */
+#define skb_checksum_none_assert(a) compat_skb_checksum_none_assert(a)
+
 /**
  * skb_checksum_none_assert - make sure skb ip_summed is CHECKSUM_NONE
  * @skb: skb to check
@@ -109,6 +112,9 @@ extern void compat_led_brightness_set(struct led_classdev *led_cdev,
 #define alloc_ordered_workqueue(name, flags) create_singlethread_workqueue(name)
 
 #define netdev_refcnt_read(a) atomic_read(&a->refcnt)
+
+/* mask vzalloc as RHEL6 backports this */
+#define vzalloc(a) compat_vzalloc(a)
 
 extern void *vzalloc(unsigned long size);
 

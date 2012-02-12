@@ -26,18 +26,20 @@
 
 #include "wl12xx.h"
 
-int wl1271_scan(struct wl1271 *wl, const u8 *ssid, size_t ssid_len,
+int wl1271_scan(struct wl1271 *wl, struct ieee80211_vif *vif,
+		const u8 *ssid, size_t ssid_len,
 		struct cfg80211_scan_request *req);
 int wl1271_scan_stop(struct wl1271 *wl);
 int wl1271_scan_build_probe_req(struct wl1271 *wl,
 				const u8 *ssid, size_t ssid_len,
 				const u8 *ie, size_t ie_len, u8 band);
-void wl1271_scan_stm(struct wl1271 *wl);
+void wl1271_scan_stm(struct wl1271 *wl, struct ieee80211_vif *vif);
 void wl1271_scan_complete_work(struct work_struct *work);
 int wl1271_scan_sched_scan_config(struct wl1271 *wl,
+				     struct wl12xx_vif *wlvif,
 				     struct cfg80211_sched_scan_request *req,
 				     struct ieee80211_sched_scan_ies *ies);
-int wl1271_scan_sched_scan_start(struct wl1271 *wl);
+int wl1271_scan_sched_scan_start(struct wl1271 *wl, struct wl12xx_vif *wlvif);
 void wl1271_scan_sched_scan_stop(struct wl1271 *wl);
 void wl1271_scan_sched_scan_results(struct wl1271 *wl);
 
@@ -46,7 +48,7 @@ void wl1271_scan_sched_scan_results(struct wl1271 *wl);
 #define WL1271_SCAN_CURRENT_TX_PWR     0
 #define WL1271_SCAN_OPT_ACTIVE         0
 #define WL1271_SCAN_OPT_PASSIVE	       1
-#define WL1271_SCAN_OPT_TRIGGERED_SCAN 2
+#define WL1271_SCAN_OPT_SPLIT_SCAN     2
 #define WL1271_SCAN_OPT_PRIORITY_HIGH  4
 /* scan even if we fail to enter psm */
 #define WL1271_SCAN_OPT_FORCE          8
@@ -80,7 +82,7 @@ struct basic_scan_params {
 	/* Rate bit field for sending the probes */
 	__le32 tx_rate;
 
-	u8 ssid[IW_ESSID_MAX_SIZE];
+	u8 ssid[IEEE80211_MAX_SSID_LEN];
 	/* Band to scan */
 	u8 band;
 
@@ -174,7 +176,7 @@ struct wl1271_cmd_sched_scan_config {
 	u8 filter_type;
 
 	u8 ssid_len;     /* For SCAN_SSID_FILTER_SPECIFIC */
-	u8 ssid[IW_ESSID_MAX_SIZE];
+	u8 ssid[IEEE80211_MAX_SSID_LEN];
 
 	u8 n_probe_reqs; /* Number of probes requests per channel */
 
@@ -201,7 +203,7 @@ enum {
 struct wl1271_ssid {
 	u8 type;
 	u8 len;
-	u8 ssid[IW_ESSID_MAX_SIZE];
+	u8 ssid[IEEE80211_MAX_SSID_LEN];
 	/* u8 padding[2]; */
 } __packed;
 

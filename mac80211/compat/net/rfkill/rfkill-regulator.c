@@ -90,7 +90,6 @@ static int __devinit rfkill_regulator_probe(struct platform_device *pdev)
 				pdata->type,
 				&rfkill_regulator_ops, rfkill_data);
 	if (rf_kill == NULL) {
-		dev_err(&pdev->dev, "Cannot alloc rfkill device\n");
 		ret = -ENOMEM;
 		goto err_rfkill_alloc;
 	}
@@ -145,17 +144,7 @@ static struct platform_driver rfkill_regulator_driver = {
 	},
 };
 
-static int __init rfkill_regulator_init(void)
-{
-	return platform_driver_register(&rfkill_regulator_driver);
-}
-module_init(rfkill_regulator_init);
-
-static void __exit rfkill_regulator_exit(void)
-{
-	platform_driver_unregister(&rfkill_regulator_driver);
-}
-module_exit(rfkill_regulator_exit);
+module_platform_driver(rfkill_regulator_driver);
 
 MODULE_AUTHOR("Guiming Zhuo <gmzhuo@gmail.com>");
 MODULE_AUTHOR("Antonio Ospite <ospite@studenti.unina.it>");

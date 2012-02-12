@@ -14,6 +14,9 @@
 #define kparam_block_sysfs_write(a)
 #define kparam_unblock_sysfs_write(a)
 
+/* mask va_format as RHEL6 backports this */
+#define va_format compat_va_format
+
 struct va_format {
 	const char *fmt;
 	va_list *va;
@@ -124,6 +127,30 @@ static inline void tty_unlock(void) __releases(kernel_lock)
 #define __rcu
 
 static inline void pm_wakeup_event(struct device *dev, unsigned int msec) {}
+
+static inline bool skb_defer_rx_timestamp(struct sk_buff *skb)
+{
+	return false;
+}
+
+static inline void skb_tx_timestamp(struct sk_buff *skb)
+{
+}
+
+extern struct workqueue_struct *system_nrt_wq;
+
+void compat_system_workqueue_create(void);
+void compat_system_workqueue_destroy(void);
+
+#else
+
+static inline void compat_system_workqueue_create(void)
+{
+}
+
+static inline void compat_system_workqueue_destroy(void)
+{
+}
 
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)) */
 

@@ -23,7 +23,9 @@
 
 #include <linux/slab.h>
 #include <linux/wl12xx.h>
+#include <linux/export.h>
 
+#include "debug.h"
 #include "acx.h"
 #include "reg.h"
 #include "boot.h"
@@ -102,6 +104,23 @@ static void wl1271_boot_set_ecpu_ctrl(struct wl1271 *wl, u32 flag)
 	wl1271_write32(wl, ACX_REG_ECPU_CONTROL, cpu_ctrl);
 }
 
+static unsigned int wl12xx_get_fw_ver_quirks(struct wl1271 *wl)
+{
+	unsigned int quirks = 0;
+	unsigned int *fw_ver = wl->chip.fw_ver;
+
+	/* Only new station firmwares support routing fw logs to the host */
+	if ((fw_ver[FW_VER_IF_TYPE] == FW_VER_IF_TYPE_STA) &&
+	    (fw_ver[FW_VER_MINOR] < FW_VER_MINOR_FWLOG_STA_MIN))
+		quirks |= WL12XX_QUIRK_FWLOG_NOT_IMPLEMENTED;
+
+	/* This feature is not yet supported for AP mode */
+	if (fw_ver[FW_VER_IF_TYPE] == FW_VER_IF_TYPE_AP)
+		quirks |= WL12XX_QUIRK_FWLOG_NOT_IMPLEMENTED;
+
+	return quirks;
+}
+
 static void wl1271_parse_fw_ver(struct wl1271 *wl)
 {
 	int ret;
@@ -116,6 +135,9 @@ static void wl1271_parse_fw_ver(struct wl1271 *wl)
 		memset(wl->chip.fw_ver, 0, sizeof(wl->chip.fw_ver));
 		return;
 	}
+
+	/* Check if any quirks are needed with older fw versions */
+	wl->quirks |= wl12xx_get_fw_ver_quirks(wl);
 }
 
 static void wl1271_boot_fw_version(struct wl1271 *wl)
@@ -326,6 +348,9 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
 		nvs_ptr += 3;
 
 		for (i = 0; i < burst_len; i++) {
+			if (nvs_ptr + 3 >= (u8 *) wl->nvs + nvs_len)
+				goto out_badnvs;
+
 			val = (nvs_ptr[0] | (nvs_ptr[1] << 8)
 			       | (nvs_ptr[2] << 16) | (nvs_ptr[3] << 24));
 
@@ -337,6 +362,9 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
 			nvs_ptr += 4;
 			dest_addr += 4;
 		}
+
+		if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
+			goto out_badnvs;
 	}
 
 	/*
@@ -348,6 +376,10 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
 	 */
 	nvs_ptr = (u8 *)wl->nvs +
 			ALIGN(nvs_ptr - (u8 *)wl->nvs + 7, 4);
+
+	if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
+		goto out_badnvs;
+
 	nvs_len -= nvs_ptr - (u8 *)wl->nvs;
 
 	/* Now we must set the partition correctly */
@@ -363,6 +395,10 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
 
 	kfree(nvs_aligned);
 	return 0;
+
+out_badnvs:
+	wl1271_error("nvs data is malformed");
+	return -EILSEQ;
 }
 
 static void wl1271_boot_enable_interrupts(struct wl1271 *wl)
@@ -468,32 +504,22 @@ static int wl1271_boot_run_firmware(struct wl1271 *wl)
 	 * ready to receive event from the command mailbox
 	 */
 
-	/* TODO: when removing a role, mask the appropriate events */
-
 	/* unmask required mbox events  */
 	wl->event_mask = BSS_LOSE_EVENT_ID |
 		SCAN_COMPLETE_EVENT_ID |
-		PS_REPORT_EVENT_ID |
-		DISCONNECT_EVENT_COMPLETE_ID |
+		ROLE_STOP_COMPLETE_EVENT_ID |
 		RSSI_SNR_TRIGGER_0_EVENT_ID |
 		PSPOLL_DELIVERY_FAILURE_EVENT_ID |
 		SOFT_GEMINI_SENSE_EVENT_ID |
-		CHANGE_AUTO_MODE_TIMEOUT_EVENT_ID |
 		PERIODIC_SCAN_REPORT_EVENT_ID |
 		PERIODIC_SCAN_COMPLETE_EVENT_ID |
 		DUMMY_PACKET_EVENT_ID |
+		PEER_REMOVE_COMPLETE_EVENT_ID |
+		BA_SESSION_RX_CONSTRAINT_EVENT_ID |
 		REMAIN_ON_CHANNEL_COMPLETE_EVENT_ID |
-		BA_SESSION_RX_CONSTRAINT_EVENT_ID;
-
-	/* TODO: mode can change dynamically. make it more sane */
-	wl->event_mask |= PEER_REMOVE_COMPLETE_EVENT_ID;
-
-	/* TODO: there's a bug in MAX_TX_RETRY_EVENT_ID in STA mode */
-	if (wl->bss_type == BSS_TYPE_AP_BSS)
-		wl->event_mask |= MAX_TX_RETRY_EVENT_ID |
-				  INACTIVE_STA_EVENT_ID;
-	else
-		wl->event_mask |= CHANNEL_SWITCH_COMPLETE_EVENT_ID;
+		INACTIVE_STA_EVENT_ID |
+		MAX_TX_RETRY_EVENT_ID |
+		CHANNEL_SWITCH_COMPLETE_EVENT_ID;
 
 	ret = wl1271_event_unmask(wl);
 	if (ret < 0) {
@@ -759,9 +785,6 @@ int wl1271_load_firmware(struct wl1271 *wl)
 		clk |= (wl->ref_clock << 1) << 4;
 	}
 
-	if (wl->quirks & WL12XX_QUIRK_LPD_MODE)
-		clk |= SCRATCH_ENABLE_LPD;
-
 	wl1271_write32(wl, DRPW_SCRATCH_START, clk);
 
 	wl1271_set_partition(wl, &part_table[PART_WORK]);
@@ -801,6 +824,8 @@ int wl1271_load_firmware(struct wl1271 *wl)
 	if (ret < 0)
 		goto out;
 
+	/* update loaded fw type */
+	wl->fw_type = wl->saved_fw_type;
 out:
 	return ret;
 }
@@ -829,9 +854,6 @@ int wl1271_boot(struct wl1271 *wl)
 
 	/* Enable firmware interrupts now */
 	wl1271_boot_enable_interrupts(wl);
-
-	/* set the wl1271 default filters */
-	wl1271_set_default_filters(wl);
 
 	wl1271_event_mbox_config(wl);
 

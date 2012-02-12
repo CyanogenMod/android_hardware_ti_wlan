@@ -92,5 +92,19 @@ void compat_usb_scuttle_anchored_urbs(struct usb_anchor *anchor)
 	spin_unlock_irqrestore(&anchor->lock, flags);
 }
 EXPORT_SYMBOL_GPL(compat_usb_scuttle_anchored_urbs);
+
 #endif /* CONFIG_COMPAT_USB_URB_THREAD_FIX */
 
+struct workqueue_struct *system_nrt_wq __read_mostly;
+EXPORT_SYMBOL_GPL(system_nrt_wq);
+
+void compat_system_workqueue_create()
+{
+	system_nrt_wq = create_singlethread_workqueue("events_nrt");
+	WARN_ON(!system_nrt_wq);
+}
+
+void compat_system_workqueue_destroy()
+{
+	destroy_workqueue(system_nrt_wq);
+}

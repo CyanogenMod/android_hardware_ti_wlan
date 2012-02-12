@@ -36,6 +36,7 @@ static int __init compat_init(void)
 {
 	/* pm-qos for kernels <= 2.6.24, this is a no-op on newer kernels */
 	compat_pm_qos_power_init();
+	compat_system_workqueue_create();
 
 	printk(KERN_INFO
 	       COMPAT_PROJECT " backport release: "
@@ -52,6 +53,7 @@ module_init(compat_init);
 static void __exit compat_exit(void)
 {
 	compat_pm_qos_power_deinit();
+	compat_system_workqueue_destroy();
 
         return;
 }

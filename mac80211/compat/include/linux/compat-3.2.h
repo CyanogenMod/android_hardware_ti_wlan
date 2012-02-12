@@ -8,23 +8,6 @@
 #include <linux/skbuff.h>
 #include <linux/dma-mapping.h>
 
-/*
- * This is not part of The 2.6.37 kernel yet but we
- * we use it to optimize the backport code we
- * need to implement. Instead of using ifdefs
- * to check what version of the check we use
- * we just replace all checks on current code
- * with this. I'll submit this upstream too, that
- * way all we'd have to do is to implement this
- * for older kernels, then we would not have to
- * edit the upstrema code for backport efforts.
- */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
-#define br_port_exists(dev)	(dev->priv_flags & IFF_BRIDGE_PORT)
-#else
-#define br_port_exists(dev)	(dev->br_port)
-#endif
-
 #define PMSG_IS_AUTO(msg)	(((msg).event & PM_EVENT_AUTO) != 0)
 
 /**
@@ -57,6 +40,29 @@ static inline dma_addr_t skb_frag_dma_map(struct device *dev,
 	return dma_map_page(dev, skb_frag_page(frag),
 			    frag->page_offset + offset, size, dir);
 }
+
+#define ETH_P_TDLS	0x890D          /* TDLS */
+
+static inline unsigned int skb_frag_size(const skb_frag_t *frag)
+{
+	return frag->size;
+}
+
+static inline char *hex_byte_pack(char *buf, u8 byte)
+{
+	*buf++ = hex_asc_hi(byte);
+	*buf++ = hex_asc_lo(byte);
+	return buf;
+}
+
+/* module_platform_driver() - Helper macro for drivers that don't do
+ * anything special in module init/exit.  This eliminates a lot of
+ * boilerplate.  Each module may only use this macro once, and
+ * calling it replaces module_init() and module_exit()
+ */
+#define module_platform_driver(__platform_driver) \
+        module_driver(__platform_driver, platform_driver_register, \
+                        platform_driver_unregister)
 
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0)) */
 

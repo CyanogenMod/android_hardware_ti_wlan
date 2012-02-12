@@ -314,9 +314,15 @@ static ssize_t firmware_loading_store(struct device *dev,
 
 static DEVICE_ATTR(loading, 0644, firmware_loading_show, firmware_loading_store);
 
+#if defined(CONFIG_COMPAT_FIRMWARE_DATA_RW_NEEDS_FILP)
+static ssize_t firmware_data_read(struct file *filp, struct kobject *kobj,
+				  struct bin_attribute *bin_attr,
+				  char *buffer, loff_t offset, size_t count)
+#else
 static ssize_t firmware_data_read(struct kobject *kobj,
 				  struct bin_attribute *bin_attr,
 				  char *buffer, loff_t offset, size_t count)
+#endif
 {
 	struct device *dev = to_dev(kobj);
 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
@@ -407,9 +413,15 @@ static int fw_realloc_buffer(struct firmware_priv *fw_priv, int min_size)
  *	Data written to the 'data' attribute will be later handed to
  *	the driver as a firmware image.
  **/
+#if defined(CONFIG_COMPAT_FIRMWARE_DATA_RW_NEEDS_FILP)
+static ssize_t firmware_data_write(struct file *filp, struct kobject *kobj,
+				   struct bin_attribute *bin_attr,
+				   char *buffer, loff_t offset, size_t count)
+#else
 static ssize_t firmware_data_write(struct kobject *kobj,
 				   struct bin_attribute *bin_attr,
 				   char *buffer, loff_t offset, size_t count)
+#endif
 {
 	struct device *dev = to_dev(kobj);
 	struct firmware_priv *fw_priv = to_firmware_priv(dev);

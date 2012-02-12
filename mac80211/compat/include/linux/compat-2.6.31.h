@@ -202,6 +202,20 @@ void compat_synchronize_threaded_irq(struct compat_threaded_irq *comp)
 #define skb_walk_frags(skb, iter)	\
 	for (iter = skb_shinfo(skb)->frag_list; iter; iter = iter->next)
 
+#ifndef CONFIG_64BIT
+
+typedef struct {
+	long long counter;
+} atomic64_t;
+
+extern long long atomic64_read(const atomic64_t *v);
+extern long long atomic64_add_return(long long a, atomic64_t *v);
+
+#define atomic64_inc_return(v)          atomic64_add_return(1LL, (v))
+
+#endif
+
+
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31)) */
 
 #endif /* LINUX_26_31_COMPAT_H */

@@ -2,7 +2,7 @@
 
   Broadcom B43 wireless driver
 
-  Copyright (c) 2007 Michael Buesch <mb@bu3sch.de>
+  Copyright (c) 2007 Michael Buesch <m@bues.ch>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 #include <linux/ssb/ssb.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 
 #include <pcmcia/cistpl.h>
 #include <pcmcia/ciscode.h>
@@ -32,7 +33,7 @@
 #include <pcmcia/cisreg.h>
 
 
-static /*const */ struct pcmcia_device_id b43_pcmcia_tbl[] = {
+static const struct pcmcia_device_id b43_pcmcia_tbl[] = {
 	PCMCIA_DEVICE_MANF_CARD(0x2D0, 0x448),
 	PCMCIA_DEVICE_MANF_CARD(0x2D0, 0x476),
 	PCMCIA_DEVICE_NULL,
