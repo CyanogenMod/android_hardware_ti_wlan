@@ -136,7 +136,7 @@ int __must_check ieee80211_key_link(struct ieee80211_key *key,
 void __ieee80211_key_free(struct ieee80211_key *key);
 void ieee80211_key_free(struct ieee80211_local *local,
 			struct ieee80211_key *key);
-void ieee80211_set_default_key(struct ieee80211_sub_if_data *sdata, int idx,
+int ieee80211_set_default_key(struct ieee80211_sub_if_data *sdata, int idx,
 			       bool uni, bool multi);
 void ieee80211_set_default_mgmt_key(struct ieee80211_sub_if_data *sdata,
 				    int idx);

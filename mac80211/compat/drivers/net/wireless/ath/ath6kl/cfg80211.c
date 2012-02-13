@@ -2449,7 +2449,7 @@ static int ath6kl_cfg80211_sscan_start(struct wiphy *wiphy,
 	}
 
 	/* fw uses seconds, also make sure that it's >0 */
-	interval = max_t(u16, 1, request->interval / 1000);
+	interval = max_t(u16, 1, request->long_interval / 1000);
 
 	ath6kl_wmi_scanparams_cmd(ar->wmi, vif->fw_vif_idx,
 				  interval, interval,

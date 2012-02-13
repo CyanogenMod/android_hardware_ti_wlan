@@ -428,6 +428,7 @@ static int wl1271_prepare_tx_frame(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 			 (cipher == WLAN_CIPHER_SUITE_WEP104);
 
 		if (unlikely(is_wep && wlvif->default_key != idx)) {
+			WARN_ON(1);
 			ret = wl1271_set_default_wep_key(wl, wlvif, idx);
 			if (ret < 0)
 				return ret;
@@ -558,6 +559,7 @@ static struct sk_buff *wl12xx_lnk_skb_dequeue(struct wl1271 *wl,
 	if (skb) {
 		int q = wl1271_tx_get_queue(skb_get_queue_mapping(skb));
 		spin_lock_irqsave(&wl->wl_lock, flags);
+		WARN_ON(wl->tx_queue_count[q] <= 0);
 		wl->tx_queue_count[q]--;
 		spin_unlock_irqrestore(&wl->wl_lock, flags);
 	}
@@ -602,6 +604,7 @@ static struct sk_buff *wl1271_skb_dequeue(struct wl1271 *wl)
 	struct wl12xx_vif *wlvif = wl->last_wlvif;
 	struct sk_buff *skb = NULL;
 
+	/* continue from last wlvif (round robin) */
 	if (wlvif) {
 		wl12xx_for_each_wlvif_continue(wl, wlvif) {
 			skb = wl12xx_vif_skb_dequeue(wl, wlvif);
@@ -612,7 +615,11 @@ static struct sk_buff *wl1271_skb_dequeue(struct wl1271 *wl)
 		}
 	}
 
-	/* do another pass */
+	/* dequeue from the system HLID before the restarting wlvif list */
+	if (!skb)
+		skb = wl12xx_lnk_skb_dequeue(wl, &wl->links[wl->system_hlid]);
+
+	/* do a new pass over the wlvif list */
 	if (!skb) {
 		wl12xx_for_each_wlvif(wl, wlvif) {
 			skb = wl12xx_vif_skb_dequeue(wl, wlvif);
@@ -620,11 +627,15 @@ static struct sk_buff *wl1271_skb_dequeue(struct wl1271 *wl)
 				wl->last_wlvif = wlvif;
 				break;
 			}
+
+			/*
+			 * No need to continue after last_wlvif. The previous
+			 * pass should have found it.
+			 */
+			if (wlvif == wl->last_wlvif)
+				break;
 		}
 	}
-
-	if (!skb)
-		skb = wl12xx_lnk_skb_dequeue(wl, &wl->links[wl->system_hlid]);
 
 	if (!skb &&
 	    test_and_clear_bit(WL1271_FLAG_DUMMY_PACKET_PENDING, &wl->flags)) {
@@ -633,6 +644,7 @@ static struct sk_buff *wl1271_skb_dequeue(struct wl1271 *wl)
 		skb = wl->dummy_packet;
 		q = wl1271_tx_get_queue(skb_get_queue_mapping(skb));
 		spin_lock_irqsave(&wl->wl_lock, flags);
+		WARN_ON(wl->tx_queue_count[q] <= 0);
 		wl->tx_queue_count[q]--;
 		spin_unlock_irqrestore(&wl->wl_lock, flags);
 	}
@@ -990,7 +1002,6 @@ void wl12xx_tx_reset_wlvif(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 		else
 			wlvif->sta.ba_rx_bitmap = 0;
 
-		wl1271_tx_reset_link_queues(wl, i);
 		wl->links[i].allocated_pkts = 0;
 		wl->links[i].prev_freed_pkts = 0;
 	}
@@ -1004,8 +1015,14 @@ void wl12xx_tx_reset(struct wl1271 *wl, bool reset_tx_queues)
 	struct sk_buff *skb;
 	struct ieee80211_tx_info *info;
 
-	for (i = 0; i < NUM_TX_QUEUES; i++)
-		wl->tx_queue_count[i] = 0;
+	/* only reset the queues if something bad happened */
+	if (WARN_ON(wl1271_tx_total_queue_count(wl) != 0)) {
+		for (i = 0; i < WL12XX_MAX_LINKS; i++)
+			wl1271_tx_reset_link_queues(wl, i);
+
+		for (i = 0; i < NUM_TX_QUEUES; i++)
+			wl->tx_queue_count[i] = 0;
+	}
 
 	wl->stopped_queues_map = 0;
 
@@ -1055,6 +1072,7 @@ void wl12xx_tx_reset(struct wl1271 *wl, bool reset_tx_queues)
 void wl1271_tx_flush(struct wl1271 *wl)
 {
 	unsigned long timeout;
+	int i;
 	timeout = jiffies + usecs_to_jiffies(WL1271_TX_FLUSH_TIMEOUT);
 
 	while (!time_after(jiffies, timeout)) {
@@ -1072,6 +1090,12 @@ void wl1271_tx_flush(struct wl1271 *wl)
 	}
 
 	wl1271_warning("Unable to flush all TX buffers, timed out.");
+
+	/* forcibly flush all Tx buffers on our queues */
+	mutex_lock(&wl->mutex);
+	for (i = 0; i < WL12XX_MAX_LINKS; i++)
+		wl1271_tx_reset_link_queues(wl, i);
+	mutex_unlock(&wl->mutex);
 }
 
 u32 wl1271_tx_min_rate_get(struct wl1271 *wl, u32 rate_set)

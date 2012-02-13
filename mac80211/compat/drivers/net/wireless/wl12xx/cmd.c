@@ -459,23 +459,39 @@ out:
 
 int wl12xx_allocate_link(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 *hlid)
 {
+	unsigned long flags;
 	u8 link = find_first_zero_bit(wl->links_map, WL12XX_MAX_LINKS);
 	if (link >= WL12XX_MAX_LINKS)
 		return -EBUSY;
 
+	/* these bits are used by op_tx */
+	spin_lock_irqsave(&wl->wl_lock, flags);
 	__set_bit(link, wl->links_map);
 	__set_bit(link, wlvif->links_map);
+	spin_unlock_irqrestore(&wl->wl_lock, flags);
 	*hlid = link;
 	return 0;
 }
 
 void wl12xx_free_link(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 *hlid)
 {
+	unsigned long flags;
+
 	if (*hlid == WL12XX_INVALID_LINK_ID)
 		return;
 
+	/* these bits are used by op_tx */
+	spin_lock_irqsave(&wl->wl_lock, flags);
 	__clear_bit(*hlid, wl->links_map);
 	__clear_bit(*hlid, wlvif->links_map);
+	spin_unlock_irqrestore(&wl->wl_lock, flags);
+
+	/*
+	 * At this point op_tx() will not add more packets to the queues. We
+	 * can purge them.
+	 */
+	wl1271_tx_reset_link_queues(wl, *hlid);
+
 	*hlid = WL12XX_INVALID_LINK_ID;
 }
 
@@ -664,6 +680,12 @@ int wl12xx_cmd_role_stop_sta(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	ret = wl1271_cmd_send(wl, CMD_ROLE_STOP, cmd, sizeof(*cmd), 0);
 	if (ret < 0) {
 		wl1271_error("failed to initiate cmd role stop sta");
+		goto out_free;
+	}
+
+	ret = wl1271_cmd_wait_for_event(wl, ROLE_STOP_COMPLETE_EVENT_ID);
+	if (ret < 0) {
+		wl1271_error("cmd role stop sta event completion error");
 		goto out_free;
 	}
 

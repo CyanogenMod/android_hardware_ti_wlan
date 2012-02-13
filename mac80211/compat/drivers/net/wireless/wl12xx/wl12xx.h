@@ -38,14 +38,13 @@
 #include "conf.h"
 #include "ini.h"
 
-#define WL127X_FW_NAME_MULTI "ti-connectivity/wl127x-fw-mr.bin.r5"
-#define WL127X_FW_NAME_SINGLE "ti-connectivity/wl127x-fw-mr.bin.r4"
+#define WL127X_FW_NAME_MULTI	"ti-connectivity/wl127x-fw-4-mr.bin"
+#define WL127X_FW_NAME_SINGLE	"ti-connectivity/wl127x-fw-4-sr.bin"
+#define WL127X_PLT_FW_NAME	"ti-connectivity/wl127x-fw-4-plt.bin"
 
-#define WL128X_FW_NAME_MULTI "ti-connectivity/wl128x-fw-mr.bin.r5"
-#define WL128X_FW_NAME_SINGLE "ti-connectivity/wl128x-fw-mr.bin.r4"
-
-#define WL127X_PLT_FW_NAME "ti-connectivity/wl127x-fw-mr_plt.bin.r4"
-#define WL128X_PLT_FW_NAME "ti-connectivity/wl128x-fw-mr_plt.bin.r4"
+#define WL128X_FW_NAME_MULTI	"ti-connectivity/wl128x-fw-4-mr.bin"
+#define WL128X_FW_NAME_SINGLE	"ti-connectivity/wl128x-fw-4-sr.bin"
+#define WL128X_PLT_FW_NAME	"ti-connectivity/wl128x-fw-4-plt.bin"
 
 /*
  * wl127x and wl128x are using the same NVS file name. However, the
@@ -265,6 +264,7 @@ enum wl12xx_flags {
 	WL1271_FLAG_SOFT_GEMINI,
 	WL1271_FLAG_RECOVERY_IN_PROGRESS,
 	WL1271_FLAG_VIF_CHANGE_IN_PROGRESS,
+	WL1271_FLAG_INTENDED_FW_RECOVERY,
 };
 
 enum wl12xx_vif_flags {
@@ -365,7 +365,12 @@ struct wl1271 {
 
 	s8 hw_pg_ver;
 
-	u8 mac_addr[ETH_ALEN];
+	/* address read from the fuse ROM */
+	u32 fuse_oui_addr;
+	u32 fuse_nic_addr;
+
+	/* we have up to 2 MAC addresses */
+	struct mac_address addresses[2];
 	int channel;
 	u8 system_hlid;
 

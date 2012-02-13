@@ -256,7 +256,7 @@ static int wl1271_scan_send(struct wl1271 *wl, struct ieee80211_vif *vif,
 		goto out;
 	}
 
-	trigger->timeout = wl->conf.scan.split_scan_timeout;
+	trigger->timeout = cpu_to_le32(wl->conf.scan.split_scan_timeout);
 	ret = wl1271_cmd_send(wl, CMD_TRIGGER_SCAN_TO, trigger,
 			      sizeof(*trigger), 0);
 	if (ret < 0) {
@@ -441,6 +441,23 @@ wl1271_scan_get_sched_scan_channels(struct wl1271 *wl,
 	int i, j;
 	u32 flags;
 	bool force_passive = !req->n_ssids;
+	u32 min_dwell_time_active, max_dwell_time_active, delta_per_probe;
+	u32 dwell_time_passive, dwell_time_dfs;
+
+	if (band == IEEE80211_BAND_5GHZ)
+		delta_per_probe = c->dwell_time_delta_per_probe_5;
+	else
+		delta_per_probe = c->dwell_time_delta_per_probe;
+
+	min_dwell_time_active = c->base_dwell_time +
+		 req->n_ssids * c->num_probe_reqs * delta_per_probe;
+
+	max_dwell_time_active = min_dwell_time_active + c->max_dwell_time_delta;
+
+	min_dwell_time_active = DIV_ROUND_UP(min_dwell_time_active, 1000);
+	max_dwell_time_active = DIV_ROUND_UP(max_dwell_time_active, 1000);
+	dwell_time_passive = DIV_ROUND_UP(c->dwell_time_passive, 1000);
+	dwell_time_dfs = DIV_ROUND_UP(c->dwell_time_dfs, 1000);
 
 	for (i = 0, j = start;
 	     i < req->n_channels && j < max_channels;
@@ -464,21 +481,25 @@ wl1271_scan_get_sched_scan_channels(struct wl1271 *wl,
 				     req->channels[i]->flags);
 			wl1271_debug(DEBUG_SCAN, "max_power %d",
 				     req->channels[i]->max_power);
+			wl1271_debug(DEBUG_SCAN, "min_dwell_time %d"
+				     "max dwell time %d",
+				     min_dwell_time_active,
+				     max_dwell_time_active);
 
 			if (flags & IEEE80211_CHAN_RADAR) {
 				channels[j].flags |= SCAN_CHANNEL_FLAGS_DFS;
 
 				channels[j].passive_duration =
-					cpu_to_le16(c->dwell_time_dfs);
+					cpu_to_le16(dwell_time_dfs);
 			} else {
 				channels[j].passive_duration =
-					cpu_to_le16(c->dwell_time_passive);
+					cpu_to_le16(dwell_time_passive);
 			}
 
 			channels[j].min_duration =
-				cpu_to_le16(c->min_dwell_time_active);
+				cpu_to_le16(min_dwell_time_active);
 			channels[j].max_duration =
-				cpu_to_le16(c->max_dwell_time_active);
+				cpu_to_le16(max_dwell_time_active);
 
 			channels[j].tx_power_att = req->channels[i]->max_power;
 			channels[j].channel = req->channels[i]->hw_value;
@@ -652,6 +673,13 @@ int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 
 	wl1271_debug(DEBUG_CMD, "cmd sched_scan scan config");
 
+	if (req->n_short_intervals > SCAN_MAX_SHORT_INTERVALS) {
+		wl1271_warning("Number of short intervals requested (%d)"
+			       "exceeds limit (%d)", req->n_short_intervals,
+			       SCAN_MAX_SHORT_INTERVALS);
+		return -EINVAL;
+	}
+
 	cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
 	if (!cfg)
 		return -ENOMEM;
@@ -668,9 +696,13 @@ int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 	cfg->tag = WL1271_SCAN_DEFAULT_TAG;
 	/* don't filter on BSS type */
 	cfg->bss_type = SCAN_BSS_TYPE_ANY;
-	/* currently NL80211 supports only a single interval */
-	for (i = 0; i < SCAN_MAX_CYCLE_INTERVALS; i++)
-		cfg->intervals[i] = cpu_to_le32(req->interval);
+
+	for (i = 1; i < SCAN_MAX_CYCLE_INTERVALS; i++) {
+		if (i <= req->n_short_intervals)
+			cfg->intervals[i] = cpu_to_le32(req->short_interval);
+		else
+			cfg->intervals[i] = cpu_to_le32(req->long_interval);
+	}
 
 	cfg->ssid_len = 0;
 	ret = wl12xx_scan_sched_scan_ssid_list(wl, req);

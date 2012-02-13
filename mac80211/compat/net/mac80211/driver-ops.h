@@ -810,4 +810,21 @@ drv_allow_buffered_frames(struct ieee80211_local *local,
 						  more_data);
 	trace_drv_return_void(local);
 }
+
+static inline int
+drv_set_default_unicast_key(struct ieee80211_local *local,
+		    struct ieee80211_sub_if_data *sdata,
+		    int key_idx)
+{
+	int ret = 0;
+	check_sdata_in_driver(sdata);
+
+	if (local->ops->set_default_key_idx)
+		ret = local->ops->set_default_key_idx(&local->hw, &sdata->vif,
+						key_idx);
+
+	trace_drv_return_int(local, ret);
+
+	return ret;
+}
 #endif /* __MAC80211_DRIVER_OPS */
