@@ -223,13 +223,6 @@ static int parse_general_prms(char *l, struct wl12xx_common *cmn,
 	COMPARE_N_ADD("Single_Dual_Band_Solution", l, val,
 		&gp->dual_mode_select);
 
-	if (cmn->dual_mode == DUAL_MODE_UNSET)
-		cmn->dual_mode = gp->dual_mode_select;
-	else if (cmn->dual_mode != gp->dual_mode_select) {
-		fprintf(stderr, "Error, FEMs with non-compatible dual modes\n");
-		return 1;
-	}
-
 	COMPARE_N_ADD("Settings", l, val, &gp->general_settings);
 
 	COMPARE_N_ADD("SRState", l, val, &gp->sr_state);
@@ -283,13 +276,6 @@ static int parse_general_prms_128x(char *l, struct wl12xx_common *cmn,
 
 	COMPARE_N_ADD("Single_Dual_Band_Solution", l, val,
 		&gp->dual_mode_select);
-
-	if (cmn->dual_mode == DUAL_MODE_UNSET)
-		cmn->dual_mode = gp->dual_mode_select;
-	else if (cmn->dual_mode != gp->dual_mode_select) {
-		fprintf(stderr, "Error, FEMs with non-compatible dual modes\n");
-		return 1;
-	}
 
 	COMPARE_N_ADD("Settings", l, val, &gp->general_settings);
 

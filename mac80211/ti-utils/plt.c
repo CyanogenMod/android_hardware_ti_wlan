@@ -28,6 +28,8 @@
 #include "ini.h"
 #include "nvs.h"
 
+#define ZERO_MAC	"00:00:00:00:00:00"
+
 #ifndef SIOCETHTOOL
 #define SIOCETHTOOL     0x8946
 #endif
@@ -49,7 +51,7 @@ static int insmod(char *filename)
 static int rmmod(char *name)
 {
 	char cmd[CMDBUF_SIZE];
-	char *tmp = strdup(name);
+	char *tmp;
 	int i, ret;
 
 	/* "basename" */
@@ -65,8 +67,10 @@ static int rmmod(char *name)
 
 	/* strip trailing .ko if there */
 	i = strlen(tmp);
-	if (i < 4)
-		return -EINVAL;
+	if (i < 4) {
+		ret = -EINVAL;
+		goto out;
+	}
 	if (!strcmp(tmp + i - 3, ".ko"))
 		tmp[i-3] = 0;
 
@@ -74,6 +78,7 @@ static int rmmod(char *name)
 	ret = system(cmd);
 	if (ret)
 		fprintf(stderr, "Failed to remove kernel module using command %s\n", cmd);
+out:
 	free(tmp);
 	return ret;
 }
@@ -862,23 +867,36 @@ fail_out:
 COMMAND(plt, rx_statistics, NULL, 0, 0, CIB_NONE, plt_rx_statistics,
 	"Get Rx statistics\n");
 
+static int plt_do_power_on(struct nl80211_state *state, char *devname)
+{
+	int err;
+	char *pm_on[4] = { devname, "plt", "power_mode", "on" };
+
+	err = handle_cmd(state, II_NETDEV, ARRAY_SIZE(pm_on), pm_on);
+	if (err < 0)
+		fprintf(stderr, "Fail to set PLT power mode on\n");
+
+	return err;
+}
+
+static int plt_do_power_off(struct nl80211_state *state, char *devname)
+{
+	int err;
+	char *prms[4] = { devname, "plt", "power_mode", "off"};
+
+	err = handle_cmd(state, II_NETDEV, ARRAY_SIZE(prms), prms);
+	if (err < 0)
+		fprintf(stderr, "Failed to set PLT power mode on\n");
+
+	return err;
+}
+
+
 static int plt_do_calibrate(struct nl80211_state *state, struct nl_cb *cb,
 			struct nl_msg *msg, int single_dual, char *nvs_file,
 			char *devname, enum wl12xx_arch arch)
 {
 	int ret = 0, err;
-
-	/* power mode on */
-	{
-		char *pm_on[4] = { devname, "plt", "power_mode", "on" };
-
-		err = handle_cmd(state, II_NETDEV, ARRAY_SIZE(pm_on), pm_on);
-		if (err < 0) {
-			fprintf(stderr, "Fail to set PLT power mode on\n");
-			ret = err;
-			goto fail_out_final;
-		}
-	}
 
 	/* tune channel */
 	{
@@ -941,18 +959,6 @@ static int plt_do_calibrate(struct nl80211_state *state, struct nl_cb *cb,
 	}
 
 fail_out:
-	/* power mode off */
-	{
-		char *prms[4] = { devname, "plt", "power_mode", "off"};
-
-		err = handle_cmd(state, II_NETDEV, ARRAY_SIZE(prms), prms);
-		if (err < 0) {
-			fprintf(stderr, "Failed to set PLT power mode on\n");
-			ret = err;
-		}
-	}
-
-fail_out_final:
 	if (ret < 0)
 		return 1;
 
@@ -962,6 +968,7 @@ fail_out_final:
 static int plt_calibrate(struct nl80211_state *state, struct nl_cb *cb,
 			struct nl_msg *msg, int argc, char **argv)
 {
+	int ret, err;
 	int single_dual = 0;
 
 	if (argc > 2 && (strncmp(argv[2], "dual", 4) ==  0))
@@ -969,8 +976,19 @@ static int plt_calibrate(struct nl80211_state *state, struct nl_cb *cb,
 	else
 		single_dual = 0;	/* going for single band calibration */
 
-	return plt_do_calibrate(state, cb, msg, single_dual, NEW_NVS_NAME,
-	                        "wlan0", UNKNOWN_ARCH);
+
+	err = plt_do_power_on(state, "wlan0");
+	if (err < 0)
+		goto out;
+
+	err = plt_do_calibrate(state, cb, msg, single_dual, NEW_NVS_NAME,
+			       "wlan0", UNKNOWN_ARCH);
+
+	ret = plt_do_power_off(state, "wlan0");
+	if (ret < 0)
+		err = ret;
+out:
+	return err;
 }
 
 COMMAND(plt, calibrate, "[<single|dual>]", 0, 0, CIB_NONE,
@@ -984,16 +1002,16 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 		.auto_fem = 0,
 		.arch = UNKNOWN_ARCH,
 		.parse_ops = NULL,
-		.dual_mode = DUAL_MODE_UNSET,
 	};
 
 	char *devname, *modpath, *inifile1, *macaddr;
+	char *set_mac_prms[5];
 	int single_dual = 0, res, fems_parsed;
 
 	argc -= 2;
 	argv += 2;
 
-	if (argc != 5) {
+	if (argc < 4 || argc > 5) {
 		return 1;
 	}
 
@@ -1007,8 +1025,13 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 	argc--;
 
 	cmn.nvs_name = get_opt_nvsoutfile(argc--, argv++);
-	macaddr = *argv++;
-	argc--;
+
+	if (argc) {
+		macaddr = *argv++;
+		argc--;
+	} else {
+		macaddr = NULL;
+	}
 
 	if (file_exist(cmn.nvs_name) >= 0) {
 		fprintf(stderr, "nvs file %s. File already exists. Won't overwrite.\n", cmn.nvs_name);
@@ -1068,17 +1091,31 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 		goto out_removenvs;
 	}
 
+	res = plt_do_power_on(state, devname);
+	if (res < 0)
+		goto out_rmmod;
+
 	res = plt_do_calibrate(state, cb, msg, single_dual,
 	                      cmn.nvs_name, devname, cmn.arch);
 	if (res) {
-		goto out_rmmod;
+		goto out_power_off;
 	}
 
-	res = nvs_set_mac(cmn.nvs_name, macaddr);
+	set_mac_prms[0] = devname;
+	set_mac_prms[1] = "plt";
+	set_mac_prms[2] = "set_mac";
+	set_mac_prms[3] = cmn.nvs_name;
+	set_mac_prms[4] = macaddr;
+
+	res = handle_cmd(state, II_NETDEV,
+			 ARRAY_SIZE(set_mac_prms) - (!macaddr),
+			 set_mac_prms);
 	if (res) {
-		goto out_rmmod;
+		goto out_power_off;
 	}
 
+	/* we can ignore the return value, because we rmmod anyway */
+	plt_do_power_off(state, devname);
 	rmmod(modpath);
 
 	printf("Calibration done. ");
@@ -1095,6 +1132,9 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 	       cmn.nvs_name);
 	return 0;
 
+out_power_off:
+	/* we can ignore the return value, because we rmmod anyway */
+	plt_do_power_off(state, devname);
 out_rmmod:
 	rmmod(modpath);
 
@@ -1104,5 +1144,210 @@ out_removenvs:
 	return 0;
 
 }
-COMMAND(plt, autocalibrate, "<dev> <module path> <ini file1> <nvs file> <mac addr> ", 0, 0, CIB_NONE,
-	plt_autocalibrate, "Do automatic calibration\n");
+COMMAND(plt, autocalibrate, "<dev> <module path> <ini file1> <nvs file> "
+	"[<MAC address>|from_fuse|default]", 0, 0, CIB_NONE, plt_autocalibrate,
+	"Do automatic calibration.\n"
+	"The MAC address value can be:\n"
+	"from_fuse\ttry to read from the fuse ROM, if not available the command fails\n"
+	"default\t\twrite 00:00:00:00:00:00 to have the driver read from the fuse ROM,\n"
+	"\t\t\tfails if not available\n"
+	"00:00:00:00:00:00\tforce use of a zeroed MAC address (use with caution!)\n");
+
+static int plt_get_mac_cb(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *td[WL1271_TM_ATTR_MAX + 1];
+	char *addr;
+	int lower;
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_TESTDATA]) {
+		fprintf(stderr, "no data!\n");
+		return NL_SKIP;
+	}
+
+	nla_parse(td, WL1271_TM_ATTR_MAX, nla_data(tb[NL80211_ATTR_TESTDATA]),
+		  nla_len(tb[NL80211_ATTR_TESTDATA]), NULL);
+
+	addr = (char *) nla_data(td[WL1271_TM_ATTR_DATA]);
+
+	printf("BD_ADDR from fuse:\t0x%0x:0x%0x:0x%0x:0x%0x:0x%0x:0x%0x\n",
+	       addr[0], addr[1], addr[2],
+	       addr[3], addr[4], addr[5]);
+
+	lower = (addr[3] << 16) + (addr[4] << 8) + addr[5];
+
+	lower++;
+	printf("First WLAN MAC:\t\t0x%0x:0x%0x:0x%0x:0x%0x:0x%0x:0x%0x\n",
+	       addr[0], addr[1], addr[2],
+	       (lower & 0xff0000) >> 16,
+	       (lower & 0xff00) >> 8,
+	       (lower & 0xff));
+
+	lower++;
+	printf("Second WLAN MAC:\t0x%0x:0x%0x:0x%0x:0x%0x:0x%0x:0x%0x\n",
+	       addr[0], addr[1], addr[2],
+	       (lower & 0xff0000) >> 16,
+	       (lower & 0xff00) >> 8,
+	       (lower & 0xff));
+
+	return NL_SKIP;
+}
+
+static int plt_get_mac_from_fuse(struct nl_msg *msg, struct nl_cb *cb,
+				 nl_recvmsg_msg_cb_t callback, void *arg)
+{
+	struct nlattr *key;
+
+	key = nla_nest_start(msg, NL80211_ATTR_TESTDATA);
+	if (!key) {
+		fprintf(stderr, "%s> fail to nla_nest_start()\n", __func__);
+		return 1;
+	}
+
+	NLA_PUT_U32(msg, WL1271_TM_ATTR_CMD_ID, WL1271_TM_CMD_GET_MAC);
+
+	nla_nest_end(msg, key);
+
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, callback, arg);
+
+	return 0;
+
+nla_put_failure:
+	fprintf(stderr, "%s> building message failed\n", __func__);
+	return 2;
+}
+
+static int plt_get_mac(struct nl80211_state *state, struct nl_cb *cb,
+		       struct nl_msg *msg, int argc, char **argv)
+{
+	if (argc != 0)
+		return 1;
+
+	return plt_get_mac_from_fuse(msg, cb, plt_get_mac_cb, NULL);
+}
+COMMAND(plt, get_mac, "",
+	NL80211_CMD_TESTMODE, 0, CIB_NETDEV, plt_get_mac,
+	"Read MAC address from the Fuse ROM.\n");
+
+static int plt_set_mac_from_fuse_cb(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	struct nlattr *td[WL1271_TM_ATTR_MAX + 1];
+	char mac[sizeof(ZERO_MAC)];
+	char *addr;
+	char *nvs_file = (char *) arg;
+	int lower;
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_TESTDATA]) {
+		fprintf(stderr, "no data!\n");
+		return NL_SKIP;
+	}
+
+	nla_parse(td, WL1271_TM_ATTR_MAX, nla_data(tb[NL80211_ATTR_TESTDATA]),
+		  nla_len(tb[NL80211_ATTR_TESTDATA]), NULL);
+
+	addr = (char *) nla_data(td[WL1271_TM_ATTR_DATA]);
+
+	/*
+	 * The first address is the BD_ADDR, the next is the first
+	 * MAC.  Increment only the lower part, so we don't overflow
+	 * to the OUI */
+	lower = (addr[3] << 16) + (addr[4] << 8) + addr[5] + 1;
+
+	snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x",
+		 addr[0], addr[1], addr[2], (lower & 0xff0000) >> 16,
+		 (lower & 0xff00) >> 8, (lower & 0xff));
+
+	/* ignore the return value, since a message was already printed out */
+	nvs_set_mac(nvs_file, mac);
+
+	return NL_SKIP;
+}
+
+static int plt_set_mac_default_cb(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	char *nvs_file = (char *) arg;
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_TESTDATA]) {
+		fprintf(stderr, "no data!\n");
+		return NL_SKIP;
+	}
+
+	/*
+	 * No need to parse, we just need to know if the command
+	 * worked (ie. the hardware supports MAC from fuse) so the
+	 * driver can fetch it by itself.
+	 */
+
+	/* ignore the return value, since a message was already printed out */
+	nvs_set_mac(nvs_file, ZERO_MAC);
+
+	return NL_SKIP;
+}
+
+static int plt_set_mac_from_fuse(struct nl80211_state *state, struct nl_cb *cb,
+				 struct nl_msg *msg, int argc, char **argv)
+{
+	return plt_get_mac_from_fuse(msg, cb, plt_set_mac_from_fuse_cb, argv[0]);
+}
+HIDDEN(plt, set_mac_from_fuse, "<nvs file>",
+       NL80211_CMD_TESTMODE, 0, CIB_NETDEV, plt_set_mac_from_fuse);
+
+static int plt_set_mac_default(struct nl80211_state *state, struct nl_cb *cb,
+			       struct nl_msg *msg, int argc, char **argv)
+{
+	return plt_get_mac_from_fuse(msg, cb, plt_set_mac_default_cb, argv[0]);
+}
+HIDDEN(plt, set_mac_default, "<nvs file>",
+       NL80211_CMD_TESTMODE, 0, CIB_NETDEV, plt_set_mac_default);
+
+static int plt_set_mac(struct nl80211_state *state, struct nl_cb *cb,
+		       struct nl_msg *msg, int argc, char **argv)
+{
+	char *nvs_file;
+
+	if (argc < 4 || argc > 5)
+		return 1;
+
+	nvs_file = argv[3];
+
+	if (argc == 4 || !strcmp(argv[4], "default")) {
+		char *prms[] = { argv[0], argv[1], "set_mac_default",
+				 nvs_file };
+
+		return handle_cmd(state, II_NETDEV, ARRAY_SIZE(prms), prms);
+	}
+
+	if (!strcmp(argv[4], "from_fuse")) {
+		char *prms[] = { argv[0], argv[1], "set_mac_from_fuse",
+				 nvs_file };
+
+		return handle_cmd(state, II_NETDEV, ARRAY_SIZE(prms), prms);
+	}
+
+	if (nvs_set_mac(nvs_file, argv[4]) != 0)
+		return 1;
+
+	return 0;
+}
+COMMAND(plt, set_mac, "<nvs file> [<MAC address>|from_fuse|default]",
+	0, 0, CIB_NETDEV, plt_set_mac,
+	"Set a MAC address to the NVS file.\n\n"
+	"<MAC address>\tspecific address to use (XX:XX:XX:XX:XX:XX)\n"
+	"from_fuse\ttry to read from the fuse ROM, if not available the command fails\n"
+	"default\t\twrite 00:00:00:00:00:00 to have the driver read from the fuse ROM,\n"
+	"\t\t\tfails if not available\n"
+	"00:00:00:00:00:00\tforce use of a zeroed MAC address (use with caution!)\n");

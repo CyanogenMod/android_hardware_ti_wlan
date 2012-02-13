@@ -59,14 +59,14 @@ static int set_nvs_mac(struct nl80211_state *state, struct nl_cb *cb,
 	argc -= 2;
 	argv += 2;
 
-	if (argc < 1 || (argc == 2 && (strlen(argv[1]) != 17)))
-		return 2;
+	if ((argc != 2) || (strlen(argv[1]) != 17))
+		return 1;
 
 	nvs_set_mac(argv[0], argv[1]);
 	return 0;
 }
 
-COMMAND(set, nvs_mac, "<nvs file> [<mac addr>]", 0, 0, CIB_NONE, set_nvs_mac,
+COMMAND(set, nvs_mac, "<nvs file> <mac addr>", 0, 0, CIB_NONE, set_nvs_mac,
 	"Set MAC addr in NVS file (offline), like XX:XX:XX:XX:XX:XX");
 
 static int set_ref_nvs(struct nl80211_state *state, struct nl_cb *cb,
@@ -74,8 +74,7 @@ static int set_ref_nvs(struct nl80211_state *state, struct nl_cb *cb,
 {
 	struct wl12xx_common cmn = {
 		.arch = UNKNOWN_ARCH,
-		.parse_ops = NULL,
-		.dual_mode = DUAL_MODE_UNSET,
+		.parse_ops = NULL
 	};
 
 	argc -= 2;

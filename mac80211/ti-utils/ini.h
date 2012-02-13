@@ -297,7 +297,6 @@ struct wl12xx_ini {
 struct wl12xx_common {
 	enum wl12xx_arch arch;
 	unsigned char auto_fem;
-	unsigned char dual_mode;
 	unsigned int fem0_bands;
 	unsigned int fem1_bands;
 	struct wl12xx_parse_ops *parse_ops;

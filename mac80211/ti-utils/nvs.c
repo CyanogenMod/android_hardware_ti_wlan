@@ -67,6 +67,7 @@ int nvs_set_mac(char *nvsfile, char *mac)
 	unsigned char mac_buff[12];
 	unsigned char in_mac[6];
 	int fd;
+	unsigned int lower;
 
 	if (mac) {
 		int ret =
@@ -80,15 +81,8 @@ int nvs_set_mac(char *nvsfile, char *mac)
 		}
 	}
 	else {
-		srand((unsigned)time(NULL));
-
-		in_mac[0] = 0x0;
-		in_mac[1] = rand()%256;
-		in_mac[2] = rand()%256;
-		in_mac[3] = rand()%256;
-		in_mac[4] = rand()%256;
-		in_mac[5] = rand()%256;
-		fprintf(stderr, "WARNING: No MAC specified. Using random MAC!");
+		fprintf(stderr, "No MAC address specified\n");
+		return -1;
 	}
 
 	fd = open(nvsfile, O_RDWR);
@@ -106,6 +100,12 @@ int nvs_set_mac(char *nvsfile, char *mac)
 	mac_buff[3]  = in_mac[5];
 
 	lseek(fd, 0L, 0);
+
+	/* we need at least two valid NIC addresses */
+	lower = (in_mac[3] << 16) + (in_mac[4] << 8) + in_mac[5];
+	if (lower + 1 > 0xffffff)
+		fprintf(stderr,
+			"WARNING: NIC part of the MAC address wraps around!\n");
 
 	printf("Writing mac address %s to file %s\n", mac, nvsfile);
 	write(fd, mac_buff, 12);
