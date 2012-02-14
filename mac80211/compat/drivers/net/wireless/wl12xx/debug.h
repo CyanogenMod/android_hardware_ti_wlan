@@ -58,6 +58,9 @@ enum {
 
 extern u32 wl12xx_debug_level;
 
+extern const char *wl12xx_timestamp;
+extern const char *wl12xx_git_head;
+
 #define DEBUG_DUMP_LIMIT 1024
 
 #define wl1271_error(fmt, arg...) \

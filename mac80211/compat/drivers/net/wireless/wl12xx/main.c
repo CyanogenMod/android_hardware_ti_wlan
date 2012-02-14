@@ -5822,6 +5822,8 @@ static int __devinit wl12xx_probe(struct platform_device *pdev)
 		goto out_hw_pg_ver;
 	}
 
+	wl1271_info("driver version: %s", wl12xx_git_head);
+	wl1271_info("compilation time: %s", wl12xx_timestamp);
 	return 0;
 
 out_hw_pg_ver:
