@@ -993,11 +993,7 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 	argc -= 2;
 	argv += 2;
 
-#ifdef NVS_RANDOM_MAC
-	if (argc != 4) {
-#else
 	if (argc != 5) {
-#endif
 		return 1;
 	}
 
@@ -1011,13 +1007,8 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 	argc--;
 
 	cmn.nvs_name = get_opt_nvsoutfile(argc--, argv++);
-
-#ifdef NVS_RANDOM_MAC
-	macaddr = NULL;
-#else
 	macaddr = *argv++;
 	argc--;
-#endif
 
 	if (file_exist(cmn.nvs_name) >= 0) {
 		fprintf(stderr, "nvs file %s. File already exists. Won't overwrite.\n", cmn.nvs_name);

@@ -12,7 +12,7 @@ LOCAL_SRC_FILES := \
         plt.c \
         ini.c
 
-LOCAL_CFLAGS := -DCONFIG_LIBNL20 -DNVS_RANDOM_MAC
+LOCAL_CFLAGS := -DCONFIG_LIBNL20
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) \
     external/libnl-headers
