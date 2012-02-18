@@ -40,6 +40,8 @@
 
 #define TIWLAN_DRV_NAME "tiap"
 
+#define DRIVER_PROP_STATUS "wlan.ap.driver.status"
+
 S8    g_drv_name[IF_NAME_SIZE + 1];
 
 S32 print_usage(VOID)
@@ -237,7 +239,7 @@ S32 user_main(S32 argc, PPS8 argv)
             {
                 os_error_printf (CU_MSG_ERROR, (PS8)"Loader: unknow parameter '%s'\n", argv[i]);
 #ifdef ANDROID
-                check_and_set_property("wlan.ap.driver.status", "failed");
+                check_and_set_property(DRIVER_PROP_STATUS, "failed");
 #endif	
                 return -1;
             }
@@ -256,13 +258,13 @@ S32 user_main(S32 argc, PPS8 argv)
     if (init_driver (g_drv_name, eeprom_file_name, init_file_name, firmware_file_name) != 0)
     {
 #ifdef ANDROID
-	check_and_set_property("wlan.ap.driver.status", "failed");
+	check_and_set_property(DRIVER_PROP_STATUS, "failed");
 	release_wake_lock(PROGRAM_NAME);
 #endif    
         return -1;
     }
 #ifdef ANDROID
-	check_and_set_property("wlan.ap.driver.status", "ok");
+	check_and_set_property(DRIVER_PROP_STATUS, "ok");
 	release_wake_lock(PROGRAM_NAME);
 #endif    
     return 0;
