@@ -12,7 +12,7 @@ ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
     WPA_SUPPL_DIR = external/wpa_supplicant_8/wpa_supplicant
 endif
 
-include $(WPA_SUPPL_DIR)/.config
+include $(WPA_SUPPL_DIR)/android.config
 
 ifneq ($(BOARD_WPA_SUPPLICANT_DRIVER),)
   CONFIG_DRIVER_$(BOARD_WPA_SUPPLICANT_DRIVER) := y

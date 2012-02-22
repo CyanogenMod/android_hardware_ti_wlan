@@ -44,7 +44,7 @@ TXN	= $(DK_ROOT)/Txn
 CUDK	= $(DK_ROOT)/CUDK
 LIB	= ../../lib
 
-include $(WPA_SUPPL_DIR)/.config
+include $(WPA_SUPPL_DIR)/android.config
 
 INCLUDES = $(STAD)/Export_Inc \
 	$(STAD)/src/Application \
