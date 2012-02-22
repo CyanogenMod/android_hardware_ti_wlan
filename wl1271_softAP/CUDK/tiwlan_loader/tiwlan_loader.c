@@ -2,22 +2,22 @@
  * tiwlan_loader.c
  *
  * Copyright 2001-2010 Texas Instruments, Inc. - http://www.ti.com/
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and  
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * \file  tiwlan_loader.c 
+
+/**
+ * \file  tiwlan_loader.c
  * \brief Loader implementation - sends FW image, NVS image and ini file to the driver
  */
 
@@ -30,23 +30,23 @@
 #include <string.h>
 #include <cutils/properties.h>
 #include <hardware_legacy/power.h>
-#define PROGRAM_NAME    "wlan_ap_loader"
-#endif
+#endif // ANDROID
 
 #include "STADExternalIf.h"
 #include "cu_osapi.h"
 #include "ipc_sta.h"
 #include "WlanDrvCommon.h"
 
+/* prefix of the AP network interface tiap0 */
 #define TIWLAN_DRV_NAME "tiap"
-
+#define PROGRAM_NAME       "tiap_loader"
 #define DRIVER_PROP_STATUS "wlan.ap.driver.status"
 
 S8    g_drv_name[IF_NAME_SIZE + 1];
 
 S32 print_usage(VOID)
 {
-    os_error_printf (CU_MSG_INFO1, (PS8)"Usage: ./wlan_loader [driver_name] [options]\n");
+    os_error_printf (CU_MSG_INFO1, (PS8)"Usage: " PROGRAM_NAME " [driver_name] [options]\n");
     os_error_printf (CU_MSG_INFO1, (PS8)"   -e <filename>  - eeprom image file name. default=./nvs_map.bin\n");
     os_error_printf (CU_MSG_INFO1, (PS8)"   -n - no eeprom file\n");
     os_error_printf (CU_MSG_INFO1, (PS8)"   -i <filename>  - init file name. default=tiwlan.ini\n");
@@ -55,7 +55,7 @@ S32 print_usage(VOID)
 }
 
 /*  Return '0' if success */
-S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name, 
+S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
                  PS8 init_file_name, PS8 firmware_file_name )
 {
     PVOID f1=NULL, f2=NULL, f3 = NULL;
@@ -76,11 +76,10 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
 
     hIpcSta = IpcSta_Create(adapter_name);
     if (hIpcSta == NULL)
-    {	
+    {
         os_error_printf (CU_MSG_ERROR, (PS8)"wlan_loader: cant allocate IpcSta context\n", eeprom_file_name);
         goto init_driver_end;
     }
-	
 
     /* Send init request to the driver */
     if ( (NULL != eeprom_file_name) &&
@@ -130,8 +129,8 @@ S32 init_driver( PS8 adapter_name, PS8 eeprom_file_name,
     init_info->uNvsFileLength = eeprom_image_length;
     init_info->uFwFileLength  = firmware_image_length;
     init_info->uIniFileLength = init_file_length;
-    
-    if (!f1 || 
+
+    if (!f1 ||
         (eeprom_image_length &&
         os_fread(&init_info->data[0], 1, eeprom_image_length, f1)<eeprom_image_length))
     {
@@ -172,7 +171,7 @@ init_driver_end:
         os_fclose(f3);
     if (init_info)
         os_MemoryFree(init_info);
-	if (hIpcSta)
+    if (hIpcSta)
         IpcSta_Destroy(hIpcSta);
 
     return rc;
@@ -188,10 +187,10 @@ int check_and_set_property(char *prop_name, char *prop_val)
         property_set(prop_name, prop_val);
         if( property_get(prop_name, prop_status, NULL) &&
             (strcmp(prop_status, prop_val) == 0) )
-	    break;
+        break;
     }
-    if( count ) {
-		os_error_printf(CU_MSG_ERROR, (PS8)"Set property %s = %s - Ok\n", prop_name, prop_val);
+    if (count) {
+        os_error_printf(CU_MSG_ERROR, (PS8)"Set property %s = %s - Ok\n", prop_name, prop_val);
     }
     else {
         os_error_printf(CU_MSG_ERROR, (PS8)"Set property %s = %s - Fail\n", prop_name, prop_val);

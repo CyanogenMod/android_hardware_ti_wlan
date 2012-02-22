@@ -39,7 +39,7 @@ LOCAL_C_INCLUDES = \
 LOCAL_SRC_FILES:= \
 	tiwlan_loader.c
 
-LOCAL_CFLAGS+= -Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(AP_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -DDRV_NAME='"tiwlan"'
+LOCAL_CFLAGS+= -Wall -Wstrict-prototypes $(DEBUGFLAGS) -D__LINUX__ $(AP_DEFINES) -D__BYTE_ORDER_LITTLE_ENDIAN -DDRV_NAME='"tiap"'
 
 LOCAL_CFLAGS += $(ARMFLAGS)
 
