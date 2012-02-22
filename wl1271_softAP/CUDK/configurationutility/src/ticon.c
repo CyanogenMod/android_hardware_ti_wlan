@@ -62,6 +62,7 @@
 
 #define TIWLAN_DRV_NAME "tiap0"
 #define SUPPL_IF_FILE "/var/run/tiwlan0"
+#define PROGRAM_NAME "tiap_cu"
  
 extern int consoleRunScript( char *script_file, THandle hConsole);
 
@@ -1180,8 +1181,8 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 		}
 	} /* h1 */
 
-    /* -------------------------------------------- Root -------------------------------------------- */
-				
+	/* -------------------------------------------- Root -------------------------------------------- */
+
 	Console_AddToken(pTiCon->hConsole,NULL, (PS8)"aboUt", (PS8)"About", (FuncToken_t) CuCmd_ShowAbout, NULL );
 	Console_AddToken(pTiCon->hConsole,NULL, (PS8)"Quit", (PS8)"quit", (FuncToken_t) CuCmd_Quit, NULL );
 
@@ -1191,18 +1192,18 @@ static S32 TiCon_Init_Console_Menu(TiCon_t* pTiCon)
 
 static S32 TiCon_Print_Usage(VOID)
 {
-    os_error_printf(CU_MSG_ERROR, (PS8)"Usage: ./wlan_cu [driver_name] [options]\n");    
+    os_error_printf(CU_MSG_ERROR, (PS8)"Usage: " PROGRAM_NAME " [driver_name] [options]\n");
     os_error_printf(CU_MSG_ERROR, (PS8)"   -b             - bypass supplicant\n");
-	os_error_printf(CU_MSG_ERROR, (PS8)"   -i<ifname>     - supplicant interface file\n");
-	os_error_printf(CU_MSG_ERROR, (PS8)"example:\n");
-	os_error_printf(CU_MSG_ERROR, (PS8)"   ./wlan_cu tiwlan0 -i/voice/tiwlan0\n");
+    os_error_printf(CU_MSG_ERROR, (PS8)"   -i<ifname>     - supplicant interface file\n");
+    os_error_printf(CU_MSG_ERROR, (PS8)"example:\n");
+    os_error_printf(CU_MSG_ERROR, (PS8)"   " PROGRAM_NAME " " TIWLAN_DRV_NAME " -itiwlan0\n");
     return 0;
 }
 
 static VOID TiCon_SignalCtrlC(S32 signo)
 {
-	os_error_printf(CU_MSG_ERROR, (PS8)"TiCon_Signal - got signal Ctrl+c ... exiting\n");
-	Console_Stop(g_TiCon.hConsole);
+    os_error_printf(CU_MSG_ERROR, (PS8)"TiCon_Signal - got signal Ctrl+c ... exiting\n");
+    Console_Stop(g_TiCon.hConsole);
 }
 
 
@@ -1217,9 +1218,9 @@ S32 user_main(S32 argc, PS8* argv)
     S32             fill_name = TRUE;
     int             stop_UI = 0;
     THostapdCLICmd  cmd;
-  
+
     CuHostapd_LoadConfFileToMemory();
-    
+
     SupplIfFile[0] = '\0';
     if( argc > 1 )
     {
@@ -1227,7 +1228,7 @@ S32 user_main(S32 argc, PS8* argv)
         if( argv[i][0] != '-' )
         {
             os_strcpy( g_TiCon.drv_name, argv[i++] );
-			fill_name = FALSE;
+            fill_name = FALSE;
         }
 
         for( ;i < argc; i++ )
