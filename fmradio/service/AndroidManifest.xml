@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="com.ti.server"
+      android:versionCode="1"
+      android:versionName="1.0.0"
+      android:sharedUserId="android.uid.system">
+    <permission android:name="ti.permission.FMRX"
+        android:label="@string/permlab_FmRx"
+        android:description="@string/permdesc_FmRxAdmin"
+        android:permissionGroup="android.permission-group.HARDWARE_CONTROLS"
+        android:protectionLevel="dangerous" />
+    <permission android:name="ti.permission.FMRX_ADMIN"
+        android:label="@string/permlab_FmRxAdmin"
+        android:description="@string/permdesc_FmRxAdmin"
+        android:permissionGroup="android.permission-group.HARDWARE_CONTROLS"
+        android:protectionLevel="dangerous" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+          android:process="system"
+          android:label="FmRxService">
+        <uses-library android:name="fmreceiverif" />
+        <service android:name=".FmRxService"
+                 android:exported="true"
+                 android:enabled="true">
+            <intent-filter>
+                <action android:name="com.ti.server.FmRxService" />
+            </intent-filter>
+        </service>
+        <receiver android:name=".BootReceiver">
+            <intent-filter>
+                <action android:name ="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+    <uses-sdk android:minSdkVersion="4" />
+</manifest>
+
+

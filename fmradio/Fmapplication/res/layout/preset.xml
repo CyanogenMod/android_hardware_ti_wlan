@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+android:id="@+id/scrollview1"
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="320dip"
+	android:layout_height="480dip" android:background="@drawable/background">
+
+
+	<ListView android:id="@+id/android:list" android:layout_width="fill_parent"
+		android:layout_height="0px" android:layout_weight="1"
+		android:cacheColorHint="#00000000">
+	</ListView>
+	<RelativeLayout android:id="@+id/widget244"
+		android:layout_alignParentBottom="true" android:layout_width="fill_parent"
+		android:layout_height="200dip">
+
+		<Button android:id="@+id/btnBack" android:layout_width="150dip"
+			android:layout_height="50dip" android:text="@string/btnBack"
+			android:layout_alignParentRight="true"
+			android:layout_alignParentBottom="true" android:layout_marginBottom="40dip">
+		</Button>
+	</RelativeLayout>
+
+
+
+</LinearLayout>   
+</ScrollView>
+
