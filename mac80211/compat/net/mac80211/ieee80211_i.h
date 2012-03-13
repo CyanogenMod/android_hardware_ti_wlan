@@ -801,12 +801,7 @@ struct ieee80211_local {
 	struct work_struct recalc_smps;
 
 	/* aggregated multicast list */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 	struct netdev_hw_addr_list mc_list;
-#else
-	struct dev_addr_list *mc_list;
-	int mc_count;
-#endif
 
 	bool tim_in_locked_section; /* see ieee80211_beacon_get() */
 

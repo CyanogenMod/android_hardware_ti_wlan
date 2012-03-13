@@ -91,6 +91,7 @@ static inline int ath6kl_hif_suspend(struct ath6kl *ar,
 
 	return ar->hif_ops->suspend(ar, wow);
 }
+#endif
 
 /*
  * Read from the ATH6KL through its diagnostic window. No cooperation from
@@ -122,6 +123,7 @@ static inline int ath6kl_hif_bmi_write(struct ath6kl *ar, u8 *buf, u32 len)
 	return ar->hif_ops->bmi_write(ar, buf, len);
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34))
 static inline int ath6kl_hif_resume(struct ath6kl *ar)
 {
 	ath6kl_dbg(ATH6KL_DBG_HIF, "hif resume\n");

@@ -9,6 +9,7 @@ ATH_MAKEFILE="drivers/net/wireless/ath/Makefile"
 ATH9K_MAKEFILE="drivers/net/wireless/ath/ath9k/Makefile"
 BRCM80211_MAKEFILE="drivers/net/wireless/brcm80211/Makefile"
 RT2X00_MAKEFILE="drivers/net/wireless/rt2x00/Makefile"
+TI_MAKEFILE="drivers/net/wireless/ti/Makefile"
 NET_WIRELESS_MAKEFILE="net/wireless/Makefile"
 EEPROM_MAKEFILE="drivers/misc/eeprom/Makefile"
 DRIVERS_NET_ATHEROS="drivers/net/ethernet/atheros/Makefile"
@@ -33,11 +34,11 @@ PURPLE="\033[35m"
 CYAN="\033[36m"
 UNDERLINE="\033[02m"
 
-SUPPORTED_80211_DRIVERS="ath5k ath9k ath9k_htc carl9170 ath6kl b43 zd1211rw rt2x00 wl1251 wl12xx brcmsmac brcmfmac"
+SUPPORTED_80211_DRIVERS="ath5k ath9k ath9k_htc carl9170 ath6kl b43 zd1211rw rt2x00 wl1251 wl12xx wl18xx brcmsmac brcmfmac"
 
 # b43 needs some more work for driver-select, the SSB stuff, plus
 # what if you update b44 but not b43? It will bust.
-SUPPORTED_ETH_DRIVERS=""
+SUPPORTED_ETH_DRIVERS="atl1 atl2 atl1e atl1c"
 
 function usage {
 	echo -e "${GREEN}Usage${NORMAL}: ${BOLD}$0${NORMAL} [ ${PURPLE}<driver-name>${NORMAL} | ${CYAN}<driver-group-name>${NORMAL} | ${GREEN}restore${NORMAL} ]"
@@ -45,6 +46,12 @@ function usage {
 	# These should match the switch below.
 	echo -e "Supported 802.11 drivers:"
 	for i in $SUPPORTED_80211_DRIVERS; do
+		echo -e "\t${PURPLE}${i}${NORMAL}"
+	done
+
+	echo
+	echo -e "Supported Ethernet drivers:"
+	for i in $SUPPORTED_ETH_DRIVERS; do
 		echo -e "\t${PURPLE}${i}${NORMAL}"
 	done
 
@@ -56,7 +63,8 @@ function usage {
 	echo -e "\t${CYAN}intel${NORMAL} < ${PURPLE} iwlwifi, iwlegacy ${NORMAL}>"
 	echo -e "\t${CYAN}rtl818x${NORMAL} < ${PURPLE} rtl8180 rtl8187 ${NORMAL}>"
 	echo -e "\t${CYAN}rtlwifi${NORMAL} < ${PURPLE} rtl8192ce ${NORMAL}>"
-	echo -e "\t${CYAN}wl12xx${NORMAL} < ${PURPLE} wl1251 wl12xx (SPI and SDIO)${NORMAL}>"
+	echo -e "\t${CYAN}ti${NORMAL} < ${PURPLE} wl1251 wl12xx (SPI and SDIO)${NORMAL}>"
+	echo -e "\t${CYAN}wl18xx${NORMAL} < ${PURPLE} wl18xx (SPI and SDIO)${NORMAL}>"
 	
 	echo -e "\nSupported group drivers: Bluetooth & Ethernet:"
 	echo -e "\t${CYAN}atlxx${NORMAL} < ${PURPLE} atl1 atl2 atl1e atl1c ${NORMAL}>"
@@ -243,6 +251,12 @@ function select_brcm80211_driver
 	perl -i -ne 'print if /'$1'/ || /CONFIG_BRCMUTIL/ ' $BRCM80211_MAKEFILE
 }
 
+function select_ti_driver
+{
+	backup_file $TI_MAKEFILE
+	perl -i -ne 'print if /'$1'/ || /CONFIG_WLCORE/ || /CONFIG_WL12XX_PLATFORM_DATA/' $TI_MAKEFILE
+}
+
 function restore_file {
 	#ORIG=$(shell ${1%%.${BACKUP_EXT}})
 	ORIG=${1%%.bk}
@@ -348,9 +362,8 @@ case $1 in
 		disable_bt_usb_ethernet_var
 		disable_lib80211
 		;;
-	wl12xx)
-		select_drivers		CONFIG_WL1251 \
-					CONFIG_WL12XX
+	wl_ti)
+		select_drivers		CONFIG_WL_TI
 		disable_staging
 		disable_var_01
 		;;
@@ -424,12 +437,20 @@ case $1 in
 		disable_var_02
 		;;
 	wl1251)
-		select_drivers		CONFIG_WL1251
+		select_drivers		CONFIG_WL_TI
+		select_ti_driver	CONFIG_WL1251
 		disable_staging
 		disable_var_01
 		;;
 	wl12xx)
-		select_drivers		CONFIG_WL12XX
+		select_drivers		CONFIG_WL_TI
+		select_ti_driver	CONFIG_WL12XX
+		disable_staging
+		disable_var_01
+		;;
+	wl18xx)
+		select_drivers		CONFIG_WL_TI
+		select_ti_driver	CONFIG_WL18XX
 		disable_staging
 		disable_var_01
 		;;

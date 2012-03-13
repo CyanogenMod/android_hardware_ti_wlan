@@ -5084,17 +5084,15 @@ il_pci_resume(struct device *device)
 }
 EXPORT_SYMBOL(il_pci_resume);
 
-const SIMPLE_DEV_PM_OPS(il_pm_ops, il_pci_suspend, il_pci_resume);
-
-compat_pci_suspend(il_pci_suspend)
-compat_pci_resume(il_pci_resume)
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
+const struct dev_pm_ops il_pm_ops = {
+	.suspend = il_pci_suspend,
+	.resume = il_pci_resume,
+	.freeze = il_pci_suspend,
+	.thaw = il_pci_resume,
+	.poweroff = il_pci_suspend,
+	.restore = il_pci_resume,
+};
 EXPORT_SYMBOL(il_pm_ops);
-#else
-EXPORT_SYMBOL(il_pci_suspend_compat);
-EXPORT_SYMBOL(il_pci_resume_compat);
-#endif
 
 #endif /* CONFIG_PM */
 

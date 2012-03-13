@@ -2165,11 +2165,7 @@ struct ieee80211_ops {
 			       enum ieee80211_tx_sync_type type);
 
 	u64 (*prepare_multicast)(struct ieee80211_hw *hw,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 				 struct netdev_hw_addr_list *mc_list);
-#else
-				 int mc_count, struct dev_addr_list *mc_list);
-#endif
 	void (*configure_filter)(struct ieee80211_hw *hw,
 				 unsigned int changed_flags,
 				 unsigned int *total_flags,
@@ -2900,6 +2896,16 @@ __le16 ieee80211_generic_frame_duration(struct ieee80211_hw *hw,
  */
 struct sk_buff *
 ieee80211_get_buffered_bc(struct ieee80211_hw *hw, struct ieee80211_vif *vif);
+
+/**
+ * ieee80211_set_netdev_features - set netdev feature bits for vif
+ * @vif: virtual interface to set netdev flags on
+ * @features: feature bits (see &struct net_device for details)
+ *
+ * This function sets netdev feature bit for the device associated with the
+ * specified vif.
+ */
+void ieee80211_set_netdev_features(struct ieee80211_vif *vif, int features);
 
 /**
  * ieee80211_get_tkip_p1k_iv - get a TKIP phase 1 key for IV32

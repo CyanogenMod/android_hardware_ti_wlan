@@ -2027,12 +2027,7 @@ __le32 il_add_beacon_time(struct il_priv *il, u32 base, u32 addon,
 #ifdef CONFIG_PM
 int il_pci_suspend(struct device *device);
 int il_pci_resume(struct device *device);
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29))
-int il_pci_suspend_compat(struct pci_dev *pdev, pm_message_t state);
-int il_pci_resume_compat(struct pci_dev *pdev);
-#else
 extern const struct dev_pm_ops il_pm_ops;
-#endif
 
 #define IL_LEGACY_PM_OPS	(&il_pm_ops)
 

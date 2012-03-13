@@ -1659,11 +1659,7 @@ static void set_multicast_list(struct usbnet *usbdev)
 
 		netdev_for_each_mc_addr(ha, usbdev->net)
 			memcpy(mc_addrs + i++ * ETH_ALEN,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 			       ha->addr, ETH_ALEN);
-#else
-			       ha->dmi_addr, ETH_ALEN);
-#endif
 	}
 	netif_addr_unlock_bh(usbdev->net);
 

@@ -204,28 +204,14 @@ static inline void drv_finish_tx_sync(struct ieee80211_local *local,
 }
 
 static inline u64 drv_prepare_multicast(struct ieee80211_local *local,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 					struct netdev_hw_addr_list *mc_list)
-#else
-					int mc_count,
-					struct dev_addr_list *mc_list)
-#endif
 {
 	u64 ret = 0;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 	trace_drv_prepare_multicast(local, mc_list->count);
-#else
-	trace_drv_prepare_multicast(local, mc_count);
-#endif
 
 	if (local->ops->prepare_multicast)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 		ret = local->ops->prepare_multicast(&local->hw, mc_list);
-#else
-		ret = local->ops->prepare_multicast(&local->hw, mc_count,
-						    mc_list);
-#endif
 
 	trace_drv_return_u64(local, ret);
 

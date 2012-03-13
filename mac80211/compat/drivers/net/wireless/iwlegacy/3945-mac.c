@@ -3920,12 +3920,7 @@ static struct pci_driver il3945_driver = {
 	.id_table = il3945_hw_card_ids,
 	.probe = il3945_pci_probe,
 	.remove = __devexit_p(il3945_pci_remove),
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
 	.driver.pm = IL_LEGACY_PM_OPS,
-#elif defined(CONFIG_PM)
-	.suspend = il_pci_suspend_compat,
-	.resume = il_pci_resume_compat,
-#endif
 };
 
 static int __init

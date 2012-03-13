@@ -2458,6 +2458,9 @@ int ieee80211_mgd_auth(struct ieee80211_sub_if_data *sdata,
 	if (req->local_state_change)
 		return 0; /* no need to update mac80211 state */
 
+	/* first, disconnect from previous AP */
+	ieee80211_disassoc_only(sdata);
+
 	switch (req->auth_type) {
 	case NL80211_AUTHTYPE_OPEN_SYSTEM:
 		auth_alg = WLAN_AUTH_OPEN;
@@ -2888,6 +2891,13 @@ int ieee80211_disassoc_only(struct ieee80211_sub_if_data *sdata)
 	ieee80211_set_disassoc(sdata, true, false);
 
 	mutex_unlock(&ifmgd->mtx);
+
+	sta_info_flush(sdata->local, sdata);
+
+	mutex_lock(&sdata->local->mtx);
+	ieee80211_recalc_idle(sdata->local);
+	mutex_unlock(&sdata->local->mtx);
+
 	return 0;
 }
 void ieee80211_cqm_rssi_notify(struct ieee80211_vif *vif,

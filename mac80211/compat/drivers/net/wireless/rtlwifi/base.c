@@ -30,7 +30,6 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/ip.h>
-#include <linux/in.h>
 #include <linux/module.h>
 #include "wifi.h"
 #include "rc.h"

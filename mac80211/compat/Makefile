@@ -8,8 +8,11 @@ endif
 export KLIB_BUILD ?=	$(KLIB)/build
 # Sometimes not available in the path
 MODPROBE := /sbin/modprobe
+
+ifneq ($(wildcard $(MODPROBE)),)
 MADWIFI=$(shell $(MODPROBE) -l ath_pci)
 OLD_IWL=$(shell $(MODPROBE) -l iwl4965)
+endif
 
 DESTDIR?=
 
@@ -43,6 +46,13 @@ obj-$(CONFIG_COMPAT_BLUETOOTH_MODULES) += drivers/bluetooth/
 else
 
 export PWD :=	$(shell pwd)
+
+# The build will fail if there is any space in PWD.
+ifneq (,$(findstring  $() ,$(PWD)))
+$(error "The path to this compat-wireless directory has spaces in it." \
+	"Please put it somewhere where there is no space")
+endif
+
 CFLAGS += \
         -DCOMPAT_BASE_TREE="\"$(shell cat compat_base_tree)\"" \
         -DCOMPAT_BASE_TREE_VERSION="\"$(shell cat compat_base_tree_version)\"" \
@@ -84,7 +94,7 @@ $(CREL_CHECK):
 
 btinstall: btuninstall bt-install-modules
 
-bt-install-modules: bt
+bt-install-modules: bt $(MODPROBE)
 	$(MAKE) -C $(KLIB_BUILD) M=$(PWD) $(KMODDIR_ARG) $(KMODPATH_ARG) BT=TRUE \
 		modules_install
 	@/sbin/depmod -ae
@@ -119,7 +129,7 @@ bt-install-modules: bt
 	@echo And then load the needed bluetooth modules. If unsure reboot.
 	@echo
 
-btuninstall:
+btuninstall: $(MODPROBE)
 	@# New location, matches upstream
 	@rm -rf $(KLIB)/$(KMODDIR)/net/bluetooth/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/bluetooth/
@@ -152,7 +162,7 @@ btuninstall:
 	@echo
 
 btclean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) BT=TRUE clean
+	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) BT=TRUE clean
 	@rm -f $(CREL_PRE)*
 
 install: uninstall install-modules install-scripts
@@ -161,7 +171,7 @@ install-modules: modules
 	$(MAKE) -C $(KLIB_BUILD) M=$(PWD) $(KMODDIR_ARG) $(KMODPATH_ARG) \
 		modules_install
 
-install-scripts:
+install-scripts: $(MODPROBE)
 	@# All the scripts we can use
 	@mkdir -p $(DESTDIR)/usr/lib/compat-wireless/
 	@install scripts/modlib.sh	$(DESTDIR)/usr/lib/compat-wireless/
@@ -318,7 +328,7 @@ install-scripts:
 	@echo If unsure reboot.
 	@echo
 
-uninstall:
+uninstall: $(MODPROBE)
 	@# New location, matches upstream
 	@rm -rf $(KLIB)/$(KMODDIR)/compat/
 	@rm -rf $(KLIB)/$(KMODDIR)/net/mac80211/

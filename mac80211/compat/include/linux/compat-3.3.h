@@ -24,11 +24,6 @@
 #else
 #define br_port_exists(dev)	(dev->br_port)
 #endif
-
-static inline void skb_complete_wifi_ack(struct sk_buff *skb, bool acked)
-{
-	WARN_ON(1);
-}
 #define NL80211_FEATURE_SK_TX_STATUS 0
 
 typedef u32 netdev_features_t;

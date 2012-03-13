@@ -406,11 +406,7 @@ static void atl1c_set_multi(struct net_device *netdev)
 
 	/* comoute mc addresses' hash value ,and put it into hash table */
 	netdev_for_each_mc_addr(ha, netdev) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 		hash_value = atl1c_hash_mc_addr(hw, ha->addr);
-#else
-		hash_value = atl1c_hash_mc_addr(hw, ha->dmi_addr);
-#endif
 		atl1c_hash_set(hw, hash_value);
 	}
 }
@@ -2901,9 +2897,6 @@ static struct pci_error_handlers atl1c_err_handler = {
 
 static SIMPLE_DEV_PM_OPS(atl1c_pm_ops, atl1c_suspend, atl1c_resume);
 
-compat_pci_suspend(atl1c_suspend)
-compat_pci_resume(atl1c_resume)
-
 static struct pci_driver atl1c_driver = {
 	.name     = atl1c_driver_name,
 	.id_table = atl1c_pci_tbl,
@@ -2911,12 +2904,7 @@ static struct pci_driver atl1c_driver = {
 	.remove   = __devexit_p(atl1c_remove),
 	.shutdown = atl1c_shutdown,
 	.err_handler = &atl1c_err_handler,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
 	.driver.pm = &atl1c_pm_ops,
-#elif defined(CONFIG_PM_SLEEP)
-	.suspend        = atl1c_suspend_compat,
-	.resume         = atl1c_resume_compat,
-#endif
 };
 
 /*

@@ -2720,3 +2720,12 @@ void ieee80211_tx_skb_tid(struct ieee80211_sub_if_data *sdata,
 	ieee80211_xmit(sdata, skb);
 	local_bh_enable();
 }
+
+void ieee80211_set_netdev_features(struct ieee80211_vif *vif, int features)
+{
+	struct ieee80211_sub_if_data *sdata = vif_to_sdata(vif);
+
+	if (sdata->dev)
+		sdata->dev->features |= features;
+}
+EXPORT_SYMBOL(ieee80211_set_netdev_features);

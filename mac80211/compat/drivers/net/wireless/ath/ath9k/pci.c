@@ -334,10 +334,14 @@ static int ath_pci_resume(struct device *device)
 	return 0;
 }
 
-compat_pci_suspend(ath_pci_suspend)
-compat_pci_resume(ath_pci_resume)
-
-static SIMPLE_DEV_PM_OPS(ath9k_pm_ops, ath_pci_suspend, ath_pci_resume);
+static const struct dev_pm_ops ath9k_pm_ops = {
+	.suspend = ath_pci_suspend,
+	.resume = ath_pci_resume,
+	.freeze = ath_pci_suspend,
+	.thaw = ath_pci_resume,
+	.poweroff = ath_pci_suspend,
+	.restore = ath_pci_resume,
+};
 
 #define ATH9K_PM_OPS	(&ath9k_pm_ops)
 
@@ -355,12 +359,7 @@ static struct pci_driver ath_pci_driver = {
 	.id_table   = ath_pci_id_table,
 	.probe      = ath_pci_probe,
 	.remove     = ath_pci_remove,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
 	.driver.pm  = ATH9K_PM_OPS,
-#elif defined(CONFIG_PM)
-	.suspend    = ath_pci_suspend_compat,
-	.resume     = ath_pci_resume_compat,
-#endif
 };
 
 int ath_pci_init(void)

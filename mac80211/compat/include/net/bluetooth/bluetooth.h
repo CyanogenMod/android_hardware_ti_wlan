@@ -250,7 +250,7 @@ extern void bt_sysfs_cleanup(void);
 
 extern struct dentry *bt_debugfs;
 
-#ifdef CONFIG_COMPAT_BT_L2CAP
+#ifdef CONFIG_BT_L2CAP
 int l2cap_init(void);
 void l2cap_exit(void);
 #else
@@ -264,7 +264,7 @@ static inline void l2cap_exit(void)
 }
 #endif
 
-#ifdef CONFIG_COMPAT_BT_SCO
+#ifdef CONFIG_BT_SCO
 int sco_init(void);
 void sco_exit(void);
 #else

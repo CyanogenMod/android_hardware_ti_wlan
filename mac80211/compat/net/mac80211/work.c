@@ -454,10 +454,6 @@ ieee80211_authenticate(struct ieee80211_work *wk)
 	struct ieee80211_sub_if_data *sdata = wk->sdata;
 	struct ieee80211_local *local = sdata->local;
 
-	/* first, disconnect from previous AP */
-	if (!wk->probe_auth.tries)
-		ieee80211_disassoc_only(sdata);
-
 	if (!wk->probe_auth.synced) {
 		int ret = drv_tx_sync(local, sdata, wk->filter_ta,
 				      IEEE80211_TX_SYNC_AUTH);
