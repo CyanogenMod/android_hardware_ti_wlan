@@ -832,9 +832,12 @@ static void wl1271_recovery_work(struct work_struct *work)
 
 	/* change partitions momentarily so we can read the FW pc */
 	wlcore_set_partition(wl, &wl->ptable[PART_BOOT]);
-	wl1271_info("Hardware recovery in progress. FW ver: %s pc: 0x%x",
-		    wl->chip.fw_ver_str,
-		    wlcore_read_reg(wl, REG_PC_ON_RECOVERY));
+	wl1271_info("Hardware recovery in progress. FW ver: %s",
+		    wl->chip.fw_ver_str);
+	wl1271_info("pc: 0x%x hint_sts: 0x%08x count: %d",
+		    wlcore_read_reg(wl, REG_PC_ON_RECOVERY),
+		    wlcore_read_reg(wl, REG_INTERRUPT_NO_CLEAR),
+		    ++wl->recovery_count);
 	wlcore_set_partition(wl, &wl->ptable[PART_WORK]);
 
 	BUG_ON(bug_on_recovery &&
@@ -1076,6 +1079,7 @@ int wl1271_plt_stop(struct wl1271 *wl)
 	mutex_lock(&wl->mutex);
 	wl1271_power_off(wl);
 	wl->flags = 0;
+	wl->sleep_auth = WL1271_PSM_CAM;
 	wl->state = WL1271_STATE_OFF;
 	wl->rx_counter = 0;
 	mutex_unlock(&wl->mutex);
@@ -1651,6 +1655,7 @@ static void wl1271_op_stop(struct ieee80211_hw *hw)
 	wl->ap_fw_ps_map = 0;
 	wl->ap_ps_map = 0;
 	wl->sched_scanning = false;
+	wl->sleep_auth = WL1271_PSM_CAM;
 	memset(wl->roles_map, 0, sizeof(wl->roles_map));
 	memset(wl->links_map, 0, sizeof(wl->links_map));
 	memset(wl->roc_map, 0, sizeof(wl->roc_map));
@@ -2351,7 +2356,8 @@ static int wl12xx_config_vif(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 	/* if the channel changes while joined, join again */
 	if (changed & IEEE80211_CONF_CHANGE_CHANNEL &&
 	    ((wlvif->band != conf->channel->band) ||
-	     (wlvif->channel != channel))) {
+	     (wlvif->channel != channel) ||
+	     wlvif->channel_type != conf->channel_type)) {
 		/* send all pending packets */
 		wl1271_tx_work_locked(wl);
 		wlvif->band = conf->channel->band;
@@ -3241,14 +3247,15 @@ static int wl1271_ap_set_probe_resp_tmpl(struct wl1271 *wl, u32 rates,
 				      skb->data,
 				      skb->len, 0,
 				      rates);
-
 	dev_kfree_skb(skb);
 
-	if (ret == 0) {
-		wl1271_debug(DEBUG_AP, "probe response updated");
-		set_bit(WLVIF_FLAG_AP_PROBE_RESP_SET, &wlvif->flags);
-	}
+	if (ret < 0)
+		goto out;
 
+	wl1271_debug(DEBUG_AP, "probe response updated");
+	set_bit(WLVIF_FLAG_AP_PROBE_RESP_SET, &wlvif->flags);
+
+out:
 	return ret;
 }
 
@@ -4892,7 +4899,7 @@ static int wl1271_init_ieee80211(struct wl1271 *wl)
 	};
 
 	/* The tx descriptor buffer and the TKIP space. */
-	wl->hw->extra_tx_headroom = WL1271_EXTRA_SPACE_TKIP +
+	wl->hw->extra_tx_headroom = wl->tkip_extra_space +
 		sizeof(struct wl1271_tx_hw_descr);
 
 	/* unit us */
@@ -5042,6 +5049,8 @@ struct ieee80211_hw *wlcore_alloc_hw(size_t priv_size)
 	wl->channel_type = NL80211_CHAN_NO_HT;
 	wl->flags = 0;
 	wl->sg_enabled = true;
+	wl->sleep_auth = WL1271_PSM_CAM;
+	wl->recovery_count = 0;
 	wl->hw_pg_ver = -1;
 	wl->ap_ps_map = 0;
 	wl->ap_fw_ps_map = 0;

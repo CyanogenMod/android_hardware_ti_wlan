@@ -1,4 +1,4 @@
-wl18xx-objs	= main.o acx.o tx.o io.o
+wl18xx-objs	= main.o acx.o tx.o io.o debugfs.o
 
 define filechk_version.h
 	(echo 'static const char *wl18xx_git_head = \

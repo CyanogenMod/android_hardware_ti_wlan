@@ -25,6 +25,7 @@
 #include <linux/platform_device.h>
 
 #include "wlcore_i.h"
+#include "boot.h"
 
 /* The maximum number of Tx descriptors in all chip families */
 #define MAX_ACX_TX_DESCRIPTORS 32
@@ -70,6 +71,9 @@ struct wlcore_ops {
 					  struct wl12xx_vif *wlvif);
 	s8 (*get_pg_ver)(struct wl1271 *wl);
 	void (*get_mac)(struct wl1271 *wl);
+	int (*debugfs_init)(struct wl1271 *wl, struct dentry *rootdir);
+	int (*handle_static_data)(struct wl1271 *wl,
+				  struct wl1271_static_data *static_data);
 };
 
 enum wlcore_partitions {
@@ -117,6 +121,15 @@ enum wlcore_registers {
 	REG_RAW_FW_STATUS_ADDR,
 
 	REG_TABLE_LEN,
+};
+
+struct wl1271_stats {
+	void *fw_stats;
+	unsigned long fw_stats_update;
+	size_t fw_stats_len;
+
+	unsigned int retry_count;
+	unsigned int excessive_retries;
 };
 
 struct wl1271 {
@@ -280,6 +293,10 @@ struct wl1271 {
 
 	bool enable_11a;
 
+	int sleep_auth;
+
+	int recovery_count;
+
 	struct list_head list;
 
 	/* Most recently reported noise in dBm */
@@ -353,6 +370,9 @@ struct wl1271 {
 	u32 normal_tx_spare;
 	u32 gem_tx_spare;
 
+	/* extra headroom the firmware needs for TKIP */
+	u32 tkip_extra_space;
+
 	/* translate HW Tx rates to standard rate-indices */
 	const u8 **band_rate_to_idx;
 
@@ -367,6 +387,9 @@ struct wl1271 {
 
 	/* size of the private FW status data */
 	size_t fw_status_priv_len;
+
+	/* size of the private static data */
+	size_t static_data_priv_len;
 
 	/* the current channel type */
 	enum nl80211_channel_type channel_type;

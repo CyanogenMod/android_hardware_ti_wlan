@@ -36,6 +36,7 @@
 #include "cmd.h"
 #include "event.h"
 #include "tx.h"
+#include "hw_ops.h"
 
 #define WL1271_CMD_FAST_POLL_COUNT       50
 
@@ -497,6 +498,7 @@ int wl12xx_cmd_role_start_ap(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	struct wl12xx_cmd_role_start *cmd;
 	struct ieee80211_vif *vif = wl12xx_wlvif_to_vif(wlvif);
 	struct ieee80211_bss_conf *bss_conf = &vif->bss_conf;
+	u32 supported_rates;
 	int ret;
 
 	wl1271_debug(DEBUG_CMD, "cmd role start ap %d", wlvif->role_id);
@@ -547,7 +549,13 @@ int wl12xx_cmd_role_start_ap(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 		memcpy(cmd->ap.ssid, bss_conf->ssid, bss_conf->ssid_len);
 	}
 
-	cmd->ap.local_rates = cpu_to_le32(0xffffffff);
+	supported_rates = CONF_TX_AP_ENABLED_RATES | CONF_TX_MCS_RATES |
+		wlcore_hw_ap_get_mimo_wide_rate_mask(wl, wlvif);
+
+	wl1271_debug(DEBUG_CMD, "cmd role start ap with supported_rates 0x%08x",
+		     supported_rates);
+
+	cmd->ap.local_rates = cpu_to_le32(supported_rates);
 
 	switch (wlvif->band) {
 	case IEEE80211_BAND_2GHZ:
@@ -1074,7 +1082,7 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	/* encryption space */
 	switch (wlvif->encryption_type) {
 	case KEY_TKIP:
-		extra = WL1271_EXTRA_SPACE_TKIP;
+		extra = wl->tkip_extra_space;
 		break;
 	case KEY_AES:
 		extra = WL1271_EXTRA_SPACE_AES;

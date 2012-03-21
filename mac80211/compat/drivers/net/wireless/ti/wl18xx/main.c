@@ -39,16 +39,22 @@
 #include "wl18xx.h"
 #include "io.h"
 #include "version.h"
+#include "debugfs.h"
 
 #define WL18XX_RX_CHECKSUM_MASK      0x40
 
-static char *ht_mode_param;
+static char *ht_mode_param = "wide";
 static char *board_type_param = "hdk";
 static bool dc2dc_param = false;
 static int n_antennas_2_param = 1;
 static int n_antennas_5_param = 1;
 static bool checksum_param = true;
 static bool enable_11a_param = true;
+static int low_band_component = -1;
+static int low_band_component_type = -1;
+static int high_band_component = -1;
+static int high_band_component_type = -1;
+static int pwr_limit_reference_11_abg = -1;
 
 static const u8 wl18xx_rate_to_idx_2ghz[] = {
 	/* MCS rates are used only with 11n */
@@ -501,6 +507,7 @@ static struct wl18xx_priv_conf wl18xx_default_priv_conf = {
 		.enable_clpc			= 0x00,
 		.enable_tx_low_pwr_on_siso_rdl	= 0x00,
 		.rx_profile			= 0x00,
+		.pwr_limit_reference_11_abg	= 0xc8,
 	},
 };
 
@@ -582,6 +589,8 @@ static const struct wl18xx_clk_cfg wl18xx_clk_table[NUM_CLOCK_CONFIGS] = {
 static int wl18xx_identify_chip(struct wl1271 *wl)
 {
 	int ret = 0;
+
+	printk("PRDP: Chip Id=%d\n", wl->chip.id);
 
 	switch (wl->chip.id) {
 	case CHIP_ID_185x_PG10:
@@ -853,6 +862,8 @@ static void wl18xx_set_mac_and_phy(struct wl1271 *wl)
 		phy->clock_valid_on_wake_up;
 	params.secondary_clock_setting_time =
 		phy->secondary_clock_setting_time;
+	params.pwr_limit_reference_11_abg =
+		phy->pwr_limit_reference_11_abg;
 
 	params.board_type = priv->board_type;
 
@@ -1079,11 +1090,12 @@ static u32 wl18xx_sta_get_ap_rate_mask(struct wl1271 *wl,
 static u32 wl18xx_ap_get_mimo_wide_rate_mask(struct wl1271 *wl,
 					     struct wl12xx_vif *wlvif)
 {
-	if (wlvif->channel_type == NL80211_CHAN_HT40MINUS ||
-	    wlvif->channel_type == NL80211_CHAN_HT40PLUS) {
+	if ((wlvif->channel_type == NL80211_CHAN_HT40MINUS ||
+	     wlvif->channel_type == NL80211_CHAN_HT40PLUS) &&
+	    !strcmp(ht_mode_param, "wide")) {
 		wl1271_debug(DEBUG_ACX, "using wide channel rate mask");
 		return CONF_TX_RATE_USE_WIDE_CHAN;
-	} else {
+	} else if (!strcmp(ht_mode_param, "mimo")) {
 		wl1271_debug(DEBUG_ACX, "using MIMO rate mask");
 
 		/*
@@ -1097,6 +1109,8 @@ static u32 wl18xx_ap_get_mimo_wide_rate_mask(struct wl1271 *wl,
 			return CONF_TX_MIMO_RATES & ~CONF_HW_BIT_RATE_MCS_13;
 
 		return CONF_TX_MIMO_RATES;
+	} else {
+		return 0;
 	}
 }
 
@@ -1149,6 +1163,17 @@ static void wl18xx_get_mac(struct wl1271 *wl)
 	wlcore_set_partition(wl, &wl->ptable[PART_DOWN]);
 }
 
+static int wl18xx_handle_static_data(struct wl1271 *wl,
+				     struct wl1271_static_data *static_data)
+{
+	struct wl18xx_static_data_priv *static_data_priv =
+		(struct wl18xx_static_data_priv *) static_data->priv;
+
+	wl1271_info("PHY firmware version: %s", static_data_priv->phy_version);
+
+	return 0;
+}
+
 static struct wlcore_ops wl18xx_ops = {
 	.identify_chip	= wl18xx_identify_chip,
 	.boot		= wl18xx_boot,
@@ -1170,10 +1195,12 @@ static struct wlcore_ops wl18xx_ops = {
 	.ap_get_mimo_wide_rate_mask = wl18xx_ap_get_mimo_wide_rate_mask,
 	.get_pg_ver	= wl18xx_get_pg_ver,
 	.get_mac	= wl18xx_get_mac,
+	.debugfs_init	= wl18xx_debugfs_add_files,
+	.handle_static_data	= wl18xx_handle_static_data,
 };
 
 /* HT cap appropriate for wide channels */
-struct ieee80211_sta_ht_cap wl18xx_ht_cap = {
+struct ieee80211_sta_ht_cap wl18xx_siso40_ht_cap = {
 	.cap = IEEE80211_HT_CAP_SGI_20 | IEEE80211_HT_CAP_SGI_40 |
 	       IEEE80211_HT_CAP_SUP_WIDTH_20_40 | IEEE80211_HT_CAP_DSSSCCK40,
 	.ht_supported = true,
@@ -1182,6 +1209,19 @@ struct ieee80211_sta_ht_cap wl18xx_ht_cap = {
 	.mcs = {
 		.rx_mask = { 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
 		.rx_highest = cpu_to_le16(150),
+		.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
+		},
+};
+
+/* HT cap appropriate for SISO 20 */
+struct ieee80211_sta_ht_cap wl18xx_siso20_ht_cap = {
+	.cap = IEEE80211_HT_CAP_SGI_20,
+	.ht_supported = true,
+	.ampdu_factor = IEEE80211_HT_MAX_AMPDU_16K,
+	.ampdu_density = IEEE80211_HT_MPDU_DENSITY_16,
+	.mcs = {
+		.rx_mask = { 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		.rx_highest = cpu_to_le16(72),
 		.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
 		},
 };
@@ -1220,14 +1260,27 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 	wl->num_rx_desc = 16;
 	wl->normal_tx_spare = WL18XX_TX_HW_BLOCK_SPARE;
 	wl->gem_tx_spare = WL18XX_TX_HW_GEM_BLOCK_SPARE;
+	wl->tkip_extra_space = 0;
 	wl->band_rate_to_idx = wl18xx_band_rate_to_idx;
 	wl->hw_tx_rate_tbl_size = WL18XX_CONF_HW_RXTX_RATE_MAX;
 	wl->hw_min_ht_rate = WL18XX_CONF_HW_RXTX_RATE_MCS0;
 	wl->fw_status_priv_len = sizeof(struct wl18xx_fw_status_priv);
-	memcpy(&wl->ht_cap, &wl18xx_ht_cap, sizeof(wl18xx_ht_cap));
-	if (ht_mode_param && !strcmp(ht_mode_param, "mimo"))
+	wl->stats.fw_stats_len = sizeof(struct wl18xx_acx_statistics);
+	wl->static_data_priv_len = sizeof(struct wl18xx_static_data_priv);
+
+	if (!strcmp(ht_mode_param, "wide")) {
+		memcpy(&wl->ht_cap, &wl18xx_siso40_ht_cap,
+		       sizeof(wl18xx_siso40_ht_cap));
+	} else if (!strcmp(ht_mode_param, "mimo")) {
 		memcpy(&wl->ht_cap, &wl18xx_mimo_ht_cap,
 		       sizeof(wl18xx_mimo_ht_cap));
+	} else if (!strcmp(ht_mode_param, "siso20")) {
+		memcpy(&wl->ht_cap, &wl18xx_siso20_ht_cap,
+		       sizeof(wl18xx_siso20_ht_cap));
+	} else {
+		wl1271_error("invalid ht_mode '%s'", ht_mode_param);
+		goto out_free;
+	}
 
 	wl18xx_conf_init(wl);
 
@@ -1247,9 +1300,41 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 		priv->conf.phy.low_band_component_type = 0x06;
 	} else {
 		wl1271_error("invalid board type '%s'", board_type_param);
-		wlcore_free_hw(wl);
-		return -EINVAL;
+		goto out_free;
 	}
+
+	/*
+	 * If the module param is not set, update it with the one from
+	 * conf.  If it is set, overwrite conf with it.
+	 */
+	if (low_band_component == -1)
+		low_band_component = priv->conf.phy.low_band_component;
+	else
+		priv->conf.phy.low_band_component = low_band_component;
+	if (low_band_component_type == -1)
+		low_band_component_type =
+			priv->conf.phy.low_band_component_type;
+	else
+		priv->conf.phy.low_band_component_type = 
+			low_band_component_type;
+
+	if (high_band_component == -1)
+		high_band_component = priv->conf.phy.high_band_component;
+	else
+		priv->conf.phy.high_band_component = high_band_component;
+	if (high_band_component_type == -1)
+		high_band_component_type =
+			priv->conf.phy.high_band_component_type;
+	else
+		priv->conf.phy.high_band_component_type = 
+			high_band_component_type;
+
+	if (pwr_limit_reference_11_abg == -1)
+		pwr_limit_reference_11_abg =
+			priv->conf.phy.pwr_limit_reference_11_abg;
+	else
+		priv->conf.phy.pwr_limit_reference_11_abg =
+			pwr_limit_reference_11_abg;
 
 	if (!checksum_param) {
 		wl18xx_ops.set_rx_csum = NULL;
@@ -1259,6 +1344,10 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 	wl->enable_11a = enable_11a_param;
 
 	return wlcore_probe(wl, pdev);
+
+out_free:
+	wlcore_free_hw(wl);
+	return -EINVAL;
 }
 
 static const struct platform_device_id wl18xx_id_table[] __devinitconst = {
@@ -1281,6 +1370,8 @@ static int __init wl18xx_init(void)
 {
 	wl1271_info("wl18xx driver version: %s", wl18xx_git_head);
 
+	/* TODO: should check the module params validity here */
+
 	return platform_driver_register(&wl18xx_driver);
 }
 module_init(wl18xx_init);
@@ -1292,7 +1383,7 @@ static void __exit wl18xx_exit(void)
 module_exit(wl18xx_exit);
 
 module_param_named(ht_mode, ht_mode_param, charp, S_IRUSR);
-MODULE_PARM_DESC(ht_mode, "Force HT mode: wide or mimo");
+MODULE_PARM_DESC(ht_mode, "Force HT mode: wide (default), mimo or siso20");
 
 module_param_named(board_type, board_type_param, charp, S_IRUSR);
 MODULE_PARM_DESC(board_type, "Board type: fpga, hdk (default), evb, com8 or "
@@ -1312,6 +1403,26 @@ MODULE_PARM_DESC(checksum, "Enable TCP checksum: boolean (defaults to true)");
 
 module_param_named(enable_11a, enable_11a_param, bool, S_IRUSR);
 MODULE_PARM_DESC(enable_11a, "Enable 11a (5GHz): boolean (defaults to true)");
+
+module_param(low_band_component, uint, S_IRUSR);
+MODULE_PARM_DESC(low_band_component, "Low band component: u8 "
+		 "(default is 0x01)");
+
+module_param(low_band_component_type, uint, S_IRUSR);
+MODULE_PARM_DESC(low_band_component_type, "Low band component type: u8 "
+		 "(default is 0x05 or 0x06 depending on the board_type)");
+
+module_param(high_band_component, uint, S_IRUSR);
+MODULE_PARM_DESC(high_band_component, "High band component: u8, "
+		 "(default is 0x01)");
+
+module_param(high_band_component_type, uint, S_IRUSR);
+MODULE_PARM_DESC(high_band_component_type, "High band component type: u8 "
+		 "(default is 0x09)");
+
+module_param(pwr_limit_reference_11_abg, uint, S_IRUSR);
+MODULE_PARM_DESC(pwr_limit_reference_11_abg, "Power limit reference: u8 "
+		 "(default is 0xc8)");
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Luciano Coelho <coelho@ti.com>");
