@@ -181,6 +181,7 @@ static int nl80211_self_filter_get_pattern_handler(u8 *buf, int buflen, void *ar
 }
 
 static struct rx_filter rx_filters[] = {
+	/* ID 0 */
 	{.name = "self",
 	 .pattern = {},
 	 .pattern_len = 6,
@@ -189,6 +190,7 @@ static struct rx_filter rx_filters[] = {
 	 .get_pattern_handler = nl80211_self_filter_get_pattern_handler,
 	},
 
+	/* ID 1 */
 	{.name = "bcast",
 	 .pattern = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
 	 .pattern_len = 6,
@@ -196,6 +198,7 @@ static struct rx_filter rx_filters[] = {
 	 .mask_len = 1,
 	},
 
+	/* ID 2 */
 	{.name = "ipv4mc",
 	 .pattern = {0x01,0x00,0x5E},
 	 .pattern_len = 3,
@@ -203,6 +206,7 @@ static struct rx_filter rx_filters[] = {
 	 .mask_len = 1,
 	},
 
+	/* ID 3 */
 	{.name = "ipv6mc",
 	 .pattern = {0x33,0x33},
 	 .pattern_len = 2,
@@ -210,18 +214,44 @@ static struct rx_filter rx_filters[] = {
 	 .mask_len = 1,
 	},
 
+	/* ID 4 */
 	{.name = "dhcp",
-	 .pattern = {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+	 .pattern = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0   , 0   ,
 		     0   , 0   , 0   , 0   , 0   , 0   , 0x45, 0   ,
 		     0   , 0   , 0   , 0   , 0   , 0   , 0   , 0x11,
 		     0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
 		     0   , 0   , 0   , 0   , 0x00, 0x44},
 	 .pattern_len = 38,
-	 .mask = { 0,                                 /* OCTET 1 */
-		   BIT(6),                            /* OCTET 2 */
-		   BIT(7),                            /* OCTET 3 */
-		   0,                                 /* OCTET 4 */
-		   BIT(4) | BIT(5) },                 /* OCTET 5 */
+	 .mask = { BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5),
+		   BIT(6),                            	/* OCTET 2 */
+		   BIT(7),                            	/* OCTET 3 */
+		   0,                                 	/* OCTET 4 */
+		   BIT(4) | BIT(5) },                 	/* OCTET 5 */
+	 .mask_len = 5,
+	},
+	/* ID 5 */
+	{.name = "arp",
+	 .pattern = {0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		     0   , 0   , 0   , 0   , 0x08, 0x06},
+	 .pattern_len = 14,
+	 .mask = { 0,                                    /* OCTET 1 */
+		   BIT(4) | BIT(5) },                    /* OCTET 2 */
+	 .mask_len = 2,
+	},
+
+	/* ID 6 */
+	{.name = "ssdp",
+	 .pattern = {0x01, 0x00, 0x5E, 0   , 0   , 0   , 0   , 0   ,
+		     0   , 0   , 0   , 0   , 0   , 0   , 0x45, 0   ,
+		     0   , 0   , 0   , 0   , 0   , 0   , 0   , 0x11,
+		     0   , 0   , 0   , 0   , 0   , 0   , 0xEF, 0xFF,
+		     0xFF, 0xFA, 0   , 0   , 0x07, 0x6C},
+	 .pattern_len = 38,
+	 .mask = { BIT(0) | BIT(1) | BIT(2),             /* OCTET 1 */
+		   BIT(6),                               /* OCTET 2 */
+		   BIT(7),                               /* OCTET 3 */
+		   BIT(6) | BIT(7),                      /* OCTET 4 */
+		   BIT(0) | BIT(1) | BIT(4) | BIT(5) },  /* OCTET 5 */
 	 .mask_len = 5,
 	},
 };
@@ -261,10 +291,12 @@ static int nl80211_set_wowlan_triggers(struct i802_bss *bss, int enable)
 			goto nla_put_failure;
 		}
 
-		/* In pre ICS framework code, filter 0 and 1 are always set but in ICS they are not.
-		 * Make sure to always set them otherwise unicast and bcast are dropped.
-		 */
-		filters = bss->drv->wowlan_triggers |= 3;
+		/* In ginger filter 0 and 1 are always set but in ICS we
+		 * only enable unicast. Make sure to always set it, otherwise
+		 * unicast packets will be dropped.
+		 * bcast packets are dropped and handled by the firmware */
+
+		filters = bss->drv->wowlan_triggers |= 1;
 
 		for (i = 0; i < NR_RX_FILTERS; i++) {
 			if (filters & (1 << i)) {
@@ -339,6 +371,62 @@ static int nl80211_parse_wowlan_trigger_nr(char *s)
 	return i;
 }
 
+static int nl80211_toggle_dropbcast(int enable)
+{
+	char filename[90];
+	int rv;
+	FILE *f;
+
+	snprintf(filename, sizeof(filename) - 1,
+		 "/sys/bus/platform/devices/wl12xx/drop_bcast");
+	f = fopen(filename, "w");
+	if (f < 0) {
+		wpa_printf(MSG_DEBUG, "Could not open file %s: %s",
+			   filename, strerror(errno));
+		return -1;
+	}
+
+	rv = fprintf(f, "%d", enable);
+	fclose(f);
+	if (rv < 1) {
+		wpa_printf(MSG_DEBUG, "Could not write to file %s: %s",
+			   filename, strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
+static int nl80211_dropbcast_get(char *buf, size_t buf_len)
+{
+	char filename[90], value[10], *pos;
+	int f, rv;
+
+	snprintf(filename, sizeof(filename) - 1,
+		 "/sys/bus/platform/devices/wl12xx/drop_bcast");
+	f = open(filename, O_RDONLY);
+	if (f < 0) {
+		wpa_printf(MSG_DEBUG, "Could not open file %s: %s",
+			   filename, strerror(errno));
+		return -1;
+	}
+
+	rv = read(f, value, sizeof(value) - 1);
+	close(f);
+	if (rv < 0) {
+		wpa_printf(MSG_DEBUG, "Could not read file %s: %s",
+			   filename, strerror(errno));
+		return -1;
+	}
+
+	value[rv] = '\0';
+	pos = os_strchr(value, '\n');
+	if (pos)
+		*pos = '\0';
+
+	return snprintf(buf, buf_len, "Drop bcast = %s\n", value);
+}
+
 int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 				  size_t buf_len )
 {
@@ -398,6 +486,29 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 		return nl80211_set_wowlan_triggers(bss, 1);
 	} else if( os_strcasecmp(cmd, "RXFILTER-STOP") == 0 ) {
 		return nl80211_set_wowlan_triggers(bss, 0);
+	} else if( os_strncasecmp(cmd, "DROPBCAST", 9) == 0 ) {
+		char *value = cmd + 10;
+
+		if (!os_strcasecmp(value, "ENABLE") ||
+		    !os_strcasecmp(value, "1")) {
+			ret = nl80211_toggle_dropbcast(1);
+		} else if (!os_strcasecmp(value, "DISABLE") ||
+			   !os_strcasecmp(value, "0")) {
+			ret = nl80211_toggle_dropbcast(0);
+		} else if (!os_strcasecmp(value, "GET") ||
+			   !os_strlen(value)) {
+			ret = nl80211_dropbcast_get(buf, buf_len);
+		} else {
+			wpa_printf(MSG_ERROR,
+				   "Invalid parameter for DROPBCAST: %s",
+				   value);
+			ret = -1;
+		}
+	} else if( os_strncasecmp(cmd, "SETBAND ", 8) == 0 ) {
+		int val = atoi(cmd + 8);
+		ret = 0;
+		if ( val < 0 || val > 2 )
+			ret = -1;
 	} else {
 		wpa_printf(MSG_INFO, "%s: Unsupported command %s", __func__, cmd);
 	}
