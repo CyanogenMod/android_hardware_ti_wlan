@@ -840,6 +840,50 @@ static const struct file_operations rx_streaming_interval_ops = {
 	.llseek = default_llseek,
 };
 
+static ssize_t tx_ba_win_size_write(struct file *file,
+			   const char __user *user_buf,
+			   size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	unsigned long value;
+	int ret;
+
+	ret = kstrtoul_from_user(user_buf, count, 10, &value);
+	if (ret < 0) {
+		wl1271_warning("illegal value in tx_ba_win_size!");
+		return -EINVAL;
+	}
+
+	mutex_lock(&wl->mutex);
+
+	wl->conf.ht.tx_ba_win_size = value;
+
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		goto out;
+
+	wl1271_ps_elp_sleep(wl);
+out:
+	mutex_unlock(&wl->mutex);
+	return count;
+}
+
+static ssize_t tx_ba_win_size_read(struct file *file,
+			    char __user *userbuf,
+			    size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	return wl1271_format_buffer(userbuf, count, ppos,
+				    "%d\n", wl->conf.ht.tx_ba_win_size);
+}
+
+static const struct file_operations tx_ba_win_size_ops = {
+	.read = tx_ba_win_size_read,
+	.write = tx_ba_win_size_write,
+	.open = wl1271_open_file_generic,
+	.llseek = default_llseek,
+};
+
 static ssize_t rx_streaming_always_write(struct file *file,
 			   const char __user *user_buf,
 			   size_t count, loff_t *ppos)
@@ -983,6 +1027,7 @@ static int wl1271_debugfs_add_files(struct wl1271 *wl,
 	DEBUGFS_ADD(sleep_auth, rootdir);
 	DEBUGFS_ADD(split_scan_timeout, rootdir);
 	DEBUGFS_ADD(tx_stuck, rootdir);
+	DEBUGFS_ADD(tx_ba_win_size, rootdir);
 
 	streaming = debugfs_create_dir("rx_streaming", rootdir);
 	if (!streaming || IS_ERR(streaming))

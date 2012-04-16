@@ -409,7 +409,7 @@ static struct wlcore_conf wl18xx_conf = {
 	},
 	.ht = {
 		.rx_ba_win_size = 10,
-		.tx_ba_win_size = 10,
+		.tx_ba_win_size = 64,
 		.inactivity_timeout = 10000,
 		.tx_ba_tid_bitmap = CONF_TX_BA_ENABLED_TID_BITMAP,
 	},
@@ -589,8 +589,6 @@ static const struct wl18xx_clk_cfg wl18xx_clk_table[NUM_CLOCK_CONFIGS] = {
 static int wl18xx_identify_chip(struct wl1271 *wl)
 {
 	int ret = 0;
-
-	printk("PRDP: Chip Id=%d\n", wl->chip.id);
 
 	switch (wl->chip.id) {
 	case CHIP_ID_185x_PG10:
