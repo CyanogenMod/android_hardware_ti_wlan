@@ -240,8 +240,8 @@ static struct conf_drv_settings default_conf = {
 			},
 
 		},
-		.synch_fail_thold            = 6,
-		.bss_lose_timeout            = 600,
+		.synch_fail_thold            = 12,
+		.bss_lose_timeout            = 400,
 		.cons_bcn_loss_time          = 5000,
 		.max_bcn_loss_time           = 10000,
 		.beacon_rx_timeout           = 10000,
@@ -339,8 +339,8 @@ static struct conf_drv_settings default_conf = {
 		.swallow_period               = 5,
 		.n_divider_fref_set_1         = 0xff,       /* default */
 		.n_divider_fref_set_2         = 12,
-		.m_divider_fref_set_1         = 148,
-		.m_divider_fref_set_2         = 0xffff,     /* default */
+		.m_divider_fref_set_1         = 0xffff,
+		.m_divider_fref_set_2         = 148,	    /* default */
 		.coex_pll_stabilization_time  = 0xffffffff, /* default */
 		.ldo_stabilization_time       = 0xffff,     /* default */
 		.fm_disturbed_band_margin     = 0xff,       /* default */
@@ -2105,6 +2105,8 @@ static int wl1271_op_resume(struct ieee80211_hw *hw)
 
 static int wl1271_op_start(struct ieee80211_hw *hw)
 {
+	struct wl1271 *wl = hw->priv;
+
 	wl1271_debug(DEBUG_MAC80211, "mac80211 start");
 
 	/*
@@ -2118,6 +2120,14 @@ static int wl1271_op_start(struct ieee80211_hw *hw)
 	 * is added. That is where we will initialize the hardware.
 	 */
 
+
+	/*
+	 * store wl in the global wl_list, used to find wl
+	 * in the wl1271_dev_notify callback
+	 */
+	mutex_lock(&wl_list_mutex);
+	list_add(&wl->list, &wl_list);
+	mutex_unlock(&wl_list_mutex);
 	return 0;
 }
 
@@ -2180,7 +2190,6 @@ static void wl1271_op_stop(struct ieee80211_hw *hw)
 	wl->tx_results_count = 0;
 	wl->tx_packets_count = 0;
 	wl->time_offset = 0;
-	wl->tx_spare_blocks = TX_HW_BLOCK_SPARE_DEFAULT;
 	wl->ap_fw_ps_map = 0;
 	wl->ap_ps_map = 0;
 	wl->sched_scanning = false;
@@ -2566,11 +2575,6 @@ out:
 	wl1271_ps_elp_sleep(wl);
 out_unlock:
 	mutex_unlock(&wl->mutex);
-
-	mutex_lock(&wl_list_mutex);
-	if (!ret)
-		list_add(&wl->list, &wl_list);
-	mutex_unlock(&wl_list_mutex);
 
 	return ret;
 }
@@ -3318,17 +3322,6 @@ static int wl1271_set_key(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 		static const u8 bcast_addr[ETH_ALEN] = {
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 		};
-
-		/*
-		 * A STA set to GEM cipher requires 2 tx spare blocks.
-		 * Return to default value when GEM cipher key is removed
-		 */
-		if (key_type == KEY_GEM) {
-			if (action == KEY_ADD_OR_REPLACE)
-				wl->tx_spare_blocks = 2;
-			else if (action == KEY_REMOVE)
-				wl->tx_spare_blocks = TX_HW_BLOCK_SPARE_DEFAULT;
-		}
 
 		addr = sta ? sta->addr : bcast_addr;
 
@@ -5838,7 +5831,6 @@ static struct ieee80211_hw *wl1271_alloc_hw(void)
 	wl->quirks = 0;
 	wl->platform_quirks = 0;
 	wl->sched_scanning = false;
-	wl->tx_spare_blocks = TX_HW_BLOCK_SPARE_DEFAULT;
 	wl->system_hlid = WL12XX_SYSTEM_HLID;
 	wl->active_sta_count = 0;
 	wl->fwlog_size = 0;
