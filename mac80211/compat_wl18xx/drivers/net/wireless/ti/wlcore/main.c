@@ -4896,7 +4896,7 @@ static int wl1271_init_ieee80211(struct wl1271 *wl)
 	};
 
 	/* The tx descriptor buffer and the TKIP space. */
-	wl->hw->extra_tx_headroom = wl->tkip_extra_space +
+	wl->hw->extra_tx_headroom = WL1271_EXTRA_SPACE_TKIP +
 		sizeof(struct wl1271_tx_hw_descr);
 
 	/* unit us */

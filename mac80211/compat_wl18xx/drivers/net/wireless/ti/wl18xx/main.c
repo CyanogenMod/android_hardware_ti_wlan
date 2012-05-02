@@ -48,7 +48,7 @@ static char *board_type_param = "hdk";
 static bool dc2dc_param = false;
 static int n_antennas_2_param = 1;
 static int n_antennas_5_param = 1;
-static bool checksum_param = true;
+static bool checksum_param = false;
 static bool enable_11a_param = true;
 static int low_band_component = -1;
 static int low_band_component_type = -1;
@@ -1258,7 +1258,6 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 	wl->num_rx_desc = 16;
 	wl->normal_tx_spare = WL18XX_TX_HW_BLOCK_SPARE;
 	wl->gem_tx_spare = WL18XX_TX_HW_GEM_BLOCK_SPARE;
-	wl->tkip_extra_space = 0;
 	wl->band_rate_to_idx = wl18xx_band_rate_to_idx;
 	wl->hw_tx_rate_tbl_size = WL18XX_CONF_HW_RXTX_RATE_MAX;
 	wl->hw_min_ht_rate = WL18XX_CONF_HW_RXTX_RATE_MCS0;
@@ -1397,7 +1396,7 @@ module_param_named(n_antennas_5, n_antennas_5_param, uint, S_IRUSR);
 MODULE_PARM_DESC(n_antennas_5, "Number of installed 5GHz antennas: 1 (default) or 2");
 
 module_param_named(checksum, checksum_param, bool, S_IRUSR);
-MODULE_PARM_DESC(checksum, "Enable TCP checksum: boolean (defaults to true)");
+MODULE_PARM_DESC(checksum, "Enable TCP checksum: boolean (defaults to false)");
 
 module_param_named(enable_11a, enable_11a_param, bool, S_IRUSR);
 MODULE_PARM_DESC(enable_11a, "Enable 11a (5GHz): boolean (defaults to true)");

@@ -74,12 +74,13 @@ static void wl18xx_tx_complete_packet(struct wl1271 *wl, u8 tx_stat_byte)
 	/* remove private header from packet */
 	skb_pull(skb, sizeof(struct wl1271_tx_hw_descr));
 
-	/*
-	 * TODO: we don't need to have a call to wlcore_remove_tkip()
-	 * here, because with wl18xx we don't have extra space for
-	 * TKIP.  This function should be moved to wlcore, though, and
-	 * then wlcore_remove_tkip() must be called.
-	 */
+	/* remove TKIP header space if present */
+	if (info->control.hw_key &&
+	    info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP) {
+		int hdrlen = ieee80211_get_hdrlen_from_skb(skb);
+		memmove(skb->data + WL1271_EXTRA_SPACE_TKIP, skb->data, hdrlen);
+		skb_pull(skb, WL1271_EXTRA_SPACE_TKIP);
+	}
 
 	wl1271_debug(DEBUG_TX, "tx status id %u skb 0x%p success %d",
 		     id, skb, tx_success);

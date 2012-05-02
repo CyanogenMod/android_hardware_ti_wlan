@@ -1436,7 +1436,6 @@ int __devinit wl12xx_probe(struct platform_device *pdev)
 	wl->num_rx_desc = 8;
 	wl->normal_tx_spare = WL12XX_TX_HW_BLOCK_SPARE_DEFAULT;
 	wl->gem_tx_spare = WL12XX_TX_HW_BLOCK_GEM_SPARE;
-	wl->tkip_extra_space = WL1271_EXTRA_SPACE_TKIP;
 	wl->band_rate_to_idx = wl12xx_band_rate_to_idx;
 	wl->hw_tx_rate_tbl_size = WL12XX_CONF_HW_RXTX_RATE_MAX;
 	wl->hw_min_ht_rate = WL12XX_CONF_HW_RXTX_RATE_MCS0;

@@ -1082,7 +1082,7 @@ int wl1271_cmd_build_arp_rsp(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	/* encryption space */
 	switch (wlvif->encryption_type) {
 	case KEY_TKIP:
-		extra = wl->tkip_extra_space;
+		extra = WL1271_EXTRA_SPACE_TKIP;
 		break;
 	case KEY_AES:
 		extra = WL1271_EXTRA_SPACE_AES;

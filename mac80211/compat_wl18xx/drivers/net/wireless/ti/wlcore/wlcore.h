@@ -370,9 +370,6 @@ struct wl1271 {
 	u32 normal_tx_spare;
 	u32 gem_tx_spare;
 
-	/* extra headroom the firmware needs for TKIP */
-	u32 tkip_extra_space;
-
 	/* translate HW Tx rates to standard rate-indices */
 	const u8 **band_rate_to_idx;
 
