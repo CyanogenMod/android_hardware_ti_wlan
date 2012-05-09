@@ -15,7 +15,7 @@ esac
 TARGET_FW_DIR=/system/etc/firmware/ti-connectivity
 TARGET_NVS_FILE=$TARGET_FW_DIR/wl1271-nvs.bin
 TARGET_INI_FILE=/system/etc/wifi/TQS_D_1.7.ini
-WL12xx_MODULE=/system/lib/modules/wlcore_sdio.ko
+WL12xx_MODULE=/system/lib/modules/wl12xx_sdio.ko
 
 # Remount system partition as rw
 mount -o remount rw /system
