@@ -46,7 +46,7 @@ void wl1271_scan_complete_work(struct work_struct *work)
 
 	mutex_lock(&wl->mutex);
 
-	if (wl->state == WL1271_STATE_OFF)
+	if (unlikely(wl->state != WLCORE_STATE_ON))
 		goto out;
 
 	if (wl->scan.state == WL1271_SCAN_STATE_IDLE)
@@ -54,6 +54,12 @@ void wl1271_scan_complete_work(struct work_struct *work)
 
 	vif = wl->scan_vif;
 	wlvif = wl12xx_vif_to_data(vif);
+
+	/*
+	 * Rearm the tx watchdog just before idling scan. This
+	 * prevents just-finished scans from triggering the watchdog
+	 */
+	wl12xx_rearm_tx_watchdog_locked(wl);
 
 	wl->scan.state = WL1271_SCAN_STATE_IDLE;
 	memset(wl->scan.scanned_ch, 0, sizeof(wl->scan.scanned_ch));
@@ -198,11 +204,7 @@ static int wl1271_scan_send(struct wl1271 *wl, struct ieee80211_vif *vif,
 	if (passive)
 		scan_options |= WL1271_SCAN_OPT_PASSIVE;
 
-	if (wlvif->bss_type == BSS_TYPE_AP_BSS ||
-	    test_bit(WLVIF_FLAG_STA_ASSOCIATED, &wlvif->flags))
-		cmd->params.role_id = wlvif->role_id;
-	else
-		cmd->params.role_id = wlvif->dev_role_id;
+	cmd->params.role_id = wlvif->role_id;
 
 	if (WARN_ON(cmd->params.role_id == WL12XX_INVALID_ROLE_ID)) {
 		ret = -EINVAL;
@@ -250,7 +252,7 @@ static int wl1271_scan_send(struct wl1271 *wl, struct ieee80211_vif *vif,
 					 cmd->params.role_id, band,
 					 wl->scan.ssid, wl->scan.ssid_len,
 					 wl->scan.req->ie,
-					 wl->scan.req->ie_len);
+					 wl->scan.req->ie_len, false);
 	if (ret < 0) {
 		wl1271_error("PROBE request template failed");
 		goto out;
@@ -618,7 +620,7 @@ wl12xx_scan_sched_scan_ssid_list(struct wl1271 *wl,
 		goto out;
 	}
 
-	cmd->role_id = wlvif->dev_role_id;
+	cmd->role_id = wlvif->role_id;
 	if (!n_match_ssids) {
 		/* No filter, with ssids */
 		type = SCAN_SSID_FILTER_DISABLED;
@@ -657,7 +659,9 @@ wl12xx_scan_sched_scan_ssid_list(struct wl1271 *wl,
 					continue;
 
 				for (j = 0; j < cmd->n_ssids; j++)
-					if (!memcmp(req->ssids[i].ssid,
+					if ((req->ssids[i].ssid_len ==
+					     cmd->ssids[j].len) &&
+					    !memcmp(req->ssids[i].ssid,
 						   cmd->ssids[j].ssid,
 						   req->ssids[i].ssid_len)) {
 						cmd->ssids[j].type =
@@ -713,7 +717,7 @@ int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 	if (!cfg)
 		return -ENOMEM;
 
-	cfg->role_id = wlvif->dev_role_id;
+	cfg->role_id = wlvif->role_id;
 	cfg->rssi_threshold = c->rssi_threshold;
 	cfg->snr_threshold  = c->snr_threshold;
 	cfg->n_probe_reqs = c->num_probe_reqs;
@@ -752,11 +756,11 @@ int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 	if (!force_passive && cfg->active[0]) {
 		u8 band = IEEE80211_BAND_2GHZ;
 		ret = wl12xx_cmd_build_probe_req(wl, wlvif,
-						 wlvif->dev_role_id, band,
+						 wlvif->role_id, band,
 						 req->ssids[0].ssid,
 						 req->ssids[0].ssid_len,
 						 ies->ie[band],
-						 ies->len[band]);
+						 ies->len[band], true);
 		if (ret < 0) {
 			wl1271_error("2.4GHz PROBE request template failed");
 			goto out;
@@ -766,11 +770,11 @@ int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 	if (!force_passive && cfg->active[1]) {
 		u8 band = IEEE80211_BAND_5GHZ;
 		ret = wl12xx_cmd_build_probe_req(wl, wlvif,
-						 wlvif->dev_role_id, band,
+						 wlvif->role_id, band,
 						 req->ssids[0].ssid,
 						 req->ssids[0].ssid_len,
 						 ies->ie[band],
-						 ies->len[band]);
+						 ies->len[band], true);
 		if (ret < 0) {
 			wl1271_error("5GHz PROBE request template failed");
 			goto out;
@@ -807,7 +811,7 @@ int wl1271_scan_sched_scan_start(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	if (!start)
 		return -ENOMEM;
 
-	start->role_id = wlvif->dev_role_id;
+	start->role_id = wlvif->role_id;
 	start->tag = WL1271_SCAN_DEFAULT_TAG;
 
 	ret = wl1271_cmd_send(wl, CMD_START_PERIODIC_SCAN, start,
@@ -843,7 +847,7 @@ void wl1271_scan_sched_scan_stop(struct wl1271 *wl,  struct wl12xx_vif *wlvif)
 		return;
 	}
 
-	stop->role_id = wlvif->dev_role_id;
+	stop->role_id = wlvif->role_id;
 	stop->tag = WL1271_SCAN_DEFAULT_TAG;
 
 	ret = wl1271_cmd_send(wl, CMD_STOP_PERIODIC_SCAN, stop,

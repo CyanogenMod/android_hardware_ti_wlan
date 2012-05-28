@@ -165,6 +165,12 @@ struct wl1271_tx_hw_res_if {
 	struct wl1271_tx_hw_res_descr tx_results_queue[TX_HW_RESULT_QUEUE_LEN];
 } __packed;
 
+enum wlcore_queue_stop_reason {
+	WLCORE_QUEUE_STOP_REASON_WATERMARK,
+	WLCORE_QUEUE_STOP_REASON_FW_RESTART,
+	WLCORE_QUEUE_STOP_REASON_FLUSH,
+};
+
 static inline int wl1271_tx_get_queue(int queue)
 {
 	switch (queue) {
@@ -208,10 +214,10 @@ static inline int wl1271_tx_total_queue_count(struct wl1271 *wl)
 }
 
 void wl1271_tx_work(struct work_struct *work);
-void wl1271_tx_work_locked(struct wl1271 *wl);
-void wl1271_tx_complete(struct wl1271 *wl);
+int wl1271_tx_work_locked(struct wl1271 *wl);
+int wl1271_tx_complete(struct wl1271 *wl);
 void wl12xx_tx_reset_wlvif(struct wl1271 *wl, struct wl12xx_vif *wlvif);
-void wl12xx_tx_reset(struct wl1271 *wl, bool reset_tx_queues);
+void wl12xx_tx_reset(struct wl1271 *wl);
 void wl1271_tx_flush(struct wl1271 *wl);
 u8 wl1271_rate_to_idx(int rate, enum ieee80211_band band);
 u32 wl1271_tx_enabled_rates_get(struct wl1271 *wl, u32 rate_set,
@@ -225,8 +231,23 @@ void wl1271_tx_reset_link_queues(struct wl1271 *wl, u8 hlid);
 void wl1271_handle_tx_low_watermark(struct wl1271 *wl);
 bool wl12xx_is_dummy_packet(struct wl1271 *wl, struct sk_buff *skb);
 void wl12xx_rearm_rx_streaming(struct wl1271 *wl, unsigned long *active_hlids);
+void wlcore_stop_queue_locked(struct wl1271 *wl, u8 queue,
+			      enum wlcore_queue_stop_reason reason);
+void wlcore_stop_queue(struct wl1271 *wl, u8 queue,
+		       enum wlcore_queue_stop_reason reason);
+void wlcore_wake_queue(struct wl1271 *wl, u8 queue,
+		       enum wlcore_queue_stop_reason reason);
+void wlcore_stop_queues(struct wl1271 *wl,
+			enum wlcore_queue_stop_reason reason);
+void wlcore_wake_queues(struct wl1271 *wl,
+			enum wlcore_queue_stop_reason reason);
+void wlcore_reset_stopped_queues(struct wl1271 *wl);
+bool wlcore_is_queue_stopped_by_reason(struct wl1271 *wl, u8 queue,
+				       enum wlcore_queue_stop_reason reason);
+bool wlcore_is_queue_stopped(struct wl1271 *wl, u8 queue);
 
 /* from main.c */
 void wl1271_free_sta(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 hlid);
+void wl12xx_rearm_tx_watchdog_locked(struct wl1271 *wl);
 
 #endif

@@ -226,11 +226,26 @@ struct beacon_data {
 	u8 *head, *tail;
 	int head_len, tail_len;
 	int dtim_period;
+	struct rcu_head rcu_head;
 };
+
+struct probe_resp {
+	struct sk_buff *skb;
+	struct rcu_head rcu_head;
+};
+
+static inline void ieee80211_free_probe_resp(struct probe_resp *probe_resp)
+{
+	if (!probe_resp)
+		return;
+
+	dev_kfree_skb(probe_resp->skb);
+	kfree(probe_resp);
+}
 
 struct ieee80211_if_ap {
 	struct beacon_data __rcu *beacon;
-	struct sk_buff __rcu *probe_resp;
+	struct probe_resp __rcu *probe_resp;
 
 	struct list_head vlans;
 

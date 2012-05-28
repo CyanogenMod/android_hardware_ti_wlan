@@ -3750,5 +3750,5 @@ int ieee80211_get_open_count(struct ieee80211_hw *hw,
 			     struct ieee80211_vif *exclude_vif);
 
 bool ieee80211_suspending(struct ieee80211_hw *hw);
-
+int ieee80211_started_vifs_count(struct ieee80211_hw *hw);
 #endif /* MAC80211_H */

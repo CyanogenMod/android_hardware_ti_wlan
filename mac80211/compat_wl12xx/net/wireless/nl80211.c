@@ -699,27 +699,6 @@ nla_put_failure:
 	return -ENOBUFS;
 }
 
-static int nl80211_put_device_capa_flags(struct wiphy *wiphy,
-					  struct sk_buff *msg)
-{
-	u32 capa_flags = 0;
-
-	if (wiphy->flags & WIPHY_FLAG_SUPPORTS_CANCEL_SCAN)
-		capa_flags |= NL80211_DEV_CAPA_SUPPORTS_CANCEL_SCAN;
-
-	if (wiphy->flags & WIPHY_FLAG_SUPPORTS_IM_SCAN_EVENT)
-		capa_flags |= NL80211_DEV_CAPA_SUPPORTS_IM_SCAN_EVENT;
-
-
-	/* map new flags above here */
-
-	NLA_PUT_U32(msg, NL80211_ATTR_CAPABILITIES,  capa_flags);
-
-	return 0;
-nla_put_failure:
-	return -ENOBUFS;
-}
-
 static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 			      struct cfg80211_registered_device *dev)
 {
@@ -1057,9 +1036,6 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 		goto nla_put_failure;
 
 	if (nl80211_put_iface_combinations(&dev->wiphy, msg))
-		goto nla_put_failure;
-
-	if (nl80211_put_device_capa_flags(&dev->wiphy, msg))
 		goto nla_put_failure;
 
 	if (dev->wiphy.flags & WIPHY_FLAG_HAVE_AP_SME)
@@ -5911,6 +5887,8 @@ static int nl80211_get_wowlan(struct sk_buff *skb, struct genl_info *info)
 				NLA_PUT(msg, NL80211_WOWLAN_PKTPAT_PATTERN,
 					pat_len,
 					rdev->wowlan->patterns[i].pattern);
+				NLA_PUT_U8(msg, NL80211_WOWLAN_PKTPAT_ACTION,
+					   rdev->wowlan->patterns[i].action);
 				nla_nest_end(msg, nl_pat);
 			}
 			nla_nest_end(msg, nl_pats);
@@ -6018,6 +5996,8 @@ static int nl80211_set_wowlan(struct sk_buff *skb, struct genl_info *info)
 
 		nla_for_each_nested(pat, tb[NL80211_WOWLAN_TRIG_PKT_PATTERN],
 				    rem) {
+			u8 action = NL80211_WOWLAN_ACTION_ALLOW;
+
 			nla_parse(pat_tb, MAX_NL80211_WOWLAN_PKTPAT,
 				  nla_data(pat), nla_len(pat), NULL);
 			err = -EINVAL;
@@ -6032,7 +6012,13 @@ static int nl80211_set_wowlan(struct sk_buff *skb, struct genl_info *info)
 			if (pat_len > wowlan->pattern_max_len ||
 			    pat_len < wowlan->pattern_min_len)
 				goto error;
-
+			if (pat_tb[NL80211_WOWLAN_PKTPAT_ACTION]) {
+				action = nla_get_u8(
+					pat_tb[NL80211_WOWLAN_PKTPAT_ACTION]);
+				if (action > MAX_NL80211_WOWLAN_ACTION)
+					goto error;
+			}
+			new_triggers.patterns[i].action = action;
 			new_triggers.patterns[i].mask =
 				kmalloc(mask_len + pat_len, GFP_KERNEL);
 			if (!new_triggers.patterns[i].mask) {

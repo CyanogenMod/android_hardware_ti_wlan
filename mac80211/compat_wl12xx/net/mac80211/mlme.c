@@ -653,9 +653,6 @@ static bool ieee80211_powersave_allowed(struct ieee80211_sub_if_data *sdata)
 	if (!mgd->associated)
 		return false;
 
-	if (!mgd->associated->beacon_ies)
-		return false;
-
 	if (mgd->flags & (IEEE80211_STA_BEACON_POLL |
 			  IEEE80211_STA_CONNECTION_POLL))
 		return false;
@@ -689,6 +686,10 @@ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
 	list_for_each_entry(sdata, &local->interfaces, list) {
 		if (!ieee80211_sdata_running(sdata))
 			continue;
+
+		if (sdata->vif.bss_conf.idle)
+			continue;
+
 		if (sdata->vif.type == NL80211_IFTYPE_AP) {
 			/* If an AP vif is found, then disable PS
 			 * by setting the count to zero thereby setting

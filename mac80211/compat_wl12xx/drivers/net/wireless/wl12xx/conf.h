@@ -433,8 +433,7 @@ struct conf_rx_settings {
 #define CONF_TX_RATE_RETRY_LIMIT       10
 
 /* basic rates for p2p operations (probe req/resp, etc.) */
-#define CONF_TX_RATE_MASK_BASIC_P2P    (CONF_HW_BIT_RATE_6MBPS | \
-	CONF_HW_BIT_RATE_12MBPS | CONF_HW_BIT_RATE_24MBPS)
+#define CONF_TX_RATE_MASK_BASIC_P2P    CONF_HW_BIT_RATE_6MBPS
 
 /*
  * Rates supported for data packets when operating as AP. Note the absence
@@ -690,6 +689,9 @@ struct conf_tx_settings {
 	 */
 	u8 tmpl_short_retry_limit;
 	u8 tmpl_long_retry_limit;
+
+	/* Time in ms for Tx watchdog timer to expire */
+	u32 tx_watchdog_timeout;
 };
 
 enum {
@@ -979,6 +981,13 @@ struct conf_conn_settings {
 	 * Range: u16
 	 */
 	u8 max_listen_interval;
+
+	/*
+	 * Specifies the timeout in which the host will allow the chip to go
+	 * into ELP. Mainly needed for TX traffic to prevent the host from
+	 * interrogating the FW status for each packets.
+	 */
+	u16 elp_timeout;
 };
 
 enum {
