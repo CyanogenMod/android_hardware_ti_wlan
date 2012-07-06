@@ -84,7 +84,10 @@
 #define WL1271_AP_BSS_INDEX        0
 #define WL1271_AP_DEF_BEACON_EXP   20
 
-#define WL1271_AGGR_BUFFER_SIZE (5 * PAGE_SIZE)
+#define WL1271_AGGR_BUFFER_SIZE (15 * PAGE_SIZE)
+
+#define WLCORE_AGGR_MAX_PACKETS	(WL1271_AGGR_BUFFER_SIZE /	\
+				 sizeof(struct ieee80211_hdr))
 
 enum wl1271_state {
 	WL1271_STATE_OFF,
@@ -406,9 +409,6 @@ struct wl12xx_vif {
 	struct work_struct rx_streaming_enable_work;
 	struct work_struct rx_streaming_disable_work;
 	struct timer_list rx_streaming_timer;
-
-	/* does the current role use GEM for encryption (AP or STA) */
-	bool is_gem;
 
 	/*
 	 * This struct must be last!

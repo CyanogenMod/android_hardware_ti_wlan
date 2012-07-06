@@ -736,7 +736,7 @@ static int __must_check __sta_info_destroy(struct sta_info *sta)
 	 * will be sufficient.
 	 */
 	set_sta_flag(sta, WLAN_STA_BLOCK_BA);
-	ieee80211_sta_tear_down_BA_sessions(sta, true);
+	ieee80211_sta_tear_down_BA_sessions(sta, true, true);
 
 	ret = sta_info_hash_del(local, sta);
 	if (ret)

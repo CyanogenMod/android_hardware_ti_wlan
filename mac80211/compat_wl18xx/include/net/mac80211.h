@@ -1149,6 +1149,10 @@ enum sta_notify_cmd {
  *
  * @IEEE80211_HW_SUPPORTS_IM_SCAN_EVENT: Hardware supports intemediate scan
  *	event.
+ *
+ * @IEEE80211_HW_AP_ADD_STA_AFTER_BEACON: When restarting the HW, add stations
+ *	connected to the AP only after telling the AP to start beaconing. The
+ *	other way around is not supported by some devices.
  */
 enum ieee80211_hw_flags {
 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
@@ -1178,6 +1182,7 @@ enum ieee80211_hw_flags {
 	IEEE80211_HW_SUPPORTS_CANCEL_SCAN		= 1<<24,
 	IEEE80211_HW_SUPPORTS_IM_SCAN_EVENT		= 1<<25,
 	IEEE80211_HW_SCAN_WHILE_IDLE			= 1<<26,
+	IEEE80211_HW_AP_ADD_STA_AFTER_BEACON		= 1<<27,
 };
 
 /**

@@ -32,6 +32,10 @@ int wl18xx_acx_host_if_cfg_bitmap(struct wl1271 *wl, u32 host_cfg_bitmap,
 	struct wl18xx_acx_host_config_bitmap *bitmap_conf;
 	int ret;
 
+	wl1271_debug(DEBUG_ACX, "acx cfg bitmap %d blk %d spare %d field %d",
+		     host_cfg_bitmap, sdio_blk_size, extra_mem_blks,
+		     len_field_size);
+
 	bitmap_conf = kzalloc(sizeof(*bitmap_conf), GFP_KERNEL);
 	if (!bitmap_conf) {
 		ret = -ENOMEM;
@@ -74,6 +78,30 @@ int wl18xx_acx_set_checksum_state(struct wl1271 *wl)
 	ret = wl1271_cmd_configure(wl, ACX_CHECKSUM_CONFIG, acx, sizeof(*acx));
 	if (ret < 0) {
 		wl1271_warning("failed to set Tx checksum state: %d", ret);
+		goto out;
+	}
+
+out:
+	kfree(acx);
+	return ret;
+}
+
+int wl18xx_acx_clear_statistics(struct wl1271 *wl)
+{
+	struct wl18xx_acx_clear_statistics *acx;
+	int ret = 0;
+
+	wl1271_debug(DEBUG_ACX, "acx clear statistics");
+
+	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
+	if (!acx) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	ret = wl1271_cmd_configure(wl, ACX_CLEAR_STATISTICS, acx, sizeof(*acx));
+	if (ret < 0) {
+		wl1271_warning("failed to clear firmware statistics: %d", ret);
 		goto out;
 	}
 

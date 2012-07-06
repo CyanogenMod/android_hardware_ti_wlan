@@ -228,7 +228,7 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
 			ret = ieee80211_stop_tx_ba_session(&sta->sta, tid);
 	} else {
 		__ieee80211_stop_rx_ba_session(sta, tid, WLAN_BACK_RECIPIENT,
-					       3, true);
+					       3, true, true);
 		ret = 0;
 	}
 

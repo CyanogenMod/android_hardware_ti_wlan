@@ -51,21 +51,25 @@
 #define WL1271_ACX_INTR_TRACE_A            BIT(7)
 /* Trace message on MBOX #B */
 #define WL1271_ACX_INTR_TRACE_B            BIT(8)
+/* SW FW Initiated interrupt Watchdog timer expiration */
+#define WL1271_ACX_SW_INTR_WATCHDOG        BIT(9)
 
 #define WL1271_ACX_INTR_ALL		   0xFFFFFFFF
-#define WL1271_ACX_ALL_EVENTS_VECTOR       (WL1271_ACX_INTR_WATCHDOG      | \
-					    WL1271_ACX_INTR_INIT_COMPLETE | \
-					    WL1271_ACX_INTR_EVENT_A       | \
-					    WL1271_ACX_INTR_EVENT_B       | \
-					    WL1271_ACX_INTR_CMD_COMPLETE  | \
-					    WL1271_ACX_INTR_HW_AVAILABLE  | \
-					    WL1271_ACX_INTR_DATA)
+#define WL1271_ACX_ALL_EVENTS_VECTOR	(WL1271_ACX_INTR_WATCHDOG      | \
+					WL1271_ACX_INTR_INIT_COMPLETE | \
+					WL1271_ACX_INTR_EVENT_A       | \
+					WL1271_ACX_INTR_EVENT_B       | \
+					WL1271_ACX_INTR_CMD_COMPLETE  | \
+					WL1271_ACX_INTR_HW_AVAILABLE  | \
+					WL1271_ACX_INTR_DATA          | \
+					WL1271_ACX_SW_INTR_WATCHDOG)
 
-#define WL1271_INTR_MASK                   (WL1271_ACX_INTR_WATCHDOG     | \
-					    WL1271_ACX_INTR_EVENT_A      | \
-					    WL1271_ACX_INTR_EVENT_B      | \
-					    WL1271_ACX_INTR_HW_AVAILABLE | \
-					    WL1271_ACX_INTR_DATA)
+#define WL1271_INTR_MASK		(WL1271_ACX_INTR_WATCHDOG      | \
+					WL1271_ACX_INTR_EVENT_A       | \
+					WL1271_ACX_INTR_EVENT_B       | \
+					WL1271_ACX_INTR_HW_AVAILABLE  | \
+					WL1271_ACX_INTR_DATA          | \
+					WL1271_ACX_SW_INTR_WATCHDOG)
 
 /* Target's information element */
 struct acx_header {
@@ -123,6 +127,9 @@ enum wl1271_psm_mode {
 	WL1271_PSM_ELP = 2,
 
 	WL1271_PSM_MAX = WL1271_PSM_ELP,
+
+	/* illegal out of band value of PSM mode */
+	WL1271_PSM_ILLEGAL = 0xff
 };
 
 struct acx_sleep_auth {
@@ -728,7 +735,7 @@ struct wl1271_acx_ht_information {
 	u8 padding[2];
 } __packed;
 
-#define RX_BA_MAX_SESSIONS 2
+#define RX_BA_MAX_SESSIONS 3
 
 struct wl1271_acx_ba_initiator_policy {
 	struct acx_header header;

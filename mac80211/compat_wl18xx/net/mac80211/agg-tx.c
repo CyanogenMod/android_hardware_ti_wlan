@@ -150,7 +150,7 @@ void ieee80211_assign_tid_tx(struct sta_info *sta, int tid,
 
 int ___ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
 				    enum ieee80211_back_parties initiator,
-				    bool tx)
+				    bool tx, bool call_drv)
 {
 	struct ieee80211_local *local = sta->local;
 	struct tid_ampdu_tx *tid_tx;
@@ -216,9 +216,12 @@ int ___ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
 	tid_tx->stop_initiator = initiator;
 	tid_tx->tx_stop = tx;
 
-	ret = drv_ampdu_action(local, sta->sdata,
-			       IEEE80211_AMPDU_TX_STOP,
-			       &sta->sta, tid, NULL, 0);
+	if (call_drv)
+		ret = drv_ampdu_action(local, sta->sdata,
+				       IEEE80211_AMPDU_TX_STOP,
+				       &sta->sta, tid, NULL, 0);
+	else
+		ret = 0;
 
 	/* HW shall not deny going back to legacy */
 	if (WARN_ON(ret)) {
@@ -669,13 +672,14 @@ EXPORT_SYMBOL(ieee80211_start_tx_ba_cb_irqsafe);
 
 int __ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
 				   enum ieee80211_back_parties initiator,
-				   bool tx)
+				   bool tx, bool call_drv)
 {
 	int ret;
 
 	mutex_lock(&sta->ampdu_mlme.mtx);
 
-	ret = ___ieee80211_stop_tx_ba_session(sta, tid, initiator, tx);
+	ret = ___ieee80211_stop_tx_ba_session(sta, tid, initiator, tx,
+					      call_drv);
 
 	mutex_unlock(&sta->ampdu_mlme.mtx);
 
@@ -890,7 +894,7 @@ void ieee80211_process_addba_resp(struct ieee80211_local *local,
 
 	} else {
 		___ieee80211_stop_tx_ba_session(sta, tid, WLAN_BACK_INITIATOR,
-						true);
+						true, true);
 	}
 
  out:

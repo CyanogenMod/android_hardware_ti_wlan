@@ -1010,7 +1010,7 @@ static void ieee80211_set_associated(struct ieee80211_sub_if_data *sdata,
 
 	bss_info_changed |= BSS_CHANGED_BEACON_INT;
 	bss_info_changed |= ieee80211_handle_bss_capability(sdata,
-		cbss->capability, bss->has_erp_value, bss->erp_value);
+		bss_conf->assoc_capability, bss->has_erp_value, bss->erp_value);
 
 	sdata->u.mgd.beacon_timeout = usecs_to_jiffies(ieee80211_tu_to_usec(
 		IEEE80211_BEACON_LOSS_COUNT * bss_conf->beacon_int));
@@ -1071,17 +1071,13 @@ static void ieee80211_set_disassoc(struct ieee80211_sub_if_data *sdata,
 	struct ieee80211_local *local = sdata->local;
 	struct sta_info *sta;
 	u32 changed = 0, config_changed = 0;
-	u8 bssid[ETH_ALEN];
 
 	ASSERT_MGD_MTX(ifmgd);
 
 	if (WARN_ON(!ifmgd->associated))
 		return;
 
-	memcpy(bssid, ifmgd->associated->bssid, ETH_ALEN);
-
 	ifmgd->associated = NULL;
-	memset(ifmgd->bssid, 0, ETH_ALEN);
 
 	/*
 	 * we need to commit the associated = NULL change because the
@@ -1101,12 +1097,15 @@ static void ieee80211_set_disassoc(struct ieee80211_sub_if_data *sdata,
 	netif_carrier_off(sdata->dev);
 
 	mutex_lock(&local->sta_mtx);
-	sta = sta_info_get(sdata, bssid);
+	sta = sta_info_get(sdata, ifmgd->bssid);
 	if (sta) {
 		set_sta_flag(sta, WLAN_STA_BLOCK_BA);
-		ieee80211_sta_tear_down_BA_sessions(sta, tx);
+		ieee80211_sta_tear_down_BA_sessions(sta, tx, true);
 	}
 	mutex_unlock(&local->sta_mtx);
+
+	/* clear bssid only after building the needed mgmt frames */
+	memset(ifmgd->bssid, 0, ETH_ALEN);
 
 	changed |= ieee80211_reset_erp_info(sdata);
 
@@ -2284,13 +2283,17 @@ static void ieee80211_sta_monitor_work(struct work_struct *work)
 
 static void ieee80211_restart_sta_timer(struct ieee80211_sub_if_data *sdata)
 {
+	u32 flags;
+
 	if (sdata->vif.type == NL80211_IFTYPE_STATION) {
 		sdata->u.mgd.flags &= ~(IEEE80211_STA_BEACON_POLL |
 					IEEE80211_STA_CONNECTION_POLL);
 
 		/* let's probe the connection once */
-		ieee80211_queue_work(&sdata->local->hw,
-			   &sdata->u.mgd.monitor_work);
+		flags = sdata->local->hw.flags;
+		if (!(flags & IEEE80211_HW_CONNECTION_MONITOR))
+			ieee80211_queue_work(&sdata->local->hw,
+					     &sdata->u.mgd.monitor_work);
 		/* and do all the other regular work too */
 		ieee80211_queue_work(&sdata->local->hw, &sdata->work);
 	}

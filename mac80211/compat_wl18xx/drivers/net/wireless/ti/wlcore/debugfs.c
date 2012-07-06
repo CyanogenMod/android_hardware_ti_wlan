@@ -39,6 +39,8 @@
 /* ms */
 #define WL1271_DEBUGFS_STATS_LIFETIME 1000
 
+#define WLCORE_MAX_BLOCK_SIZE ((size_t)(4*PAGE_SIZE))
+
 /* debugfs macros idea from mac80211 */
 int wl1271_format_buffer(char __user *userbuf, size_t count,
 			 loff_t *ppos, char *fmt, ...)
@@ -113,6 +115,89 @@ static const struct file_operations tx_queue_len_ops = {
 	.open = wl1271_open_file_generic,
 	.llseek = default_llseek,
 };
+
+static void chip_op_handler(struct wl1271 *wl, unsigned long value,
+			    void *arg)
+{
+	int ret;
+	int (*chip_op) (struct wl1271 *wl);
+
+	if (!arg) {
+		wl1271_warning("debugfs chip_op_handler with no callback");
+		return;
+	}
+
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		return;
+
+	chip_op = arg;
+	chip_op(wl);
+
+	wl1271_ps_elp_sleep(wl);
+}
+
+
+static inline void no_write_handler(struct wl1271 *wl,
+				    unsigned long value,
+				    unsigned long param)
+{
+}
+
+#define WL12XX_CONF_DEBUGFS(param, conf_sub_struct,			\
+			    min_val, max_val, write_handler_locked,	\
+			    write_handler_arg)				\
+	static ssize_t param##_read(struct file *file,			\
+				      char __user *user_buf,		\
+				      size_t count, loff_t *ppos)	\
+	{								\
+	struct wl1271 *wl = file->private_data;				\
+	return wl1271_format_buffer(user_buf, count,			\
+				    ppos, "%d\n",			\
+				    wl->conf.conf_sub_struct.param);	\
+	}								\
+									\
+	static ssize_t param##_write(struct file *file,			\
+				     const char __user *user_buf,	\
+				     size_t count, loff_t *ppos)	\
+	{								\
+	struct wl1271 *wl = file->private_data;				\
+	unsigned long value;						\
+	int ret;							\
+									\
+	ret = kstrtoul_from_user(user_buf, count, 10, &value);		\
+	if (ret < 0) {							\
+		wl1271_warning("illegal value for " #param);		\
+		return -EINVAL;						\
+	}								\
+									\
+	if (value < min_val || value > max_val) {			\
+		wl1271_warning(#param " is not in valid range");	\
+		return -ERANGE;						\
+	}								\
+									\
+	mutex_lock(&wl->mutex);						\
+	wl->conf.conf_sub_struct.param = value;				\
+									\
+	write_handler_locked(wl, value, write_handler_arg);		\
+									\
+	mutex_unlock(&wl->mutex);					\
+	return count;							\
+	}								\
+									\
+	static const struct file_operations param##_ops = {		\
+		.read = param##_read,					\
+		.write = param##_write,					\
+		.open = wl1271_open_file_generic,			\
+		.llseek = default_llseek,				\
+	};
+
+WL12XX_CONF_DEBUGFS(irq_pkt_threshold, rx, 0, 65535,
+		    chip_op_handler, wl1271_acx_init_rx_interrupt)
+WL12XX_CONF_DEBUGFS(irq_blk_threshold, rx, 0, 65535,
+		    chip_op_handler, wl1271_acx_init_rx_interrupt)
+WL12XX_CONF_DEBUGFS(irq_timeout, rx, 0, 100,
+		    chip_op_handler, wl1271_acx_init_rx_interrupt)
 
 static ssize_t gpio_power_read(struct file *file, char __user *user_buf,
 			  size_t count, loff_t *ppos)
@@ -343,8 +428,13 @@ static ssize_t sleep_auth_write(struct file *file,
 
 	mutex_lock(&wl->mutex);
 
-	if (wl->state == WL1271_STATE_OFF)
+	wl->conf.conn.sta_sleep_auth = value;
+
+	if (wl->state == WL1271_STATE_OFF) {
+		/* this will show up on "read" in case we are off */
+		wl->sleep_auth = value;
 		goto out;
+	}
 
 	ret = wl1271_ps_elp_wakeup(wl);
 	if (ret < 0)
@@ -368,6 +458,90 @@ static const struct file_operations sleep_auth_ops = {
 	.llseek = default_llseek,
 };
 
+static ssize_t stats_tx_aggr_read(struct file *file, char __user *user_buf,
+			       size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	char *buf;
+	int ret, i;
+	size_t len = 32768, size = 0;
+	u32 total_buffer_full = 0, total_fw_buffer_full= 0;
+	u32 total_no_data = 0, total_other = 0;
+
+	buf = kmalloc(len, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	buf[0] = '\0';
+
+	mutex_lock(&wl->mutex);
+
+	for (i = 0; i < WLCORE_AGGR_MAX_PACKETS; i++) {
+		total_buffer_full += wl->aggr_pkts_reason[i].buffer_full;
+		total_fw_buffer_full += wl->aggr_pkts_reason[i].fw_buffer_full;
+		total_other += wl->aggr_pkts_reason[i].other;
+		total_no_data += wl->aggr_pkts_reason[i].no_data;
+		wl->aggr_pkts_reason[i].total =
+			wl->aggr_pkts_reason[i].buffer_full +
+			wl->aggr_pkts_reason[i].fw_buffer_full +
+			wl->aggr_pkts_reason[i].other +
+			wl->aggr_pkts_reason[i].no_data;
+		if (wl->aggr_pkts_reason[i].total)
+			snprintf(buf, len, "%s[%d] total %d\n"
+				 "\tbuffer_full\t= %d\n"
+				 "\tfw_buffer_full\t= %d\n"
+				 "\tother\t\t= %d\n"
+				 "\tno_data\t\t= %d\n", buf, i,
+				 wl->aggr_pkts_reason[i].total,
+				 wl->aggr_pkts_reason[i].buffer_full,
+				 wl->aggr_pkts_reason[i].fw_buffer_full,
+				 wl->aggr_pkts_reason[i].other,
+				 wl->aggr_pkts_reason[i].no_data);
+	}
+
+	mutex_unlock(&wl->mutex);
+
+	size =  snprintf(buf, len, "%sTotals:\n"
+			 "\tbuffer_full\t= %d\n"
+			 "\tfw_buffer_full\t= %d\n"
+			 "\tother\t\t= %d\n"
+			 "\tno_data\t\t= %d\n",
+			 buf,
+			 total_buffer_full,
+			 total_fw_buffer_full,
+			 total_other,
+			 total_no_data);
+
+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, size);
+
+	kfree(buf);
+	return ret;
+}
+
+static ssize_t stats_tx_aggr_write(struct file *file,
+				const char __user *user_buf,
+				size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+
+	mutex_lock(&wl->mutex);
+
+	if (wl->state == WL1271_STATE_OFF)
+		goto out;
+
+	memset(wl->aggr_pkts_reason, 0, sizeof(wl->aggr_pkts_reason));
+
+out:
+	mutex_unlock(&wl->mutex);
+	return count;
+}
+
+static const struct file_operations stats_tx_aggr_ops = {
+	.read = stats_tx_aggr_read,
+	.write = stats_tx_aggr_write,
+	.open = wl1271_open_file_generic,
+	.llseek = default_llseek,
+};
 
 static ssize_t split_scan_timeout_read(struct file *file, char __user *user_buf,
 			  size_t count, loff_t *ppos)
@@ -584,7 +758,6 @@ static ssize_t vifs_state_read(struct file *file, char __user *user_buf,
 		VIF_STATE_PRINT_INT(last_rssi_event);
 		VIF_STATE_PRINT_INT(ba_support);
 		VIF_STATE_PRINT_INT(ba_allowed);
-		VIF_STATE_PRINT_INT(is_gem);
 		VIF_STATE_PRINT_LLHEX(tx_security_seq);
 		VIF_STATE_PRINT_INT(tx_security_last_seq_lsb);
 	}
@@ -1004,6 +1177,197 @@ static const struct file_operations tx_stuck_ops = {
 	.llseek = default_llseek,
 };
 
+static ssize_t fw_stats_raw_read(struct file *file,
+				 char __user *userbuf,
+				 size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+
+	wl1271_debugfs_update_stats(wl);
+
+	return simple_read_from_buffer(userbuf, count, ppos,
+				       wl->stats.fw_stats,
+				       wl->stats.fw_stats_len);
+}
+
+static const struct file_operations fw_stats_raw_ops = {
+	.read = fw_stats_raw_read,
+	.open = wl1271_open_file_generic,
+	.llseek = default_llseek,
+};
+
+static ssize_t dev_mem_read(struct file *file,
+	     char __user *user_buf, size_t count,
+	     loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	struct wlcore_partition_set part, old_part;
+	size_t bytes = count;
+	int ret;
+	char *buf;
+
+	/* only requests of dword-aligned size and offset are supported */
+	if (bytes % 4)
+		return -EINVAL;
+
+	if (*ppos % 4)
+		return -EINVAL;
+
+	/* function should return in reasonable time */
+	bytes = min(bytes, WLCORE_MAX_BLOCK_SIZE);
+
+	if (bytes == 0)
+		return -EINVAL;
+
+	memset(&part, 0, sizeof(part));
+	part.mem.start = file->f_pos;
+	part.mem.size = bytes;
+
+	buf = kmalloc(bytes, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	mutex_lock(&wl->mutex);
+
+	if (wl->state == WL1271_STATE_OFF) {
+		ret = -EFAULT;
+		goto skip_read;
+	}
+
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		goto skip_read;
+
+	/* store current partition and switch partition */
+	memcpy(&old_part, &wl->curr_part, sizeof(old_part));
+	wlcore_set_partition(wl, &part);
+
+	wl1271_raw_read(wl, 0, buf, bytes, false);
+
+	/* recover partition */
+	wlcore_set_partition(wl, &old_part);
+	wl1271_ps_elp_sleep(wl);
+
+skip_read:
+	mutex_unlock(&wl->mutex);
+
+	if (ret == 0) {
+		ret = copy_to_user(user_buf, buf, bytes);
+		if (ret < bytes) {
+			bytes -= ret;
+			*ppos += bytes;
+			ret = 0;
+		} else {
+			ret = -EFAULT;
+		}
+	}
+
+	kfree(buf);
+
+	return ((ret == 0) ? bytes : ret);
+}
+
+static ssize_t dev_mem_write(struct file *file, const char __user *user_buf,
+		size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	struct wlcore_partition_set part, old_part;
+	size_t bytes = count;
+	int ret;
+	char *buf;
+
+	/* only requests of dword-aligned size and offset are supported */
+	if (bytes % 4)
+		return -EINVAL;
+
+	if (*ppos % 4)
+		return -EINVAL;
+
+	/* function should return in reasonable time */
+	bytes = min(bytes, WLCORE_MAX_BLOCK_SIZE);
+
+	if (bytes == 0)
+		return -EINVAL;
+
+	memset(&part, 0, sizeof(part));
+	part.mem.start = file->f_pos;
+	part.mem.size = bytes;
+
+	buf = kmalloc(bytes, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	ret = copy_from_user(buf, user_buf, bytes);
+	if (ret) {
+		ret = -EFAULT;
+		goto err_out;
+	}
+
+	mutex_lock(&wl->mutex);
+
+	if (wl->state == WL1271_STATE_OFF) {
+		ret = -EFAULT;
+		goto skip_write;
+	}
+
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		goto skip_write;
+
+	/* store current partition and switch partition */
+	memcpy(&old_part, &wl->curr_part, sizeof(old_part));
+	wlcore_set_partition(wl, &part);
+
+	wl1271_raw_write(wl, 0, buf, bytes, false);
+
+	/* recover partition */
+	wlcore_set_partition(wl, &old_part);
+
+	wl1271_ps_elp_sleep(wl);
+
+skip_write:
+	mutex_unlock(&wl->mutex);
+
+	if (ret == 0)
+		*ppos += bytes;
+
+err_out:
+	kfree(buf);
+
+	return ((ret == 0) ? bytes : ret);
+}
+
+static loff_t dev_mem_seek(struct file *file, loff_t offset, int orig)
+{
+	loff_t ret;
+
+	/* only requests of dword-aligned size and offset are supported */
+	if (offset % 4)
+		return -EINVAL;
+
+	switch (orig) {
+	case SEEK_SET:
+		file->f_pos = offset;
+		ret = file->f_pos;
+		break;
+	case SEEK_CUR:
+		file->f_pos += offset;
+		ret = file->f_pos;
+		break;
+	default:
+		ret = -EINVAL;
+	}
+
+	return ret;
+}
+
+static const struct file_operations dev_mem_ops = {
+	.open = wl1271_open_file_generic,
+	.read = dev_mem_read,
+	.write = dev_mem_write,
+	.llseek = dev_mem_seek,
+};
+
 static int wl1271_debugfs_add_files(struct wl1271 *wl,
 				    struct dentry *rootdir)
 {
@@ -1025,9 +1389,14 @@ static int wl1271_debugfs_add_files(struct wl1271 *wl,
 	DEBUGFS_ADD(dynamic_ps_timeout, rootdir);
 	DEBUGFS_ADD(forced_ps, rootdir);
 	DEBUGFS_ADD(sleep_auth, rootdir);
+	DEBUGFS_ADD(stats_tx_aggr, rootdir);
 	DEBUGFS_ADD(split_scan_timeout, rootdir);
 	DEBUGFS_ADD(tx_stuck, rootdir);
 	DEBUGFS_ADD(tx_ba_win_size, rootdir);
+	DEBUGFS_ADD(irq_pkt_threshold, rootdir);
+	DEBUGFS_ADD(irq_blk_threshold, rootdir);
+	DEBUGFS_ADD(irq_timeout, rootdir);
+	DEBUGFS_ADD(fw_stats_raw, rootdir);
 
 	streaming = debugfs_create_dir("rx_streaming", rootdir);
 	if (!streaming || IS_ERR(streaming))
@@ -1036,6 +1405,7 @@ static int wl1271_debugfs_add_files(struct wl1271 *wl,
 	DEBUGFS_ADD_PREFIX(rx_streaming, interval, streaming);
 	DEBUGFS_ADD_PREFIX(rx_streaming, always, streaming);
 
+	DEBUGFS_ADD_PREFIX(dev, mem, rootdir);
 
 	return 0;
 

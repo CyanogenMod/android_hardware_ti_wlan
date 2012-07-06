@@ -22,6 +22,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ip.h>
+#include <linux/firmware.h>
 
 #include "../wlcore/wlcore.h"
 #include "../wlcore/debug.h"
@@ -43,18 +44,26 @@
 
 #define WL18XX_RX_CHECKSUM_MASK      0x40
 
-static char *ht_mode_param = "wide";
-static char *board_type_param = "hdk";
-static bool dc2dc_param = false;
-static int n_antennas_2_param = 1;
-static int n_antennas_5_param = 1;
+static char *ht_mode_param = NULL;
+static char *board_type_param = NULL;
 static bool checksum_param = false;
 static bool enable_11a_param = true;
-static int low_band_component = -1;
-static int low_band_component_type = -1;
-static int high_band_component = -1;
-static int high_band_component_type = -1;
-static int pwr_limit_reference_11_abg = -1;
+static bool disable_yield_fix = true;
+static bool enable_pad_last_frame = true;
+
+/* phy paramters */
+static int dc2dc_param = -1;
+static int n_antennas_2_param = -1;
+static int n_antennas_5_param = -1;
+static int low_band_component_param = -1;
+static int low_band_component_type_param = -1;
+static int high_band_component_param = -1;
+static int high_band_component_type_param = -1;
+static int pwr_limit_reference_11_abg_param = -1;
+static int Psat = -1;
+static int low_power_val = 0xff;
+static int med_power_val = 0xff;
+static int high_power_val = 0xff;
 
 static const u8 wl18xx_rate_to_idx_2ghz[] = {
 	/* MCS rates are used only with 11n */
@@ -366,6 +375,7 @@ static struct wlcore_conf wl18xx_conf = {
 		.forced_ps                   = false,
 		.keep_alive_interval         = 55000,
 		.max_listen_interval         = 20,
+		.sta_sleep_auth              = WL1271_PSM_ILLEGAL,
 	},
 	.itrim = {
 		.enable = false,
@@ -373,7 +383,7 @@ static struct wlcore_conf wl18xx_conf = {
 	},
 	.pm_config = {
 		.host_clk_settling_time = 5000,
-		.host_fast_wakeup_support = false
+		.host_fast_wakeup_support = CONF_FAST_WAKEUP_DISABLE,
 	},
 	.roam_trigger = {
 		.trigger_pacing               = 1,
@@ -408,7 +418,7 @@ static struct wlcore_conf wl18xx_conf = {
 		.snr_threshold                = 0,
 	},
 	.ht = {
-		.rx_ba_win_size = 10,
+		.rx_ba_win_size = 32,
 		.tx_ba_win_size = 64,
 		.inactivity_timeout = 10000,
 		.tx_ba_tid_bitmap = CONF_TX_BA_ENABLED_TID_BITMAP,
@@ -486,16 +496,20 @@ static struct wlcore_conf wl18xx_conf = {
 };
 
 static struct wl18xx_priv_conf wl18xx_default_priv_conf = {
+	.ht = {
+		.mode				= HT_MODE_WIDE,
+	},
 	.phy = {
 		.phy_standalone			= 0x00,
 		.primary_clock_setting_time	= 0x05,
 		.clock_valid_on_wake_up		= 0x00,
 		.secondary_clock_setting_time	= 0x05,
+		.board_type 			= BOARD_TYPE_HDK_18XX,
 		.rdl				= 0x01,
 		.auto_detect			= 0x00,
 		.dedicated_fem			= FEM_NONE,
-		.low_band_component		= COMPONENT_2_WAY_SWITCH,
-		.low_band_component_type	= 0x05,
+		.low_band_component		= COMPONENT_3_WAY_SWITCH,
+		.low_band_component_type	= 0x04,
 		.high_band_component		= COMPONENT_2_WAY_SWITCH,
 		.high_band_component_type	= 0x09,
 		.tcxo_ldo_voltage		= 0x00,
@@ -508,6 +522,13 @@ static struct wl18xx_priv_conf wl18xx_default_priv_conf = {
 		.enable_tx_low_pwr_on_siso_rdl	= 0x00,
 		.rx_profile			= 0x00,
 		.pwr_limit_reference_11_abg	= 0xc8,
+		.Psat				= 0,
+		.low_power_val			= 0x05,
+		.med_power_val			= 0x14,
+		.high_power_val			= 0x1e,
+		.external_pa_dc2dc		= 0,
+		.number_of_assembled_ant2_4	= 1,
+		.number_of_assembled_ant5	= 1,
 	},
 };
 
@@ -537,18 +558,36 @@ static const struct wlcore_partition_set wl18xx_ptable[PART_TABLE_LEN] = {
 		.mem3 = { .start = 0x00000000, .size  = 0x00000000 },
 	},
 	[PART_PHY_INIT] = {
-		/* TODO: use the phy_conf struct size here */
-		.mem  = { .start = 0x80926000, .size = 252 },
+		.mem  = { .start = 0x80926000, .size =
+				sizeof(struct wl18xx_mac_and_phy_params) },
 		.reg  = { .start = 0x00000000, .size = 0x00000000 },
 		.mem2 = { .start = 0x00000000, .size = 0x00000000 },
 		.mem3 = { .start = 0x00000000, .size = 0x00000000 },
 	},
 	[PART_PHY_PDSP_WA] = {
 		.mem  = { .start = 0x00940100, .size  = 0x00000200 },
-		.reg  = { .start = 0x00953000, .size  = 0x00012000 },
+		.reg  = { .start = 0x00953000, .size  = 0x00018000 },
 		.mem2 = { .start = 0x00000000, .size  = 0x00000000 },
 		.mem3 = { .start = 0x00000000, .size  = 0x00000000 },
 	},
+};
+
+static const struct wl18xx_phy_addresses wl18xx_phy_addresses_pg1 = {
+	.phy_hram_rd_en = WL18XX_PHY_HRAM_RD_EN_PER_RAM,
+	.pdsp_ctrl_reg = WL18XX_PDSP_CONTROL_REG_PG1,
+	.pdsp_ram = WL18XX_FDSP_RAM,
+	.prcm_bt_pwr_rst = WL18XX_PRCM_BT_PWR_RST,
+	.ip_sel_ov_en = WL18XX_IP_SEL_OV_EN,
+	.ip_ov_en = WL18XX_IP_OV_EN,
+};
+
+static const struct wl18xx_phy_addresses wl18xx_phy_addresses_pg2 = {
+	.phy_hram_rd_en = WL18XX_PHY_HRAM_RD_EN_PER_RAM,
+	.pdsp_ctrl_reg = WL18XX_PDSP_CONTROL_REG_PG2,
+	.pdsp_ram = WL18XX_FDSP_RAM,
+	.prcm_bt_pwr_rst = WL18XX_PRCM_BT_PWR_RST,
+	.ip_sel_ov_en = WL18XX_IP_SEL_OV_EN,
+	.ip_ov_en = WL18XX_IP_OV_EN,
 };
 
 static const int wl18xx_rtable[REG_TABLE_LEN] = {
@@ -584,25 +623,48 @@ static const struct wl18xx_clk_cfg wl18xx_clk_table[NUM_CLOCK_CONFIGS] = {
 };
 
 /* TODO: maybe move to a new header file? */
-#define WL18XX_FW_NAME "ti-connectivity/wl18xx-fw.bin"
+#define WL18XX_FW_PG1_NAME "ti-connectivity/wl18xx-fw-pg1.1.bin"
+#define WL18XX_FW_PG2_NAME "ti-connectivity/wl18xx-fw.bin"
 
 static int wl18xx_identify_chip(struct wl1271 *wl)
 {
 	int ret = 0;
+	struct wl18xx_priv *priv = wl->priv;
 
 	switch (wl->chip.id) {
+	case CHIP_ID_185x_PG20:
+		wl1271_debug(DEBUG_BOOT, "chip id 0x%x (185x PG20)",
+				 wl->chip.id);
+		wl->sr_fw_name = WL18XX_FW_PG2_NAME;
+		/* wl18xx uses the same firmware for PLT */
+		wl->plt_fw_name = WL18XX_FW_PG2_NAME;
+		wl->quirks |= WLCORE_QUIRK_NO_ELP |
+				  WLCORE_QUIRK_RX_BLOCKSIZE_ALIGN;
+		if (enable_pad_last_frame) {
+			wl->quirks |= WLCORE_QUIRK_TX_PAD_LAST_FRAME;
+			wl->quirks &= ~WLCORE_QUIRK_TX_BLOCKSIZE_ALIGN;
+		}
+
+		memcpy(&priv->phy_addresses, &wl18xx_phy_addresses_pg2,
+			sizeof(struct wl18xx_phy_addresses));
+
+		/* TODO: need to blocksize alignment for RX/TX separately? */
+		break;
 	case CHIP_ID_185x_PG10:
 		wl1271_debug(DEBUG_BOOT, "chip id 0x%x (185x PG10)",
 			     wl->chip.id);
-		wl->sr_fw_name = WL18XX_FW_NAME;
+		wl->sr_fw_name = WL18XX_FW_PG1_NAME;
 		/* wl18xx uses the same firmware for PLT */
-		wl->plt_fw_name = WL18XX_FW_NAME;
+		wl->plt_fw_name = WL18XX_FW_PG1_NAME;
 		wl->quirks |= WLCORE_QUIRK_NO_ELP |
 			      WLCORE_QUIRK_FWLOG_NOT_IMPLEMENTED |
 			      WLCORE_QUIRK_RX_BLOCKSIZE_ALIGN;
 
+		memcpy(&priv->phy_addresses, &wl18xx_phy_addresses_pg1,
+			sizeof(struct wl18xx_phy_addresses));
+
 		/* PG 1.0 has some problems with MCS_13, so disable it */
-		wl->ht_cap.mcs.rx_mask[1] &= ~BIT(5);
+		wl->ht_cap[IEEE80211_BAND_2GHZ].mcs.rx_mask[1] &= ~BIT(5);
 
 		/* TODO: need to blocksize alignment for RX/TX separately? */
 		break;
@@ -669,17 +731,19 @@ static void wl18xx_boot_soft_reset(struct wl1271 *wl)
 static int wl18xx_pdsp_reset(struct wl1271 *wl)
 {
 	int status;
+	struct wl18xx_priv *priv = wl->priv;
+	struct wl18xx_phy_addresses *phy_addr = &priv->phy_addresses;
 
 	wl1271_debug(DEBUG_BOOT, "reset PDSP");
 
-	wl1271_write32(wl, WL18XX_PDSP_CONTROL_REG, WL18XX_PDSP_ENABLE);
-	wl1271_write32(wl, WL18XX_PDSP_CONTROL_REG, WL18XX_PDSP_DISABLE);
-	wl1271_write32(wl, WL18XX_PDSP_CONTROL_REG, WL18XX_PDSP_ENABLE);
-	wl1271_write32(wl, WL18XX_PDSP_CONTROL_REG, WL18XX_PDSP_DISABLE);
+	wl1271_write32(wl, phy_addr->pdsp_ctrl_reg, WL18XX_PDSP_ENABLE);
+	wl1271_write32(wl, phy_addr->pdsp_ctrl_reg, WL18XX_PDSP_DISABLE);
+	wl1271_write32(wl, phy_addr->pdsp_ctrl_reg, WL18XX_PDSP_ENABLE);
+	wl1271_write32(wl, phy_addr->pdsp_ctrl_reg, WL18XX_PDSP_DISABLE);
 
 	/* validate PDSP reset */
-	wl1271_write32(wl, WL18XX_FDSP_RAM, WL18XX_FDSP_RAM_VAL);
-	status = wl1271_read32(wl, WL18XX_FDSP_RAM);
+	wl1271_write32(wl, phy_addr->pdsp_ram, WL18XX_FDSP_RAM_VAL);
+	status = wl1271_read32(wl, phy_addr->pdsp_ram);
 	if (status == WL18XX_FDSP_RAM_VAL) {
 		wl1271_debug(DEBUG_BOOT, "OCP bridge ready");
 		return 0;
@@ -691,11 +755,13 @@ static int wl18xx_pdsp_reset(struct wl1271 *wl)
 static int wl18xx_phy_core_reset(struct wl1271 *wl)
 {
 	int ocp_state;
+	struct wl18xx_priv *priv = wl->priv;
+	struct wl18xx_phy_addresses *phy_addr = &priv->phy_addresses;
 
 	wl1271_debug(DEBUG_BOOT, "reset wl phy core");
 
 	wlcore_set_partition(wl, &wl->ptable[PART_PHY_PDSP_WA]);
-	ocp_state = wl1271_read32(wl, WL18XX_PHY_HRAM_RD_EN_PER_RAM);
+	ocp_state = wl1271_read32(wl, phy_addr->phy_hram_rd_en);
 	if (!ocp_state)
 		return -EIO;
 
@@ -704,11 +770,11 @@ static int wl18xx_phy_core_reset(struct wl1271 *wl)
 
 	wlcore_set_partition(wl, &wl->ptable[PART_TOP_PRCM_ELP_SOC]);
 
-	wl18xx_top_reg_write(wl, WL18XX_IP_SEL_OV_EN, WL18XX_WL_PHY_PWR_REQ);
-	wl18xx_top_reg_write(wl, WL18XX_IP_OV_EN, WL18XX_WL_PHY_PWR_REQ);
+	wl18xx_top_reg_write(wl, phy_addr->ip_sel_ov_en, WL18XX_WL_PHY_PWR_REQ);
+	wl18xx_top_reg_write(wl, phy_addr->ip_ov_en, WL18XX_WL_PHY_PWR_REQ);
 
-	wl18xx_top_reg_write(wl, WL18XX_IP_SEL_OV_EN, WL18XX_RM_OVERRIDE);
-	wl18xx_top_reg_write(wl, WL18XX_IP_OV_EN, WL18XX_RM_OVERRIDE);
+	wl18xx_top_reg_write(wl, phy_addr->ip_sel_ov_en, WL18XX_RM_OVERRIDE);
+	wl18xx_top_reg_write(wl, phy_addr->ip_ov_en, WL18XX_RM_OVERRIDE);
 
 	return -EAGAIN;
 }
@@ -716,11 +782,13 @@ static int wl18xx_phy_core_reset(struct wl1271 *wl)
 static int wl18xx_bt_core_reset(struct wl1271 *wl)
 {
 	int ocp_state, status;
+	struct wl18xx_priv *priv = wl->priv;
+	struct wl18xx_phy_addresses *phy_addr = &priv->phy_addresses;
 
 	wl1271_debug(DEBUG_BOOT, "reset bt core");
 
 	wlcore_set_partition(wl, &wl->ptable[PART_PHY_PDSP_WA]);
-	ocp_state = wl1271_read32(wl, WL18XX_PHY_HRAM_RD_EN_PER_RAM);
+	ocp_state = wl1271_read32(wl, phy_addr->phy_hram_rd_en);
 	if (!ocp_state)
 		return -EIO;
 
@@ -729,24 +797,27 @@ static int wl18xx_bt_core_reset(struct wl1271 *wl)
 
 	wlcore_set_partition(wl, &wl->ptable[PART_TOP_PRCM_ELP_SOC]);
 	/* check if BT is disabled */
-	status = wl18xx_top_reg_read(wl, WL18XX_PRCM_BT_PWR_RST);
+	status = wl18xx_top_reg_read(wl, phy_addr->prcm_bt_pwr_rst);
 	if (status != 0)
 		return -EACCES;
 
-	wl18xx_top_reg_write(wl, WL18XX_IP_SEL_OV_EN, WL18XX_WL_PHY_PWR_REQ);
-	wl18xx_top_reg_write(wl, WL18XX_IP_OV_EN, WL18XX_BT_PWR_REQ);
+	wl18xx_top_reg_write(wl, phy_addr->ip_sel_ov_en, WL18XX_WL_PHY_PWR_REQ);
+	wl18xx_top_reg_write(wl, phy_addr->ip_ov_en, WL18XX_BT_PWR_REQ);
 
-	wl18xx_top_reg_write(wl, WL18XX_IP_SEL_OV_EN, WL18XX_BT_WL_PHY_PWR_REQ);
-	wl18xx_top_reg_write(wl, WL18XX_IP_OV_EN, WL18XX_BT_WL_PHY_PWR_REQ);
+	wl18xx_top_reg_write(wl, phy_addr->ip_sel_ov_en,
+			WL18XX_BT_WL_PHY_PWR_REQ);
+	wl18xx_top_reg_write(wl, phy_addr->ip_ov_en, WL18XX_BT_WL_PHY_PWR_REQ);
 
-	wl18xx_top_reg_write(wl, WL18XX_IP_SEL_OV_EN, WL18XX_RM_OVERRIDE);
-	wl18xx_top_reg_write(wl, WL18XX_IP_OV_EN, WL18XX_RM_OVERRIDE);
+	wl18xx_top_reg_write(wl, phy_addr->ip_sel_ov_en, WL18XX_RM_OVERRIDE);
+	wl18xx_top_reg_write(wl, phy_addr->ip_ov_en, WL18XX_RM_OVERRIDE);
 	return -EAGAIN;
 }
 
 static int wl18xx_release_ocp_bridge(struct wl1271 *wl)
 {
 	int ocp_state, i, status;
+	struct wl18xx_priv *priv = wl->priv;
+	struct wl18xx_phy_addresses *phy_addr = &priv->phy_addresses;
 
 	wl1271_debug(DEBUG_BOOT, "release OCP bridge");
 
@@ -769,7 +840,7 @@ static int wl18xx_release_ocp_bridge(struct wl1271 *wl)
 	}
 
 	wlcore_set_partition(wl, &wl->ptable[PART_PHY_PDSP_WA]);
-	ocp_state = wl1271_read32(wl, WL18XX_PHY_HRAM_RD_EN_PER_RAM);
+	ocp_state = wl1271_read32(wl, phy_addr->phy_hram_rd_en);
 	if (ocp_state == WL18XX_H_RAM_ENABLED)
 		goto out;
 
@@ -785,12 +856,23 @@ static int wl18xx_pre_boot(struct wl1271 *wl)
 {
 	wl18xx_set_clk(wl);
 
-	if (wl->chip.id == CHIP_ID_185x_PG10) {
-		int ret = wl18xx_release_ocp_bridge(wl);
+	if (wl->chip.id == CHIP_ID_185x_PG20) {
+		int ret;
+		if (disable_yield_fix)
+			goto elp_wakeup;
+		ret = wl18xx_release_ocp_bridge(wl);
 		if (ret < 0)
 			return ret;
 	}
 
+	if (wl->chip.id == CHIP_ID_185x_PG10) {
+		int ret;
+		ret = wl18xx_release_ocp_bridge(wl);
+		if (ret < 0)
+			return ret;
+	}
+
+elp_wakeup:
 	/* Continue the ELP wake up sequence */
 	wl1271_write32(wl, WL18XX_WELP_ARM_COMMAND, WELP_ARM_COMMAND_VAL);
 	udelay(500);
@@ -821,53 +903,31 @@ static void wl18xx_pre_upload(struct wl1271 *wl)
 	tmp = wl1271_read32(wl, WL18XX_SCR_PAD2);
 }
 
-static void wl18xx_set_mac_and_phy(struct wl1271 *wl)
+static int wl18xx_set_mac_and_phy(struct wl1271 *wl)
 {
 	struct wl18xx_priv *priv = wl->priv;
-	struct wl18xx_conf_phy *phy = &priv->conf.phy;
-	struct wl18xx_mac_and_phy_params params;
+	struct wl18xx_mac_and_phy_params *params;
+	size_t len;
+	int ret = 0;
 
-	memset(&params, 0, sizeof(params));
+	params = kmemdup(&priv->conf.phy, sizeof(*params), GFP_KERNEL);
+	if (!params) {
+		ret = -ENOMEM;
+		goto out;
+	}
 
-	params.phy_standalone = phy->phy_standalone;
-	params.rdl = phy->rdl;
-	params.enable_clpc = phy->enable_clpc;
-	params.enable_tx_low_pwr_on_siso_rdl =
-		phy->enable_tx_low_pwr_on_siso_rdl;
-	params.auto_detect = phy->auto_detect;
-	params.dedicated_fem = phy->dedicated_fem;
-	params.low_band_component = phy->low_band_component;
-	params.low_band_component_type =
-		phy->low_band_component_type;
-	params.high_band_component = phy->high_band_component;
-	params.high_band_component_type =
-		phy->high_band_component_type;
-	params.number_of_assembled_ant2_4 =
-		n_antennas_2_param;
-	params.number_of_assembled_ant5 =
-		n_antennas_5_param;
-	params.external_pa_dc2dc = dc2dc_param;
-	params.tcxo_ldo_voltage = phy->tcxo_ldo_voltage;;
-	params.xtal_itrim_val = phy->xtal_itrim_val;
-	params.srf_state = phy->srf_state;
-	params.io_configuration = phy->io_configuration;
-	params.sdio_configuration = phy->sdio_configuration;
-	params.settings = phy->settings;
-	params.rx_profile = phy->rx_profile;
-	params.primary_clock_setting_time =
-		phy->primary_clock_setting_time;
-	params.clock_valid_on_wake_up =
-		phy->clock_valid_on_wake_up;
-	params.secondary_clock_setting_time =
-		phy->secondary_clock_setting_time;
-	params.pwr_limit_reference_11_abg =
-		phy->pwr_limit_reference_11_abg;
-
-	params.board_type = priv->board_type;
+	/* the parameters struct is smaller for PG1 */
+	if (wl->chip.id == CHIP_ID_185x_PG10)
+		len = offsetof(struct wl18xx_mac_and_phy_params, Psat) + 1;
+	else
+		len = sizeof(struct wl18xx_mac_and_phy_params);
 
 	wlcore_set_partition(wl, &wl->ptable[PART_PHY_INIT]);
-	wl1271_write(wl, WL18XX_PHY_INIT_MEM_ADDR, (u8*)&params,
-		     sizeof(params), false);
+	wl1271_write(wl, WL18XX_PHY_INIT_MEM_ADDR, params, len,
+		     false);
+out:
+	kfree(params);
+	return ret;
 }
 
 static void wl18xx_enable_interrupts(struct wl1271 *wl)
@@ -893,7 +953,9 @@ static int wl18xx_boot(struct wl1271 *wl)
 	if (ret < 0)
 		goto out;
 
-	wl18xx_set_mac_and_phy(wl);
+	ret = wl18xx_set_mac_and_phy(wl);
+	if (ret < 0)
+		goto out;
 
 	ret = wlcore_boot_run_firmware(wl);
 	if (ret < 0)
@@ -975,21 +1037,16 @@ static void wl18xx_tx_immediate_completion(struct wl1271 *wl)
 	wl18xx_tx_immediate_complete(wl);
 }
 
-static int wl18xx_hw_init(struct wl1271 *wl)
+static int wl18xx_set_host_cfg_bitmap(struct wl1271 *wl, u32 extra_mem_blk)
 {
 	int ret;
-	struct wl18xx_priv *priv = wl->priv;
-	u32 host_cfg_bitmap = HOST_IF_CFG_RX_FIFO_ENABLE |
-		HOST_IF_CFG_ADD_RX_ALIGNMENT;
-
-	/* 18xxTODO: can this even work? */
 	u32 sdio_align_size = 0;
-
-	/* (re)init private structures. Relevant on recovery as well. */
-	priv->last_fw_rls_idx = 0;
+	u32 host_cfg_bitmap = HOST_IF_CFG_RX_FIFO_ENABLE |
+			      HOST_IF_CFG_ADD_RX_ALIGNMENT;
 
 	/* Enable Tx SDIO padding */
-	if (wl->quirks & WLCORE_QUIRK_TX_BLOCKSIZE_ALIGN) {
+	if (wl->quirks & (WLCORE_QUIRK_TX_BLOCKSIZE_ALIGN |
+					WLCORE_QUIRK_TX_PAD_LAST_FRAME)) {
 		host_cfg_bitmap |= HOST_IF_CFG_TX_PAD_TO_SDIO_BLK;
 		sdio_align_size = WL12XX_BUS_BLOCK_SIZE;
 	}
@@ -1001,9 +1058,25 @@ static int wl18xx_hw_init(struct wl1271 *wl)
 	}
 
 	ret = wl18xx_acx_host_if_cfg_bitmap(wl, host_cfg_bitmap,
-					    sdio_align_size,
-					    WL18XX_TX_HW_BLOCK_SPARE,
+					    sdio_align_size, extra_mem_blk,
 					    WL18XX_HOST_IF_LEN_SIZE_FIELD);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
+static int wl18xx_hw_init(struct wl1271 *wl)
+{
+	int ret;
+	struct wl18xx_priv *priv = wl->priv;
+
+	/* (re)init private structures. Relevant on recovery as well. */
+	priv->last_fw_rls_idx = 0;
+	priv->extra_spare_vif_count = 0;
+
+	/* set the default amount of spare blocks in the bitmap */
+	ret = wl18xx_set_host_cfg_bitmap(wl, WL18XX_TX_HW_BLOCK_SPARE);
 	if (ret < 0)
 		return ret;
 
@@ -1088,12 +1161,14 @@ static u32 wl18xx_sta_get_ap_rate_mask(struct wl1271 *wl,
 static u32 wl18xx_ap_get_mimo_wide_rate_mask(struct wl1271 *wl,
 					     struct wl12xx_vif *wlvif)
 {
+	struct wl18xx_priv *priv = wl->priv;
+
 	if ((wlvif->channel_type == NL80211_CHAN_HT40MINUS ||
 	     wlvif->channel_type == NL80211_CHAN_HT40PLUS) &&
-	    !strcmp(ht_mode_param, "wide")) {
+	     priv->conf.ht.mode == HT_MODE_WIDE) {
 		wl1271_debug(DEBUG_ACX, "using wide channel rate mask");
 		return CONF_TX_RATE_USE_WIDE_CHAN;
-	} else if (!strcmp(ht_mode_param, "mimo")) {
+	} else if (priv->conf.ht.mode == HT_MODE_MIMO) {
 		wl1271_debug(DEBUG_ACX, "using MIMO rate mask");
 
 		/*
@@ -1112,15 +1187,65 @@ static u32 wl18xx_ap_get_mimo_wide_rate_mask(struct wl1271 *wl,
 	}
 }
 
-static void wl18xx_conf_init(struct wl1271 *wl)
+#define WL18XX_CONF_FILE_NAME "ti-connectivity/wl18xx-conf.bin"
+static int wl18xx_conf_init(struct wl1271 *wl, struct device *dev)
 {
 	struct wl18xx_priv *priv = wl->priv;
+	struct wlcore_conf_file *conf_file;
+	const struct firmware *fw;
+	int ret;
+
+	ret = request_firmware(&fw, WL18XX_CONF_FILE_NAME, dev);
+	if (ret < 0) {
+		wl1271_error("could not get configuration binary %s: %d",
+			     WL18XX_CONF_FILE_NAME, ret);
+		goto out_fallback;
+	}
+
+	if (fw->size != WL18XX_CONF_SIZE) {
+		wl1271_error("configuration binary file size is wrong, "
+			     "expected %d got %d", WL18XX_CONF_SIZE, fw->size);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	conf_file = (struct wlcore_conf_file *) fw->data;
+
+	if (conf_file->header.magic != WL18XX_CONF_MAGIC) {
+		wl1271_error("configuration binary file magic number mismatch, "
+			     "expected 0x%0x got 0x%0x", WL18XX_CONF_MAGIC,
+			     conf_file->header.magic);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (conf_file->header.version != WL18XX_CONF_VERSION) {
+		wl1271_error("configuration binary file version not supported, "
+			     "expected 0x%08x got 0x%08x",
+			     WL18XX_CONF_VERSION, conf_file->header.version);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	memcpy(&wl->conf, &conf_file->core, sizeof(wl18xx_conf));
+	memcpy(&priv->conf, &conf_file->priv, sizeof(priv->conf));
+
+	goto out;
+
+out_fallback:
+	wl1271_warning("falling back to default config");
 
 	/* apply driver default configuration */
 	memcpy(&wl->conf, &wl18xx_conf, sizeof(wl18xx_conf));
-
 	/* apply default private configuration */
 	memcpy(&priv->conf, &wl18xx_default_priv_conf, sizeof(priv->conf));
+
+	/* For now we just fallback */
+	return 0;
+
+out:
+	release_firmware(fw);
+	return ret;
 }
 
 static int wl18xx_plt_init(struct wl1271 *wl)
@@ -1172,6 +1297,72 @@ static int wl18xx_handle_static_data(struct wl1271 *wl,
 	return 0;
 }
 
+static int wl18xx_get_spare_blocks(struct wl1271 *wl, bool is_gem)
+{
+	struct wl18xx_priv *priv = wl->priv;
+
+	/* If we have VIFs requiring extra spare, indulge them */
+	if (priv->extra_spare_vif_count)
+		return WL18XX_TX_HW_EXTRA_BLOCK_SPARE;
+
+	return WL18XX_TX_HW_BLOCK_SPARE;
+}
+
+static int wl18xx_set_key(struct wl1271 *wl, enum set_key_cmd cmd,
+			  struct ieee80211_vif *vif,
+			  struct ieee80211_sta *sta,
+			  struct ieee80211_key_conf *key_conf)
+{
+	struct wl18xx_priv *priv = wl->priv;
+	bool change_spare = false;
+	int ret;
+
+	/*
+	 * when adding the first or removing the last GEM/TKIP interface,
+	 * we have to adjust the number of spare blocks.
+	 */
+	change_spare = (key_conf->cipher == WL1271_CIPHER_SUITE_GEM ||
+		key_conf->cipher == WLAN_CIPHER_SUITE_TKIP) &&
+		((priv->extra_spare_vif_count == 0 && cmd == SET_KEY) ||
+		 (priv->extra_spare_vif_count == 1 && cmd == DISABLE_KEY));
+
+	/* no need to change spare - just regular set_key */
+	if (!change_spare)
+		return wlcore_set_key(wl, cmd, vif, sta, key_conf);
+
+	/*
+	 * stop the queues and flush to ensure the next packets are
+	 * in sync with FW spare block accounting
+	 */
+	wlcore_stop_queues(wl, WLCORE_QUEUE_STOP_REASON_SPARE_BLK);
+	wl1271_tx_flush(wl);
+
+	ret = wlcore_set_key(wl, cmd, vif, sta, key_conf);
+	if (ret < 0)
+		goto out;
+
+	/* key is now set, change the spare blocks */
+	if (cmd == SET_KEY) {
+		ret = wl18xx_set_host_cfg_bitmap(wl,
+					WL18XX_TX_HW_EXTRA_BLOCK_SPARE);
+		if (ret < 0)
+			goto out;
+
+		priv->extra_spare_vif_count++;
+	} else {
+		ret = wl18xx_set_host_cfg_bitmap(wl,
+					WL18XX_TX_HW_BLOCK_SPARE);
+		if (ret < 0)
+			goto out;
+
+		priv->extra_spare_vif_count--;
+	}
+
+out:
+	wlcore_wake_queues(wl, WLCORE_QUEUE_STOP_REASON_SPARE_BLK);
+	return ret;
+}
+
 static struct wlcore_ops wl18xx_ops = {
 	.identify_chip	= wl18xx_identify_chip,
 	.boot		= wl18xx_boot,
@@ -1195,6 +1386,8 @@ static struct wlcore_ops wl18xx_ops = {
 	.get_mac	= wl18xx_get_mac,
 	.debugfs_init	= wl18xx_debugfs_add_files,
 	.handle_static_data	= wl18xx_handle_static_data,
+	.get_spare_blocks = wl18xx_get_spare_blocks,
+	.set_key	= wl18xx_set_key,
 };
 
 /* HT cap appropriate for wide channels */
@@ -1225,7 +1418,7 @@ struct ieee80211_sta_ht_cap wl18xx_siso20_ht_cap = {
 };
 
 /* HT cap appropriate for MIMO rates in 20mhz channel */
-struct ieee80211_sta_ht_cap wl18xx_mimo_ht_cap = {
+static struct ieee80211_sta_ht_cap wl18xx_mimo_ht_cap_2ghz = {
 	.cap = IEEE80211_HT_CAP_SGI_20,
 	.ht_supported = true,
 	.ampdu_factor = IEEE80211_HT_MAX_AMPDU_16K,
@@ -1237,16 +1430,30 @@ struct ieee80211_sta_ht_cap wl18xx_mimo_ht_cap = {
 		},
 };
 
+static struct ieee80211_sta_ht_cap wl18xx_mimo_ht_cap_5ghz = {
+	.cap = IEEE80211_HT_CAP_SGI_20,
+	.ht_supported = true,
+	.ampdu_factor = IEEE80211_HT_MAX_AMPDU_16K,
+	.ampdu_density = IEEE80211_HT_MPDU_DENSITY_16,
+	.mcs = {
+		.rx_mask = { 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		.rx_highest = cpu_to_le16(72),
+		.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
+		},
+};
+
 int __devinit wl18xx_probe(struct platform_device *pdev)
 {
 	struct wl1271 *wl;
 	struct ieee80211_hw *hw;
 	struct wl18xx_priv *priv;
+	int ret;
 
 	hw = wlcore_alloc_hw(sizeof(*priv));
 	if (IS_ERR(hw)) {
 		wl1271_error("can't allocate hw");
-		return PTR_ERR(hw);
+		ret = PTR_ERR(hw);
+		goto out;
 	}
 
 	wl = hw->priv;
@@ -1255,9 +1462,7 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 	wl->ptable = wl18xx_ptable;
 	wl->rtable = wl18xx_rtable;
 	wl->num_tx_desc = 32;
-	wl->num_rx_desc = 16;
-	wl->normal_tx_spare = WL18XX_TX_HW_BLOCK_SPARE;
-	wl->gem_tx_spare = WL18XX_TX_HW_GEM_BLOCK_SPARE;
+	wl->num_rx_desc = 32;
 	wl->band_rate_to_idx = wl18xx_band_rate_to_idx;
 	wl->hw_tx_rate_tbl_size = WL18XX_CONF_HW_RXTX_RATE_MAX;
 	wl->hw_min_ht_rate = WL18XX_CONF_HW_RXTX_RATE_MCS0;
@@ -1265,73 +1470,117 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 	wl->stats.fw_stats_len = sizeof(struct wl18xx_acx_statistics);
 	wl->static_data_priv_len = sizeof(struct wl18xx_static_data_priv);
 
-	if (!strcmp(ht_mode_param, "wide")) {
-		memcpy(&wl->ht_cap, &wl18xx_siso40_ht_cap,
+	ret = wl18xx_conf_init(wl, &pdev->dev);
+	if (ret < 0)
+		goto out_free;
+
+	/* If the module param is set, update it in conf */
+	if (board_type_param) {
+		if (!strcmp(board_type_param, "fpga")) {
+			priv->conf.phy.board_type = BOARD_TYPE_FPGA_18XX;
+		} else if (!strcmp(board_type_param, "hdk")) {
+			priv->conf.phy.board_type = BOARD_TYPE_HDK_18XX;
+		} else if (!strcmp(board_type_param, "dvp")) {
+			priv->conf.phy.board_type = BOARD_TYPE_DVP_18XX;
+		} else if (!strcmp(board_type_param, "evb")) {
+			priv->conf.phy.board_type = BOARD_TYPE_EVB_18XX;
+		} else if (!strcmp(board_type_param, "com8")) {
+			priv->conf.phy.board_type = BOARD_TYPE_COM8_18XX;
+		} else {
+			wl1271_error("invalid board type '%s'",
+				board_type_param);
+			ret = -EINVAL;
+			goto out_free;
+		}
+	}
+
+	if (priv->conf.phy.board_type >= NUM_BOARD_TYPES) {
+		wl1271_error("invalid board type '%d'",
+			priv->conf.phy.board_type);
+		ret = -EINVAL;
+		goto out_free;
+	}
+
+	if (low_band_component_param != -1)
+		priv->conf.phy.low_band_component = low_band_component_param;
+	if (low_band_component_type_param != -1)
+		priv->conf.phy.low_band_component_type =
+			low_band_component_type_param;
+	if (high_band_component_param != -1)
+		priv->conf.phy.high_band_component = high_band_component_param;
+	if (high_band_component_type_param != -1)
+		priv->conf.phy.high_band_component_type =
+			high_band_component_type_param;
+	if (pwr_limit_reference_11_abg_param != -1)
+		priv->conf.phy.pwr_limit_reference_11_abg =
+			pwr_limit_reference_11_abg_param;
+	if (n_antennas_2_param != -1)
+		priv->conf.phy.number_of_assembled_ant2_4 = n_antennas_2_param;
+	if (n_antennas_5_param != -1)
+		priv->conf.phy.number_of_assembled_ant5 = n_antennas_5_param;
+	if (dc2dc_param != -1)
+		priv->conf.phy.external_pa_dc2dc = dc2dc_param;
+
+	if (ht_mode_param) {
+		if (!strcmp(ht_mode_param, "mimo"))
+			priv->conf.ht.mode = HT_MODE_MIMO;
+		else if (!strcmp(ht_mode_param, "wide"))
+			priv->conf.ht.mode = HT_MODE_WIDE;
+		else if (!strcmp(ht_mode_param, "siso20"))
+			priv->conf.ht.mode = HT_MODE_SISO20;
+		else {
+			wl1271_error("invalid ht_mode '%s'", ht_mode_param);
+			ret = -EINVAL;
+			goto out_free;
+		}
+	}
+
+	if (priv->conf.ht.mode == HT_MODE_WIDE) {
+		memcpy(&wl->ht_cap[IEEE80211_BAND_2GHZ],
+		       &wl18xx_siso40_ht_cap,
 		       sizeof(wl18xx_siso40_ht_cap));
-	} else if (!strcmp(ht_mode_param, "mimo")) {
-		memcpy(&wl->ht_cap, &wl18xx_mimo_ht_cap,
-		       sizeof(wl18xx_mimo_ht_cap));
-	} else if (!strcmp(ht_mode_param, "siso20")) {
-		memcpy(&wl->ht_cap, &wl18xx_siso20_ht_cap,
+		memcpy(&wl->ht_cap[IEEE80211_BAND_5GHZ],
+		       &wl18xx_siso40_ht_cap,
+		       sizeof(wl18xx_siso40_ht_cap));
+	} else if (priv->conf.ht.mode == HT_MODE_MIMO) {
+		memcpy(&wl->ht_cap[IEEE80211_BAND_2GHZ],
+		       &wl18xx_mimo_ht_cap_2ghz,
+		       sizeof(wl18xx_mimo_ht_cap_2ghz));
+		memcpy(&wl->ht_cap[IEEE80211_BAND_5GHZ],
+		       &wl18xx_mimo_ht_cap_5ghz,
+		       sizeof(wl18xx_mimo_ht_cap_5ghz));
+	} else if (priv->conf.ht.mode == HT_MODE_SISO20) {
+		memcpy(&wl->ht_cap[IEEE80211_BAND_2GHZ],
+		       &wl18xx_siso20_ht_cap,
+		       sizeof(wl18xx_siso20_ht_cap));
+		memcpy(&wl->ht_cap[IEEE80211_BAND_5GHZ],
+		       &wl18xx_siso20_ht_cap,
 		       sizeof(wl18xx_siso20_ht_cap));
 	} else {
 		wl1271_error("invalid ht_mode '%s'", ht_mode_param);
+		ret = -EINVAL;
 		goto out_free;
 	}
 
-	wl18xx_conf_init(wl);
+	if (Psat == -1)
+		Psat = priv->conf.phy.Psat;
+	else
+		priv->conf.phy.Psat = Psat;
 
-	if (!strcmp(board_type_param, "fpga")) {
-		priv->board_type = BOARD_TYPE_FPGA_18XX;
-	} else if (!strcmp(board_type_param, "hdk")) {
-		priv->board_type = BOARD_TYPE_HDK_18XX;
-		/* HACK! Just for now we hardcode HDK to 0x06 */
-		priv->conf.phy.low_band_component_type = 0x06;
-	} else if (!strcmp(board_type_param, "dvp")) {
-		priv->board_type = BOARD_TYPE_DVP_18XX;
-	} else if (!strcmp(board_type_param, "evb")) {
-		priv->board_type = BOARD_TYPE_EVB_18XX;
-	} else if (!strcmp(board_type_param, "com8")) {
-		priv->board_type = BOARD_TYPE_COM8_18XX;
-		/* HACK! Just for now we hardcode COM8 to 0x06 */
-		priv->conf.phy.low_band_component_type = 0x06;
-	} else {
-		wl1271_error("invalid board type '%s'", board_type_param);
-		goto out_free;
-	}
+	if (low_power_val == 0xff)
+		low_power_val = priv->conf.phy.low_power_val;
+	else
+		priv->conf.phy.low_power_val = low_power_val;
 
-	/*
-	 * If the module param is not set, update it with the one from
-	 * conf.  If it is set, overwrite conf with it.
-	 */
-	if (low_band_component == -1)
-		low_band_component = priv->conf.phy.low_band_component;
+	if (med_power_val == 0xff)
+		med_power_val = priv->conf.phy.med_power_val;
 	else
-		priv->conf.phy.low_band_component = low_band_component;
-	if (low_band_component_type == -1)
-		low_band_component_type =
-			priv->conf.phy.low_band_component_type;
-	else
-		priv->conf.phy.low_band_component_type = 
-			low_band_component_type;
+		priv->conf.phy.med_power_val = med_power_val;
 
-	if (high_band_component == -1)
-		high_band_component = priv->conf.phy.high_band_component;
+	if (high_power_val == 0xff)
+		high_power_val = priv->conf.phy.high_power_val;
 	else
-		priv->conf.phy.high_band_component = high_band_component;
-	if (high_band_component_type == -1)
-		high_band_component_type =
-			priv->conf.phy.high_band_component_type;
-	else
-		priv->conf.phy.high_band_component_type = 
-			high_band_component_type;
-
-	if (pwr_limit_reference_11_abg == -1)
-		pwr_limit_reference_11_abg =
-			priv->conf.phy.pwr_limit_reference_11_abg;
-	else
-		priv->conf.phy.pwr_limit_reference_11_abg =
-			pwr_limit_reference_11_abg;
+		priv->conf.phy.high_power_val = high_power_val;
 
 	if (!checksum_param) {
 		wl18xx_ops.set_rx_csum = NULL;
@@ -1344,7 +1593,8 @@ int __devinit wl18xx_probe(struct platform_device *pdev)
 
 out_free:
 	wlcore_free_hw(wl);
-	return -EINVAL;
+out:
+	return ret;
 }
 
 static const struct platform_device_id wl18xx_id_table[] __devinitconst = {
@@ -1386,14 +1636,16 @@ module_param_named(board_type, board_type_param, charp, S_IRUSR);
 MODULE_PARM_DESC(board_type, "Board type: fpga, hdk (default), evb, com8 or "
 		 "dvp");
 
-module_param_named(dc2dc, dc2dc_param, bool, S_IRUSR);
-MODULE_PARM_DESC(dc2dc, "External DC2DC: boolean (defaults to false)");
+module_param_named(dc2dc, dc2dc_param, int, S_IRUSR);
+MODULE_PARM_DESC(dc2dc, "External DC2DC: u8 (defaults to 0)");
 
-module_param_named(n_antennas_2, n_antennas_2_param, uint, S_IRUSR);
-MODULE_PARM_DESC(n_antennas_2, "Number of installed 2.4GHz antennas: 1 (default) or 2");
+module_param_named(n_antennas_2, n_antennas_2_param, int, S_IRUSR);
+MODULE_PARM_DESC(n_antennas_2,
+		 "Number of installed 2.4GHz antennas: 1 (default) or 2");
 
-module_param_named(n_antennas_5, n_antennas_5_param, uint, S_IRUSR);
-MODULE_PARM_DESC(n_antennas_5, "Number of installed 5GHz antennas: 1 (default) or 2");
+module_param_named(n_antennas_5, n_antennas_5_param, int, S_IRUSR);
+MODULE_PARM_DESC(n_antennas_5,
+		 "Number of installed 5GHz antennas: 1 (default) or 2");
 
 module_param_named(checksum, checksum_param, bool, S_IRUSR);
 MODULE_PARM_DESC(checksum, "Enable TCP checksum: boolean (defaults to false)");
@@ -1401,26 +1653,55 @@ MODULE_PARM_DESC(checksum, "Enable TCP checksum: boolean (defaults to false)");
 module_param_named(enable_11a, enable_11a_param, bool, S_IRUSR);
 MODULE_PARM_DESC(enable_11a, "Enable 11a (5GHz): boolean (defaults to true)");
 
-module_param(low_band_component, uint, S_IRUSR);
+module_param_named(low_band_component, low_band_component_param, int,
+		   S_IRUSR);
 MODULE_PARM_DESC(low_band_component, "Low band component: u8 "
 		 "(default is 0x01)");
 
-module_param(low_band_component_type, uint, S_IRUSR);
+module_param_named(low_band_component_type, low_band_component_type_param,
+		   int, S_IRUSR);
 MODULE_PARM_DESC(low_band_component_type, "Low band component type: u8 "
 		 "(default is 0x05 or 0x06 depending on the board_type)");
 
-module_param(high_band_component, uint, S_IRUSR);
+module_param_named(high_band_component, high_band_component_param, int,
+		   S_IRUSR);
 MODULE_PARM_DESC(high_band_component, "High band component: u8, "
 		 "(default is 0x01)");
 
-module_param(high_band_component_type, uint, S_IRUSR);
+module_param_named(high_band_component_type, high_band_component_type_param,
+		   int, S_IRUSR);
 MODULE_PARM_DESC(high_band_component_type, "High band component type: u8 "
 		 "(default is 0x09)");
 
-module_param(pwr_limit_reference_11_abg, uint, S_IRUSR);
+module_param_named(pwr_limit_reference_11_abg,
+		   pwr_limit_reference_11_abg_param, int, S_IRUSR);
 MODULE_PARM_DESC(pwr_limit_reference_11_abg, "Power limit reference: u8 "
 		 "(default is 0xc8)");
 
+module_param(disable_yield_fix, bool, S_IRUSR);
+MODULE_PARM_DESC(disable_yield_fix, "disable yield issue workaround: bool "
+		 "(default is false)");
+
+module_param(enable_pad_last_frame, bool, S_IRUSR);
+MODULE_PARM_DESC(enable_pad_last_frame, "enable last sdio packet padding: "
+		"bool (default is true)");
+
+module_param(Psat, uint, S_IRUSR);
+MODULE_PARM_DESC(Psat, "Psat: u8 "
+		 "(default is 0)");
+
+module_param(low_power_val, uint, S_IRUSR);
+MODULE_PARM_DESC(low_power_val, "low_power_val: u8 "
+		 "(default is 0x00)");
+
+module_param(med_power_val, uint, S_IRUSR);
+MODULE_PARM_DESC(med_power_val, "med_power_val: u8 "
+		 "(default is 0x0a)");
+
+module_param(high_power_val, uint, S_IRUSR);
+MODULE_PARM_DESC(high_power_val, "high_power_val: u8 "
+		 "(default is 0x1e)");
+
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Luciano Coelho <coelho@ti.com>");
-MODULE_FIRMWARE(WL18XX_FW_NAME);
+MODULE_FIRMWARE(WL18XX_FW_PG1_NAME);

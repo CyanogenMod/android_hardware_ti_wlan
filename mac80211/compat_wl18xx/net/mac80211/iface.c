@@ -799,7 +799,7 @@ static void ieee80211_iface_work(struct work_struct *work)
 				__ieee80211_stop_rx_ba_session(
 					sta, tid, WLAN_BACK_RECIPIENT,
 					WLAN_REASON_QSTA_REQUIRE_SETUP,
-					true);
+					true, true);
 			}
 			mutex_unlock(&local->sta_mtx);
 		} else switch (sdata->vif.type) {

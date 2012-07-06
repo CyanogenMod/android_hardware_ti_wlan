@@ -57,7 +57,8 @@ static void ieee80211_free_tid_rx(struct rcu_head *h)
 }
 
 void ___ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
-				     u16 initiator, u16 reason, bool tx)
+				     u16 initiator, u16 reason, bool tx,
+				     bool call_drv)
 {
 	struct ieee80211_local *local = sta->local;
 	struct tid_ampdu_rx *tid_rx;
@@ -80,8 +81,9 @@ void ___ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
 	       (int)reason);
 #endif /* CONFIG_MAC80211_HT_DEBUG */
 
-	if (drv_ampdu_action(local, sta->sdata, IEEE80211_AMPDU_RX_STOP,
-			     &sta->sta, tid, NULL, 0))
+	if (call_drv && drv_ampdu_action(local, sta->sdata,
+					 IEEE80211_AMPDU_RX_STOP,
+					 &sta->sta, tid, NULL, 0))
 		printk(KERN_DEBUG "HW problem - can not stop rx "
 				"aggregation for tid %d\n", tid);
 
@@ -97,10 +99,12 @@ void ___ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
 }
 
 void __ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
-				    u16 initiator, u16 reason, bool tx)
+				    u16 initiator, u16 reason, bool tx,
+				    bool call_drv)
 {
 	mutex_lock(&sta->ampdu_mlme.mtx);
-	___ieee80211_stop_rx_ba_session(sta, tid, initiator, reason, tx);
+	___ieee80211_stop_rx_ba_session(sta, tid, initiator, reason, tx,
+					call_drv);
 	mutex_unlock(&sta->ampdu_mlme.mtx);
 }
 
@@ -277,7 +281,7 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 		/* delete existing Rx BA session on the same tid */
 		___ieee80211_stop_rx_ba_session(sta, tid, WLAN_BACK_RECIPIENT,
 						WLAN_STATUS_UNSPECIFIED_QOS,
-						false);
+						false, true);
 	}
 
 	/* prepare A-MPDU MLME for Rx aggregation */

@@ -56,6 +56,9 @@
 /* Used for management frames and dummy packets */
 #define WL1271_TID_MGMT 7
 
+/* Used with WLCORE_QUIRK_TX_PAD_LAST_FRAME devices */
+#define WLCORE_TX_CTRL_PADDED	BIT(7)
+
 struct wl127x_tx_mem {
 	/*
 	 * Number of extra memory blocks to allocate for this packet
@@ -98,6 +101,19 @@ struct wl18xx_tx_mem {
 	u8 reserved;
 } __packed;
 
+struct wlcore_tx_ctrl {
+	/*
+	 * Reserved for the total number of memory blocks allocated
+	 * by the host for this packet.
+	 */
+	u8 reserved;
+
+	/*
+	 * control bits
+	 */
+	u8 ctrl;
+} __packed;
+
 /*
  * On wl128x based devices, when TX packets are aggregated, each packet
  * size must be aligned to the SDIO block size. The maximum block size
@@ -111,9 +127,10 @@ struct wl1271_tx_hw_descr {
 	/* Length of packet in words, including descriptor+header+data */
 	__le16 length;
 	union {
-		struct wl127x_tx_mem wl127x_mem;
-		struct wl128x_tx_mem wl128x_mem;
-		struct wl18xx_tx_mem wl18xx_mem;
+		struct wl127x_tx_mem	wl127x_mem;
+		struct wl128x_tx_mem	wl128x_mem;
+		struct wl18xx_tx_mem	wl18xx_mem;
+		struct wlcore_tx_ctrl	wlcore_ctrl;
 	} __packed;
 	/* Device time (in us) when the packet arrived to the driver */
 	__le32 start_time;
@@ -184,6 +201,13 @@ struct wl1271_tx_hw_res_if {
 	struct wl1271_tx_hw_res_descr tx_results_queue[TX_HW_RESULT_QUEUE_LEN];
 } __packed;
 
+enum wlcore_queue_stop_reason {
+	WLCORE_QUEUE_STOP_REASON_WATERMARK,
+	WLCORE_QUEUE_STOP_REASON_FW_RESTART,
+	WLCORE_QUEUE_STOP_REASON_FLUSH,
+	WLCORE_QUEUE_STOP_REASON_SPARE_BLK, /* 18xx specific */
+};
+
 static inline int wl1271_tx_get_queue(int queue)
 {
 	switch (queue) {
@@ -230,7 +254,7 @@ void wl1271_tx_work(struct work_struct *work);
 void wl1271_tx_work_locked(struct wl1271 *wl);
 void wl1271_tx_complete(struct wl1271 *wl);
 void wl12xx_tx_reset_wlvif(struct wl1271 *wl, struct wl12xx_vif *wlvif);
-void wl12xx_tx_reset(struct wl1271 *wl, bool reset_tx_queues);
+void wl12xx_tx_reset(struct wl1271 *wl);
 void wl1271_tx_flush(struct wl1271 *wl);
 u8 wlcore_rate_to_idx(struct wl1271 *wl, u8 rate, enum ieee80211_band band);
 u32 wl1271_tx_enabled_rates_get(struct wl1271 *wl, u32 rate_set,
@@ -247,7 +271,19 @@ void wl12xx_rearm_rx_streaming(struct wl1271 *wl, unsigned long *active_hlids);
 unsigned int wlcore_calc_packet_alignment(struct wl1271 *wl,
 					  unsigned int packet_length);
 void wl1271_free_tx_id(struct wl1271 *wl, int id);
-
+void wlcore_stop_queue_locked(struct wl1271 *wl, u8 queue,
+			      enum wlcore_queue_stop_reason reason);
+void wlcore_stop_queue(struct wl1271 *wl, u8 queue,
+		       enum wlcore_queue_stop_reason reason);
+void wlcore_wake_queue(struct wl1271 *wl, u8 queue,
+		       enum wlcore_queue_stop_reason reason);
+void wlcore_stop_queues(struct wl1271 *wl,
+			enum wlcore_queue_stop_reason reason);
+void wlcore_wake_queues(struct wl1271 *wl,
+			enum wlcore_queue_stop_reason reason);
+void wlcore_reset_stopped_queues(struct wl1271 *wl);
+bool wlcore_is_queue_stopped(struct wl1271 *wl, u8 queue,
+			     enum wlcore_queue_stop_reason reason);
 /* from main.c */
 void wl1271_free_sta(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 hlid);
 

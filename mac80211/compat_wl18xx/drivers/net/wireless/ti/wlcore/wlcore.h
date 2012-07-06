@@ -74,6 +74,11 @@ struct wlcore_ops {
 	int (*debugfs_init)(struct wl1271 *wl, struct dentry *rootdir);
 	int (*handle_static_data)(struct wl1271 *wl,
 				  struct wl1271_static_data *static_data);
+	int (*get_spare_blocks)(struct wl1271 *wl, bool is_gem);
+	int (*set_key)(struct wl1271 *wl, enum set_key_cmd cmd,
+		       struct ieee80211_vif *vif,
+		       struct ieee80211_sta *sta,
+		       struct ieee80211_key_conf *key_conf);
 };
 
 enum wlcore_partitions {
@@ -130,6 +135,14 @@ struct wl1271_stats {
 
 	unsigned int retry_count;
 	unsigned int excessive_retries;
+};
+
+struct wlcore_aggr_reason {
+	u32 total;
+	u32 buffer_full;
+	u32 fw_buffer_full;
+	u32 other;
+	u32 no_data;
 };
 
 struct wl1271 {
@@ -207,7 +220,7 @@ struct wl1271 {
 
 	/* Frames scheduled for transmission, not handled yet */
 	int tx_queue_count[NUM_TX_QUEUES];
-	long stopped_queues_map;
+	unsigned long queue_stop_reasons[NUM_TX_QUEUES];
 
 	/* Frames received, not handled yet by mac80211 */
 	struct sk_buff_head deferred_rx_queue;
@@ -366,10 +379,6 @@ struct wl1271 {
 	/* number of RX descriptors the HW supports. */
 	u32 num_rx_desc;
 
-	/* spare Tx blocks for normal/GEM operating modes */
-	u32 normal_tx_spare;
-	u32 gem_tx_spare;
-
 	/* translate HW Tx rates to standard rate-indices */
 	const u8 **band_rate_to_idx;
 
@@ -380,7 +389,7 @@ struct wl1271 {
 	u8 hw_min_ht_rate;
 
 	/* HW HT (11n) capabilities */
-	struct ieee80211_sta_ht_cap ht_cap;
+	struct ieee80211_sta_ht_cap ht_cap[IEEE80211_NUM_BANDS];
 
 	/* size of the private FW status data */
 	size_t fw_status_priv_len;
@@ -390,12 +399,18 @@ struct wl1271 {
 
 	/* the current channel type */
 	enum nl80211_channel_type channel_type;
+
+	struct wlcore_aggr_reason aggr_pkts_reason[WLCORE_AGGR_MAX_PACKETS];
 };
 
 int __devinit wlcore_probe(struct wl1271 *wl, struct platform_device *pdev);
 int __devexit wlcore_remove(struct platform_device *pdev);
 struct ieee80211_hw *wlcore_alloc_hw(size_t priv_size);
 int wlcore_free_hw(struct wl1271 *wl);
+int wlcore_set_key(struct wl1271 *wl, enum set_key_cmd cmd,
+		   struct ieee80211_vif *vif,
+		   struct ieee80211_sta *sta,
+		   struct ieee80211_key_conf *key_conf);
 
 /* Firmware image load chunk size */
 #define CHUNK_SIZE	16384
@@ -419,6 +434,12 @@ int wlcore_free_hw(struct wl1271 *wl);
 
 /* Some firmwares may not support ELP */
 #define WLCORE_QUIRK_NO_ELP			BIT(6)
+
+/* pad only the last frame in the aggregate buffer */
+#define WLCORE_QUIRK_TX_PAD_LAST_FRAME		BIT(7)
+
+/* extra header space is required for TKIP */
+#define WLCORE_QUIRK_TKIP_HEADER_SPACE		BIT(8)
 
 /* TODO: move to the lower drivers when all usages are abstracted */
 #define CHIP_ID_1271_PG10              (0x4030101)

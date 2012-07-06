@@ -55,10 +55,7 @@ struct ieee80211_local;
 #define TU_TO_EXP_TIME(x)	(jiffies + usecs_to_jiffies((x) * 1024))
 
 #define IEEE80211_DEFAULT_UAPSD_QUEUES \
-	(IEEE80211_WMM_IE_STA_QOSINFO_AC_BK |	\
-	 IEEE80211_WMM_IE_STA_QOSINFO_AC_BE |	\
-	 IEEE80211_WMM_IE_STA_QOSINFO_AC_VI |	\
-	 IEEE80211_WMM_IE_STA_QOSINFO_AC_VO)
+	 IEEE80211_WMM_IE_STA_QOSINFO_AC_VO
 
 #define IEEE80211_DEFAULT_MAX_SP_LEN		\
 	IEEE80211_WMM_IE_STA_QOSINFO_SP_ALL
@@ -830,6 +827,9 @@ struct ieee80211_local {
 	/* device is started */
 	bool started;
 
+	/* device is during a HW reconfig */
+	bool in_reconfig;
+
 	/* wowlan is enabled -- don't reconfig on resume */
 	bool wowlan;
 
@@ -1275,10 +1275,13 @@ int ieee80211_send_smps_action(struct ieee80211_sub_if_data *sdata,
 void ieee80211_request_smps_work(struct work_struct *work);
 
 void ___ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
-				     u16 initiator, u16 reason, bool stop);
+				     u16 initiator, u16 reason, bool stop,
+				     bool call_drv);
 void __ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
-				    u16 initiator, u16 reason, bool stop);
-void ieee80211_sta_tear_down_BA_sessions(struct sta_info *sta, bool tx);
+				    u16 initiator, u16 reason, bool stop,
+				    bool call_drv);
+void ieee80211_sta_tear_down_BA_sessions(struct sta_info *sta, bool tx,
+					 bool call_drv);
 void ieee80211_process_delba(struct ieee80211_sub_if_data *sdata,
 			     struct sta_info *sta,
 			     struct ieee80211_mgmt *mgmt, size_t len);
@@ -1293,10 +1296,10 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 
 int __ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
 				   enum ieee80211_back_parties initiator,
-				   bool tx);
+				   bool tx, bool call_drv);
 int ___ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
 				    enum ieee80211_back_parties initiator,
-				    bool tx);
+				    bool tx, bool call_drv);
 void ieee80211_start_tx_ba_cb(struct ieee80211_vif *vif, u8 *ra, u16 tid);
 void ieee80211_stop_tx_ba_cb(struct ieee80211_vif *vif, u8 *ra, u8 tid);
 void ieee80211_ba_session_work(struct work_struct *work);
