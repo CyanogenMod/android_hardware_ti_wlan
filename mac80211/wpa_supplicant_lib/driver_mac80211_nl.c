@@ -97,7 +97,7 @@ static int wpa_driver_set_power_save(void *priv, int state)
 	if (!msg)
 		return -1;
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(drv->nl80211), 0, 0,
+	genlmsg_put(msg, 0, 0, drv->global->nl80211_id, 0, 0,
 		    NL80211_CMD_SET_POWER_SAVE, 0);
 
 	if (state == WPA_PS_ENABLED)
@@ -170,7 +170,7 @@ static int nl80211_self_filter_get_pattern_handler(u8 *buf, int buflen, void *ar
 	int ret;
 	struct i802_bss *bss = (struct i802_bss *)arg;
 
-	ret = linux_get_ifhwaddr(bss->drv->ioctl_sock,
+	ret = linux_get_ifhwaddr(bss->drv->global->ioctl_sock,
 				 bss->ifname, buf);
 	if (ret) {
 		wpa_printf(MSG_ERROR, "Failed to get own HW addr (%d)", ret);
@@ -260,6 +260,7 @@ static struct rx_filter rx_filters[] = {
 static int nl80211_set_wowlan_triggers(struct i802_bss *bss, int enable)
 {
 	struct nl_msg *msg, *pats = NULL;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct nlattr *wowtrig, *pat;
 	int i, ret = -1;
 	int filters;
@@ -270,7 +271,7 @@ static int nl80211_set_wowlan_triggers(struct i802_bss *bss, int enable)
 	if (!msg)
 		return -ENOMEM;
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(bss->drv->nl80211), 0,
+	genlmsg_put(msg, 0, 0, drv->global->nl80211_id, 0,
 		    0, NL80211_CMD_SET_WOWLAN, 0);
 
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, bss->drv->first_bss.ifindex);
@@ -379,7 +380,7 @@ static int nl80211_toggle_dropbcast(int enable)
 	snprintf(filename, sizeof(filename) - 1,
 		 "/sys/bus/platform/devices/wl12xx/drop_bcast");
 	f = fopen(filename, "w");
-	if (f < 0) {
+	if (f == NULL) {
 		wpa_printf(MSG_DEBUG, "Could not open file %s: %s",
 			   filename, strerror(errno));
 		return -1;
@@ -435,10 +436,10 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 	int ret = 0;
 
 	if (os_strcasecmp(cmd, "STOP") == 0) {
-		linux_set_iface_flags(drv->ioctl_sock, bss->ifname, 0);
+		linux_set_iface_flags(drv->global->ioctl_sock, bss->ifname, 0);
 		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "STOPPED");
 	} else if (os_strcasecmp(cmd, "START") == 0) {
-		linux_set_iface_flags(drv->ioctl_sock, bss->ifname, 1);
+		linux_set_iface_flags(drv->global->ioctl_sock, bss->ifname, 1);
 		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "STARTED");
 	} else if (os_strcasecmp(cmd, "RELOAD") == 0) {
 		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
@@ -467,7 +468,7 @@ int wpa_driver_nl80211_driver_cmd(void *priv, char *cmd, char *buf,
 	} else if (os_strcasecmp(cmd, "MACADDR") == 0) {
 		u8 macaddr[ETH_ALEN] = {};
 
-		ret = linux_get_ifhwaddr(drv->ioctl_sock, bss->ifname, macaddr);
+		ret = linux_get_ifhwaddr(drv->global->ioctl_sock, bss->ifname, macaddr);
 		if (!ret)
 			ret = os_snprintf(buf, buf_len,
 					  "Macaddr = " MACSTR "\n", MAC2STR(macaddr));
