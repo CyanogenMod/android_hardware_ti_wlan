@@ -105,6 +105,7 @@ LOCAL_SHARED_LIBRARIES = \
 	libwpa_client
 endif
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE:= wlan_cu
 
 include $(BUILD_EXECUTABLE)
