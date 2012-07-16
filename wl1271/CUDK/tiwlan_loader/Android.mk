@@ -51,6 +51,7 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_SHARED_LIBRARIES := \
 	libc libcutils libhardware_legacy
 
+LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE:= wlan_loader
 
 include $(BUILD_EXECUTABLE)
