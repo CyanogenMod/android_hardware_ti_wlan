@@ -375,15 +375,13 @@ static int wl1271_cmd_wait_for_event_or_timeout(struct wl1271 *wl, u32 mask,
 		msleep(1);
 
 		/* read from both event fields */
-		ret = wl1271_read(wl, wl->mbox_ptr[0], &events_vector,
-				  sizeof(events_vector), false);
+		ret = wl1271_read32(wl, wl->mbox_ptr[0], &events_vector);
 		if (ret < 0)
 			return ret;
 
 		event = events_vector & mask;
 
-		ret = wl1271_read(wl, wl->mbox_ptr[1], &events_vector,
-				  sizeof(events_vector), false);
+		ret = wl1271_read32(wl, wl->mbox_ptr[1], &events_vector);
 		if (ret < 0)
 			return ret;
 
@@ -1891,10 +1889,13 @@ out:
 
 int wl12xx_cmd_channel_switch(struct wl1271 *wl,
 			      struct wl12xx_vif *wlvif,
-			      struct ieee80211_channel_switch *ch_switch)
+			      struct ieee80211_channel *channel,
+			      u8 count, bool block_tx,
+			      bool post_switch_block_tx)
 {
 	struct wl12xx_cmd_channel_switch *cmd;
 	int ret;
+	bool is_ap = (wlvif->bss_type == BSS_TYPE_AP_BSS);
 
 	wl1271_debug(DEBUG_ACX, "cmd channel switch");
 
@@ -1904,13 +1905,21 @@ int wl12xx_cmd_channel_switch(struct wl1271 *wl,
 		goto out;
 	}
 
-	cmd->role_id = wlvif->role_id;
-	cmd->channel = ch_switch->channel->hw_value;
-	cmd->switch_time = ch_switch->count;
-	cmd->stop_tx = ch_switch->block_tx;
+	if (channel->flags & IEEE80211_CHAN_RADAR) {
+		wl1271_error("can't switch to radar channel,"
+			     "dfs not supported");
+		ret = -EINVAL;
+		goto out;
+	}
 
-	/* FIXME: control from mac80211 in the future */
-	cmd->post_switch_tx_disable = 0;  /* Enable TX on the target channel */
+	cmd->role_id = wlvif->role_id;
+	cmd->channel = channel->hw_value;
+	cmd->switch_time = count;
+	cmd->stop_tx = block_tx;
+	cmd->post_switch_tx_disable = post_switch_block_tx;
+
+	if (is_ap)
+		wl->ch_sw_freq = channel->center_freq;
 
 	ret = wl1271_cmd_send(wl, CMD_CHANNEL_SWITCH, cmd, sizeof(*cmd), 0);
 	if (ret < 0) {
@@ -1962,16 +1971,28 @@ int wl12xx_start_dev(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 		      wlvif->bss_type == BSS_TYPE_IBSS)))
 		return -EINVAL;
 
-	ret = wl12xx_cmd_role_enable(wl,
-				     wl12xx_wlvif_to_vif(wlvif)->addr,
-				     WL1271_ROLE_DEVICE,
-				     &wlvif->dev_role_id);
-	if (ret < 0)
-		goto out;
+	/* the dev role is already started for p2p mgmt interfaces */
+	if (!wl12xx_wlvif_to_vif(wlvif)->dummy_p2p) {
+		ret = wl12xx_cmd_role_enable(wl,
+					     wl12xx_wlvif_to_vif(wlvif)->addr,
+					     WL1271_ROLE_DEVICE,
+					     &wlvif->dev_role_id);
+		if (ret < 0)
+			goto out;
+	}
 
 	ret = wl12xx_cmd_role_start_dev(wl, wlvif);
 	if (ret < 0)
 		goto out_disable;
+
+	/*
+	 * don't ROC if we are on the SR FW in the dummy p2p interface,
+	 * and there's already an existing interface on the same channel
+	 */
+	if (wl->fw_type == WL12XX_FW_TYPE_NORMAL &&
+	    wl12xx_wlvif_to_vif(wlvif)->dummy_p2p &&
+	    is_p2p_mgmt_on_existing_chan(wl))
+		goto out;
 
 	ret = wl12xx_roc(wl, wlvif, wlvif->dev_role_id);
 	if (ret < 0)
@@ -1982,7 +2003,8 @@ int wl12xx_start_dev(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 out_stop:
 	wl12xx_cmd_role_stop_dev(wl, wlvif);
 out_disable:
-	wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
+	if (!wl12xx_wlvif_to_vif(wlvif)->dummy_p2p)
+		wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
 out:
 	return ret;
 }
@@ -2013,9 +2035,45 @@ int wl12xx_stop_dev(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	if (ret < 0)
 		goto out;
 
-	ret = wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
-	if (ret < 0)
+	if (!wl12xx_wlvif_to_vif(wlvif)->dummy_p2p) {
+		ret = wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
+		if (ret < 0)
+			goto out;
+	}
+
+out:
+	return ret;
+}
+
+
+/* generic firmware configuration - used as a feature dumpster */
+int wl12xx_cmd_generic_cfg(struct wl1271 *wl, struct wl12xx_vif *wlvif,
+			   u8 index, bool enable, u8 value)
+{
+	struct wl12xx_cmd_generic_cfg *cmd;
+	int ret;
+
+	wl1271_debug(DEBUG_CMD, "cmd generic cfg (%d %d %d)",
+		     index, enable, value);
+
+	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
+	if (!cmd) {
+		ret = -ENOMEM;
 		goto out;
+	}
+	cmd->role_id    = wlvif ? wlvif->role_id : WL12XX_INVALID_ROLE_ID;
+	cmd->index      = index;
+	cmd->status     = (u8) enable;
+	cmd->value      = value;
+
+	ret = wl1271_cmd_send(wl, CMD_GENERIC_CFG, cmd, sizeof(*cmd), 0);
+	if (ret < 0) {
+		wl1271_error("failed to send generic cfg command");
+		goto out_free;
+	}
+
+out_free:
+	kfree(cmd);
 
 out:
 	return ret;

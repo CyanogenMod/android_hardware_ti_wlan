@@ -302,13 +302,6 @@ struct wl1271_link {
 	u8 ba_bitmap;
 };
 
-struct ap_peers {
-	struct list_head list;
-	struct ieee80211_sta sta;
-	struct ieee80211_vif *vif;
-	struct ieee80211_hw *hw;
-};
-
 #define WL1271_MAX_RX_FILTERS 7
 #define WL1271_RX_FILTER_MAX_FIELDS 8
 
@@ -440,7 +433,7 @@ struct wl1271 {
 	u32 rx_counter;
 
 	/* Rx memory pool address */
-	struct wl1271_rx_mem_pool_addr rx_mem_pool_addr;
+	struct wl1271_rx_mem_pool_addr *rx_mem_pool_addr;
 
 	/* Intermediate buffer, used for packet aggregation */
 	u8 *aggr_buf;
@@ -460,6 +453,21 @@ struct wl1271 {
 	/* Sysfs FW log entry readers wait queue */
 	wait_queue_head_t fwlog_waitq;
 
+	/* Core Dump memory map */
+	struct mem_partition *core_dump_mem_area;
+
+	/* Core Dump buffer */
+	u8 *core_dump;
+
+	/* Number of valid bytes in the core dump buffer */
+	size_t core_dump_size;
+
+	/* Core dump available */
+	bool core_dump_avail;
+
+	/* Sysfs core_dump entry readers wait queue */
+	wait_queue_head_t core_dump_waitq;
+
 	/* Hardware recovery work */
 	struct work_struct recovery_work;
 	/*
@@ -469,6 +477,9 @@ struct wl1271 {
 	 */
 	struct delayed_work delayed_recovery;
 	bool force_mr_fw;
+
+	/* Pointer that holds DMA-friendly block for the mailbox */
+	struct event_mailbox *mbox;
 
 	/* The mbox event mask */
 	u32 event_mask;
@@ -500,7 +511,7 @@ struct wl1271 {
 
 	struct wl1271_stats stats;
 
-	__le32 buffer_32;
+	__le32 *buffer_32;
 	u32 buffer_cmd;
 	u32 buffer_busyword[WL1271_BUSY_WORD_CNT];
 
@@ -564,8 +575,8 @@ struct wl1271 {
 	/* RX Data filter rule status - enabled/disabled */
 	bool rx_data_filters_status[WL1271_MAX_RX_FILTERS];
 
-	/* AP's peers */
-	struct list_head peers_list;
+	/* AP-mode - the frequency driver switching to in AP/GO */
+	u16 ch_sw_freq;
 
 	bool watchdog_recovery;
 
@@ -574,6 +585,12 @@ struct wl1271 {
 
 	/* mutex for protecting the tx_flush function */
 	struct mutex flush_mutex;
+
+	/* Short GI is disabled in the FW - For certification tests purposes */
+	bool disable_sgi;
+
+	/* Patterns configured with set_rx_filters */
+	struct cfg80211_wowlan *wowlan_patterns;
 };
 
 struct wl1271_station {
@@ -745,14 +762,10 @@ struct wl12xx_rx_data_filter *wl1271_rx_filter_alloc(void);
 int wl1271_rx_filter_get_fields_size(struct wl12xx_rx_data_filter *filter);
 void wl1271_rx_filter_flatten_fields(struct wl12xx_rx_data_filter *filter,
 				     u8 *buf);
-int wl1271_op_sta_add_locked(struct ieee80211_hw *hw,
-			     struct ieee80211_vif *vif,
-			     struct ieee80211_sta *sta);
-void wl12xx_update_sta_state(struct wl1271 *wl,
-			     struct ieee80211_sta *sta,
-			     enum ieee80211_sta_state state);
 int wl12xx_init_pll_clock(struct wl1271 *wl, int *selected_clock);
 bool wl12xx_change_fw_if_needed(struct wl1271 *wl);
+bool is_p2p_mgmt_on_existing_chan(struct wl1271 *wl);
+u8 wl12xx_open_count(struct wl1271 *wl);
 
 #define JOIN_TIMEOUT 5000 /* 5000 milliseconds to join */
 

@@ -93,9 +93,11 @@ out:
 static int wl1271_get_scan_channels(struct wl1271 *wl,
 				    struct cfg80211_scan_request *req,
 				    struct basic_scan_channel_params *channels,
-				    enum ieee80211_band band, bool passive)
+				    enum ieee80211_band band, bool passive,
+				    bool active_vif_exists)
 {
 	struct conf_scan_settings *c = &wl->conf.scan;
+	u32 min_dwell_time_active, max_dwell_time_active;
 	int i, j;
 	u32 flags;
 
@@ -128,19 +130,27 @@ static int wl1271_get_scan_channels(struct wl1271 *wl,
 				     req->channels[i]->beacon_found);
 
 			if (!passive) {
+				min_dwell_time_active = active_vif_exists ?
+					c->min_dwell_time_active_conc :
+					c->min_dwell_time_active;
+
+				max_dwell_time_active = active_vif_exists ?
+					c->max_dwell_time_active_conc :
+					c->max_dwell_time_active;
+
 				if (req->min_dwell)
 					channels[j].min_duration =
 						req->min_dwell;
 				else
 					channels[j].min_duration =
-					  cpu_to_le32(c->min_dwell_time_active);
+					  cpu_to_le32(min_dwell_time_active);
 
 				if (req->max_dwell)
 					channels[j].max_duration =
 						req->max_dwell;
 				else
 					channels[j].max_duration =
-					  cpu_to_le32(c->max_dwell_time_active);
+					  cpu_to_le32(max_dwell_time_active);
 			} else {
 				if ((req->min_dwell) &&
 					(wl->scan.req->n_ssids == 0))
@@ -214,8 +224,10 @@ static int wl1271_scan_send(struct wl1271 *wl, struct ieee80211_vif *vif,
 	cmd->params.scan_options = cpu_to_le16(scan_options);
 
 	cmd->params.n_ch = wl1271_get_scan_channels(wl, wl->scan.req,
-						    cmd->channels,
-						    band, passive);
+					    cmd->channels,
+					    band, passive,
+					    !!wl12xx_open_count(wl));
+
 	if (cmd->params.n_ch == 0) {
 		ret = WL1271_NOTHING_TO_SCAN;
 		goto out;

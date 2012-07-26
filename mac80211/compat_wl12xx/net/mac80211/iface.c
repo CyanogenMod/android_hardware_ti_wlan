@@ -279,6 +279,7 @@ static int ieee80211_do_open(struct net_device *dev, bool coming_up)
 			res = drv_add_interface(local, sdata);
 			if (res)
 				goto err_stop;
+			drv_set_rx_filters(local, local->wowlan_patterns);
 		}
 
 		if (sdata->vif.type == NL80211_IFTYPE_AP) {
@@ -882,10 +883,14 @@ static void ieee80211_setup_sdata(struct ieee80211_sub_if_data *sdata,
 		type = NL80211_IFTYPE_AP;
 		sdata->vif.type = type;
 		sdata->vif.p2p = true;
+		INIT_WORK(&sdata->u.ap.ap_ch_sw_work,
+			ieee80211_ap_ch_switch_done_work);
 		/* fall through */
 	case NL80211_IFTYPE_AP:
 		skb_queue_head_init(&sdata->u.ap.ps_bc_buf);
 		INIT_LIST_HEAD(&sdata->u.ap.vlans);
+		INIT_WORK(&sdata->u.ap.ap_ch_sw_work,
+			ieee80211_ap_ch_switch_done_work);
 		break;
 	case NL80211_IFTYPE_P2P_CLIENT:
 		type = NL80211_IFTYPE_STATION;
@@ -1180,6 +1185,10 @@ int ieee80211_if_add(struct ieee80211_local *local, const char *name,
 	ndev->ieee80211_ptr = &sdata->wdev;
 	memcpy(sdata->vif.addr, ndev->dev_addr, ETH_ALEN);
 	memcpy(sdata->name, ndev->name, IFNAMSIZ);
+
+	/* hack for android */
+	if (0 == strcmp(sdata->name, "p2p0"))
+		sdata->vif.dummy_p2p = true;
 
 	/* initialise type-independent data */
 	sdata->wdev.wiphy = local->hw.wiphy;

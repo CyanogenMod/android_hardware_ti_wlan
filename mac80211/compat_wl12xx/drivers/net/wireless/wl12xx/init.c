@@ -594,6 +594,10 @@ int wl1271_init_vif_specific(struct wl1271 *wl, struct ieee80211_vif *vif)
 			ret = wl1271_acx_sleep_auth(wl, WL1271_PSM_CAM);
 			if (ret < 0)
 				return ret;
+
+			ret = wl1271_configure_wowlan(wl, NULL);
+			if (ret < 0)
+				return ret;
 		} else if (!wl->sta_count) {
 			/* Configure for ELP power saving */
 			ret = wl1271_acx_sleep_auth(wl, WL1271_PSM_ELP);

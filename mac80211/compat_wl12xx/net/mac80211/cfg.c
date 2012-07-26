@@ -1907,12 +1907,20 @@ int ieee80211_set_rx_filters(struct wiphy *wiphy,
 			     struct cfg80211_wowlan *wowlan)
 {
 	struct ieee80211_local *local = wiphy_priv(wiphy);
+	int ret = 0;
 
 	if (!(local->hw.flags & IEEE80211_HW_SUPPORTS_RX_FILTERS))
 		return 0;
 
+	mutex_lock(&local->mtx);
+	ret = drv_set_rx_filters(local, wowlan);
+	if (ret < 0)
+		goto unlock;
+
 	local->wowlan_patterns = wowlan;
-	return drv_set_rx_filters(local, wowlan);
+unlock:
+	mutex_unlock(&local->mtx);
+	return ret;
 }
 
 static int ieee80211_set_cqm_rssi_config(struct wiphy *wiphy,
@@ -2088,6 +2096,33 @@ ieee80211_offchan_tx_done(struct ieee80211_work *wk, struct sk_buff *skb)
 					wk->ie, wk->ie_len, false, GFP_KERNEL);
 
 	return WORK_DONE_DESTROY;
+}
+
+static int
+ieee80211_ap_process_chanswitch(struct wiphy *wiphy,
+				struct net_device *dev,
+				struct ieee80211_ap_ch_switch *ap_ch_switch)
+{
+	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_local *local = sdata->local;
+
+	if (!local->ops->channel_switch)
+		return -EOPNOTSUPP;
+
+	if (!ap_ch_switch || !ap_ch_switch->channel)
+		return -EINVAL;
+
+	if (local->ap_cs_channel)
+		return -EBUSY;
+
+	local->ap_cs_channel = ap_ch_switch->channel;
+	local->ap_cs_type = ap_ch_switch->channel_type;
+
+	ieee80211_stop_queues_by_reason(&local->hw,
+					IEEE80211_QUEUE_STOP_REASON_CH_SW);
+
+	drv_ap_channel_switch(local, ap_ch_switch);
+	return 0;
 }
 
 static int ieee80211_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
@@ -2817,4 +2852,5 @@ struct cfg80211_ops mac80211_config_ops = {
 	.get_channel = ieee80211_wiphy_get_channel,
 	.set_noack_map = ieee80211_set_noack_map,
 	.set_rx_filters = ieee80211_set_rx_filters,
+	.ap_channel_switch = ieee80211_ap_process_chanswitch,
 };

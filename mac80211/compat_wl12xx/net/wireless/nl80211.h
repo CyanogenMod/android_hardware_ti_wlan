@@ -107,6 +107,11 @@ nl80211_send_cqm_rssi_notify(struct cfg80211_registered_device *rdev,
 			     struct net_device *netdev,
 			     enum nl80211_cqm_rssi_threshold_event rssi_event,
 			     gfp_t gfp);
+
+void nl80211_req_channel_switch(struct cfg80211_registered_device *rdev,
+				struct ieee80211_channel *chan,
+				struct net_device *netdev, gfp_t gfp);
+
 void
 nl80211_send_cqm_pktloss_notify(struct cfg80211_registered_device *rdev,
 				struct net_device *netdev, const u8 *peer,
@@ -119,6 +124,10 @@ void nl80211_gtk_rekey_notify(struct cfg80211_registered_device *rdev,
 void nl80211_pmksa_candidate_notify(struct cfg80211_registered_device *rdev,
 				    struct net_device *netdev, int index,
 				    const u8 *bssid, bool preauth, gfp_t gfp);
+
+void nl80211_ch_switch_notify(struct cfg80211_registered_device *rdev,
+			      struct net_device *dev, int freq,
+			      enum nl80211_channel_type type, gfp_t gfp);
 
 bool nl80211_unexpected_frame(struct net_device *dev,
 			      const u8 *addr, gfp_t gfp);

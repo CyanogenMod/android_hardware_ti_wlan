@@ -302,9 +302,18 @@ static ssize_t start_recovery_write(struct file *file,
 				    size_t count, loff_t *ppos)
 {
 	struct wl1271 *wl = file->private_data;
+	int ret;
 
 	mutex_lock(&wl->mutex);
+
+	/* Call ELP wakeup to allow general recovery processing */
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		wl1271_error(
+		    "start_recovery_write: FAILED wl1271_ps_elp_wakeup");
+
 	wl12xx_queue_recovery_work(wl);
+
 	mutex_unlock(&wl->mutex);
 
 	return count;
@@ -345,7 +354,7 @@ static ssize_t dynamic_ps_timeout_write(struct file *file,
 		wl1271_warning("dyanmic_ps_timeout is not in valid range");
 		return -ERANGE;
 	}
-	
+
 	mutex_lock(&wl->mutex);
 
 	wl->conf.conn.dynamic_ps_timeout = value;
@@ -454,7 +463,7 @@ static ssize_t vif_count_read(struct file *file, char __user *user_buf,
 
 	return wl1271_format_buffer(user_buf, count,
 				    ppos, "%d\n",
-				    ieee80211_started_vifs_count(wl->hw));
+				    wl12xx_open_count(wl));
 }
 
 static const struct file_operations vif_count_ops = {
@@ -1078,6 +1087,82 @@ static const struct file_operations beacon_filtering_ops = {
 	.llseek = default_llseek,
 };
 
+static ssize_t ch_sw_debug_read(struct file *file, char __user *user_buf,
+				size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	struct wl12xx_vif *wlvif;
+	u16 current_ch = 0;
+
+
+	wl12xx_for_each_wlvif_ap(wl, wlvif) {
+	    current_ch = wlvif->channel;
+	    break;
+	}
+
+	return wl1271_format_buffer(user_buf, count, ppos,
+				    "current channel=%d\n", current_ch);
+}
+
+static ssize_t ch_sw_debug_write(struct file *file,
+				 const char __user *user_buf,
+				 size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	int ret;
+	struct ieee80211_vif *vif;
+	struct wl12xx_vif *wlvif;
+	unsigned long value;
+
+	ret = kstrtoul_from_user(user_buf, count, 10, &value);
+	if (ret < 0) {
+		wl1271_warning("illegal value in channel switch request!");
+		return -EINVAL;
+	}
+
+	mutex_lock(&wl->mutex);
+
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		goto out;
+
+	wl12xx_for_each_wlvif_ap(wl, wlvif) {
+		struct ieee80211_channel *channel;
+
+		if ((wlvif->band == IEEE80211_BAND_2GHZ) &&
+			((value > 2484) || (value < 2412))) {
+			wl1271_warning("illegal freq value for BG band!");
+			break;
+		} else if ((wlvif->band == IEEE80211_BAND_5GHZ) &&
+			((value > 5825) || (value < 4915))) {
+			wl1271_warning("illegal freq value for A band!");
+			break;
+		}
+
+		channel = ieee80211_get_channel(wl->hw->wiphy, value);
+		if (channel) {
+			wl1271_debug(DEBUG_AP, "Req. to switch to %d freq",
+				channel->center_freq);
+
+			vif = wl12xx_wlvif_to_vif(wlvif);
+			ieee80211_req_channel_switch(vif, channel, GFP_KERNEL);
+		} else
+			wl1271_debug(DEBUG_AP, "illegal chan freq");
+	}
+
+	wl1271_ps_elp_sleep(wl);
+out:
+	mutex_unlock(&wl->mutex);
+	return count;
+}
+
+static const struct file_operations ch_sw_debug_ops = {
+	.read = ch_sw_debug_read,
+	.write = ch_sw_debug_write,
+	.open = wl1271_open_file_generic,
+	.llseek = default_llseek,
+};
+
 static int wl1271_debugfs_add_files(struct wl1271 *wl,
 				     struct dentry *rootdir)
 {
@@ -1198,6 +1283,7 @@ static int wl1271_debugfs_add_files(struct wl1271 *wl,
 	DEBUGFS_ADD(split_scan_timeout, rootdir);
 	DEBUGFS_ADD(elp_timeout, rootdir);
 	DEBUGFS_ADD(vif_count, rootdir);
+	DEBUGFS_ADD(ch_sw_debug, rootdir);
 
 	streaming = debugfs_create_dir("rx_streaming", rootdir);
 	if (!streaming || IS_ERR(streaming))

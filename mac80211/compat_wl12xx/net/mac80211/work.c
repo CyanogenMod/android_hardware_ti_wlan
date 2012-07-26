@@ -892,6 +892,67 @@ static void ieee80211_work_timer(unsigned long data)
 	ieee80211_queue_work(&local->hw, &local->work_work);
 }
 
+static void ieee80211_sw_ap_ch_if_needed(struct ieee80211_local *local)
+{
+	struct ieee80211_work *wk, *tmp;
+	struct ieee80211_sub_if_data *sdata = NULL, *ap_sdata = NULL;
+	struct ieee80211_channel *ap_ch_sw_req = NULL;
+	DECLARE_COMPLETION_ONSTACK(compl);
+	unsigned int ap_cs_grace_period = 0;
+	unsigned long csr_timeout = 0;
+
+	mutex_lock(&local->mtx);
+	list_for_each_entry(sdata, &local->interfaces, list) {
+		if ((sdata->vif.type == NL80211_IFTYPE_AP) &&
+		    ieee80211_sdata_running(sdata) &&
+		    (sdata->vif.bss_conf.enable_beacon)) {
+			ap_sdata = sdata;
+			break;
+		}
+	}
+
+	if (ap_sdata) {
+		list_for_each_entry_safe(wk, tmp, &local->work_list, list) {
+			if (((wk->sdata->vif.type == NL80211_IFTYPE_STATION) &&
+			    (wk->type == IEEE80211_WORK_AUTH)) &&
+			    ieee80211_sdata_running(wk->sdata) &&
+			    (local->oper_channel != wk->chan)) {
+				/* request channel switch for the AP role */
+				ap_ch_sw_req = wk->chan;
+				break;
+			}
+		}
+	}
+
+	if (ap_ch_sw_req) {
+		struct ieee80211_bss_conf *bss_conf = &ap_sdata->vif.bss_conf;
+		printk(KERN_DEBUG "%s: request %s to switch to channel %d\n",
+		       wk->sdata->name, ap_sdata->name, ap_ch_sw_req->hw_value);
+		ieee80211_req_channel_switch(&ap_sdata->vif, ap_ch_sw_req,
+					     GFP_KERNEL);
+		csr_timeout = msecs_to_jiffies(bss_conf->beacon_int * 10);
+		ap_cs_grace_period =
+			bss_conf->dtim_period * bss_conf->beacon_int * 2;
+	}
+	mutex_unlock(&local->mtx);
+
+	if (ap_cs_grace_period) {
+		int ret;
+		local->csr_compl = &compl;
+		/* wait for channel switch to complete */
+		ret = wait_for_completion_timeout(&compl, csr_timeout);
+		if (ret == 0)
+			WARN(1, "completion timeout");
+		else if (ret < 0)
+			WARN(1, "completion error");
+		/*
+		 * give the AP some time to start beaconing on the new
+		 * channel, otherwise it might loose peers
+		 */
+		msleep(ap_cs_grace_period);
+	}
+}
+
 static void ieee80211_work_work(struct work_struct *work)
 {
 	struct ieee80211_local *local =
@@ -915,6 +976,8 @@ static void ieee80211_work_work(struct work_struct *work)
 	/* first process frames to avoid timing out while a frame is pending */
 	while ((skb = skb_dequeue(&local->work_skb_queue)))
 		ieee80211_work_rx_queued_mgmt(local, skb);
+
+	ieee80211_sw_ap_ch_if_needed(local);
 
 	mutex_lock(&local->mtx);
 

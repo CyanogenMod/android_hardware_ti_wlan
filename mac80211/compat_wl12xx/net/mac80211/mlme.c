@@ -2475,6 +2475,8 @@ int ieee80211_mgd_auth(struct ieee80211_sub_if_data *sdata,
 	const u8 *ssid;
 	struct ieee80211_work *wk;
 	u16 auth_alg;
+	struct ieee80211_local *local = sdata->local;
+	struct ieee80211_sub_if_data *ap_sdata = NULL, *tmp_sdata = NULL;
 
 	if (req->local_state_change)
 		return 0; /* no need to update mac80211 state */
@@ -2498,6 +2500,25 @@ int ieee80211_mgd_auth(struct ieee80211_sub_if_data *sdata,
 		auth_alg = WLAN_AUTH_LEAP;
 		break;
 	default:
+		return -EOPNOTSUPP;
+	}
+
+	list_for_each_entry(tmp_sdata, &local->interfaces, list) {
+		if ((tmp_sdata->vif.type == NL80211_IFTYPE_AP) &&
+		    ieee80211_sdata_running(tmp_sdata) &&
+		    (tmp_sdata->vif.bss_conf.enable_beacon)) {
+			ap_sdata = tmp_sdata;
+			break;
+		}
+	}
+
+	if (ap_sdata &&
+	    (local->hw.flags & IEEE80211_HW_AP_CH_IS_DOMINANT) &&
+	    (local->oper_channel != req->bss->channel)) {
+		wiphy_debug(local->hw.wiphy,
+			    "%s: Can't authenticate with %pM on ch %d.\n",
+			    sdata->name, req->bss->bssid,
+			    req->bss->channel->hw_value);
 		return -EOPNOTSUPP;
 	}
 
@@ -2939,3 +2960,61 @@ unsigned char ieee80211_get_operstate(struct ieee80211_vif *vif)
 	return sdata->dev->operstate;
 }
 EXPORT_SYMBOL(ieee80211_get_operstate);
+
+void ieee80211_req_channel_switch(struct ieee80211_vif *vif,
+				  struct ieee80211_channel *chan, gfp_t gfp)
+{
+	struct ieee80211_sub_if_data *sdata = vif_to_sdata(vif);
+
+	trace_api_req_channel_switch(sdata, chan->center_freq);
+
+	cfg80211_req_channel_switch(sdata->dev, chan, gfp);
+}
+EXPORT_SYMBOL(ieee80211_req_channel_switch);
+
+void ieee80211_ap_ch_switch_done_work(struct work_struct *work)
+{
+	struct ieee80211_sub_if_data *sdata =
+		container_of(work, struct ieee80211_sub_if_data,
+			     u.ap.ap_ch_sw_work);
+	struct ieee80211_local *local = sdata->local;
+
+	/* update the device channel directly */
+	mutex_lock(&local->mtx);
+	if (local->ap_cs_channel) {
+		local->oper_channel =
+			local->hw.conf.channel = local->ap_cs_channel;
+		local->_oper_channel_type =  local->ap_cs_type;
+		local->ap_cs_channel = NULL;
+	}
+
+	ieee80211_wake_queues_by_reason(&local->hw,
+					IEEE80211_QUEUE_STOP_REASON_CH_SW);
+	mutex_unlock(&local->mtx);
+
+	cfg80211_ch_switch_notify(sdata->dev, local->oper_channel->center_freq,
+				  local->_oper_channel_type);
+
+	if (local->csr_compl) {
+		complete(local->csr_compl);
+		local->csr_compl = NULL;
+	}
+}
+
+void ieee80211_ap_ch_switch_done(struct ieee80211_vif *vif,
+				 struct ieee80211_channel *new_channel,
+				 enum nl80211_channel_type type)
+{
+	struct ieee80211_sub_if_data *sdata = vif_to_sdata(vif);
+	struct ieee80211_local *local = sdata->local;
+
+	if (WARN_ON(sdata->vif.type != NL80211_IFTYPE_AP))
+		return;
+
+	if (WARN_ON(local->ap_cs_channel != new_channel))
+		return;
+
+	trace_api_ap_ch_switch_done(sdata, new_channel->center_freq);
+	schedule_work(&sdata->u.ap.ap_ch_sw_work);
+}
+EXPORT_SYMBOL(ieee80211_ap_ch_switch_done);

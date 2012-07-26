@@ -648,6 +648,16 @@ static inline void drv_channel_switch(struct ieee80211_local *local,
 	trace_drv_return_void(local);
 }
 
+static inline void
+drv_ap_channel_switch(struct ieee80211_local *local,
+		      struct ieee80211_ap_ch_switch *ap_ch_switch)
+{
+	might_sleep();
+
+	trace_drv_ap_channel_switch(local, ap_ch_switch);
+	local->ops->ap_channel_switch(&local->hw, ap_ch_switch);
+	trace_drv_return_void(local);
+}
 
 static inline int drv_set_antenna(struct ieee80211_local *local,
 				  u32 tx_ant, u32 rx_ant)

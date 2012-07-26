@@ -909,6 +909,37 @@ TRACE_EVENT(drv_channel_switch,
 	)
 );
 
+TRACE_EVENT(drv_ap_channel_switch,
+	TP_PROTO(struct ieee80211_local *local,
+		 struct ieee80211_ap_ch_switch *ap_ch_switch),
+
+	TP_ARGS(local, ap_ch_switch),
+
+	TP_STRUCT__entry(
+		LOCAL_ENTRY
+		__field(u64, timestamp)
+		__field(bool, block_tx)
+		__field(bool, post_switch_block_tx)
+		__field(u16, freq)
+		__field(u8, count)
+	),
+
+	TP_fast_assign(
+		LOCAL_ASSIGN;
+		__entry->timestamp = ap_ch_switch->timestamp;
+		__entry->block_tx = ap_ch_switch->block_tx;
+		__entry->post_switch_block_tx =
+			ap_ch_switch->post_switch_block_tx;
+		__entry->freq = ap_ch_switch->channel->center_freq;
+		__entry->count = ap_ch_switch->count;
+	),
+
+	TP_printk(
+		LOCAL_PR_FMT " new freq:%u count:%d",
+		LOCAL_PR_ARG, __entry->freq, __entry->count
+	)
+);
+
 TRACE_EVENT(drv_set_antenna,
 	TP_PROTO(struct ieee80211_local *local, u32 tx_ant, u32 rx_ant, int ret),
 
@@ -1368,6 +1399,50 @@ TRACE_EVENT(api_cqm_rssi_notify,
 		VIF_PR_ARG, __entry->rssi_event
 	)
 );
+
+TRACE_EVENT(api_ap_ch_switch_done,
+	TP_PROTO(struct ieee80211_sub_if_data *sdata,
+		 u16 center_freq),
+
+	TP_ARGS(sdata, center_freq),
+
+	TP_STRUCT__entry(
+		VIF_ENTRY
+		__field(u16, center_freq)
+	),
+
+	TP_fast_assign(
+		VIF_ASSIGN;
+		__entry->center_freq = center_freq;
+	),
+
+	TP_printk(
+		VIF_PR_FMT " switched to new freq:%d",
+		VIF_PR_ARG, __entry->center_freq
+	)
+)
+
+TRACE_EVENT(api_req_channel_switch,
+	TP_PROTO(struct ieee80211_sub_if_data *sdata,
+		 u16 center_freq),
+
+	TP_ARGS(sdata, center_freq),
+
+	TP_STRUCT__entry(
+		VIF_ENTRY
+		__field(u16, center_freq)
+	),
+
+	TP_fast_assign(
+		VIF_ASSIGN;
+		__entry->center_freq = center_freq;
+	),
+
+	TP_printk(
+		VIF_PR_FMT " request to switch to freq %d",
+		VIF_PR_ARG, __entry->center_freq
+	)
+)
 
 TRACE_EVENT(api_scan_completed,
 	TP_PROTO(struct ieee80211_local *local, bool aborted),

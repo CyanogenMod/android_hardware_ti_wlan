@@ -863,6 +863,7 @@ struct ieee80211_channel_switch {
  * @addr: address of this interface
  * @p2p: indicates whether this AP or STA interface is a p2p
  *	interface, i.e. a GO or p2p-sta respectively
+ * @dummy_p2p: dummy p2p interface - not used for data
  * @drv_priv: data area for driver use, will always be aligned to
  *	sizeof(void *).
  */
@@ -871,6 +872,9 @@ struct ieee80211_vif {
 	struct ieee80211_bss_conf bss_conf;
 	u8 addr[ETH_ALEN];
 	bool p2p;
+
+	bool dummy_p2p;
+
 	/* must be last */
 	u8 drv_priv[0] __attribute__((__aligned__(sizeof(void *))));
 };
@@ -1149,6 +1153,11 @@ enum sta_notify_cmd {
  *
  * @IEEE80211_HW_SUPPORTS_IM_SCAN_EVENT: Hardware supports intemediate scan
  *	event.
+ *
+ * @IEEE80211_HW_AP_CH_IS_DOMINANT: AP/GO channel is dominant, thus other roles
+ *	which has a different operational channel will be blocked.
+ *	By default the STA channel is the dominant one (this flag is't set) and
+ *	the AP/GO channel can follow the dominant role channel.
  */
 enum ieee80211_hw_flags {
 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
@@ -1179,6 +1188,7 @@ enum ieee80211_hw_flags {
 	IEEE80211_HW_SUPPORTS_IM_SCAN_EVENT		= 1<<25,
 	IEEE80211_HW_SCAN_WHILE_IDLE			= 1<<26,
 	IEEE80211_HW_SUPPORTS_RX_FILTERS                = 1<<27,
+	IEEE80211_HW_AP_CH_IS_DOMINANT			= 1<<28,
 };
 
 /**
@@ -2241,6 +2251,8 @@ struct ieee80211_ops {
 	void (*flush)(struct ieee80211_hw *hw, bool drop);
 	void (*channel_switch)(struct ieee80211_hw *hw,
 			       struct ieee80211_channel_switch *ch_switch);
+	void (*ap_channel_switch)(struct ieee80211_hw *hw,
+				  struct ieee80211_ap_ch_switch *ap_ch_switch);
 	int (*napi_poll)(struct ieee80211_hw *hw, int budget);
 	int (*set_antenna)(struct ieee80211_hw *hw, u32 tx_ant, u32 rx_ant);
 	int (*get_antenna)(struct ieee80211_hw *hw, u32 *tx_ant, u32 *rx_ant);
@@ -3455,6 +3467,35 @@ void ieee80211_enable_dyn_ps(struct ieee80211_vif *vif);
 void ieee80211_cqm_rssi_notify(struct ieee80211_vif *vif,
 			       enum nl80211_cqm_rssi_threshold_event rssi_event,
 			       gfp_t gfp);
+
+/**
+ * ieee80211_req_channel_switch - req a channel switch from usermode.
+ *
+ * @vif: &struct ieee80211_vif pointer from the add_interface callback.
+ * @chan: the desired channel.
+ * @gfp: context flags.
+ */
+void ieee80211_req_channel_switch(struct ieee80211_vif *vif,
+				  struct ieee80211_channel *chan, gfp_t gfp);
+
+/**
+ * ieee80211_ap_ch_switch_done_work - ap channel switch complete work.
+ *
+ * @work: the channel switch complete work
+ */
+void ieee80211_ap_ch_switch_done_work(struct work_struct *work);
+
+/**
+ * ieee80211_ap_ch_switch_done - inform and update a configured connection
+ * that channel switch is complete.
+ *
+ * @vif: &struct ieee80211_vif pointer from the add_interface callback.
+ * @new_channel: the new channel.
+ * @type: new channe ltype.
+ */
+void ieee80211_ap_ch_switch_done(struct ieee80211_vif *vif,
+				 struct ieee80211_channel *new_channel,
+				 enum nl80211_channel_type type);
 
 /**
  * ieee80211_get_operstate - get the operstate of the vif

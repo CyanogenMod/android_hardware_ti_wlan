@@ -231,15 +231,16 @@ int wl12xx_rx(struct wl1271 *wl, struct wl12xx_fw_status *status)
 			mem_block = wl12xx_rx_get_mem_block(status,
 							    drv_rx_counter);
 
-			wl->rx_mem_pool_addr.addr = (mem_block << 8) +
+			wl->rx_mem_pool_addr->addr = (mem_block << 8) +
 			   le32_to_cpu(wl_mem_map->packet_memory_pool_start);
 
-			wl->rx_mem_pool_addr.addr_extra =
-				wl->rx_mem_pool_addr.addr + 4;
+			wl->rx_mem_pool_addr->addr_extra =
+				wl->rx_mem_pool_addr->addr + 4;
 
 			ret = wl1271_write(wl, WL1271_SLV_REG_DATA,
-					   &wl->rx_mem_pool_addr,
-					   sizeof(wl->rx_mem_pool_addr), false);
+					   wl->rx_mem_pool_addr,
+					   sizeof(*wl->rx_mem_pool_addr),
+					   false);
 			if (ret < 0)
 				goto out;
 		}

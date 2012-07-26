@@ -258,6 +258,7 @@ struct ieee80211_if_ap {
 	atomic_t num_sta_authorized; /* number of authorized stations */
 	int dtim_count;
 	bool dtim_bc_mc;
+	struct work_struct ap_ch_sw_work;
 };
 
 struct ieee80211_if_wds {
@@ -712,6 +713,7 @@ enum queue_stop_reason {
 	IEEE80211_QUEUE_STOP_REASON_SUSPEND,
 	IEEE80211_QUEUE_STOP_REASON_SKB_ADD,
 	IEEE80211_QUEUE_STOP_REASON_CHTYPE_CHANGE,
+	IEEE80211_QUEUE_STOP_REASON_CH_SW,
 };
 
 #ifdef CONFIG_MAC80211_LEDS
@@ -847,6 +849,9 @@ struct ieee80211_local {
 	/* device is started */
 	bool started;
 
+	/* device is during a HW reconfig */
+	bool in_reconfig;
+
 	/* wowlan is enabled -- don't reconfig on resume */
 	bool wowlan;
 
@@ -933,6 +938,10 @@ struct ieee80211_local {
 	struct ieee80211_sub_if_data *scan_sdata;
 	enum nl80211_channel_type _oper_channel_type;
 	struct ieee80211_channel *oper_channel, *csa_channel;
+	struct ieee80211_channel *ap_cs_channel;
+	enum nl80211_channel_type ap_cs_type;
+	/* Channel switch request completion */
+	struct completion *csr_compl;
 
 	/* Temporary remain-on-channel for off-channel operations */
 	struct ieee80211_channel *tmp_channel;
