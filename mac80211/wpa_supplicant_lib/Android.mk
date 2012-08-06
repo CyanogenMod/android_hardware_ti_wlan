@@ -4,6 +4,8 @@ ifeq ($(TARGET_SIMULATOR),true)
   $(error This makefile must not be included when building the simulator)
 endif
 
+ifneq ($(BOARD_WPA_SUPPLICANT_PRIVATE_LIB),)
+
 ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_6_X)
     WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
 endif
@@ -71,3 +73,5 @@ LOCAL_CFLAGS := $(L_CFLAGS)
 LOCAL_SRC_FILES := $(L_SRC)
 LOCAL_C_INCLUDES := $(INCLUDES)
 include $(BUILD_STATIC_LIBRARY)
+
+endif
