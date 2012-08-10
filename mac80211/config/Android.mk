@@ -77,7 +77,10 @@ ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_8_X)
   include external/wpa_supplicant_8/wpa_supplicant/wpa_supplicant_conf.mk
 else
 ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_8_X_TI)
-  include external/wpa_supplicant_8_ti/wpa_supplicant/wpa_supplicant_conf.mk
+  # Since this is additional TI tree, make extra check
+  ifneq ($(wildcard  external/wpa_supplicant_8_ti/wpa_supplicant/wpa_supplicant_conf.mk),)
+    include external/wpa_supplicant_8_ti/wpa_supplicant/wpa_supplicant_conf.mk
+  endif
 else
 ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_6_X)
   include external/wpa_supplicant_6/wpa_supplicant/wpa_supplicant_conf.mk
