@@ -17,6 +17,17 @@ TARGET_NVS_FILE=$TARGET_FW_DIR/wl1271-nvs.bin
 TARGET_INI_FILE=/system/etc/wifi/TQS_D_1.7.ini
 WL12xx_MODULE=/system/lib/modules/wl12xx_sdio.ko
 
+if [ -e $WL12xx_MODULE ];
+then
+    echo ""
+else
+    echo "********************************************************"
+    echo "wl12xx_sdio module not found !!"
+    echo "If this is omap5/wl18xx platform, Calibration is not needed"
+    echo "********************************************************"
+    exit
+fi
+
 # Remount system partition as rw
 mount -o remount rw /system
 
