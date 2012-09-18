@@ -64,7 +64,7 @@ bool pci_pme_capable(struct pci_dev *dev, pci_power_t state)
 
 	return !!(pme_support & (1 << state));
 }
-EXPORT_SYMBOL(pci_pme_capable);
+EXPORT_SYMBOL_GPL(pci_pme_capable);
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24))
 /**
@@ -92,7 +92,7 @@ unsigned int mmc_align_data_size(struct mmc_card *card, unsigned int sz)
 
 	return sz;
 }
-EXPORT_SYMBOL(mmc_align_data_size);
+EXPORT_SYMBOL_GPL(mmc_align_data_size);
 
 /*
  * Calculate the maximum byte mode transfer size

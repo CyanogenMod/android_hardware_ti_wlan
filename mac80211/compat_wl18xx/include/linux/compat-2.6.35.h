@@ -19,6 +19,17 @@
 
 #define netdev_hw_addr dev_mc_list
 
+/*
+ * We cannot backport this guy as the IRQ data structure
+ * was modified in the kernel itself to support this. We
+ * treat the system as uni-processor in this case.
+ */
+static inline int irq_set_affinity_hint(unsigned int irq,
+					const struct cpumask *m)
+{
+	return -EINVAL;
+}
+
 static inline wait_queue_head_t *sk_sleep(struct sock *sk)
 {
 	return sk->sk_sleep;

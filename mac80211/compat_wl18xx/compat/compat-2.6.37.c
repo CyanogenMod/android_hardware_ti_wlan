@@ -142,7 +142,7 @@ error_ops:
 	compat_genl_unregister_family(family);
 	return ret;
 }
-EXPORT_SYMBOL(compat_genl_register_family_with_ops);
+EXPORT_SYMBOL_GPL(compat_genl_register_family_with_ops);
 
 int compat_genl_unregister_family(struct genl_family *family)
 {
@@ -151,7 +151,7 @@ int compat_genl_unregister_family(struct genl_family *family)
 	list_del(&family->list);
 	return err;
 }
-EXPORT_SYMBOL(compat_genl_unregister_family);
+EXPORT_SYMBOL_GPL(compat_genl_unregister_family);
 
 #if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
 
@@ -304,7 +304,7 @@ void led_blink_set(struct led_classdev *led_cdev,
 
 	mod_timer(&led->blink_timer, jiffies + 1);
 }
-EXPORT_SYMBOL(led_blink_set);
+EXPORT_SYMBOL_GPL(led_blink_set);
 
 void compat_led_brightness_set(struct led_classdev *led_cdev,
 			       enum led_brightness brightness)
@@ -316,7 +316,7 @@ void compat_led_brightness_set(struct led_classdev *led_cdev,
 
 	return led_cdev->brightness_set(led_cdev, brightness);
 }
-EXPORT_SYMBOL(compat_led_brightness_set);
+EXPORT_SYMBOL_GPL(compat_led_brightness_set);
 
 void compat_led_classdev_unregister(struct led_classdev *led_cdev)
 {
@@ -333,7 +333,7 @@ void compat_led_classdev_unregister(struct led_classdev *led_cdev)
 
 	led_classdev_unregister(led_cdev);
 }
-EXPORT_SYMBOL(compat_led_classdev_unregister);
+EXPORT_SYMBOL_GPL(compat_led_classdev_unregister);
 
 /**
  *	vzalloc - allocate virtually contiguous memory with zero fill
@@ -353,6 +353,6 @@ void *compat_vzalloc(unsigned long size)
 		memset(buf, 0, size);
 	return buf;
 }
-EXPORT_SYMBOL(compat_vzalloc);
+EXPORT_SYMBOL_GPL(compat_vzalloc);
 
 #endif

@@ -36,7 +36,7 @@ int __dev_addr_delete(struct dev_addr_list **list, int *count,
 	}
 	return -ENOENT;
 }
-EXPORT_SYMBOL(__dev_addr_delete);
+EXPORT_SYMBOL_GPL(__dev_addr_delete);
 
 /* On net/core/dev.c as of 2.6.24. This is not yet used by mac80211 but
  * might as well add it */
@@ -71,7 +71,7 @@ int __dev_addr_add(struct dev_addr_list **list, int *count,
 	(*count)++;
 	return 0;
 }
-EXPORT_SYMBOL(__dev_addr_add);
+EXPORT_SYMBOL_GPL(__dev_addr_add);
 
 
 /* Part of net/core/dev_mcast.c as of 2.6.23. This is a slightly different version.
@@ -128,7 +128,7 @@ int dev_mc_sync(struct net_device *to, struct net_device *from)
 
 	return err;
 }
-EXPORT_SYMBOL(dev_mc_sync);
+EXPORT_SYMBOL_GPL(dev_mc_sync);
 
 
 /* Part of net/core/dev_mcast.c as of 2.6.23. This is a slighty different version.
@@ -179,7 +179,7 @@ void dev_mc_unsync(struct net_device *to, struct net_device *from)
 	netif_tx_unlock_bh(to);
 	netif_tx_unlock_bh(from);
 }
-EXPORT_SYMBOL(dev_mc_unsync);
+EXPORT_SYMBOL_GPL(dev_mc_unsync);
 
 /* Added as of 2.6.23 on net/core/dev.c. Slightly modifed, no dev->set_rx_mode on
  * 2.6.22 so ignore that. */
@@ -234,6 +234,6 @@ int pci_try_set_mwi(struct pci_dev *dev)
 #endif
 	return rc;
 }
-EXPORT_SYMBOL(pci_try_set_mwi);
+EXPORT_SYMBOL_GPL(pci_try_set_mwi);
 #endif
 

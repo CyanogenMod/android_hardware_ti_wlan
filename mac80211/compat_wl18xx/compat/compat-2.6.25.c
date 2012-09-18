@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2010	Luis R. Rodriguez <mcgrof@winlab.rutgers.edu>
+ * Copyright 2007-2012	Luis R. Rodriguez <mcgrof@winlab.rutgers.edu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -9,6 +9,23 @@
  */
 
 #include <linux/miscdevice.h>
+#include <linux/pci.h>
+
+/*
+ * To backport b718989d correctly pcibios_enable_device()
+ * is required but we don't have access to it on modules
+ * as its an architecture specific routine that is not
+ * exported and as such only core kernel code has access
+ * to it. We implement a sloppy work around for backporting
+ * this.
+ */
+int pci_enable_device_mem(struct pci_dev *dev)
+{
+	int bars = pci_select_bars(dev, IORESOURCE_MEM);
+
+	return pci_enable_device_bars(dev, bars);
+}
+EXPORT_SYMBOL_GPL(pci_enable_device_mem);
 
 /**
  * The following things are out of ./lib/vsprintf.c
@@ -92,6 +109,6 @@ int strict_strto##type(const char *cp, unsigned int base, valtype *res)	\
 define_strict_strtoux(l, unsigned long)
 define_strict_strtox(l, long)
 
-EXPORT_SYMBOL(strict_strtoul);
-EXPORT_SYMBOL(strict_strtol);
+EXPORT_SYMBOL_GPL(strict_strtoul);
+EXPORT_SYMBOL_GPL(strict_strtol);
 

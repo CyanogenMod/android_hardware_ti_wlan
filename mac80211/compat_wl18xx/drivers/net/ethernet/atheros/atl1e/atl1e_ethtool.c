@@ -310,10 +310,12 @@ static void atl1e_get_drvinfo(struct net_device *netdev,
 {
 	struct atl1e_adapter *adapter = netdev_priv(netdev);
 
-	strncpy(drvinfo->driver,  atl1e_driver_name, 32);
-	strncpy(drvinfo->version, atl1e_driver_version, 32);
-	strncpy(drvinfo->fw_version, "L1e", 32);
-	strncpy(drvinfo->bus_info, pci_name(adapter->pdev), 32);
+	strlcpy(drvinfo->driver,  atl1e_driver_name, sizeof(drvinfo->driver));
+	strlcpy(drvinfo->version, atl1e_driver_version,
+		sizeof(drvinfo->version));
+	strlcpy(drvinfo->fw_version, "L1e", sizeof(drvinfo->fw_version));
+	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
+		sizeof(drvinfo->bus_info));
 	drvinfo->n_stats = 0;
 	drvinfo->testinfo_len = 0;
 	drvinfo->regdump_len = atl1e_get_regs_len(netdev);
@@ -382,6 +384,11 @@ static const struct ethtool_ops atl1e_ethtool_ops = {
 	.get_eeprom_len         = atl1e_get_eeprom_len,
 	.get_eeprom             = atl1e_get_eeprom,
 	.set_eeprom             = atl1e_set_eeprom,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39))
+	.set_tx_csum            = ethtool_op_set_tx_hw_csum,
+	.set_sg                 = ethtool_op_set_sg,
+	.set_tso                = ethtool_op_set_tso,
+#endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39)) */
 };
 
 void atl1e_set_ethtool_ops(struct net_device *netdev)

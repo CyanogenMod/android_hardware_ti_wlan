@@ -28,7 +28,6 @@
 
 int wl1271_format_buffer(char __user *userbuf, size_t count,
 			 loff_t *ppos, char *fmt, ...);
-int wl1271_open_file_generic(struct inode *inode, struct file *file);
 
 int wl1271_debugfs_init(struct wl1271 *wl);
 void wl1271_debugfs_exit(struct wl1271 *wl);
@@ -48,7 +47,7 @@ static ssize_t name## _read(struct file *file, char __user *userbuf,	\
 									\
 static const struct file_operations name## _ops = {			\
 	.read = name## _read,						\
-	.open = wl1271_open_file_generic,				\
+	.open = simple_open,						\
 	.llseek	= generic_file_llseek,					\
 };
 
@@ -85,7 +84,7 @@ static ssize_t sub## _ ##name## _read(struct file *file,		\
 									\
 static const struct file_operations sub## _ ##name## _ops = {		\
 	.read = sub## _ ##name## _read,					\
-	.open = wl1271_open_file_generic,				\
+	.open = simple_open,						\
 	.llseek	= generic_file_llseek,					\
 };
 
@@ -110,7 +109,7 @@ static ssize_t sub## _ ##name## _read(struct file *file,		\
 									\
 static const struct file_operations sub## _ ##name## _ops = {		\
 	.read = sub## _ ##name## _read,					\
-	.open = wl1271_open_file_generic,				\
+	.open = simple_open,						\
 	.llseek	= generic_file_llseek,					\
 };
 

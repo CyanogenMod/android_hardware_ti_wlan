@@ -70,7 +70,7 @@ next_entry:
 	kfree(buf);
 	return ret;
 }
-EXPORT_SYMBOL(pccard_loop_tuple);
+EXPORT_SYMBOL_GPL(pccard_loop_tuple);
 /* Source: drivers/pcmcia/cistpl.c */
 
 #if defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE)
@@ -123,7 +123,7 @@ int pcmcia_loop_tuple(struct pcmcia_device *p_dev, cisdata_t code,
 	return pccard_loop_tuple(p_dev->socket, p_dev->func, code, NULL,
 				 &loop, pcmcia_do_loop_tuple);
 }
-EXPORT_SYMBOL(pcmcia_loop_tuple);
+EXPORT_SYMBOL_GPL(pcmcia_loop_tuple);
 /* Source: drivers/pcmcia/pcmcia_resource.c */
 
 #endif /* CONFIG_PCMCIA */

@@ -412,8 +412,7 @@ struct conf_rx_settings {
 #define CONF_TX_RATE_RETRY_LIMIT       10
 
 /* basic rates for p2p operations (probe req/resp, etc.) */
-#define CONF_TX_RATE_MASK_BASIC_P2P    (CONF_HW_BIT_RATE_6MBPS | \
-	CONF_HW_BIT_RATE_12MBPS | CONF_HW_BIT_RATE_24MBPS)
+#define CONF_TX_RATE_MASK_BASIC_P2P    CONF_HW_BIT_RATE_6MBPS
 
 /*
  * Rates supported for data packets when operating as AP. Note the absence
@@ -562,8 +561,8 @@ struct conf_tx_ac_category {
 
 #define CONF_TX_MAX_TID_COUNT 8
 
-/* Allow TX BA on all TIDs but 6,7. These are currently reserved in the FW */
-#define CONF_TX_BA_ENABLED_TID_BITMAP 0x3F
+/* Allow TX BA on all TIDs */
+#define CONF_TX_BA_ENABLED_TID_BITMAP 0xFF
 
 enum {
 	CONF_CHANNEL_TYPE_DCF = 0,   /* DC/LEGACY*/
@@ -676,8 +675,8 @@ struct conf_tx_settings {
 	u8 tmpl_short_retry_limit;
 	u8 tmpl_long_retry_limit;
 
-	/* Time in ms for "Tx stuck" timer to expire */
-	u32 tx_stuck_timeout;
+	/* Time in ms for Tx watchdog timer to expire */
+	u32 tx_watchdog_timeout;
 } __packed;
 
 enum {
@@ -1060,19 +1059,11 @@ struct conf_scan_settings {
 	 */
 	u32 max_dwell_time_active;
 
-	/*
-	 * The minimum time to wait on each channel for passive scans
-	 *
-	 * Range: u32 tu/1000
-	 */
-	u32 min_dwell_time_passive;
+	/* time to wait on the channel for passive scans (in TU/1000) */
+	u32 dwell_time_passive;
 
-	/*
-	 * The maximum time to wait on each channel for passive scans
-	 *
-	 * Range: u32 tu/1000
-	 */
-	u32 max_dwell_time_passive;
+	/* time to wait on the channel for DFS scans (in TU/1000) */
+	u32 dwell_time_dfs;
 
 	/*
 	 * Number of probe requests to transmit on each active scan channel
@@ -1101,8 +1092,7 @@ struct conf_sched_scan_settings {
 	 */
 	u32 base_dwell_time;
 
-	/*
-	 * The delta between the min dwell time and max dwell time for
+	/* The delta between the min dwell time and max dwell time for
 	 * active scans (in TU/1000s). The max dwell time is used by the FW once
 	 * traffic is detected on the channel.
 	 */
@@ -1278,12 +1268,20 @@ struct conf_hangover_settings {
 	u8 window_size;
 } __packed;
 
+struct conf_recovery_settings {
+	/* BUG() on fw recovery */
+	u8 bug_on_recovery;
+
+	/* Prevent HW recovery. FW will remain stuck. */
+	u8 no_recovery;
+} __packed;
+
 /*
  * The conf version consists of 4 bytes.  The two MSB are the wlcore
  * version, the two LSB are the lower driver's private conf
  * version.
  */
-#define WLCORE_CONF_VERSION	(0x0001 << 16)
+#define WLCORE_CONF_VERSION	(0x0004 << 16)
 #define WLCORE_CONF_MASK	0xffff0000
 #define WLCORE_CONF_SIZE	(sizeof(struct wlcore_conf_header) +	\
 				 sizeof(struct wlcore_conf))
@@ -1311,6 +1309,7 @@ struct wlcore_conf {
 	struct conf_fwlog fwlog;
 	struct conf_rate_policy_settings rate;
 	struct conf_hangover_settings hangover;
+	struct conf_recovery_settings recovery;
 } __packed;
 
 struct wlcore_conf_file {

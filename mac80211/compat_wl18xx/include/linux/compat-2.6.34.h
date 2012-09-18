@@ -7,6 +7,24 @@
 
 #include <linux/netdevice.h>
 #include <linux/usb.h>
+#include <linux/mmc/sdio_func.h>
+
+/*
+ * Backports da68c4eb25
+ * sdio: introduce API for special power management features
+ *
+ * We wimply carry around the data structures and flags, and
+ * make the host return no flags set by the driver.
+ */
+typedef unsigned int mmc_pm_flag_t;
+
+#define MMC_PM_KEEP_POWER      (1 << 0)        /* preserve card power during suspend */
+#define MMC_PM_WAKE_SDIO_IRQ   (1 << 1)        /* wake up host system on SDIO IRQ assertion */
+
+extern mmc_pm_flag_t sdio_get_host_pm_caps(struct sdio_func *func);
+extern int sdio_set_host_pm_flags(struct sdio_func *func, mmc_pm_flag_t flags);
+
+void init_compat_mmc_pm_flags(void);
 
 #define netdev_mc_count(dev) ((dev)->mc_count)
 #define netdev_mc_empty(dev) (netdev_mc_count(dev) == 0)
@@ -267,9 +285,6 @@ static inline int usb_enable_autosuspend(struct usb_device *udev)
 static inline int usb_disable_autosuspend(struct usb_device *udev)
 { return 0; }
 
-#define MMC_PM_KEEP_POWER	(1 << 0)	/* preserve card power during suspend */
-#define sdio_set_host_pm_flags(a, b) 0
-
 #define rcu_dereference_protected(p, c) (p)
 #define rcu_access_pointer(p)   ACCESS_ONCE(p)
 
@@ -292,6 +307,25 @@ static inline int rcu_read_lock_held(void)
 	return 1;
 }
 
+#ifdef CONFIG_PROVE_LOCKING
+/*
+ * Obviously, this is wrong.  But the base kernel will have rtnl_mutex
+ * declared static, with no way to access it.  I think this is the best
+ * we can do...
+ */
+static inline int lockdep_rtnl_is_held(void)
+{
+        return 1;
+}
+#endif /* #ifdef CONFIG_PROVE_LOCKING */
+
+#else /* Kernels >= 2.6.34 */
+
+static inline void init_compat_mmc_pm_flags(void)
+{
+}
+
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34)) */
+
 
 #endif /* LINUX_26_34_COMPAT_H */

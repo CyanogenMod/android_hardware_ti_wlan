@@ -116,7 +116,7 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 	 * In PLT mode we seem to get frames and mac80211 warns about them,
 	 * workaround this by not retrieving them at all.
 	 */
-	if (unlikely(wl->state == WL1271_STATE_PLT))
+	if (unlikely(wl->plt))
 		return -EINVAL;
 
 	pkt_data_len = wlcore_hw_get_rx_packet_len(wl, data, length);
@@ -205,7 +205,7 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 	return is_data;
 }
 
-void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
+int wlcore_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
 {
 	unsigned long active_hlids[BITS_TO_LONGS(WL12XX_MAX_LINKS)] = {0};
 	u32 buf_size;
@@ -213,19 +213,20 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
 	u32 drv_rx_counter = wl->rx_counter % wl->num_rx_desc;
 	u32 rx_counter;
 	u32 pkt_len, align_pkt_len;
-	u32 pkt_offset, desc;
+	u32 pkt_offset, des;
 	u8 hlid;
 	enum wl_rx_buf_align rx_align;
+	int ret = 0;
 
 	while (drv_rx_counter != fw_rx_counter) {
 		buf_size = 0;
 		rx_counter = drv_rx_counter;
 		while (rx_counter != fw_rx_counter) {
-			desc = le32_to_cpu(status->rx_pkt_descs[rx_counter]);
-			pkt_len = wlcore_rx_get_buf_size(wl, desc);
+			des = le32_to_cpu(status->rx_pkt_descs[rx_counter]);
+			pkt_len = wlcore_rx_get_buf_size(wl, des);
 			align_pkt_len = wlcore_rx_get_align_buf_size(wl,
 								     pkt_len);
-			if (buf_size + align_pkt_len > WL1271_AGGR_BUFFER_SIZE)
+			if (buf_size + align_pkt_len > wl->aggr_buf_size)
 				break;
 			buf_size += align_pkt_len;
 			rx_counter++;
@@ -238,17 +239,22 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
 		}
 
 		/* Read all available packets at once */
-		desc = le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]);
-		wlcore_hw_prepare_read(wl, desc, buf_size);
-		wlcore_read_data(wl, REG_SLV_MEM_DATA, wl->aggr_buf,
-				 buf_size, true);
+		des = le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]);
+		ret = wlcore_hw_prepare_read(wl, des, buf_size);
+		if (ret < 0)
+			goto out;
+
+		ret = wlcore_read_data(wl, REG_SLV_MEM_DATA, wl->aggr_buf,
+				       buf_size, true);
+		if (ret < 0)
+			goto out;
 
 		/* Split data into separate packets */
 		pkt_offset = 0;
 		while (pkt_offset < buf_size) {
-			desc = le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]);
-			pkt_len = wlcore_rx_get_buf_size(wl, desc);
-			rx_align = wlcore_hw_get_rx_buf_align(wl, desc);
+			des = le32_to_cpu(status->rx_pkt_descs[drv_rx_counter]);
+			pkt_len = wlcore_rx_get_buf_size(wl, des);
+			rx_align = wlcore_hw_get_rx_buf_align(wl, des);
 
 			/*
 			 * the handle data call can only fail in memory-outage
@@ -278,50 +284,33 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status_1 *status)
 	 * Write the driver's packet counter to the FW. This is only required
 	 * for older hardware revisions
 	 */
-	if (wl->quirks & WLCORE_QUIRK_END_OF_TRANSACTION)
-		wl1271_write32(wl, WL12XX_REG_RX_DRIVER_COUNTER,
-			       wl->rx_counter);
+	if (wl->quirks & WLCORE_QUIRK_END_OF_TRANSACTION) {
+		ret = wlcore_write32(wl, WL12XX_REG_RX_DRIVER_COUNTER,
+				     wl->rx_counter);
+		if (ret < 0)
+			goto out;
+	}
 
 	wl12xx_rearm_rx_streaming(wl, active_hlids);
-}
 
-/*
- * Global on / off for RX packet filtering in firmware
- */
-int wl1271_rx_data_filtering_enable(struct wl1271 *wl, bool enable,
-				    enum rx_data_filter_action policy)
-{
-	int ret;
-
-	if (policy < FILTER_DROP || policy > FILTER_FW_HANDLE) {
-		wl1271_warning("filter policy value is not in valid range");
-		return -ERANGE;
-	}
-
-	if (enable < 0 || enable > 1) {
-		wl1271_warning("filter enable value is not in valid range");
-		return -ERANGE;
-	}
-
-	ret = wl1271_acx_toggle_rx_data_filter(wl, enable, policy);
-
+out:
 	return ret;
 }
 
-int wl1271_rx_data_filter_enable(struct wl1271 *wl,
-				 int index,
-				 bool enable,
-				 struct wl12xx_rx_data_filter *filter)
+#ifdef CONFIG_PM
+int wl1271_rx_filter_enable(struct wl1271 *wl,
+			    int index, bool enable,
+			    struct wl12xx_rx_filter *filter)
 {
 	int ret;
 
-	if (wl->rx_data_filters_status[index] == enable) {
-		wl1271_debug(DEBUG_ACX, "Request to enable an already "
+	if (wl->rx_filter_enabled[index] == enable) {
+		wl1271_warning("Request to enable an already "
 			     "enabled rx filter %d", index);
 		return 0;
 	}
 
-	ret = wl1271_acx_set_rx_data_filter(wl, index, enable, filter);
+	ret = wl1271_acx_set_rx_filter(wl, index, enable, filter);
 
 	if (ret) {
 		wl1271_error("Failed to %s rx data filter %d (err=%d)",
@@ -329,19 +318,24 @@ int wl1271_rx_data_filter_enable(struct wl1271 *wl,
 		return ret;
 	}
 
-	wl->rx_data_filters_status[index] = enable;
+	wl->rx_filter_enabled[index] = enable;
 
 	return 0;
 }
 
-/* Unset any active filters */
-void wl1271_rx_data_filters_clear_all(struct wl1271 *wl)
+int wl1271_rx_filter_clear_all(struct wl1271 *wl)
 {
-	int i;
+	int i, ret = 0;
 
-	for (i = 0; i < WL1271_MAX_RX_DATA_FILTERS; i++) {
-		if (!wl->rx_data_filters_status[i])
+	for (i = 0; i < WL1271_MAX_RX_FILTERS; i++) {
+		if (!wl->rx_filter_enabled[i])
 			continue;
-		wl1271_rx_data_filter_enable(wl, i, 0, NULL);
+		ret = wl1271_rx_filter_enable(wl, i, 0, NULL);
+		if (ret)
+			goto out;
 	}
+
+out:
+	return ret;
 }
+#endif /* CONFIG_PM */

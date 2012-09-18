@@ -1433,13 +1433,17 @@ int wl12xx_acx_set_ba_receiver_session(struct wl1271 *wl, u8 tid_index,
 	acx->win_size = wl->conf.ht.rx_ba_win_size;
 	acx->ssn = ssn;
 
-	ret = wl1271_cmd_configure(wl, ACX_BA_SESSION_RX_SETUP, acx,
-				   sizeof(*acx));
+	ret = wlcore_cmd_configure_failsafe(wl, ACX_BA_SESSION_RX_SETUP, acx,
+					    sizeof(*acx),
+					    BIT(CMD_STATUS_NO_RX_BA_SESSION));
 	if (ret < 0) {
 		wl1271_warning("acx ba receiver session failed: %d", ret);
 		goto out;
 	}
 
+	if (ret == CMD_STATUS_NO_RX_BA_SESSION)
+		wl1271_warning("no fw rx ba on tid %d", tid_index);
+	ret = 0;
 out:
 	kfree(acx);
 	return ret;
@@ -1725,14 +1729,13 @@ out:
 
 }
 
-int wl1271_acx_toggle_rx_data_filter(struct wl1271 *wl, bool enable,
-				     u8 default_action)
+int wlcore_acx_peer_ht_operation_mode(struct wl1271 *wl, u8 hlid, bool wide)
 {
-	struct acx_rx_data_filter_state *acx;
+	struct wlcore_peer_ht_operation_mode *acx;
 	int ret;
 
-	wl1271_debug(DEBUG_ACX, "acx toggle rx data filter en: %d act: %d",
-		     enable, default_action);
+	wl1271_debug(DEBUG_ACX, "acx peer ht operation mode hlid %d bw %d",
+		     hlid, wide);
 
 	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
 	if (!acx) {
@@ -1740,13 +1743,45 @@ int wl1271_acx_toggle_rx_data_filter(struct wl1271 *wl, bool enable,
 		goto out;
 	}
 
-	acx->enable = enable ? 1 : 0;
-	acx->default_action = default_action;
+	acx->hlid = hlid;
+	acx->bandwidth = wide ? WLCORE_BANDWIDTH_40MHZ : WLCORE_BANDWIDTH_20MHZ;
+
+	ret = wl1271_cmd_configure(wl, ACX_PEER_HT_OPERATION_MODE_CFG, acx,
+				   sizeof(*acx));
+
+	if (ret < 0) {
+		wl1271_warning("acx peer ht operation mode failed: %d", ret);
+		goto out;
+	}
+
+out:
+	kfree(acx);
+	return ret;
+
+}
+
+#ifdef CONFIG_PM
+/* Set the global behaviour of RX filters - On/Off + default action */
+int wl1271_acx_default_rx_filter_enable(struct wl1271 *wl, bool enable,
+					enum rx_filter_action action)
+{
+	struct acx_default_rx_filter *acx;
+	int ret;
+
+	wl1271_debug(DEBUG_ACX, "acx default rx filter en: %d act: %d",
+		     enable, action);
+
+	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
+	if (!acx)
+		return -ENOMEM;
+
+	acx->enable = enable;
+	acx->default_action = action;
 
 	ret = wl1271_cmd_configure(wl, ACX_ENABLE_RX_DATA_FILTER, acx,
 				   sizeof(*acx));
 	if (ret < 0) {
-		wl1271_warning("toggling rx data filter failed: %d", ret);
+		wl1271_warning("acx default rx filter enable failed: %d", ret);
 		goto out;
 	}
 
@@ -1755,73 +1790,49 @@ out:
 	return ret;
 }
 
-int wl1271_acx_set_rx_data_filter(struct wl1271 *wl, u8 index, bool enable,
-				  struct wl12xx_rx_data_filter *filter)
+/* Configure or disable a specific RX filter pattern */
+int wl1271_acx_set_rx_filter(struct wl1271 *wl, u8 index, bool enable,
+			     struct wl12xx_rx_filter *filter)
 {
-	struct acx_rx_data_filter_cfg *acx;
+	struct acx_rx_filter_cfg *acx;
 	int fields_size = 0;
 	int acx_size;
 	int ret;
 
-	if (enable && !filter) {
-		wl1271_warning("acx_set_rx_data_filter: enable but no filter");
-		return -EINVAL;
-	}
+	WARN_ON(enable && !filter);
+	WARN_ON(index >= WL1271_MAX_RX_FILTERS);
 
-	if (index >= WL1271_MAX_RX_DATA_FILTERS) {
-		wl1271_warning("acx_set_rx_data_filter: invalid filter idx(%d)",
-			       index);
-		return -EINVAL;
-	}
-
-	if (filter) {
-		if (filter->action < FILTER_DROP ||
-		    filter->action > FILTER_FW_HANDLE) {
-			wl1271_warning("invalid filter action (%d)",
-				       filter->action);
-			return -EINVAL;
-		}
-
-		if (filter->num_fields != 1 &&
-		    filter->num_fields != 2) {
-			wl1271_warning("invalid filter num_fields (%d)",
-				       filter->num_fields);
-			return -EINVAL;
-		}
-	}
-
-	wl1271_debug(DEBUG_ACX, "acx set rx data filter idx: %d, enable: %d",
-		     index, enable);
+	wl1271_debug(DEBUG_ACX,
+		     "acx set rx filter idx: %d enable: %d filter: %p",
+		     index, enable, filter);
 
 	if (enable) {
-		fields_size = filter->fields_size;
+		fields_size = wl1271_rx_filter_get_fields_size(filter);
 
 		wl1271_debug(DEBUG_ACX, "act: %d num_fields: %d field_size: %d",
 		      filter->action, filter->num_fields, fields_size);
 	}
 
-	acx_size = roundup(sizeof(*acx) + fields_size, 4);
+	acx_size = ALIGN(sizeof(*acx) + fields_size, 4);
 	acx = kzalloc(acx_size, GFP_KERNEL);
 
 	if (!acx)
 		return -ENOMEM;
 
-	acx->enable = enable ? 1 : 0;
+	acx->enable = enable;
 	acx->index = index;
 
 	if (enable) {
 		acx->num_fields = filter->num_fields;
 		acx->action = filter->action;
-
-		memcpy(acx->fields, filter->fields, filter->fields_size);
+		wl1271_rx_filter_flatten_fields(filter, acx->fields);
 	}
 
 	wl1271_dump(DEBUG_ACX, "RX_FILTER: ", acx, acx_size);
 
-	ret = wl1271_cmd_configure(wl, ACX_SET_RX_DATA_FILTER, acx,
-				   acx_size);
+	ret = wl1271_cmd_configure(wl, ACX_SET_RX_DATA_FILTER, acx, acx_size);
 	if (ret < 0) {
-		wl1271_warning("setting rx data filter failed: %d", ret);
+		wl1271_warning("setting rx filter failed: %d", ret);
 		goto out;
 	}
 
@@ -1829,3 +1840,4 @@ out:
 	kfree(acx);
 	return ret;
 }
+#endif /* CONFIG_PM */

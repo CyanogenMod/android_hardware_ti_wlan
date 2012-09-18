@@ -46,7 +46,7 @@ void netdev_attach_ops(struct net_device *dev,
 	dev->select_queue = ops->ndo_select_queue;
 #endif
 }
-EXPORT_SYMBOL(netdev_attach_ops);
+EXPORT_SYMBOL_GPL(netdev_attach_ops);
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23))
 #if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
@@ -93,7 +93,7 @@ int eth_mac_addr(struct net_device *dev, void *p)
 	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
 	return 0;
 }
-EXPORT_SYMBOL(eth_mac_addr);
+EXPORT_SYMBOL_GPL(eth_mac_addr);
 
 /**
  * eth_change_mtu - set new MTU size
@@ -110,7 +110,7 @@ int eth_change_mtu(struct net_device *dev, int new_mtu)
 	dev->mtu = new_mtu;
 	return 0;
 }
-EXPORT_SYMBOL(eth_change_mtu);
+EXPORT_SYMBOL_GPL(eth_change_mtu);
 
 int eth_validate_addr(struct net_device *dev)
 {
@@ -119,7 +119,7 @@ int eth_validate_addr(struct net_device *dev)
 
 	return 0;
 }
-EXPORT_SYMBOL(eth_validate_addr);
+EXPORT_SYMBOL_GPL(eth_validate_addr);
 /* Source: net/ethernet/eth.c */
 
 #define NETREG_DUMMY 5

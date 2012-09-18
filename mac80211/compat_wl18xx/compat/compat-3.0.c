@@ -34,7 +34,7 @@ int mac_pton(const char *s, u8 *mac)
 	}
 	return 1;
 }
-EXPORT_SYMBOL(mac_pton);
+EXPORT_SYMBOL_GPL(mac_pton);
 
 #define kstrto_from_user(f, g, type)					\
 int f(const char __user *s, size_t count, unsigned int base, type *res)	\
@@ -48,7 +48,7 @@ int f(const char __user *s, size_t count, unsigned int base, type *res)	\
 	buf[count] = '\0';						\
 	return g(buf, base, res);					\
 }									\
-EXPORT_SYMBOL(f)
+EXPORT_SYMBOL_GPL(f)
 
 kstrto_from_user(kstrtoull_from_user,	kstrtoull,	unsigned long long);
 kstrto_from_user(kstrtoll_from_user,	kstrtoll,	long long);

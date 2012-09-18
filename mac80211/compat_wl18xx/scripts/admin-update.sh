@@ -1,30 +1,31 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # 
 # Copyright 2007, 2008, 2010	Luis R. Rodriguez <mcgrof@winlab.rutgers.edu>
 #
-# Use this to update compat-wireless-2.6 to the latest
-# wireless-testing.git tree you have.
+# Use this to update compat-wireless to the latest
+# linux-next.git tree you have.
 #
-# Usage: you should have the latest pull of wireless-2.6.git
-# git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git
-# We assume you have it on your ~/devel/wireless-testing/ directory. If you do,
-# just run this script from the compat-wireless-2.6 directory.
+# Usage: you should have the latest pull of linux-next.git
+# git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+# We assume you have it on your ~/linux-next/ directory. If you do,
+# just run this script from the compat-wireless directory.
 # You can specify where your GIT_TREE is by doing:
 #
-# export GIT_TREE=/home/mcgrof/wireless-testing/
+# export GIT_TREE=/home/mcgrof/linux-next/
 # 
 # for example
 #
 GIT_URL="git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git"
-GIT_COMPAT_URL="git://git.kernel.org/pub/scm/linux/kernel/git/mcgrof/compat.git"
+GIT_COMPAT_URL="git://github.com/mcgrof/compat.git"
 
-INCLUDE_NET_BT="hci_core.h l2cap.h bluetooth.h rfcomm.h hci.h mgmt.h smp.h"
+INCLUDE_NET_BT="hci_core.h l2cap.h bluetooth.h rfcomm.h hci.h hci_mon.h mgmt.h sco.h smp.h a2mp.h"
 NET_BT_DIRS="bluetooth bluetooth/bnep bluetooth/cmtp bluetooth/rfcomm bluetooth/hidp"
 
 INCLUDE_LINUX="ieee80211.h nl80211.h"
 INCLUDE_LINUX="$INCLUDE_LINUX pci_ids.h eeprom_93cx6.h"
 INCLUDE_LINUX="$INCLUDE_LINUX ath9k_platform.h"
 INCLUDE_LINUX="$INCLUDE_LINUX wl12xx.h"
+INCLUDE_LINUX="$INCLUDE_LINUX rndis.h"
 
 # For rndis_wext
 INCLUDE_LINUX_USB="usbnet.h rndis_host.h"
@@ -232,6 +233,8 @@ DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/brcmutil"
 DRIVERS="$DRIVERS drivers/net/wireless/brcm80211/include"
 DRIVERS="$DRIVERS drivers/net/wireless/iwlegacy"
 DRIVERS="$DRIVERS drivers/net/wireless/iwlwifi"
+DRIVERS="$DRIVERS drivers/net/wireless/iwlwifi/pcie"
+DRIVERS="$DRIVERS drivers/net/wireless/iwlwifi/dvm"
 DRIVERS="$DRIVERS drivers/net/wireless/rt2x00"
 DRIVERS="$DRIVERS drivers/net/wireless/zd1211rw"
 DRIVERS="$DRIVERS drivers/net/wireless/libertas"
@@ -247,14 +250,12 @@ DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192se"
 DRIVERS="$DRIVERS drivers/net/wireless/rtlwifi/rtl8192de"
 DRIVERS="$DRIVERS drivers/net/wireless/libertas_tf"
 DRIVERS="$DRIVERS drivers/net/wireless/ipw2x00"
-#DRIVERS="$DRIVERS drivers/net/wireless/wl12xx"
-#DRIVERS="$DRIVERS drivers/net/wireless/wl1251"
 DRIVERS="$DRIVERS drivers/net/wireless/ti"
 DRIVERS="$DRIVERS drivers/net/wireless/ti/wl12xx"
 DRIVERS="$DRIVERS drivers/net/wireless/ti/wl18xx"
-DRIVERS="$DRIVERS drivers/net/wireless/ti/wlcore"
 DRIVERS="$DRIVERS drivers/net/wireless/ti/wl1251"
-DRIVERS="$DRIVERS drivers/net/wireless/iwmc3200wifi"
+DRIVERS="$DRIVERS drivers/net/wireless/ti/wlcore"
+DRIVERS="$DRIVERS drivers/net/wireless/ti/wl18xx"
 DRIVERS="$DRIVERS drivers/net/wireless/orinoco"
 DRIVERS="$DRIVERS drivers/net/wireless/mwifiex"
 
@@ -266,6 +267,7 @@ DRIVERS="$DRIVERS drivers/net/ethernet/atheros"
 DRIVERS="$DRIVERS drivers/net/ethernet/atheros/atl1c"
 DRIVERS="$DRIVERS drivers/net/ethernet/atheros/atl1e"
 DRIVERS="$DRIVERS drivers/net/ethernet/atheros/atlx"
+DRIVERS="$DRIVERS drivers/net/ethernet/atheros/alx"
 
 # Bluetooth drivers
 DRIVERS_BT="drivers/bluetooth"
@@ -336,8 +338,11 @@ for i in $NET_DIRS; do
 	echo "Copying $GIT_TREE/net/$i/*.[ch]"
 	cp $GIT_TREE/net/$i/*.[ch] net/$i/
 	cp $GIT_TREE/net/$i/Makefile net/$i/
+	cp $GIT_TREE/net/$i/Kconfig net/$i/
 	rm -f net/$i/*.mod.c
 done
+
+cp $GIT_TREE/MAINTAINERS ./
 
 # Copy files needed for statically compiled regulatory rules database
 cp $GIT_TREE/net/wireless/db.txt net/wireless/
@@ -427,10 +432,11 @@ cp $GIT_TREE/$DIR/Makefile $DIR
 COMPAT="compat"
 mkdir -p $COMPAT
 echo "Copying $GIT_COMPAT_TREE/ files..."
-cp $GIT_COMPAT_TREE/compat/*.c $COMPAT/
+cp $GIT_COMPAT_TREE/compat/*.[ch] $COMPAT/
 cp $GIT_COMPAT_TREE/compat/Makefile $COMPAT/
-cp -a $GIT_COMPAT_TREE/udev/ .
-cp -a $GIT_COMPAT_TREE/scripts/ $COMPAT/
+cp -a $GIT_COMPAT_TREE/udev .
+cp -a $GIT_COMPAT_TREE/scripts $COMPAT/
+cp $GIT_COMPAT_TREE/bin/ckmake $COMPAT/
 cp -a $GIT_COMPAT_TREE/include/linux/* include/linux/
 cp -a $GIT_COMPAT_TREE/include/net/* include/net/
 cp -a $GIT_COMPAT_TREE/include/trace/* include/trace/
@@ -447,9 +453,9 @@ export WSTABLE="
         drivers/net/wireless/
         net/bluetooth/
         drivers/bluetooth/
-        drivers/net/atl1c/
-        drivers/net/atl1e/
-        drivers/net/atlx/
+        drivers/net/ethernet/atheros/atl1c/
+        drivers/net/ethernet/atheros/atl1e/
+        drivers/net/ethernet/atheros/atlx/
         include/linux/nl80211.h
         include/linux/rfkill.h
         include/net/cfg80211.h
@@ -498,8 +504,8 @@ if [[ "$GET_STABLE_PENDING" = y ]]; then
 	fi
 	echo -e "${GREEN}Generating stable cherry picks... ${NORMAL}"
 	echo -e "\nUsing command on directory $PWD:"
-	echo -e "\ngit format-patch --grep=\"stable@kernel.org\" -o $PENDING_STABLE_DIR ${LAST_STABLE_UPDATE}.. $WSTABLE"
-	git format-patch --grep="stable@kernel.org" -o $PENDING_STABLE_DIR ${LAST_STABLE_UPDATE}.. $WSTABLE
+	echo -e "\ngit format-patch --grep=\"stable@vger.kernel.org\" -o $PENDING_STABLE_DIR ${LAST_STABLE_UPDATE}.. $WSTABLE"
+	git format-patch --grep="stable@vger.kernel.org" -o $PENDING_STABLE_DIR ${LAST_STABLE_UPDATE}.. $WSTABLE
 	if [ ! -d ${LAST_DIR}/${PENDING_STABLE_DIR} ]; then
 		echo -e "Assumption that ${LAST_DIR}/${PENDING_STABLE_DIR} directory exists failed"
 		exit 1
@@ -576,7 +582,7 @@ for dir in $EXTRA_PATCHES; do
 	if [ $FOUND -eq 0 ]; then
 		continue
 	fi
-	for i in $dir/*.patch; do
+	for i in $(ls -v $dir/*.patch); do
 		echo -e "${GREEN}Applying backport patch${NORMAL}: ${BLUE}$i${NORMAL}"
 		patch -p1 -N -t < $i
 		RET=$?
@@ -597,35 +603,46 @@ GIT_REMOTE=$(git config branch.${GIT_BRANCH}.remote)
 GIT_REMOTE=${GIT_REMOTE:-origin}
 GIT_REMOTE_URL=$(git config remote.${GIT_REMOTE}.url)
 GIT_REMOTE_URL=${GIT_REMOTE_URL:-unknown}
+
+
+echo -e "Getting TI drivers version..."
+TI_VERSION=`git describe --dirty`
+TI_DRIVERS="wlcore wl12xx wl18xx"
+TI_PATH=drivers/net/wireless/ti
+echo -e "TI drivers version: ${TI_VERSION}"
+for driver in ${TI_DRIVERS}; do
+	echo "static const char *${driver}_timestamp = __TIMESTAMP__;" > \
+		${DIR}/${TI_PATH}/${driver}/version.h
+	echo "static const char *${driver}_git_head = \"${TI_VERSION}\";" >>  \
+		${DIR}/${TI_PATH}/${driver}/version.h
+done
+
+
+cd $GIT_COMPAT_TREE
+git describe > $DIR/.compat_base
+cd $DIR
+
 echo -e "${GREEN}Updated${NORMAL} from local tree: ${BLUE}${GIT_TREE}${NORMAL}"
 echo -e "Origin remote URL: ${CYAN}${GIT_REMOTE_URL}${NORMAL}"
 cd $DIR
 if [ -d ./.git ]; then
 	if [[ ${POSTFIX_RELEASE_TAG} != "" ]]; then
-		echo -e "$(git describe)-${POSTFIX_RELEASE_TAG}" > compat_version
+		echo -e "$(git describe)-${POSTFIX_RELEASE_TAG}" > .compat_version
 	else
-		echo -e "$(git describe)" > compat_version
+		echo -e "$(git describe)" > .compat_version
 	fi
 
 	cd $GIT_TREE
 	TREE_NAME=${GIT_REMOTE_URL##*/}
 
-	echo $TREE_NAME > $DIR/compat_base_tree
-	echo $GIT_DESCRIBE > $DIR/compat_base_tree_version
+	echo $TREE_NAME > $DIR/.compat_base_tree
+	echo $GIT_DESCRIBE > $DIR/.compat_base_tree_version
 
 	case $TREE_NAME in
 	"wireless-testing.git") # John's wireless-testing
-		# We override the compat_base_tree_version for wireless-testing
-		# as john keeps the Linus' tags and does not write a tag for his
-		# tree himself so git describe would yield a v2.6.3x.y-etc but
-		# what is more useful is just the wireless-testing master tag
-		MASTER_TAG=$(git tag -l| grep master | tail -1)
-		echo $MASTER_TAG > $DIR/compat_base_tree_version
 		echo -e "This is a ${RED}wireless-testing.git${NORMAL} compat-wireless release"
 		;;
 	"linux-next.git") # The linux-next integration testing tree
-		MASTER_TAG=$(git tag -l| grep next | tail -1)
-		echo $MASTER_TAG > $DIR/master-tag
 		echo -e "This is a ${RED}linux-next.git${NORMAL} compat-wireless release"
 		;;
 	"linux-stable.git") # Greg's all stable tree
@@ -639,11 +656,16 @@ if [ -d ./.git ]; then
 	esac
 
 	cd $DIR
-	echo -e "\nBase tree: ${GREEN}$(cat compat_base_tree)${NORMAL}" >> $CODE_METRICS
-	echo -e "Base tree version: ${PURPLE}$(cat compat_base_tree_version)${NORMAL}" >> $CODE_METRICS
-	echo -e "compat-wireless release: ${YELLOW}$(cat compat_version)${NORMAL}" >> $CODE_METRICS
+	echo -e "\nBase tree: ${GREEN}$(cat .compat_base_tree)${NORMAL}" >> $CODE_METRICS
+	echo -e "Base tree version: ${PURPLE}$(cat .compat_base_tree_version)${NORMAL}" >> $CODE_METRICS
+	echo -e "compat.git: ${CYAN}$(cat .compat_base)${NORMAL}" >> $CODE_METRICS
+	echo -e "compat-wireless release: ${YELLOW}$(cat .compat_version)${NORMAL}" >> $CODE_METRICS
 
-	cat $CODE_METRICS
 fi
+
+
+echo -e "Code metrics archive: ${GREEN}http://bit.ly/H6BTF7${NORMAL}" >> $CODE_METRICS
+
+cat $CODE_METRICS
 
 ./scripts/driver-select restore

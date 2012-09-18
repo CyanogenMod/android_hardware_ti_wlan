@@ -38,7 +38,6 @@
 #include <linux/serial.h>
 #include <linux/serial_reg.h>
 #include <linux/bitops.h>
-#include <asm/system.h>
 #include <asm/io.h>
 
 #include <pcmcia/cistpl.h>
@@ -83,9 +82,6 @@ typedef struct dtl1_info_t {
 
 
 static int dtl1_config(struct pcmcia_device *link);
-static void dtl1_release(struct pcmcia_device *link);
-
-static void dtl1_detach(struct pcmcia_device *p_dev);
 
 
 /* Transmit states  */
@@ -148,13 +144,9 @@ static void dtl1_write_wakeup(dtl1_info_t *info)
 	}
 
 	do {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
-		register unsigned int iobase = info->p_dev->resource[0]->start;
-#else
-		register unsigned int iobase = info->p_dev->io.BasePort1;
-#endif
+		unsigned int iobase = info->p_dev->resource[0]->start;
 		register struct sk_buff *skb;
-		register int len;
+		int len;
 
 		clear_bit(XMIT_WAKEUP, &(info->tx_state));
 
@@ -217,11 +209,7 @@ static void dtl1_receive(dtl1_info_t *info)
 		return;
 	}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	iobase = info->p_dev->resource[0]->start;
-#else
-	iobase = info->p_dev->io.BasePort1;
-#endif
 
 	do {
 		info->hdev->stat.byte_rx++;
@@ -308,11 +296,7 @@ static irqreturn_t dtl1_interrupt(int irq, void *dev_inst)
 		/* our irq handler is shared */
 		return IRQ_NONE;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	iobase = info->p_dev->resource[0]->start;
-#else
-	iobase = info->p_dev->io.BasePort1;
-#endif
 
 	spin_lock(&(info->lock));
 
@@ -379,7 +363,7 @@ static int dtl1_hci_open(struct hci_dev *hdev)
 
 static int dtl1_hci_flush(struct hci_dev *hdev)
 {
-	dtl1_info_t *info = (dtl1_info_t *)(hdev->driver_data);
+	dtl1_info_t *info = hci_get_drvdata(hdev);
 
 	/* Drop TX queue */
 	skb_queue_purge(&(info->txq));
@@ -411,7 +395,7 @@ static int dtl1_hci_send_frame(struct sk_buff *skb)
 		return -ENODEV;
 	}
 
-	info = (dtl1_info_t *)(hdev->driver_data);
+	info = hci_get_drvdata(hdev);
 
 	switch (bt_cb(skb)->pkt_type) {
 	case HCI_COMMAND_PKT:
@@ -454,11 +438,6 @@ static int dtl1_hci_send_frame(struct sk_buff *skb)
 }
 
 
-static void dtl1_hci_destruct(struct hci_dev *hdev)
-{
-}
-
-
 static int dtl1_hci_ioctl(struct hci_dev *hdev, unsigned int cmd,  unsigned long arg)
 {
 	return -ENOIOCTLCMD;
@@ -472,11 +451,7 @@ static int dtl1_hci_ioctl(struct hci_dev *hdev, unsigned int cmd,  unsigned long
 static int dtl1_open(dtl1_info_t *info)
 {
 	unsigned long flags;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	unsigned int iobase = info->p_dev->resource[0]->start;
-#else
-	unsigned int iobase = info->p_dev->io.BasePort1;
-#endif
 	struct hci_dev *hdev;
 
 	spin_lock_init(&(info->lock));
@@ -499,17 +474,14 @@ static int dtl1_open(dtl1_info_t *info)
 	info->hdev = hdev;
 
 	hdev->bus = HCI_PCCARD;
-	hdev->driver_data = info;
+	hci_set_drvdata(hdev, info);
 	SET_HCIDEV_DEV(hdev, &info->p_dev->dev);
 
 	hdev->open     = dtl1_hci_open;
 	hdev->close    = dtl1_hci_close;
 	hdev->flush    = dtl1_hci_flush;
 	hdev->send     = dtl1_hci_send_frame;
-	hdev->destruct = dtl1_hci_destruct;
 	hdev->ioctl    = dtl1_hci_ioctl;
-
-	hdev->owner = THIS_MODULE;
 
 	spin_lock_irqsave(&(info->lock), flags);
 
@@ -523,13 +495,8 @@ static int dtl1_open(dtl1_info_t *info)
 	outb(UART_LCR_WLEN8, iobase + UART_LCR);	/* Reset DLAB */
 	outb((UART_MCR_DTR | UART_MCR_RTS | UART_MCR_OUT2), iobase + UART_MCR);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	info->ri_latch = inb(info->p_dev->resource[0]->start + UART_MSR)
 				& UART_MSR_RI;
-#else
-	info->ri_latch = inb(info->p_dev->io.BasePort1 + UART_MSR)
-				& UART_MSR_RI;
-#endif
 
 	/* Turn on interrupts */
 	outb(UART_IER_RLSI | UART_IER_RDI | UART_IER_THRI, iobase + UART_IER);
@@ -554,11 +521,7 @@ static int dtl1_open(dtl1_info_t *info)
 static int dtl1_close(dtl1_info_t *info)
 {
 	unsigned long flags;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	unsigned int iobase = info->p_dev->resource[0]->start;
-#else
-	unsigned int iobase = info->p_dev->io.BasePort1;
-#endif
 	struct hci_dev *hdev = info->hdev;
 
 	if (!hdev)
@@ -594,24 +557,7 @@ static int dtl1_probe(struct pcmcia_device *link)
 	info->p_dev = link;
 	link->priv = info;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
-#else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
-	link->resource[0]->flags |= IO_DATA_PATH_WIDTH_8;
-	link->resource[0]->end = 8;
-#else
-	link->io.Attributes1 = IO_DATA_PATH_WIDTH_8;
-	link->io.NumPorts1= 8;
-#endif
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35))
-	link->irq.Attributes = IRQ_TYPE_DYNAMIC_SHARING;
-	link->irq.Handler = dtl1_interrupt;
-#endif
-
-	link->conf.Attributes = CONF_ENABLE_IRQ;
-	link->conf.IntType = INT_MEMORY_AND_IO;
-#endif
 
 	return dtl1_config(link);
 }
@@ -621,12 +567,11 @@ static void dtl1_detach(struct pcmcia_device *link)
 {
 	dtl1_info_t *info = link->priv;
 
-	dtl1_release(link);
-
+	dtl1_close(info);
+	pcmcia_disable_device(link);
 	kfree(info);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
 static int dtl1_confcheck(struct pcmcia_device *p_dev, void *priv_data)
 {
 	if ((p_dev->resource[1]->end) || (p_dev->resource[1]->end < 8))
@@ -637,29 +582,6 @@ static int dtl1_confcheck(struct pcmcia_device *p_dev, void *priv_data)
 
 	return pcmcia_request_io(p_dev);
 }
-#else
-static int dtl1_confcheck(struct pcmcia_device *p_dev,
-			  cistpl_cftable_entry_t *cf,
-			  cistpl_cftable_entry_t *dflt,
-			  unsigned int vcc,
-			  void *priv_data)
-{
-	if ((cf->io.nwin != 1) || (cf->io.win[0].len <= 8))
-		return -ENODEV;
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
-	p_dev->resource[0]->start = cf->io.win[0].base;
-	p_dev->resource[0]->end = cf->io.win[0].len;	/*yo */
-	p_dev->io_lines = cf->io.flags & CISTPL_IO_LINES_MASK;
-	return pcmcia_request_io(p_dev);
-#else
-	p_dev->io.BasePort1 = cf->io.win[0].base;
-	p_dev->io.NumPorts1 = cf->io.win[0].len;	/*yo */
-	p_dev->io.IOAddrLines = cf->io.flags & CISTPL_IO_LINES_MASK;
-	return pcmcia_request_io(p_dev, &p_dev->io);
-#endif
-}
-#endif
 
 static int dtl1_config(struct pcmcia_device *link)
 {
@@ -667,23 +589,13 @@ static int dtl1_config(struct pcmcia_device *link)
 	int i;
 
 	/* Look for a generic full-sized window */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	link->resource[0]->end = 8;
-#else
-	link->io.NumPorts1 = 8;
-#endif
 	if (pcmcia_loop_config(link, dtl1_confcheck, NULL) < 0)
 		goto failed;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 	i = pcmcia_request_irq(link, dtl1_interrupt);
 	if (i != 0)
 		goto failed;
-#else
-	i = pcmcia_request_irq(link, &link->irq);
-	if (i != 0)
-		link->irq.AssignedIRQ = 0;
-#endif
 
 	i = pcmcia_enable_device(link);
 	if (i != 0)
@@ -695,20 +607,9 @@ static int dtl1_config(struct pcmcia_device *link)
 	return 0;
 
 failed:
-	dtl1_release(link);
+	dtl1_detach(link);
 	return -ENODEV;
 }
-
-
-static void dtl1_release(struct pcmcia_device *link)
-{
-	dtl1_info_t *info = link->priv;
-
-	dtl1_close(info);
-
-	pcmcia_disable_device(link);
-}
-
 
 static const struct pcmcia_device_id dtl1_ids[] = {
 	PCMCIA_DEVICE_PROD_ID12("Nokia Mobile Phones", "DTL-1", 0xe1bfdd64, 0xe168480d),
@@ -721,13 +622,7 @@ MODULE_DEVICE_TABLE(pcmcia, dtl1_ids);
 
 static struct pcmcia_driver dtl1_driver = {
 	.owner		= THIS_MODULE,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
 	.name		= "dtl1_cs",
-#else
-	.drv		= {
-		.name	= "dtl1_cs",
-	},
-#endif
 	.probe		= dtl1_probe,
 	.remove		= dtl1_detach,
 	.id_table	= dtl1_ids,

@@ -95,16 +95,91 @@ EXPORT_SYMBOL_GPL(compat_usb_scuttle_anchored_urbs);
 
 #endif /* CONFIG_COMPAT_USB_URB_THREAD_FIX */
 
+struct workqueue_struct *system_wq __read_mostly;
+struct workqueue_struct *system_long_wq __read_mostly;
 struct workqueue_struct *system_nrt_wq __read_mostly;
+EXPORT_SYMBOL_GPL(system_wq);
+EXPORT_SYMBOL_GPL(system_long_wq);
 EXPORT_SYMBOL_GPL(system_nrt_wq);
+
+int compat_schedule_work(struct work_struct *work)
+{
+	return queue_work(system_wq, work);
+}
+EXPORT_SYMBOL_GPL(compat_schedule_work);
+
+int compat_schedule_work_on(int cpu, struct work_struct *work)
+{
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27))
+	return queue_work_on(cpu, system_wq, work);
+#else
+	return queue_work(system_wq, work);
+#endif
+}
+EXPORT_SYMBOL_GPL(compat_schedule_work_on);
+
+int compat_schedule_delayed_work(struct delayed_work *dwork,
+                                 unsigned long delay)
+{
+	return queue_delayed_work(system_wq, dwork, delay);
+}
+EXPORT_SYMBOL_GPL(compat_schedule_delayed_work);
+
+int compat_schedule_delayed_work_on(int cpu,
+                                    struct delayed_work *dwork,
+                                    unsigned long delay)
+{
+	return queue_delayed_work_on(cpu, system_wq, dwork, delay);
+}
+EXPORT_SYMBOL_GPL(compat_schedule_delayed_work_on);
+
+void compat_flush_scheduled_work(void)
+{
+	/*
+	 * It is debatable which one we should prioritize first, lets
+	 * go with the old kernel's one first for now (keventd_wq) and
+	 * if think its reasonable later we can flip this around.
+	 */
+	flush_workqueue(system_wq);
+	flush_scheduled_work();
+}
+EXPORT_SYMBOL_GPL(compat_flush_scheduled_work);
+
+/**
+ * work_busy - test whether a work is currently pending or running
+ * @work: the work to be tested
+ *
+ * Test whether @work is currently pending or running.  There is no
+ * synchronization around this function and the test result is
+ * unreliable and only useful as advisory hints or for debugging.
+ * Especially for reentrant wqs, the pending state might hide the
+ * running state.
+ *
+ * RETURNS:
+ * OR'd bitmask of WORK_BUSY_* bits.
+ */
+unsigned int work_busy(struct work_struct *work)
+{
+	unsigned int ret = 0;
+
+	if (work_pending(work))
+		ret |= WORK_BUSY_PENDING;
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(work_busy);
 
 void compat_system_workqueue_create()
 {
+	system_wq = alloc_workqueue("events", 0, 0);
+	system_long_wq = alloc_workqueue("events_long", 0, 0);
 	system_nrt_wq = create_singlethread_workqueue("events_nrt");
-	WARN_ON(!system_nrt_wq);
+	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq);
 }
 
 void compat_system_workqueue_destroy()
 {
+	destroy_workqueue(system_wq);
+	destroy_workqueue(system_long_wq);
 	destroy_workqueue(system_nrt_wq);
 }

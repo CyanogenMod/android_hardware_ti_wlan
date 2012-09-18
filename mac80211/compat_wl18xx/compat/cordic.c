@@ -94,7 +94,7 @@ struct cordic_iq cordic_calc_iq(s32 theta)
 	coord.q *= signx;
 	return coord;
 }
-EXPORT_SYMBOL(cordic_calc_iq);
+EXPORT_SYMBOL_GPL(cordic_calc_iq);
 
 MODULE_DESCRIPTION("Cordic functions");
 MODULE_AUTHOR("Broadcom Corporation");

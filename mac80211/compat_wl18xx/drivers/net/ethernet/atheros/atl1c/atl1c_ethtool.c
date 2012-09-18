@@ -114,6 +114,13 @@ static int atl1c_set_settings(struct net_device *netdev,
 	return 0;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39))
+static u32 atl1c_get_tx_csum(struct net_device *netdev)
+{
+	return (netdev->features & NETIF_F_HW_CSUM) != 0;
+}
+#endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39)) */
+
 static u32 atl1c_get_msglevel(struct net_device *netdev)
 {
 	struct atl1c_adapter *adapter = netdev_priv(netdev);
@@ -141,8 +148,7 @@ static void atl1c_get_regs(struct net_device *netdev,
 
 	memset(p, 0, AT_REGS_LEN);
 
-	regs->version = 0;
-	AT_READ_REG(hw, REG_VPD_CAP, 		  p++);
+	regs->version = 1;
 	AT_READ_REG(hw, REG_PM_CTRL, 		  p++);
 	AT_READ_REG(hw, REG_MAC_HALF_DUPLX_CTRL,  p++);
 	AT_READ_REG(hw, REG_TWSI_CTRL, 		  p++);
@@ -154,7 +160,7 @@ static void atl1c_get_regs(struct net_device *netdev,
 	AT_READ_REG(hw, REG_LINK_CTRL, 		  p++);
 	AT_READ_REG(hw, REG_IDLE_STATUS, 	  p++);
 	AT_READ_REG(hw, REG_MDIO_CTRL, 		  p++);
-	AT_READ_REG(hw, REG_SERDES_LOCK, 	  p++);
+	AT_READ_REG(hw, REG_SERDES,		  p++);
 	AT_READ_REG(hw, REG_MAC_CTRL, 		  p++);
 	AT_READ_REG(hw, REG_MAC_IPG_IFG, 	  p++);
 	AT_READ_REG(hw, REG_MAC_STA_ADDR, 	  p++);
@@ -167,9 +173,9 @@ static void atl1c_get_regs(struct net_device *netdev,
 	AT_READ_REG(hw, REG_WOL_CTRL, 		  p++);
 
 	atl1c_read_phy_reg(hw, MII_BMCR, &phy_data);
-	regs_buff[73] =	(u32) phy_data;
+	regs_buff[AT_REGS_LEN/sizeof(u32) - 2] = (u32) phy_data;
 	atl1c_read_phy_reg(hw, MII_BMSR, &phy_data);
-	regs_buff[74] = (u32) phy_data;
+	regs_buff[AT_REGS_LEN/sizeof(u32) - 1] = (u32) phy_data;
 }
 
 static int atl1c_get_eeprom_len(struct net_device *netdev)
@@ -232,7 +238,6 @@ static void atl1c_get_drvinfo(struct net_device *netdev,
 	strlcpy(drvinfo->driver,  atl1c_driver_name, sizeof(drvinfo->driver));
 	strlcpy(drvinfo->version, atl1c_driver_version,
 		sizeof(drvinfo->version));
-	strlcpy(drvinfo->fw_version, "N/A", sizeof(drvinfo->fw_version));
 	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
 		sizeof(drvinfo->bus_info));
 	drvinfo->n_stats = 0;
@@ -303,6 +308,11 @@ static const struct ethtool_ops atl1c_ethtool_ops = {
 	.get_link               = ethtool_op_get_link,
 	.get_eeprom_len         = atl1c_get_eeprom_len,
 	.get_eeprom             = atl1c_get_eeprom,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39))
+	.get_tx_csum            = atl1c_get_tx_csum,
+	.get_sg                 = ethtool_op_get_sg,
+	.set_sg                 = ethtool_op_set_sg,
+#endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39)) */
 };
 
 void atl1c_set_ethtool_ops(struct net_device *netdev)

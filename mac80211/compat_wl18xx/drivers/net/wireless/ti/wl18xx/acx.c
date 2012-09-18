@@ -63,7 +63,7 @@ out:
 int wl18xx_acx_set_checksum_state(struct wl1271 *wl)
 {
 	struct wl18xx_acx_checksum_state *acx;
-	int ret=0;
+	int ret;
 
 	wl1271_debug(DEBUG_ACX, "acx checksum state");
 

@@ -54,6 +54,24 @@ int wl1271_init_templates_config(struct wl1271 *wl)
 	if (ret < 0)
 		return ret;
 
+	if (wl->quirks & WLCORE_QUIRK_DUAL_PROBE_TMPL) {
+		ret = wl1271_cmd_template_set(wl, WL12XX_INVALID_ROLE_ID,
+					      CMD_TEMPL_PROBE_REQ_2_4_PERIODIC,
+					      NULL,
+					      WL1271_CMD_TEMPL_MAX_SIZE,
+					      0, WL1271_RATE_AUTOMATIC);
+		if (ret < 0)
+			return ret;
+
+		ret = wl1271_cmd_template_set(wl, WL12XX_INVALID_ROLE_ID,
+					      CMD_TEMPL_PROBE_REQ_5_PERIODIC,
+					      NULL,
+					      WL1271_CMD_TEMPL_MAX_SIZE,
+					      0, WL1271_RATE_AUTOMATIC);
+		if (ret < 0)
+			return ret;
+	}
+
 	ret = wl1271_cmd_template_set(wl, WL12XX_INVALID_ROLE_ID,
 				      CMD_TEMPL_NULL_DATA, NULL,
 				      sizeof(struct wl12xx_null_data_template),
@@ -125,7 +143,7 @@ int wl1271_init_templates_config(struct wl1271 *wl)
 	if (ret < 0)
 		return ret;
 
-	for (i = 0; i < CMD_TEMPL_KLV_IDX_MAX; i++) {
+	for (i = 0; i < WLCORE_MAX_KLV_TEMPLATES; i++) {
 		ret = wl1271_cmd_template_set(wl, WL12XX_INVALID_ROLE_ID,
 					      CMD_TEMPL_KLV, NULL,
 					      sizeof(struct ieee80211_qos_hdr),
@@ -330,7 +348,7 @@ static int wl12xx_init_fwlog(struct wl1271 *wl)
 }
 
 /* generic sta initialization (non vif-specific) */
-static int wl1271_sta_hw_init(struct wl1271 *wl, struct wl12xx_vif *wlvif)
+int wl1271_sta_hw_init(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 {
 	int ret;
 
@@ -355,15 +373,7 @@ static int wl1271_sta_hw_init_post_mem(struct wl1271 *wl,
 				       struct ieee80211_vif *vif)
 {
 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
-	int ret, i;
-
-	/* disable all keep-alive templates */
-	for (i = 0; i < CMD_TEMPL_KLV_IDX_MAX; i++) {
-		ret = wl1271_acx_keep_alive_config(wl, wlvif, i,
-						   ACX_KEEP_ALIVE_TPL_INVALID);
-		if (ret < 0)
-			return ret;
-	}
+	int ret;
 
 	/* disable the keep-alive feature */
 	ret = wl1271_acx_keep_alive_mode(wl, wlvif, false);
@@ -567,9 +577,6 @@ int wl1271_init_vif_specific(struct wl1271 *wl, struct ieee80211_vif *vif)
 		/* Configure for power according to debugfs */
 		if (sta_auth != WL1271_PSM_ILLEGAL)
 			ret = wl1271_acx_sleep_auth(wl, sta_auth);
-		/* Configure for power always on */
-		else if (wl->quirks & WLCORE_QUIRK_NO_ELP)
-			ret = wl1271_acx_sleep_auth(wl, WL1271_PSM_CAM);
 		/* Configure for ELP power saving */
 		else
 			ret = wl1271_acx_sleep_auth(wl, WL1271_PSM_ELP);

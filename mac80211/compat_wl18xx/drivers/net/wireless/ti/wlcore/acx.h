@@ -54,17 +54,10 @@
 /* SW FW Initiated interrupt Watchdog timer expiration */
 #define WL1271_ACX_SW_INTR_WATCHDOG        BIT(9)
 
-#define WL1271_ACX_INTR_ALL		   0xFFFFFFFF
-#define WL1271_ACX_ALL_EVENTS_VECTOR	(WL1271_ACX_INTR_WATCHDOG      | \
-					WL1271_ACX_INTR_INIT_COMPLETE | \
-					WL1271_ACX_INTR_EVENT_A       | \
-					WL1271_ACX_INTR_EVENT_B       | \
-					WL1271_ACX_INTR_CMD_COMPLETE  | \
-					WL1271_ACX_INTR_HW_AVAILABLE  | \
-					WL1271_ACX_INTR_DATA          | \
-					WL1271_ACX_SW_INTR_WATCHDOG)
+#define WL1271_ACX_INTR_ALL             0xFFFFFFFF
 
-#define WL1271_INTR_MASK		(WL1271_ACX_INTR_WATCHDOG      | \
+/* all possible interrupts - only appropriate ones will be masked in */
+#define WLCORE_ALL_INTR_MASK		(WL1271_ACX_INTR_WATCHDOG     | \
 					WL1271_ACX_INTR_EVENT_A       | \
 					WL1271_ACX_INTR_EVENT_B       | \
 					WL1271_ACX_INTR_HW_AVAILABLE  | \
@@ -934,33 +927,46 @@ struct wl12xx_acx_config_hangover {
 	u8 increase_time;
 	u8 window_size;
 	u8 padding[2];
-}__packed;
+} __packed;
 
 
-struct acx_rx_data_filter_state {
+struct acx_default_rx_filter {
 	struct acx_header header;
 	u8 enable;
 
 	/* action of type FILTER_XXX */
 	u8 default_action;
+
 	u8 pad[2];
 } __packed;
 
 
-struct acx_rx_data_filter_cfg {
+struct acx_rx_filter_cfg {
 	struct acx_header header;
 
 	u8 enable;
 
-	/* range 0 - MAX_DATA_FILTERS */
+	/* 0 - WL1271_MAX_RX_FILTERS-1 */
 	u8 index;
 
 	u8 action;
 
 	u8 num_fields;
-
-	struct wl12xx_rx_data_filter_field fields[0];
+	u8 fields[0];
 } __packed;
+
+enum wlcore_bandwidth {
+	WLCORE_BANDWIDTH_20MHZ,
+	WLCORE_BANDWIDTH_40MHZ,
+};
+
+struct wlcore_peer_ht_operation_mode {
+	struct acx_header header;
+
+	u8 hlid;
+	u8 bandwidth; /* enum wlcore_bandwidth */
+	u8 padding[2];
+};
 
 enum {
 	ACX_WAKE_UP_CONDITIONS           = 0x0000,
@@ -1033,6 +1039,8 @@ enum {
 	ACX_FEATURE_CFG                  = 0x0043,
 	ACX_PROTECTION_CFG               = 0x0044,
 	ACX_CHECKSUM_CONFIG              = 0x0045,
+
+	ACX_PEER_HT_OPERATION_MODE_CFG   = 0x0064,
 };
 
 
@@ -1120,8 +1128,12 @@ int wl1271_acx_set_inconnection_sta(struct wl1271 *wl, u8 *addr);
 int wl1271_acx_fm_coex(struct wl1271 *wl);
 int wl12xx_acx_set_rate_mgmt_params(struct wl1271 *wl);
 int wl12xx_acx_config_hangover(struct wl1271 *wl);
-int wl1271_acx_toggle_rx_data_filter(struct wl1271 *wl, bool enable,
-				     u8 default_action);
-int wl1271_acx_set_rx_data_filter(struct wl1271 *wl, u8 index, bool enable,
-				  struct wl12xx_rx_data_filter *filter);
+int wlcore_acx_peer_ht_operation_mode(struct wl1271 *wl, u8 hlid, bool wide);
+
+#ifdef CONFIG_PM
+int wl1271_acx_default_rx_filter_enable(struct wl1271 *wl, bool enable,
+					enum rx_filter_action action);
+int wl1271_acx_set_rx_filter(struct wl1271 *wl, u8 index, bool enable,
+			     struct wl12xx_rx_filter *filter);
+#endif /* CONFIG_PM */
 #endif /* __WL1271_ACX_H__ */

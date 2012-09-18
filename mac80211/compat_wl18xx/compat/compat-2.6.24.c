@@ -16,7 +16,7 @@
  * for usage with tons of code that makes mention to it.
  */
 struct net init_net;
-EXPORT_SYMBOL(init_net);
+EXPORT_SYMBOL_GPL(init_net);
 
 /* 2.6.22 and 2.6.23 have eth_header_cache_update defined as extern in include/linux/etherdevice.h
  * and actually defined in net/ethernet/eth.c but 2.6.24 exports it. Lets export it here */
@@ -36,7 +36,7 @@ void eth_header_cache_update(struct hh_cache *hh,
 	memcpy(((u8 *) hh->hh_data) + HH_DATA_OFF(sizeof(struct ethhdr)),
 		haddr, ETH_ALEN);
 }
-EXPORT_SYMBOL(eth_header_cache_update);
+EXPORT_SYMBOL_GPL(eth_header_cache_update);
 
 /* 2.6.22 and 2.6.23 have eth_header_cache defined as extern in include/linux/etherdevice.h
  * and actually defined in net/ethernet/eth.c but 2.6.24 exports it. Lets export it here */
@@ -65,7 +65,7 @@ int eth_header_cache(struct neighbour *neigh, struct hh_cache *hh)
 	hh->hh_len = ETH_HLEN;
 	return 0;
 }
-EXPORT_SYMBOL(eth_header_cache);
+EXPORT_SYMBOL_GPL(eth_header_cache);
 
 /* 2.6.22 and 2.6.23 have eth_header() defined as extern in include/linux/etherdevice.h
  * and actually defined in net/ethernet/eth.c but 2.6.24 exports it. Lets export it here */
@@ -118,7 +118,7 @@ int eth_header(struct sk_buff *skb, struct net_device *dev, unsigned short type,
 	return -ETH_HLEN;
 }
 
-EXPORT_SYMBOL(eth_header);
+EXPORT_SYMBOL_GPL(eth_header);
 
 /* 2.6.22 and 2.6.23 have eth_rebuild_header defined as extern in include/linux/etherdevice.h
  * and actually defined in net/ethernet/eth.c but 2.6.24 exports it. Lets export it here */
@@ -154,5 +154,5 @@ int eth_rebuild_header(struct sk_buff *skb)
 
 	return 0;
 }
-EXPORT_SYMBOL(eth_rebuild_header);
+EXPORT_SYMBOL_GPL(eth_rebuild_header);
 

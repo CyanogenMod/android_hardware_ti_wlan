@@ -5,17 +5,6 @@
 #include <net/mac80211.h>
 #include "ieee80211_i.h"
 
-#if !defined(CONFIG_MAC80211_DRIVER_API_TRACER) || defined(__CHECKER__)
-#undef TRACE_EVENT
-#define TRACE_EVENT(name, proto, ...) \
-static inline void trace_ ## name(proto) {}
-#undef DECLARE_EVENT_CLASS
-#define DECLARE_EVENT_CLASS(...)
-#undef DEFINE_EVENT
-#define DEFINE_EVENT(evt_class, name, proto, ...) \
-static inline void trace_ ## name(proto) {}
-#endif
-
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM mac80211
 
@@ -172,6 +161,21 @@ DEFINE_EVENT(local_only_evt, drv_start,
 	TP_ARGS(local)
 );
 
+DEFINE_EVENT(local_u32_evt, drv_get_et_strings,
+	     TP_PROTO(struct ieee80211_local *local, u32 sset),
+	     TP_ARGS(local, sset)
+);
+
+DEFINE_EVENT(local_u32_evt, drv_get_et_sset_count,
+	     TP_PROTO(struct ieee80211_local *local, u32 sset),
+	     TP_ARGS(local, sset)
+);
+
+DEFINE_EVENT(local_only_evt, drv_get_et_stats,
+	     TP_PROTO(struct ieee80211_local *local),
+	     TP_ARGS(local)
+);
+
 DEFINE_EVENT(local_only_evt, drv_suspend,
 	TP_PROTO(struct ieee80211_local *local),
 	TP_ARGS(local)
@@ -180,6 +184,20 @@ DEFINE_EVENT(local_only_evt, drv_suspend,
 DEFINE_EVENT(local_only_evt, drv_resume,
 	TP_PROTO(struct ieee80211_local *local),
 	TP_ARGS(local)
+);
+
+TRACE_EVENT(drv_set_wakeup,
+	TP_PROTO(struct ieee80211_local *local, bool enabled),
+	TP_ARGS(local, enabled),
+	TP_STRUCT__entry(
+		LOCAL_ENTRY
+		__field(bool, enabled)
+	),
+	TP_fast_assign(
+		LOCAL_ASSIGN;
+		__entry->enabled = enabled;
+	),
+	TP_printk(LOCAL_PR_FMT " enabled:%d", LOCAL_PR_ARG, __entry->enabled)
 );
 
 DEFINE_EVENT(local_only_evt, drv_stop,
@@ -288,7 +306,8 @@ TRACE_EVENT(drv_bss_info_changed,
 		__field(u8, dtimper)
 		__field(u16, bcnint)
 		__field(u16, assoc_cap)
-		__field(u64, timestamp)
+		__field(u64, sync_tsf)
+		__field(u32, sync_device_ts)
 		__field(u32, basic_rates)
 		__field(u32, changed)
 		__field(bool, enable_beacon)
@@ -307,7 +326,8 @@ TRACE_EVENT(drv_bss_info_changed,
 		__entry->dtimper = info->dtim_period;
 		__entry->bcnint = info->beacon_int;
 		__entry->assoc_cap = info->assoc_capability;
-		__entry->timestamp = info->timestamp;
+		__entry->sync_tsf = info->sync_tsf;
+		__entry->sync_device_ts = info->sync_device_ts;
 		__entry->basic_rates = info->basic_rates;
 		__entry->enable_beacon = info->enable_beacon;
 		__entry->ht_operation_mode = info->ht_operation_mode;
@@ -317,49 +337,6 @@ TRACE_EVENT(drv_bss_info_changed,
 		LOCAL_PR_FMT  VIF_PR_FMT " changed:%#x",
 		LOCAL_PR_ARG, VIF_PR_ARG, __entry->changed
 	)
-);
-
-DECLARE_EVENT_CLASS(tx_sync_evt,
-	TP_PROTO(struct ieee80211_local *local,
-		 struct ieee80211_sub_if_data *sdata,
-		 const u8 *bssid,
-		 enum ieee80211_tx_sync_type type),
-	TP_ARGS(local, sdata, bssid, type),
-
-	TP_STRUCT__entry(
-		LOCAL_ENTRY
-		VIF_ENTRY
-		__array(char, bssid, ETH_ALEN)
-		__field(u32, sync_type)
-	),
-
-	TP_fast_assign(
-		LOCAL_ASSIGN;
-		VIF_ASSIGN;
-		memcpy(__entry->bssid, bssid, ETH_ALEN);
-		__entry->sync_type = type;
-	),
-
-	TP_printk(
-		LOCAL_PR_FMT  VIF_PR_FMT " bssid:%pM type:%d",
-		LOCAL_PR_ARG, VIF_PR_ARG, __entry->bssid, __entry->sync_type
-	)
-);
-
-DEFINE_EVENT(tx_sync_evt, drv_tx_sync,
-	TP_PROTO(struct ieee80211_local *local,
-		 struct ieee80211_sub_if_data *sdata,
-		 const u8 *bssid,
-		 enum ieee80211_tx_sync_type type),
-	TP_ARGS(local, sdata, bssid, type)
-);
-
-DEFINE_EVENT(tx_sync_evt, drv_finish_tx_sync,
-	TP_PROTO(struct ieee80211_local *local,
-		 struct ieee80211_sub_if_data *sdata,
-		 const u8 *bssid,
-		 enum ieee80211_tx_sync_type type),
-	TP_ARGS(local, sdata, bssid, type)
 );
 
 TRACE_EVENT(drv_prepare_multicast,
@@ -650,27 +627,59 @@ TRACE_EVENT(drv_sta_state,
 	TP_PROTO(struct ieee80211_local *local,
 		 struct ieee80211_sub_if_data *sdata,
 		 struct ieee80211_sta *sta,
-		 enum ieee80211_sta_state state),
+		 enum ieee80211_sta_state old_state,
+		 enum ieee80211_sta_state new_state),
 
-	TP_ARGS(local, sdata, sta, state),
+	TP_ARGS(local, sdata, sta, old_state, new_state),
 
 	TP_STRUCT__entry(
 		LOCAL_ENTRY
 		VIF_ENTRY
 		STA_ENTRY
-		__field(u32, state)
+		__field(u32, old_state)
+		__field(u32, new_state)
 	),
 
 	TP_fast_assign(
 		LOCAL_ASSIGN;
 		VIF_ASSIGN;
 		STA_ASSIGN;
-		__entry->state = state;
+		__entry->old_state = old_state;
+		__entry->new_state = new_state;
 	),
 
 	TP_printk(
-		LOCAL_PR_FMT  VIF_PR_FMT  STA_PR_FMT " state:%d",
-		LOCAL_PR_ARG, VIF_PR_ARG, STA_PR_ARG, __entry->state
+		LOCAL_PR_FMT  VIF_PR_FMT  STA_PR_FMT " state: %d->%d",
+		LOCAL_PR_ARG, VIF_PR_ARG, STA_PR_ARG,
+		__entry->old_state, __entry->new_state
+	)
+);
+
+TRACE_EVENT(drv_sta_rc_update,
+	TP_PROTO(struct ieee80211_local *local,
+		 struct ieee80211_sub_if_data *sdata,
+		 struct ieee80211_sta *sta,
+		 u32 changed),
+
+	TP_ARGS(local, sdata, sta, changed),
+
+	TP_STRUCT__entry(
+		LOCAL_ENTRY
+		VIF_ENTRY
+		STA_ENTRY
+		__field(u32, changed)
+	),
+
+	TP_fast_assign(
+		LOCAL_ASSIGN;
+		VIF_ASSIGN;
+		STA_ASSIGN;
+		__entry->changed = changed;
+	),
+
+	TP_printk(
+		LOCAL_PR_FMT  VIF_PR_FMT  STA_PR_FMT " changed: 0x%x",
+		LOCAL_PR_ARG, VIF_PR_ARG, STA_PR_ARG, __entry->changed
 	)
 );
 
@@ -727,15 +736,14 @@ TRACE_EVENT(drv_sta_remove,
 TRACE_EVENT(drv_conf_tx,
 	TP_PROTO(struct ieee80211_local *local,
 		 struct ieee80211_sub_if_data *sdata,
-		 u16 queue,
-		 const struct ieee80211_tx_queue_params *params),
+		 u16 ac, const struct ieee80211_tx_queue_params *params),
 
-	TP_ARGS(local, sdata, queue, params),
+	TP_ARGS(local, sdata, ac, params),
 
 	TP_STRUCT__entry(
 		LOCAL_ENTRY
 		VIF_ENTRY
-		__field(u16, queue)
+		__field(u16, ac)
 		__field(u16, txop)
 		__field(u16, cw_min)
 		__field(u16, cw_max)
@@ -746,7 +754,7 @@ TRACE_EVENT(drv_conf_tx,
 	TP_fast_assign(
 		LOCAL_ASSIGN;
 		VIF_ASSIGN;
-		__entry->queue = queue;
+		__entry->ac = ac;
 		__entry->txop = params->txop;
 		__entry->cw_max = params->cw_max;
 		__entry->cw_min = params->cw_min;
@@ -755,8 +763,8 @@ TRACE_EVENT(drv_conf_tx,
 	),
 
 	TP_printk(
-		LOCAL_PR_FMT  VIF_PR_FMT  " queue:%d",
-		LOCAL_PR_ARG, VIF_PR_ARG, __entry->queue
+		LOCAL_PR_FMT  VIF_PR_FMT  " AC:%d",
+		LOCAL_PR_ARG, VIF_PR_ARG, __entry->ac
 	)
 );
 
@@ -990,6 +998,18 @@ DEFINE_EVENT(local_only_evt, drv_cancel_remain_on_channel,
 	TP_ARGS(local)
 );
 
+DEFINE_EVENT(local_sdata_evt, drv_set_priority,
+	TP_PROTO(struct ieee80211_local *local,
+		 struct ieee80211_sub_if_data *sdata),
+	TP_ARGS(local, sdata)
+);
+
+DEFINE_EVENT(local_sdata_evt, drv_cancel_priority,
+	TP_PROTO(struct ieee80211_local *local,
+		 struct ieee80211_sub_if_data *sdata),
+	TP_ARGS(local, sdata)
+);
+
 TRACE_EVENT(drv_offchannel_tx,
 	TP_PROTO(struct ieee80211_local *local, struct sk_buff *skb,
 		 struct ieee80211_channel *chan,
@@ -1210,6 +1230,39 @@ DEFINE_EVENT(release_evt, drv_allow_buffered_frames,
 		 bool more_data),
 
 	TP_ARGS(local, sta, tids, num_frames, reason, more_data)
+);
+
+TRACE_EVENT(drv_get_rssi,
+	TP_PROTO(struct ieee80211_local *local, struct ieee80211_sta *sta,
+		 s8 rssi, int ret),
+
+	TP_ARGS(local, sta, rssi, ret),
+
+	TP_STRUCT__entry(
+		LOCAL_ENTRY
+		STA_ENTRY
+		__field(s8, rssi)
+		__field(int, ret)
+	),
+
+	TP_fast_assign(
+		LOCAL_ASSIGN;
+		STA_ASSIGN;
+		__entry->rssi = rssi;
+		__entry->ret = ret;
+	),
+
+	TP_printk(
+		LOCAL_PR_FMT STA_PR_FMT " rssi:%d ret:%d",
+		LOCAL_PR_ARG, STA_PR_ARG, __entry->rssi, __entry->ret
+	)
+);
+
+DEFINE_EVENT(local_sdata_evt, drv_mgd_prepare_tx,
+	TP_PROTO(struct ieee80211_local *local,
+		 struct ieee80211_sub_if_data *sdata),
+
+	TP_ARGS(local, sdata)
 );
 
 /*
@@ -1600,10 +1653,49 @@ TRACE_EVENT(stop_queue,
 		LOCAL_PR_ARG, __entry->queue, __entry->reason
 	)
 );
+
+#ifdef CONFIG_MAC80211_MESSAGE_TRACING
+#undef TRACE_SYSTEM
+#define TRACE_SYSTEM mac80211_msg
+
+#define MAX_MSG_LEN	100
+
+DECLARE_EVENT_CLASS(mac80211_msg_event,
+	TP_PROTO(struct va_format *vaf),
+
+	TP_ARGS(vaf),
+
+	TP_STRUCT__entry(
+		__dynamic_array(char, msg, MAX_MSG_LEN)
+	),
+
+	TP_fast_assign(
+		WARN_ON_ONCE(vsnprintf(__get_dynamic_array(msg),
+				       MAX_MSG_LEN, vaf->fmt,
+				       *vaf->va) >= MAX_MSG_LEN);
+	),
+
+	TP_printk("%s", __get_str(msg))
+);
+
+DEFINE_EVENT(mac80211_msg_event, mac80211_info,
+	TP_PROTO(struct va_format *vaf),
+	TP_ARGS(vaf)
+);
+DEFINE_EVENT(mac80211_msg_event, mac80211_dbg,
+	TP_PROTO(struct va_format *vaf),
+	TP_ARGS(vaf)
+);
+DEFINE_EVENT(mac80211_msg_event, mac80211_err,
+	TP_PROTO(struct va_format *vaf),
+	TP_ARGS(vaf)
+);
+#endif
+
 #endif /* !__MAC80211_DRIVER_TRACE || TRACE_HEADER_MULTI_READ */
 
 #undef TRACE_INCLUDE_PATH
 #define TRACE_INCLUDE_PATH .
 #undef TRACE_INCLUDE_FILE
-#define TRACE_INCLUDE_FILE driver-trace
+#define TRACE_INCLUDE_FILE trace
 #include <trace/define_trace.h>

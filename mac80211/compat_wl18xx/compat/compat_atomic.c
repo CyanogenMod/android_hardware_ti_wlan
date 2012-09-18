@@ -15,7 +15,7 @@ long long atomic64_read(const atomic64_t *v)
     spin_unlock_irqrestore(&lock, flags);
     return val;
 }
-EXPORT_SYMBOL(atomic64_read);
+EXPORT_SYMBOL_GPL(atomic64_read);
 
 long long atomic64_add_return(long long a, atomic64_t *v)
 {
@@ -27,7 +27,7 @@ long long atomic64_add_return(long long a, atomic64_t *v)
     spin_unlock_irqrestore(&lock, flags);
     return val;
 }
-EXPORT_SYMBOL(atomic64_add_return);
+EXPORT_SYMBOL_GPL(atomic64_add_return);
 
 #endif
 

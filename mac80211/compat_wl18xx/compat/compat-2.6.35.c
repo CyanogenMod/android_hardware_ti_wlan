@@ -27,7 +27,7 @@ int compat_hex_to_bin(char ch)
 		return ch - 'a' + 10;
 	return -1;
 }
-EXPORT_SYMBOL(compat_hex_to_bin);
+EXPORT_SYMBOL_GPL(compat_hex_to_bin);
 
 /**
  * noop_llseek - No Operation Performed llseek implementation
@@ -44,5 +44,5 @@ loff_t noop_llseek(struct file *file, loff_t offset, int origin)
 {
 	return file->f_pos;
 }
-EXPORT_SYMBOL(noop_llseek);
+EXPORT_SYMBOL_GPL(noop_llseek);
 

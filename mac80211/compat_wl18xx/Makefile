@@ -1,3 +1,19 @@
+#
+
+# Copyright (c) 2007-2012 Luis R. Rodriguez <mcgrof@frijolero.org>
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 export KMODDIR?=       updates
 KMODDIR_ARG:=   "INSTALL_MOD_DIR=$(KMODDIR)"
 ifneq ($(origin KLIB), undefined)
@@ -6,17 +22,14 @@ else
 export KLIB:=          /lib/modules/$(shell uname -r)
 endif
 export KLIB_BUILD ?=	$(KLIB)/build
-# Sometimes not available in the path
-MODPROBE := /sbin/modprobe
-
-ifneq ($(wildcard $(MODPROBE)),)
-MADWIFI=$(shell $(MODPROBE) -l ath_pci)
-OLD_IWL=$(shell $(MODPROBE) -l iwl4965)
-endif
+export MAKE
 
 DESTDIR?=
 
 ifneq ($(KERNELRELEASE),)
+
+-include $(COMPAT_CONFIG)
+include $(COMPAT_CONFIG_CW)
 
 NOSTDINC_FLAGS := -I$(M)/include/ \
 	-include $(M)/include/linux/compat-2.6.h \
@@ -53,74 +66,58 @@ $(error "The path to this compat-wireless directory has spaces in it." \
 	"Please put it somewhere where there is no space")
 endif
 
-CFLAGS += \
-        -DCOMPAT_BASE_TREE="\"$(shell cat compat_base_tree)\"" \
-        -DCOMPAT_BASE_TREE_VERSION="\"$(shell cat compat_base_tree_version)\"" \
+export CFLAGS += \
+        -DCOMPAT_BASE="\"$(shell cat $(PWD)/.compat_base)\"" \
+        -DCOMPAT_BASE_TREE="\"$(shell cat $(PWD)/.compat_base_tree)\"" \
+        -DCOMPAT_BASE_TREE_VERSION="\"$(shell cat $(PWD)/.compat_base_tree_version)\"" \
         -DCOMPAT_PROJECT="\"Compat-wireless\"" \
-        -DCOMPAT_VERSION="\"$(shell cat compat_version)\""
+        -DCOMPAT_VERSION="\"$(shell cat $(PWD)/.compat_version)\""
 
 # These exported as they are used by the scripts
 # to check config and compat autoconf
-export COMPAT_CONFIG=config.mk
-export CONFIG_CHECK=.$(COMPAT_CONFIG)_md5sum.txt
+export COMPAT_CONFIG_CW=$(PWD)/config.mk
+export COMPAT_CONFIG=$(PWD)/.config
+export CONFIG_CHECK=$(PWD)/.config.mk_md5sum.txt
 export COMPAT_AUTOCONF=include/linux/compat_autoconf.h
-export CREL=$(shell cat $(PWD)/compat_version)
+export CREL=$(shell cat $(PWD)/.compat_version)
 export CREL_PRE:=.compat_autoconf_
-export CREL_CHECK:=$(CREL_PRE)$(CREL)
-
-include $(PWD)/$(COMPAT_CONFIG)
+export CREL_CHECK:=$(PWD)/$(CREL_PRE)$(CREL)
 
 all: modules
 
+$(COMPAT_CONFIG): ;
+
 modules: $(CREL_CHECK)
-	@./scripts/check_config.sh
 	$(MAKE) -C $(KLIB_BUILD) M=$(PWD) modules
 	@touch $@
 
 bt: $(CREL_CHECK)
-	@./scripts/check_config.sh
+	+@./scripts/check_config.sh
 	$(MAKE) -C $(KLIB_BUILD) M=$(PWD) BT=TRUE modules
 	@touch $@
 
-# With the above and this we make sure we generate a new compat autoconf per
-# new relase of compat-wireless-2.6 OR when the user updates the 
-# $(COMPAT_CONFIG) file
+# We use a CREL_CHECK variable which will depend on the environment used to
+# build. If the environment requirements change it forces a reconfiguration
+# check.  This means we force a new reconfiguration check if a the user gets a
+# new updates of compat-wireless or when the user updates the $(COMPAT_CONFIG)
+# file.
+# XXX: add kernel target to the CREL_CHECK mix, this would ensure we also
+# reconfigure and build again fresh if we detect a new target kernel is
+# being used.
 $(CREL_CHECK):
 	@# Force to regenerate compat autoconf
+	+@./compat/scripts/gen-compat-config.sh > $(COMPAT_CONFIG)
 	@rm -f $(CONFIG_CHECK)
-	@./scripts/check_config.sh
+	+@./scripts/check_config.sh
+	@md5sum $(COMPAT_CONFIG_CW) > $(CONFIG_CHECK)
 	@touch $@
-	@md5sum $(COMPAT_CONFIG) > $(CONFIG_CHECK)
 
 btinstall: btuninstall bt-install-modules
 
-bt-install-modules: bt $(MODPROBE)
+bt-install-modules: bt
 	$(MAKE) -C $(KLIB_BUILD) M=$(PWD) $(KMODDIR_ARG) $(KMODPATH_ARG) BT=TRUE \
 		modules_install
 	@/sbin/depmod -ae
-	@echo
-	@echo "Currently detected bluetooth subsystem modules:"
-	@echo
-	@$(MODPROBE) -l ath3k       
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
 	@echo
 	@echo Now run:
 	@echo
@@ -129,36 +126,13 @@ bt-install-modules: bt $(MODPROBE)
 	@echo And then load the needed bluetooth modules. If unsure reboot.
 	@echo
 
-btuninstall: $(MODPROBE)
+btuninstall:
 	@# New location, matches upstream
 	@rm -rf $(KLIB)/$(KMODDIR)/net/bluetooth/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/bluetooth/
 	@# Lets only remove the stuff we are sure we are providing
 	@# on the misc directory.
 	@/sbin/depmod -ae
-	@echo
-	@echo "Your old bluetooth subsystem modules were left intact:"
-	@echo
-	@$(MODPROBE) -l ath3k       
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
 	@echo
 
 btclean:
@@ -171,7 +145,7 @@ install-modules: modules
 	$(MAKE) -C $(KLIB_BUILD) M=$(PWD) $(KMODDIR_ARG) $(KMODPATH_ARG) \
 		modules_install
 
-install-scripts: $(MODPROBE)
+install-scripts:
 	@# All the scripts we can use
 	@mkdir -p $(DESTDIR)/usr/lib/compat-wireless/
 	@install scripts/modlib.sh	$(DESTDIR)/usr/lib/compat-wireless/
@@ -183,23 +157,32 @@ install-scripts: $(MODPROBE)
 	@install scripts/athload	$(DESTDIR)/usr/sbin/
 	@install scripts/b43load	$(DESTDIR)/usr/sbin/
 	@install scripts/iwl-load	$(DESTDIR)/usr/sbin/
-	@if [ ! -z "$(MADWIFI)" ] && [ -z "$(DESTDIR)" ]; then \
-		echo ;\
+	@if [ $(shell modinfo ath_pci > /dev/null 2>&1 && echo 1) ]; then \
 		echo -n "Note: madwifi detected, we're going to disable it. "  ;\
 		echo "If you would like to enable it later you can run:"  ;\
 		echo "    sudo athenable madwifi"  ;\
 		echo ;\
 		echo Running athenable ath5k...;\
-		/usr/sbin/athenable ath5k ;\
+		$(DESTDIR)/usr/sbin/athenable ath5k ;\
 	fi
-	@if [ ! -z "$(OLD_IWL)" ] && [ -z "$(DESTDIR)" ]; then \
+	@if [ $(shell modinfo iwl4965 > /dev/null 2>&1 && echo 1) ]; then \
 		echo ;\
 		echo -n "Note: iwl4965 detected, we're going to disable it. "  ;\
 		echo "If you would like to enable it later you can run:"  ;\
 		echo "    sudo iwl-load iwl4965"  ;\
 		echo ;\
 		echo Running iwl-enable iwlagn...;\
-		/usr/sbin/iwl-enable iwlagn ;\
+		$(DESTDIR)/usr/sbin/iwl-enable iwlagn ;\
+	fi
+	@if [ $(shell modinfo iwlagn > /dev/null 2>&1 && echo 1) ] \
+	 && [ $(shell modinfo iwlwifi > /dev/null 2>&1 && echo 1) ]; then \
+		echo ;\
+		echo -n "Note: iwlagn detected, we're going to disable it. " ;\
+		echo "If you would like to enable it later you can run:"  ;\
+		echo "    sudo iwl-load iwlagn"  ;\
+		echo ;\
+		echo Running iwl-enable iwlwifi...;\
+		$(DESTDIR)/usr/sbin/iwl-enable iwlwifi ;\
 	fi
 	@# If on distributions like Mandriva which like to
 	@# compress their modules this will find out and do
@@ -214,109 +197,6 @@ install-scripts: $(MODPROBE)
 	@# Udev stuff needed for the new compat_firmware_class.
 	@./compat/scripts/compat_firmware_install
 	@/sbin/depmod -a
-	@echo
-	@echo "Currently detected wireless subsystem modules:"
-	@echo 
-	@$(MODPROBE) -l mac80211
-	@$(MODPROBE) -l cfg80211
-	@$(MODPROBE) -l lib80211
-	@$(MODPROBE) -l adm8211
-	@$(MODPROBE) -l ar9170usb
-	@$(MODPROBE) -l at76c50x-usb
-	@$(MODPROBE) -l ath
-	@$(MODPROBE) -l ath5k
-	@$(MODPROBE) -l ath6kl
-	@$(MODPROBE) -l ath9k
-	@$(MODPROBE) -l ath9k_htc
-	@$(MODPROBE) -l b43
-	@$(MODPROBE) -l b43legacy
-	@$(MODPROBE) -l b44
-	@$(MODPROBE) -l carl9170
-	@$(MODPROBE) -l brcm80211
-	@$(MODPROBE) -l cdc_ether
-	@$(MODPROBE) -l eeprom_93cx6
-	@$(MODPROBE) -l ipw2100
-	@$(MODPROBE) -l ipw2200
-	@$(MODPROBE) -l iwl3945
-	@$(MODPROBE) -l iwlagn
-	@$(MODPROBE) -l iwlcore
-	@$(MODPROBE) -l iwmc3200wifi
-	@$(MODPROBE) -l lib80211_crypt_ccmp
-	@$(MODPROBE) -l lib80211_crypt_tkip
-	@$(MODPROBE) -l lib80211_crypt_wep
-	@$(MODPROBE) -l libertas
-	@$(MODPROBE) -l libertas_cs
-	@$(MODPROBE) -l libertas_sdio
-	@$(MODPROBE) -l libertas_spi
-	@$(MODPROBE) -l libertas_tf
-	@$(MODPROBE) -l libertas_tf_usb
-	@$(MODPROBE) -l libipw
-	@$(MODPROBE) -l mac80211_hwsim
-	@$(MODPROBE) -l mwl8k
-	@$(MODPROBE) -l orinoco_cs
-	@$(MODPROBE) -l orinoco_nortel
-	@$(MODPROBE) -l orinoco_pci
-	@$(MODPROBE) -l orinoco_plx
-	@$(MODPROBE) -l orinoco_tld
-	@$(MODPROBE) -l orinoco_usb
-	@$(MODPROBE) -l orinoco
-	@$(MODPROBE) -l p54common
-	@$(MODPROBE) -l p54pci
-	@$(MODPROBE) -l p54spi
-	@$(MODPROBE) -l p54usb
-	@$(MODPROBE) -l rndis_host
-	@$(MODPROBE) -l rndis_wlan
-	@$(MODPROBE) -l rt2400pci
-	@$(MODPROBE) -l rt2500pci
-	@$(MODPROBE) -l rt2500usb
-	@$(MODPROBE) -l rt2800pci
-	@$(MODPROBE) -l rt2800usb
-	@$(MODPROBE) -l rt2x00lib
-	@$(MODPROBE) -l rt2x00pci
-	@$(MODPROBE) -l rt2x00usb
-	@$(MODPROBE) -l rt61pci
-	@$(MODPROBE) -l rt73usb
-	@$(MODPROBE) -l rtl8180
-	@$(MODPROBE) -l rtl8187
-	@$(MODPROBE) -l rtlwifi
-	@$(MODPROBE) -l rtl8192ce
-	@$(MODPROBE) -l spectrum_cs
-	@$(MODPROBE) -l ssb
-	@$(MODPROBE) -l usb8xxx
-	@$(MODPROBE) -l usbnet
-	@$(MODPROBE) -l wl1251
-	@$(MODPROBE) -l wl12xx
-	@$(MODPROBE) -l zd1211rw
-	@echo
-	@echo "Currently detected ethernet subsystem modules:"
-	@echo
-	@$(MODPROBE) -l atl1
-	@$(MODPROBE) -l atl2
-	@$(MODPROBE) -l atl1e
-	@$(MODPROBE) -l atl1c
-	@echo
-	@echo "Currently detected bluetooth subsystem modules:"
-	@echo
-	@$(MODPROBE) -l ath3k           
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
 	@echo 
 	@echo Now run:
 	@echo 
@@ -328,7 +208,7 @@ install-scripts: $(MODPROBE)
 	@echo If unsure reboot.
 	@echo
 
-uninstall: $(MODPROBE)
+uninstall:
 	@# New location, matches upstream
 	@rm -rf $(KLIB)/$(KMODDIR)/compat/
 	@rm -rf $(KLIB)/$(KMODDIR)/net/mac80211/
@@ -338,115 +218,12 @@ uninstall: $(MODPROBE)
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/net/wireless/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/staging/
 	@rm -rf $(KLIB)/$(KMODDIR)/drivers/net/atl*
+	@find $(KLIB)/$(KMODDIR)/drivers/net/ -name "alx*.ko" -o -name "atl*.ko" 2>/dev/null |xargs rm -f
 	@# Lets only remove the stuff we are sure we are providing
 	@# on the misc directory.
 	@rm -f $(KLIB)/$(KMODDIR)/drivers/misc/eeprom_93cx6.ko*
 	@rm -f $(KLIB)/$(KMODDIR)/drivers/net/b44.ko*
 	@/sbin/depmod -a
-	@echo
-	@echo "Your old wireless subsystem modules were left intact:"
-	@echo 
-	@$(MODPROBE) -l mac80211
-	@$(MODPROBE) -l cfg80211
-	@$(MODPROBE) -l lib80211
-	@$(MODPROBE) -l adm8211
-	@$(MODPROBE) -l ar9170usb
-	@$(MODPROBE) -l at76c50x-usb
-	@$(MODPROBE) -l ath
-	@$(MODPROBE) -l ath5k
-	@$(MODPROBE) -l ath6kl
-	@$(MODPROBE) -l ath9k
-	@$(MODPROBE) -l ath9k_htc
-	@$(MODPROBE) -l b43
-	@$(MODPROBE) -l b43legacy
-	@$(MODPROBE) -l b44
-	@$(MODPROBE) -l carl9170
-	@$(MODPROBE) -l brcm80211
-	@$(MODPROBE) -l cdc_ether
-	@$(MODPROBE) -l eeprom_93cx6
-	@$(MODPROBE) -l ipw2100
-	@$(MODPROBE) -l ipw2200
-	@$(MODPROBE) -l iwl3945
-	@$(MODPROBE) -l iwlagn
-	@$(MODPROBE) -l iwlcore
-	@$(MODPROBE) -l iwmc3200wifi
-	@$(MODPROBE) -l lib80211_crypt_ccmp
-	@$(MODPROBE) -l lib80211_crypt_tkip
-	@$(MODPROBE) -l lib80211_crypt_wep
-	@$(MODPROBE) -l libertas
-	@$(MODPROBE) -l libertas_cs
-	@$(MODPROBE) -l libertas_sdio
-	@$(MODPROBE) -l libertas_spi
-	@$(MODPROBE) -l libertas_tf
-	@$(MODPROBE) -l libertas_tf_usb
-	@$(MODPROBE) -l libipw
-	@$(MODPROBE) -l mac80211_hwsim
-	@$(MODPROBE) -l mwl8k
-	@$(MODPROBE) -l orinoco_cs
-	@$(MODPROBE) -l orinoco_nortel
-	@$(MODPROBE) -l orinoco_pci
-	@$(MODPROBE) -l orinoco_plx
-	@$(MODPROBE) -l orinoco_tld
-	@$(MODPROBE) -l orinoco_usb
-	@$(MODPROBE) -l orinoco
-	@$(MODPROBE) -l p54common
-	@$(MODPROBE) -l p54pci
-	@$(MODPROBE) -l p54spi
-	@$(MODPROBE) -l p54usb
-	@$(MODPROBE) -l rndis_host
-	@$(MODPROBE) -l rndis_wlan
-	@$(MODPROBE) -l rt2400pci
-	@$(MODPROBE) -l rt2500pci
-	@$(MODPROBE) -l rt2500usb
-	@$(MODPROBE) -l rt2800pci
-	@$(MODPROBE) -l rt2800usb
-	@$(MODPROBE) -l rt2x00lib
-	@$(MODPROBE) -l rt2x00pci
-	@$(MODPROBE) -l rt2x00usb
-	@$(MODPROBE) -l rt61pci
-	@$(MODPROBE) -l rt73usb
-	@$(MODPROBE) -l rtl8180
-	@$(MODPROBE) -l rtl8187
-	@$(MODPROBE) -l rtlwifi
-	@$(MODPROBE) -l rtl8192ce
-	@$(MODPROBE) -l spectrum_cs
-	@$(MODPROBE) -l ssb
-	@$(MODPROBE) -l usb8xxx
-	@$(MODPROBE) -l usbnet
-	@$(MODPROBE) -l wl1251
-	@$(MODPROBE) -l wl12xx
-	@$(MODPROBE) -l zd1211rw
-	@echo
-	@echo "Your old ethernet subsystem modules are left intact:"
-	@echo
-	@$(MODPROBE) -l atl1
-	@$(MODPROBE) -l atl2
-	@$(MODPROBE) -l atl1e
-	@$(MODPROBE) -l atl1c
-	@echo
-	@echo "Your old bluetooth subsystem modules were left intact:"
-	@echo
-	@$(MODPROBE) -l ath3k           
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
-	@
 	@echo 
 
 clean:
@@ -464,9 +241,9 @@ wlunload:
 	@./scripts/wlunload.sh
 
 
-.PHONY: all clean install uninstall unload btunload wlunload modules bt
+.PHONY: all clean install uninstall unload btunload wlunload modules bt Makefile
 
 endif
 
 clean-files += Module.symvers Module.markers modules modules.order
-clean-files += $(CREL_CHECK) $(CONFIG_CHECK)
+clean-files += $(CREL_CHECK) $(CONFIG_CHECK) $(COMPAT_CONFIG)

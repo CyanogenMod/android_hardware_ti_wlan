@@ -10,11 +10,6 @@
 
 #define PMSG_IS_AUTO(msg)	(((msg).event & PM_EVENT_AUTO) != 0)
 
-static inline void skb_complete_wifi_ack(struct sk_buff *skb, bool acked)
-{
-	WARN_ON(1);
-}
-
 /**
  * skb_frag_page - retrieve the page refered to by a paged fragment
  * @frag: the paged fragment
@@ -68,6 +63,18 @@ static inline char *hex_byte_pack(char *buf, u8 byte)
 #define module_platform_driver(__platform_driver) \
         module_driver(__platform_driver, platform_driver_register, \
                         platform_driver_unregister)
+
+static inline void *dma_zalloc_coherent(struct device *dev, size_t size,
+					dma_addr_t *dma_handle, gfp_t flag)
+{
+	void *ret = dma_alloc_coherent(dev, size, dma_handle, flag);
+	if (ret)
+		memset(ret, 0, size);
+	return ret;
+}
+
+extern int __netdev_printk(const char *level, const struct net_device *dev,
+			   struct va_format *vaf);
 
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0)) */
 

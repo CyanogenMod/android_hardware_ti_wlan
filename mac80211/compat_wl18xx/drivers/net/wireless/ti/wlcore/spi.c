@@ -66,7 +66,7 @@
 /* HW limitation: maximum possible chunk size is 4095 bytes */
 #define WSPI_MAX_CHUNK_SIZE    4092
 
-#define WSPI_MAX_NUM_OF_CHUNKS (WL1271_AGGR_BUFFER_SIZE / WSPI_MAX_CHUNK_SIZE)
+#define WSPI_MAX_NUM_OF_CHUNKS 16
 
 struct wl12xx_spi_glue {
 	struct device *dev;
@@ -193,8 +193,8 @@ static int wl12xx_spi_read_busy(struct device *child)
 	return -ETIMEDOUT;
 }
 
-static void wl12xx_spi_raw_read(struct device *child, int addr, void *buf,
-				size_t len, bool fixed)
+static int __must_check wl12xx_spi_raw_read(struct device *child, int addr,
+					    void *buf, size_t len, bool fixed)
 {
 	struct wl12xx_spi_glue *glue = dev_get_drvdata(child->parent);
 	struct wl1271 *wl = dev_get_drvdata(child);
@@ -238,7 +238,7 @@ static void wl12xx_spi_raw_read(struct device *child, int addr, void *buf,
 		if (!(busy_buf[WL1271_BUSY_WORD_CNT - 1] & 0x1) &&
 		    wl12xx_spi_read_busy(child)) {
 			memset(buf, 0, chunk_len);
-			return;
+			return 0;
 		}
 
 		spi_message_init(&m);
@@ -256,12 +256,15 @@ static void wl12xx_spi_raw_read(struct device *child, int addr, void *buf,
 		buf += chunk_len;
 		len -= chunk_len;
 	}
+
+	return 0;
 }
 
-static void wl12xx_spi_raw_write(struct device *child, int addr, void *buf,
-				 size_t len, bool fixed)
+static int __must_check wl12xx_spi_raw_write(struct device *child, int addr,
+					     void *buf, size_t len, bool fixed)
 {
 	struct wl12xx_spi_glue *glue = dev_get_drvdata(child->parent);
+	struct wl1271 *wl = dev_get_drvdata(child);
 	struct spi_transfer t[2 * WSPI_MAX_NUM_OF_CHUNKS];
 	struct spi_message m;
 	u32 commands[WSPI_MAX_NUM_OF_CHUNKS];
@@ -269,7 +272,7 @@ static void wl12xx_spi_raw_write(struct device *child, int addr, void *buf,
 	u32 chunk_len;
 	int i;
 
-	WARN_ON(len > WL1271_AGGR_BUFFER_SIZE);
+	WARN_ON(len >  wl->aggr_buf_size);
 
 	spi_message_init(&m);
 	memset(t, 0, sizeof(t));
@@ -304,6 +307,8 @@ static void wl12xx_spi_raw_write(struct device *child, int addr, void *buf,
 	}
 
 	spi_sync(to_spi_device(glue->dev), &m);
+
+	return 0;
 }
 
 static struct wl1271_if_operations spi_ops = {

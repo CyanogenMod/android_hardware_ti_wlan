@@ -56,9 +56,6 @@
 /* Used for management frames and dummy packets */
 #define WL1271_TID_MGMT 7
 
-/* Used with WLCORE_QUIRK_TX_PAD_LAST_FRAME devices */
-#define WLCORE_TX_CTRL_PADDED	BIT(7)
-
 struct wl127x_tx_mem {
 	/*
 	 * Number of extra memory blocks to allocate for this packet
@@ -96,19 +93,6 @@ struct wl18xx_tx_mem {
 	u8 total_mem_blocks;
 
 	/*
-	 * always zero
-	 */
-	u8 reserved;
-} __packed;
-
-struct wlcore_tx_ctrl {
-	/*
-	 * Reserved for the total number of memory blocks allocated
-	 * by the host for this packet.
-	 */
-	u8 reserved;
-
-	/*
 	 * control bits
 	 */
 	u8 ctrl;
@@ -127,10 +111,9 @@ struct wl1271_tx_hw_descr {
 	/* Length of packet in words, including descriptor+header+data */
 	__le16 length;
 	union {
-		struct wl127x_tx_mem	wl127x_mem;
-		struct wl128x_tx_mem	wl128x_mem;
-		struct wl18xx_tx_mem	wl18xx_mem;
-		struct wlcore_tx_ctrl	wlcore_ctrl;
+		struct wl127x_tx_mem wl127x_mem;
+		struct wl128x_tx_mem wl128x_mem;
+		struct wl18xx_tx_mem wl18xx_mem;
 	} __packed;
 	/* Device time (in us) when the packet arrived to the driver */
 	__le32 start_time;
@@ -251,8 +234,8 @@ static inline int wl1271_tx_total_queue_count(struct wl1271 *wl)
 }
 
 void wl1271_tx_work(struct work_struct *work);
-void wl1271_tx_work_locked(struct wl1271 *wl);
-void wl1271_tx_complete(struct wl1271 *wl);
+int wlcore_tx_work_locked(struct wl1271 *wl);
+int wlcore_tx_complete(struct wl1271 *wl);
 void wl12xx_tx_reset_wlvif(struct wl1271 *wl, struct wl12xx_vif *wlvif);
 void wl12xx_tx_reset(struct wl1271 *wl);
 void wl1271_tx_flush(struct wl1271 *wl);
@@ -260,10 +243,8 @@ u8 wlcore_rate_to_idx(struct wl1271 *wl, u8 rate, enum ieee80211_band band);
 u32 wl1271_tx_enabled_rates_get(struct wl1271 *wl, u32 rate_set,
 				enum ieee80211_band rate_band);
 u32 wl1271_tx_min_rate_get(struct wl1271 *wl, u32 rate_set);
-u8 wl12xx_tx_get_hlid_ap(struct wl1271 *wl, struct wl12xx_vif *wlvif,
-			 struct sk_buff *skb);
 u8 wl12xx_tx_get_hlid(struct wl1271 *wl, struct wl12xx_vif *wlvif,
-		      struct sk_buff *skb);
+		      struct sk_buff *skb, struct ieee80211_sta *sta);
 void wl1271_tx_reset_link_queues(struct wl1271 *wl, u8 hlid);
 void wl1271_handle_tx_low_watermark(struct wl1271 *wl);
 bool wl12xx_is_dummy_packet(struct wl1271 *wl, struct sk_buff *skb);
@@ -282,9 +263,12 @@ void wlcore_stop_queues(struct wl1271 *wl,
 void wlcore_wake_queues(struct wl1271 *wl,
 			enum wlcore_queue_stop_reason reason);
 void wlcore_reset_stopped_queues(struct wl1271 *wl);
-bool wlcore_is_queue_stopped(struct wl1271 *wl, u8 queue,
-			     enum wlcore_queue_stop_reason reason);
+bool wlcore_is_queue_stopped_by_reason(struct wl1271 *wl, u8 queue,
+				       enum wlcore_queue_stop_reason reason);
+bool wlcore_is_queue_stopped(struct wl1271 *wl, u8 queue);
+
 /* from main.c */
 void wl1271_free_sta(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 hlid);
+void wl12xx_rearm_tx_watchdog_locked(struct wl1271 *wl);
 
 #endif

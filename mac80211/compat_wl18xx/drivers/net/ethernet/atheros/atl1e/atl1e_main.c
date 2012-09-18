@@ -313,7 +313,7 @@ static void atl1e_set_multi(struct net_device *netdev)
 	}
 }
 
-static void __atl1e_vlan_mode(u32 features, u32 *mac_ctrl_data)
+static void __atl1e_vlan_mode(netdev_features_t features, u32 *mac_ctrl_data)
 {
 	if (features & NETIF_F_HW_VLAN_RX) {
 		/* enable VLAN tag insert/strip */
@@ -324,7 +324,8 @@ static void __atl1e_vlan_mode(u32 features, u32 *mac_ctrl_data)
 	}
 }
 
-static void atl1e_vlan_mode(struct net_device *netdev, u32 features)
+static void atl1e_vlan_mode(struct net_device *netdev,
+	netdev_features_t features)
 {
 	struct atl1e_adapter *adapter = netdev_priv(netdev);
 	u32 mac_ctrl_data = 0;
@@ -370,7 +371,9 @@ static int atl1e_set_mac_addr(struct net_device *netdev, void *p)
 	return 0;
 }
 
-static u32 atl1e_fix_features(struct net_device *netdev, u32 features)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
+static netdev_features_t atl1e_fix_features(struct net_device *netdev,
+	netdev_features_t features)
 {
 	/*
 	 * Since there is no support for separate rx/tx vlan accel
@@ -384,15 +387,17 @@ static u32 atl1e_fix_features(struct net_device *netdev, u32 features)
 	return features;
 }
 
-static int atl1e_set_features(struct net_device *netdev, u32 features)
+static int atl1e_set_features(struct net_device *netdev,
+	netdev_features_t features)
 {
-	u32 changed = netdev->features ^ features;
+	netdev_features_t changed = netdev->features ^ features;
 
 	if (changed & NETIF_F_HW_VLAN_RX)
 		atl1e_vlan_mode(netdev, features);
 
 	return 0;
 }
+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
 
 /*
  * atl1e_change_mtu - Change the Maximum Transfer Unit
@@ -1880,27 +1885,24 @@ static int atl1e_request_irq(struct atl1e_adapter *adapter)
 	int err = 0;
 
 	adapter->have_msi = true;
-	err = pci_enable_msi(adapter->pdev);
+	err = pci_enable_msi(pdev);
 	if (err) {
-		netdev_dbg(adapter->netdev,
+		netdev_dbg(netdev,
 			   "Unable to allocate MSI interrupt Error: %d\n", err);
 		adapter->have_msi = false;
-	} else
-		netdev->irq = pdev->irq;
-
+	}
 
 	if (!adapter->have_msi)
 		flags |= IRQF_SHARED;
-	err = request_irq(adapter->pdev->irq, atl1e_intr, flags,
-			netdev->name, netdev);
+	err = request_irq(pdev->irq, atl1e_intr, flags, netdev->name, netdev);
 	if (err) {
 		netdev_dbg(adapter->netdev,
 			   "Unable to allocate interrupt Error: %d\n", err);
 		if (adapter->have_msi)
-			pci_disable_msi(adapter->pdev);
+			pci_disable_msi(pdev);
 		return err;
 	}
-	netdev_dbg(adapter->netdev, "atl1e_request_irq OK\n");
+	netdev_dbg(netdev, "atl1e_request_irq OK\n");
 	return err;
 }
 
@@ -1944,7 +1946,11 @@ void atl1e_down(struct atl1e_adapter *adapter)
 	 * reschedule our watchdog timer */
 	set_bit(__AT_DOWN, &adapter->flags);
 
+#if defined(NETIF_F_LLTX) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
 	netif_stop_queue(netdev);
+#else
+	netif_tx_disable(netdev);
+#endif
 
 	/* reset MAC to disable all RX/TX */
 	atl1e_reset_hw(&adapter->hw);
@@ -2214,8 +2220,10 @@ static const struct net_device_ops atl1e_netdev_ops = {
 	.ndo_set_rx_mode	= atl1e_set_multi,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_set_mac_address	= atl1e_set_mac_addr,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
 	.ndo_fix_features	= atl1e_fix_features,
 	.ndo_set_features	= atl1e_set_features,
+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
 	.ndo_change_mtu		= atl1e_change_mtu,
 	.ndo_do_ioctl		= atl1e_ioctl,
 	.ndo_tx_timeout		= atl1e_tx_timeout,
@@ -2230,16 +2238,20 @@ static int atl1e_init_netdev(struct net_device *netdev, struct pci_dev *pdev)
 	SET_NETDEV_DEV(netdev, &pdev->dev);
 	pci_set_drvdata(pdev, netdev);
 
-	netdev->irq  = pdev->irq;
 	netdev_attach_ops(netdev, &atl1e_netdev_ops);
 
 	netdev->watchdog_timeo = AT_TX_WATCHDOG;
 	atl1e_set_ethtool_ops(netdev);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
 	netdev->hw_features = NETIF_F_SG | NETIF_F_HW_CSUM | NETIF_F_TSO |
 			      NETIF_F_HW_VLAN_RX;
 	netdev->features = netdev->hw_features | NETIF_F_LLTX |
 			   NETIF_F_HW_VLAN_TX;
+#else
+	netdev->features = NETIF_F_SG | NETIF_F_HW_CSUM | NETIF_F_TSO |
+			   NETIF_F_HW_VLAN_RX | NETIF_F_LLTX | NETIF_F_HW_VLAN_TX;
+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
 
 	return 0;
 }
@@ -2297,7 +2309,6 @@ static int __devinit atl1e_probe(struct pci_dev *pdev,
 	netdev = alloc_etherdev(sizeof(struct atl1e_adapter));
 	if (netdev == NULL) {
 		err = -ENOMEM;
-		dev_err(&pdev->dev, "etherdev alloc failed\n");
 		goto err_alloc_etherdev;
 	}
 
@@ -2317,7 +2328,6 @@ static int __devinit atl1e_probe(struct pci_dev *pdev,
 		netdev_err(netdev, "cannot map device registers\n");
 		goto err_ioremap;
 	}
-	netdev->base_addr = (unsigned long)adapter->hw.hw_addr;
 
 	/* init mii data */
 	adapter->mii.dev = netdev;

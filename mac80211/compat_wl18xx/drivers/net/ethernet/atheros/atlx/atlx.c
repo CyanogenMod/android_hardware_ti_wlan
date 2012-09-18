@@ -84,6 +84,9 @@ static int atlx_set_mac(struct net_device *netdev, void *p)
 
 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
 	memcpy(adapter->hw.mac_addr, addr->sa_data, netdev->addr_len);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
+	netdev->addr_assign_type &= ~NET_ADDR_RANDOM;
+#endif
 
 	atlx_set_mac_addr(&adapter->hw);
 	return 0;
@@ -154,14 +157,21 @@ static void atlx_set_multi(struct net_device *netdev)
 	}
 }
 
+static inline void atlx_imr_set(struct atlx_adapter *adapter,
+				unsigned int imr)
+{
+	iowrite32(imr, adapter->hw.hw_addr + REG_IMR);
+	ioread32(adapter->hw.hw_addr + REG_IMR);
+}
+
 /*
  * atlx_irq_enable - Enable default interrupt generation settings
  * @adapter: board private structure
  */
 static void atlx_irq_enable(struct atlx_adapter *adapter)
 {
-	iowrite32(IMR_NORMAL_MASK, adapter->hw.hw_addr + REG_IMR);
-	ioread32(adapter->hw.hw_addr + REG_IMR);
+	atlx_imr_set(adapter, IMR_NORMAL_MASK);
+	adapter->int_enabled = true;
 }
 
 /*
@@ -170,8 +180,8 @@ static void atlx_irq_enable(struct atlx_adapter *adapter)
  */
 static void atlx_irq_disable(struct atlx_adapter *adapter)
 {
-	iowrite32(0, adapter->hw.hw_addr + REG_IMR);
-	ioread32(adapter->hw.hw_addr + REG_IMR);
+	adapter->int_enabled = false;
+	atlx_imr_set(adapter, 0);
 	synchronize_irq(adapter->pdev->irq);
 }
 
@@ -193,7 +203,7 @@ static void atlx_tx_timeout(struct net_device *netdev)
 {
 	struct atlx_adapter *adapter = netdev_priv(netdev);
 	/* Do the reset outside of interrupt context */
-	schedule_work(&adapter->tx_timeout_task);
+	schedule_work(&adapter->reset_dev_task);
 }
 
 /*
@@ -211,7 +221,7 @@ static void atlx_link_chg_task(struct work_struct *work)
 	spin_unlock_irqrestore(&adapter->lock, flags);
 }
 
-static void __atlx_vlan_mode(u32 features, u32 *ctrl)
+static void __atlx_vlan_mode(netdev_features_t features, u32 *ctrl)
 {
 	if (features & NETIF_F_HW_VLAN_RX) {
 		/* enable VLAN tag insert/strip */
@@ -222,7 +232,8 @@ static void __atlx_vlan_mode(u32 features, u32 *ctrl)
 	}
 }
 
-static void atlx_vlan_mode(struct net_device *netdev, u32 features)
+static void atlx_vlan_mode(struct net_device *netdev,
+	netdev_features_t features)
 {
 	struct atlx_adapter *adapter = netdev_priv(netdev);
 	unsigned long flags;
@@ -242,7 +253,9 @@ static void atlx_restore_vlan(struct atlx_adapter *adapter)
 	atlx_vlan_mode(adapter->netdev, adapter->netdev->features);
 }
 
-static u32 atlx_fix_features(struct net_device *netdev, u32 features)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
+static netdev_features_t atlx_fix_features(struct net_device *netdev,
+	netdev_features_t features)
 {
 	/*
 	 * Since there is no support for separate rx/tx vlan accel
@@ -256,14 +269,16 @@ static u32 atlx_fix_features(struct net_device *netdev, u32 features)
 	return features;
 }
 
-static int atlx_set_features(struct net_device *netdev, u32 features)
+static int atlx_set_features(struct net_device *netdev,
+	netdev_features_t features)
 {
-	u32 changed = netdev->features ^ features;
+	netdev_features_t changed = netdev->features ^ features;
 
 	if (changed & NETIF_F_HW_VLAN_RX)
 		atlx_vlan_mode(netdev, features);
 
 	return 0;
 }
+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
 
 #endif /* ATLX_C */

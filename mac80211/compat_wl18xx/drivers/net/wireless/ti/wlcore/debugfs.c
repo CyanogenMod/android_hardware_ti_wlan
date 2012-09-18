@@ -33,8 +33,8 @@
 #include "ps.h"
 #include "io.h"
 #include "tx.h"
-#include "version.h"
 #include "hw_ops.h"
+#include "version.h"
 
 /* ms */
 #define WL1271_DEBUGFS_STATS_LIFETIME 1000
@@ -63,18 +63,17 @@ void wl1271_debugfs_update_stats(struct wl1271 *wl)
 
 	mutex_lock(&wl->mutex);
 
+	if (unlikely(wl->state != WLCORE_STATE_ON))
+		goto out;
+
 	ret = wl1271_ps_elp_wakeup(wl);
 	if (ret < 0)
 		goto out;
 
-	if (wl->state == WL1271_STATE_ON &&
+	if (!wl->plt &&
 	    time_after(jiffies, wl->stats.fw_stats_update +
 		       msecs_to_jiffies(WL1271_DEBUGFS_STATS_LIFETIME))) {
-
-		ret = wl1271_acx_statistics(wl, wl->stats.fw_stats);
-		if (ret < 0)
-			goto out;
-
+		wl1271_acx_statistics(wl, wl->stats.fw_stats);
 		wl->stats.fw_stats_update = jiffies;
 	}
 
@@ -84,13 +83,6 @@ out:
 	mutex_unlock(&wl->mutex);
 }
 EXPORT_SYMBOL_GPL(wl1271_debugfs_update_stats);
-
-int wl1271_open_file_generic(struct inode *inode, struct file *file)
-{
-	file->private_data = inode->i_private;
-	return 0;
-}
-EXPORT_SYMBOL_GPL(wl1271_open_file_generic);
 
 DEBUGFS_READONLY_FILE(retry_count, "%u", wl->stats.retry_count);
 DEBUGFS_READONLY_FILE(excessive_retries, "%u",
@@ -112,7 +104,7 @@ static ssize_t tx_queue_len_read(struct file *file, char __user *userbuf,
 
 static const struct file_operations tx_queue_len_ops = {
 	.read = tx_queue_len_read,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -188,7 +180,7 @@ static inline void no_write_handler(struct wl1271 *wl,
 	static const struct file_operations param##_ops = {		\
 		.read = param##_read,					\
 		.write = param##_write,					\
-		.open = wl1271_open_file_generic,			\
+		.open = simple_open,					\
 		.llseek = default_llseek,				\
 	};
 
@@ -241,7 +233,7 @@ static ssize_t gpio_power_write(struct file *file,
 static const struct file_operations gpio_power_ops = {
 	.read = gpio_power_read,
 	.write = gpio_power_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -260,7 +252,7 @@ static ssize_t start_recovery_write(struct file *file,
 
 static const struct file_operations start_recovery_ops = {
 	.write = start_recovery_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -293,12 +285,12 @@ static ssize_t dynamic_ps_timeout_write(struct file *file,
 		wl1271_warning("dyanmic_ps_timeout is not in valid range");
 		return -ERANGE;
 	}
-	
+
 	mutex_lock(&wl->mutex);
 
 	wl->conf.conn.dynamic_ps_timeout = value;
 
-	if (wl->state == WL1271_STATE_OFF)
+	if (unlikely(wl->state != WLCORE_STATE_ON))
 		goto out;
 
 	ret = wl1271_ps_elp_wakeup(wl);
@@ -324,10 +316,9 @@ out:
 static const struct file_operations dynamic_ps_timeout_ops = {
 	.read = dynamic_ps_timeout_read,
 	.write = dynamic_ps_timeout_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
-
 
 static ssize_t forced_ps_read(struct file *file, char __user *user_buf,
 			  size_t count, loff_t *ppos)
@@ -361,9 +352,12 @@ static ssize_t forced_ps_write(struct file *file,
 
 	mutex_lock(&wl->mutex);
 
+	if (wl->conf.conn.forced_ps == value)
+		goto out;
+
 	wl->conf.conn.forced_ps = value;
 
-	if (wl->state == WL1271_STATE_OFF)
+	if (unlikely(wl->state != WLCORE_STATE_ON))
 		goto out;
 
 	ret = wl1271_ps_elp_wakeup(wl);
@@ -391,70 +385,7 @@ out:
 static const struct file_operations forced_ps_ops = {
 	.read = forced_ps_read,
 	.write = forced_ps_write,
-	.open = wl1271_open_file_generic,
-	.llseek = default_llseek,
-};
-
-
-static ssize_t sleep_auth_read(struct file *file, char __user *user_buf,
-			       size_t count, loff_t *ppos)
-{
-	struct wl1271 *wl = file->private_data;
-
-	return wl1271_format_buffer(user_buf, count,
-				    ppos, "%d\n",
-				    wl->sleep_auth);
-}
-
-static ssize_t sleep_auth_write(struct file *file,
-				const char __user *user_buf,
-				size_t count, loff_t *ppos)
-{
-	struct wl1271 *wl = file->private_data;
-	unsigned long value;
-	int ret;
-
-	ret = kstrtoul_from_user(user_buf, count, 0, &value);
-	if (ret < 0) {
-		wl1271_warning("illegal value in sleep_auth");
-		return -EINVAL;
-	}
-
-	if (value < 0 || value > WL1271_PSM_MAX) {
-		wl1271_warning("sleep_auth must be between 0 and %d",
-			       WL1271_PSM_MAX);
-		return -ERANGE;
-	}
-
-	mutex_lock(&wl->mutex);
-
-	wl->conf.conn.sta_sleep_auth = value;
-
-	if (wl->state == WL1271_STATE_OFF) {
-		/* this will show up on "read" in case we are off */
-		wl->sleep_auth = value;
-		goto out;
-	}
-
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		goto out;
-
-	ret = wl1271_acx_sleep_auth(wl, value);
-	if (ret < 0)
-		goto out_sleep;
-
-out_sleep:
-	wl1271_ps_elp_sleep(wl);
-out:
-	mutex_unlock(&wl->mutex);
-	return count;
-}
-
-static const struct file_operations sleep_auth_ops = {
-	.read = sleep_auth_read,
-	.write = sleep_auth_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -476,7 +407,7 @@ static ssize_t stats_tx_aggr_read(struct file *file, char __user *user_buf,
 
 	mutex_lock(&wl->mutex);
 
-	for (i = 0; i < WLCORE_AGGR_MAX_PACKETS; i++) {
+	for (i = 0; i < wl->aggr_pkts_reason_num; i++) {
 		total_buffer_full += wl->aggr_pkts_reason[i].buffer_full;
 		total_fw_buffer_full += wl->aggr_pkts_reason[i].fw_buffer_full;
 		total_other += wl->aggr_pkts_reason[i].other;
@@ -526,7 +457,7 @@ static ssize_t stats_tx_aggr_write(struct file *file,
 
 	mutex_lock(&wl->mutex);
 
-	if (wl->state == WL1271_STATE_OFF)
+	if (unlikely(wl->state != WLCORE_STATE_ON))
 		goto out;
 
 	memset(wl->aggr_pkts_reason, 0, sizeof(wl->aggr_pkts_reason));
@@ -539,7 +470,7 @@ out:
 static const struct file_operations stats_tx_aggr_ops = {
 	.read = stats_tx_aggr_read,
 	.write = stats_tx_aggr_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -581,7 +512,7 @@ static ssize_t split_scan_timeout_write(struct file *file,
 static const struct file_operations split_scan_timeout_ops = {
 	.read = split_scan_timeout_read,
 	.write = split_scan_timeout_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -651,7 +582,7 @@ static ssize_t driver_state_read(struct file *file, char __user *user_buf,
 	DRIVER_STATE_PRINT_HEX(platform_quirks);
 	DRIVER_STATE_PRINT_HEX(chip.id);
 	DRIVER_STATE_PRINT_STR(chip.fw_ver_str);
-	DRIVER_STATE_PRINT_INT(sched_scanning);
+	DRIVER_STATE_PRINT_STR(chip.phy_fw_ver_str);
 	DRIVER_STATE_PRINT_INT(recovery_count);
 
 #undef DRIVER_STATE_PRINT_INT
@@ -671,7 +602,7 @@ static ssize_t driver_state_read(struct file *file, char __user *user_buf,
 
 static const struct file_operations driver_state_ops = {
 	.read = driver_state_read,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -780,7 +711,7 @@ static ssize_t vifs_state_read(struct file *file, char __user *user_buf,
 
 static const struct file_operations vifs_state_ops = {
 	.read = vifs_state_read,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -838,7 +769,7 @@ static ssize_t dtim_interval_write(struct file *file,
 static const struct file_operations dtim_interval_ops = {
 	.read = dtim_interval_read,
 	.write = dtim_interval_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -896,7 +827,7 @@ static ssize_t suspend_dtim_interval_write(struct file *file,
 static const struct file_operations suspend_dtim_interval_ops = {
 	.read = suspend_dtim_interval_read,
 	.write = suspend_dtim_interval_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -954,7 +885,7 @@ static ssize_t beacon_interval_write(struct file *file,
 static const struct file_operations beacon_interval_ops = {
 	.read = beacon_interval_read,
 	.write = beacon_interval_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -1009,51 +940,7 @@ static ssize_t rx_streaming_interval_read(struct file *file,
 static const struct file_operations rx_streaming_interval_ops = {
 	.read = rx_streaming_interval_read,
 	.write = rx_streaming_interval_write,
-	.open = wl1271_open_file_generic,
-	.llseek = default_llseek,
-};
-
-static ssize_t tx_ba_win_size_write(struct file *file,
-			   const char __user *user_buf,
-			   size_t count, loff_t *ppos)
-{
-	struct wl1271 *wl = file->private_data;
-	unsigned long value;
-	int ret;
-
-	ret = kstrtoul_from_user(user_buf, count, 10, &value);
-	if (ret < 0) {
-		wl1271_warning("illegal value in tx_ba_win_size!");
-		return -EINVAL;
-	}
-
-	mutex_lock(&wl->mutex);
-
-	wl->conf.ht.tx_ba_win_size = value;
-
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		goto out;
-
-	wl1271_ps_elp_sleep(wl);
-out:
-	mutex_unlock(&wl->mutex);
-	return count;
-}
-
-static ssize_t tx_ba_win_size_read(struct file *file,
-			    char __user *userbuf,
-			    size_t count, loff_t *ppos)
-{
-	struct wl1271 *wl = file->private_data;
-	return wl1271_format_buffer(userbuf, count, ppos,
-				    "%d\n", wl->conf.ht.tx_ba_win_size);
-}
-
-static const struct file_operations tx_ba_win_size_ops = {
-	.read = tx_ba_win_size_read,
-	.write = tx_ba_win_size_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -1108,7 +995,7 @@ static ssize_t rx_streaming_always_read(struct file *file,
 static const struct file_operations rx_streaming_always_ops = {
 	.read = rx_streaming_always_read,
 	.write = rx_streaming_always_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -1152,28 +1039,7 @@ out:
 
 static const struct file_operations beacon_filtering_ops = {
 	.write = beacon_filtering_write,
-	.open = wl1271_open_file_generic,
-	.llseek = default_llseek,
-};
-
-static ssize_t tx_stuck_write(struct file *file,
-			      const char __user *user_buf,
-			      size_t count, loff_t *ppos)
-{
-	struct wl1271 *wl = file->private_data;
-
-	mutex_lock(&wl->mutex);
-
-	wl1271_power_off(wl);
-	wl1271_power_on(wl);
-
-	mutex_unlock(&wl->mutex);
-	return count;
-}
-
-static const struct file_operations tx_stuck_ops = {
-	.write = tx_stuck_write,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -1192,7 +1058,69 @@ static ssize_t fw_stats_raw_read(struct file *file,
 
 static const struct file_operations fw_stats_raw_ops = {
 	.read = fw_stats_raw_read,
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
+	.llseek = default_llseek,
+};
+
+static ssize_t sleep_auth_read(struct file *file, char __user *user_buf,
+			       size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+
+	return wl1271_format_buffer(user_buf, count,
+				    ppos, "%d\n",
+				    wl->sleep_auth);
+}
+
+static ssize_t sleep_auth_write(struct file *file,
+				const char __user *user_buf,
+				size_t count, loff_t *ppos)
+{
+	struct wl1271 *wl = file->private_data;
+	unsigned long value;
+	int ret;
+
+	ret = kstrtoul_from_user(user_buf, count, 0, &value);
+	if (ret < 0) {
+		wl1271_warning("illegal value in sleep_auth");
+		return -EINVAL;
+	}
+
+	if (value < 0 || value > WL1271_PSM_MAX) {
+		wl1271_warning("sleep_auth must be between 0 and %d",
+			       WL1271_PSM_MAX);
+		return -ERANGE;
+	}
+
+	mutex_lock(&wl->mutex);
+
+	wl->conf.conn.sta_sleep_auth = value;
+
+	if (unlikely(wl->state != WLCORE_STATE_ON)) {
+		/* this will show up on "read" in case we are off */
+		wl->sleep_auth = value;
+		goto out;
+	}
+
+	ret = wl1271_ps_elp_wakeup(wl);
+	if (ret < 0)
+		goto out;
+
+	ret = wl1271_acx_sleep_auth(wl, value);
+	if (ret < 0)
+		goto out_sleep;
+
+out_sleep:
+	wl1271_ps_elp_sleep(wl);
+out:
+	mutex_unlock(&wl->mutex);
+	return count;
+}
+
+static const struct file_operations sleep_auth_ops = {
+	.read = sleep_auth_read,
+	.write = sleep_auth_write,
+	.open = simple_open,
 	.llseek = default_llseek,
 };
 
@@ -1229,23 +1157,34 @@ static ssize_t dev_mem_read(struct file *file,
 
 	mutex_lock(&wl->mutex);
 
-	if (wl->state == WL1271_STATE_OFF) {
+	if (unlikely(wl->state == WLCORE_STATE_OFF)) {
 		ret = -EFAULT;
 		goto skip_read;
 	}
 
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		goto skip_read;
+	/*
+	 * Don't fail if elp_wakeup returns an error, so the device's memory
+	 * could be read even if the FW crashed
+	 */
+	wl1271_ps_elp_wakeup(wl);
 
 	/* store current partition and switch partition */
 	memcpy(&old_part, &wl->curr_part, sizeof(old_part));
-	wlcore_set_partition(wl, &part);
+	ret = wlcore_set_partition(wl, &part);
+	if (ret < 0)
+		goto part_err;
 
-	wl1271_raw_read(wl, 0, buf, bytes, false);
+	ret = wlcore_raw_read(wl, 0, buf, bytes, false);
+	if (ret < 0)
+		goto read_err;
 
+read_err:
 	/* recover partition */
-	wlcore_set_partition(wl, &old_part);
+	ret = wlcore_set_partition(wl, &old_part);
+	if (ret < 0)
+		goto part_err;
+
+part_err:
 	wl1271_ps_elp_sleep(wl);
 
 skip_read:
@@ -1305,24 +1244,34 @@ static ssize_t dev_mem_write(struct file *file, const char __user *user_buf,
 
 	mutex_lock(&wl->mutex);
 
-	if (wl->state == WL1271_STATE_OFF) {
+	if (unlikely(wl->state == WLCORE_STATE_OFF)) {
 		ret = -EFAULT;
 		goto skip_write;
 	}
 
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		goto skip_write;
+	/*
+	 * Don't fail if elp_wakeup returns an error, so the device's memory
+	 * could be read even if the FW crashed
+	 */
+	wl1271_ps_elp_wakeup(wl);
 
 	/* store current partition and switch partition */
 	memcpy(&old_part, &wl->curr_part, sizeof(old_part));
-	wlcore_set_partition(wl, &part);
+	ret = wlcore_set_partition(wl, &part);
+	if (ret < 0)
+		goto part_err;
 
-	wl1271_raw_write(wl, 0, buf, bytes, false);
+	ret = wlcore_raw_write(wl, 0, buf, bytes, false);
+	if (ret < 0)
+		goto write_err;
 
+write_err:
 	/* recover partition */
-	wlcore_set_partition(wl, &old_part);
+	ret = wlcore_set_partition(wl, &old_part);
+	if (ret < 0)
+		goto part_err;
 
+part_err:
 	wl1271_ps_elp_sleep(wl);
 
 skip_write:
@@ -1362,7 +1311,7 @@ static loff_t dev_mem_seek(struct file *file, loff_t offset, int orig)
 }
 
 static const struct file_operations dev_mem_ops = {
-	.open = wl1271_open_file_generic,
+	.open = simple_open,
 	.read = dev_mem_read,
 	.write = dev_mem_write,
 	.llseek = dev_mem_seek,
@@ -1388,15 +1337,13 @@ static int wl1271_debugfs_add_files(struct wl1271 *wl,
 	DEBUGFS_ADD(beacon_filtering, rootdir);
 	DEBUGFS_ADD(dynamic_ps_timeout, rootdir);
 	DEBUGFS_ADD(forced_ps, rootdir);
-	DEBUGFS_ADD(sleep_auth, rootdir);
 	DEBUGFS_ADD(stats_tx_aggr, rootdir);
 	DEBUGFS_ADD(split_scan_timeout, rootdir);
-	DEBUGFS_ADD(tx_stuck, rootdir);
-	DEBUGFS_ADD(tx_ba_win_size, rootdir);
 	DEBUGFS_ADD(irq_pkt_threshold, rootdir);
 	DEBUGFS_ADD(irq_blk_threshold, rootdir);
 	DEBUGFS_ADD(irq_timeout, rootdir);
 	DEBUGFS_ADD(fw_stats_raw, rootdir);
+	DEBUGFS_ADD(sleep_auth, rootdir);
 
 	streaming = debugfs_create_dir("rx_streaming", rootdir);
 	if (!streaming || IS_ERR(streaming))

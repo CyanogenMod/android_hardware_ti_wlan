@@ -24,16 +24,21 @@
 
 #include "conf.h"
 
+/* minimum FW required for driver */
+#define WL18XX_CHIP_VER		8
+#define WL18XX_IFTYPE_VER	4
+#define WL18XX_MAJOR_VER	0
+#define WL18XX_SUBTYPE_VER	0
+#define WL18XX_MINOR_VER	8
+
 #define WL18XX_CMD_MAX_SIZE          740
 
-struct wl18xx_phy_addresses {
-	u32 phy_hram_rd_en;
-	u32 pdsp_ctrl_reg;
-	u32 pdsp_ram;
-	u32 prcm_bt_pwr_rst;
-	u32 ip_sel_ov_en;
-	u32 ip_ov_en;
-};
+#define WL18XX_AGGR_BUFFER_SIZE		(13 * PAGE_SIZE)
+
+#define WL18XX_NUM_TX_DESCRIPTORS 32
+#define WL18XX_NUM_RX_DESCRIPTORS 32
+
+#define WL18XX_NUM_MAC_ADDRESSES 3
 
 struct wl18xx_priv {
 	/* buffer for sending commands to FW */
@@ -43,8 +48,6 @@ struct wl18xx_priv {
 
 	/* Index of last released Tx desc in FW */
 	u8 last_fw_rls_idx;
-
-	struct wl18xx_phy_addresses phy_addresses;
 
 	/* number of VIFs requiring extra spare mem-blocks */
 	int extra_spare_vif_count;

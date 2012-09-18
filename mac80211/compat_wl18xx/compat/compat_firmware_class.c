@@ -21,7 +21,7 @@
 #include <linux/firmware.h>
 #include <linux/slab.h>
 
-#define to_dev(obj) container_of(obj, struct device, kobj)
+#define compat_firmware_to_dev(obj) container_of(obj, struct device, kobj)
 
 MODULE_AUTHOR("Manuel Estrada Sainz");
 MODULE_DESCRIPTION("Multi purpose firmware loading support");
@@ -324,7 +324,7 @@ static ssize_t firmware_data_read(struct kobject *kobj,
 				  char *buffer, loff_t offset, size_t count)
 #endif
 {
-	struct device *dev = to_dev(kobj);
+	struct device *dev = compat_firmware_to_dev(kobj);
 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
 	struct firmware *fw;
 	ssize_t ret_count;
@@ -423,7 +423,7 @@ static ssize_t firmware_data_write(struct kobject *kobj,
 				   char *buffer, loff_t offset, size_t count)
 #endif
 {
-	struct device *dev = to_dev(kobj);
+	struct device *dev = compat_firmware_to_dev(kobj);
 	struct firmware_priv *fw_priv = to_firmware_priv(dev);
 	struct firmware *fw;
 	ssize_t retval;
@@ -635,7 +635,7 @@ out:
  *      firmware image for this or any other device.
  **/
 int
-request_firmware(const struct firmware **firmware_p, const char *name,
+compat_request_firmware(const struct firmware **firmware_p, const char *name,
                  struct device *device)
 {
         int uevent = 1;
@@ -646,7 +646,7 @@ request_firmware(const struct firmware **firmware_p, const char *name,
  * release_firmware: - release the resource associated with a firmware image
  * @fw: firmware resource to release
  **/
-void release_firmware(const struct firmware *fw)
+void compat_release_firmware(const struct firmware *fw)
 {
 	if (fw) {
 		if (!fw_is_builtin_firmware(fw))
@@ -705,7 +705,7 @@ static int request_firmware_work_func(void *arg)
  *	in atomic contexts.
  **/
 int
-request_firmware_nowait(
+compat_request_firmware_nowait(
 	struct module *module, int uevent,
 	const char *name, struct device *device, gfp_t gfp, void *context,
 	void (*cont)(const struct firmware *fw, void *context))
@@ -754,6 +754,6 @@ static void __exit firmware_class_exit(void)
 fs_initcall(firmware_class_init);
 module_exit(firmware_class_exit);
 
-EXPORT_SYMBOL(release_firmware);
-EXPORT_SYMBOL(request_firmware);
-EXPORT_SYMBOL(request_firmware_nowait);
+EXPORT_SYMBOL_GPL(release_firmware);
+EXPORT_SYMBOL_GPL(request_firmware);
+EXPORT_SYMBOL_GPL(request_firmware_nowait);

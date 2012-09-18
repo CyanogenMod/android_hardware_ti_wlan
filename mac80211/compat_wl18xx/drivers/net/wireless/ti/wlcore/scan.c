@@ -46,7 +46,7 @@ void wl1271_scan_complete_work(struct work_struct *work)
 
 	mutex_lock(&wl->mutex);
 
-	if (wl->state == WL1271_STATE_OFF)
+	if (unlikely(wl->state != WLCORE_STATE_ON))
 		goto out;
 
 	if (wl->scan.state == WL1271_SCAN_STATE_IDLE)
@@ -54,6 +54,12 @@ void wl1271_scan_complete_work(struct work_struct *work)
 
 	vif = wl->scan_vif;
 	wlvif = wl12xx_vif_to_data(vif);
+
+	/*
+	 * Rearm the tx watchdog just before idling scan. This
+	 * prevents just-finished scans from triggering the watchdog
+	 */
+	wl12xx_rearm_tx_watchdog_locked(wl);
 
 	wl->scan.state = WL1271_SCAN_STATE_IDLE;
 	memset(wl->scan.scanned_ch, 0, sizeof(wl->scan.scanned_ch));
@@ -83,180 +89,297 @@ out:
 
 }
 
-
-static int wl1271_get_scan_channels(struct wl1271 *wl,
-				    struct cfg80211_scan_request *req,
-				    struct basic_scan_channel_params *channels,
-				    enum ieee80211_band band, bool passive)
+static int
+wlcore_scan_get_channels(struct wl1271 *wl,
+			 struct ieee80211_channel *req_channels[],
+			 u32 n_channels,
+			 u32 n_ssids,
+			 struct conn_scan_ch_params *channels,
+			 u32 band, bool radar, bool passive,
+			 int start, int max_channels,
+			 int scan_type)
 {
-	struct conf_scan_settings *c = &wl->conf.scan;
 	int i, j;
 	u32 flags;
+	bool force_passive = !n_ssids;
+	u32 min_dwell_time_active, max_dwell_time_active, delta_per_probe;
+	u32 dwell_time_passive, dwell_time_dfs;
 
-	for (i = 0, j = 0;
-	     i < req->n_channels && j < WL1271_SCAN_MAX_CHANNELS;
+	if (scan_type == SCAN_TYPE_SEARCH) {
+		struct conf_scan_settings *c = &wl->conf.scan;
+
+		min_dwell_time_active = c->min_dwell_time_active;
+		max_dwell_time_active = c->max_dwell_time_active;
+		/* TODO: convert conf from min/max to a single value */
+		dwell_time_passive = c->dwell_time_passive;
+		dwell_time_dfs = c->dwell_time_dfs;
+	} else {
+		struct conf_sched_scan_settings *c = &wl->conf.sched_scan;
+
+		if (band == IEEE80211_BAND_5GHZ)
+			delta_per_probe = c->dwell_time_delta_per_probe_5;
+		else
+			delta_per_probe = c->dwell_time_delta_per_probe;
+
+		min_dwell_time_active = c->base_dwell_time +
+			 n_ssids * c->num_probe_reqs * delta_per_probe;
+
+		max_dwell_time_active = min_dwell_time_active +
+					c->max_dwell_time_delta;
+		dwell_time_passive = c->dwell_time_passive;
+		dwell_time_dfs = c->dwell_time_dfs;
+	}
+	/* TODO: use msec in conf... */
+	min_dwell_time_active = DIV_ROUND_UP(min_dwell_time_active, 1000);
+	max_dwell_time_active = DIV_ROUND_UP(max_dwell_time_active, 1000);
+	dwell_time_passive = DIV_ROUND_UP(dwell_time_passive, 1000);
+	dwell_time_dfs = DIV_ROUND_UP(dwell_time_dfs, 1000);
+
+	for (i = 0, j = start;
+	     i < n_channels && j < max_channels;
 	     i++) {
-		flags = req->channels[i]->flags;
+		flags = req_channels[i]->flags;
 
-		if (!test_bit(i, wl->scan.scanned_ch) &&
+		if (force_passive)
+			flags |= IEEE80211_CHAN_PASSIVE_SCAN;
+
+		if ((req_channels[i]->band == band) &&
 		    !(flags & IEEE80211_CHAN_DISABLED) &&
-		    (req->channels[i]->band == band) &&
-		    /*
-		     * In passive scans, we scan all remaining
-		     * channels, even if not marked as such.
-		     * In active scans, we only scan channels not
-		     * marked as passive.
-		     */
-		    (passive || !(flags & IEEE80211_CHAN_PASSIVE_SCAN))) {
+		    (!!(flags & IEEE80211_CHAN_RADAR) == radar) &&
+		    /* if radar is set, we ignore the passive flag */
+		    (radar ||
+		     !!(flags & IEEE80211_CHAN_PASSIVE_SCAN) == passive)) {
 			wl1271_debug(DEBUG_SCAN, "band %d, center_freq %d ",
-				     req->channels[i]->band,
-				     req->channels[i]->center_freq);
+				     req_channels[i]->band,
+				     req_channels[i]->center_freq);
 			wl1271_debug(DEBUG_SCAN, "hw_value %d, flags %X",
-				     req->channels[i]->hw_value,
-				     req->channels[i]->flags);
-			wl1271_debug(DEBUG_SCAN,
-				     "max_antenna_gain %d, max_power %d",
-				     req->channels[i]->max_antenna_gain,
-				     req->channels[i]->max_power);
-			wl1271_debug(DEBUG_SCAN, "beacon_found %d",
-				     req->channels[i]->beacon_found);
+				     req_channels[i]->hw_value,
+				     req_channels[i]->flags);
+			wl1271_debug(DEBUG_SCAN, "max_power %d",
+				     req_channels[i]->max_power);
+			wl1271_debug(DEBUG_SCAN, "min_dwell_time %d max dwell time %d",
+				     min_dwell_time_active,
+				     max_dwell_time_active);
 
-			if (!passive) {
-				if (req->min_dwell)
-					channels[j].min_duration =
-						cpu_to_le32(req->min_dwell);
-				else
-					channels[j].min_duration =
-					  cpu_to_le32(c->min_dwell_time_active);
+			if (flags & IEEE80211_CHAN_RADAR) {
+				channels[j].flags |= SCAN_CHANNEL_FLAGS_DFS;
 
-				if (req->max_dwell)
-					channels[j].max_duration =
-						cpu_to_le32(req->max_dwell);
-				else
-					channels[j].max_duration =
-					  cpu_to_le32(c->max_dwell_time_active);
+				channels[j].passive_duration =
+					cpu_to_le16(dwell_time_dfs);
 			} else {
-				if ((req->min_dwell) &&
-					(wl->scan.req->n_ssids == 0))
-						channels[j].min_duration =
-						    cpu_to_le32(req->min_dwell);
-				else
-					channels[j].min_duration =
-					 cpu_to_le32(c->min_dwell_time_passive);
-
-				if ((req->max_dwell) &&
-					(wl->scan.req->n_ssids == 0))
-						channels[j].min_duration =
-						    cpu_to_le32(req->max_dwell);
-				else
-					channels[j].max_duration =
-					 cpu_to_le32(c->max_dwell_time_passive);
+				channels[j].passive_duration =
+					cpu_to_le16(dwell_time_passive);
 			}
-			channels[j].early_termination = 0;
-			channels[j].tx_power_att = req->channels[i]->max_power;
-			channels[j].channel = req->channels[i]->hw_value;
 
-			memset(&channels[j].bssid_lsb, 0xff, 4);
-			memset(&channels[j].bssid_msb, 0xff, 2);
+			channels[j].min_duration =
+				cpu_to_le16(min_dwell_time_active);
+			channels[j].max_duration =
+				cpu_to_le16(max_dwell_time_active);
 
-			/* Mark the channels we already used */
-			set_bit(i, wl->scan.scanned_ch);
+			channels[j].tx_power_att = req_channels[i]->max_power;
+			channels[j].channel = req_channels[i]->hw_value;
+#if 0
+			if ((band == IEEE80211_BAND_2GHZ) &&
+			    (channels[j].channel >= 12) &&
+			    (channels[j].channel <= 14) &&
+			    (flags & IEEE80211_CHAN_PASSIVE_SCAN) &&
+			    !force_passive) {
+				/* pactive channels treated as DFS */
+				channels[j].flags = SCAN_CHANNEL_FLAGS_DFS;
 
+				/*
+				 * n_pactive_ch is counted down from the end of
+				 * the passive channel list
+				 */
+				(*n_pactive_ch)++;
+				wl1271_debug(DEBUG_SCAN, "n_pactive_ch = %d",
+					     *n_pactive_ch);
+			}
+#endif
 			j++;
 		}
 	}
 
-	return j;
+	return j - start;
 }
 
-#define WL1271_NOTHING_TO_SCAN 1
+static bool
+wlcore_set_scan_chan_params(struct wl1271 *wl,
+			    struct wl1271_cmd_scan_params *cfg,
+			    struct ieee80211_channel *channels[],
+			    u32 n_channels,
+			    u32 n_ssids,
+			    int scan_type)
+{
+	u8 n_pactive_ch = 0;
+
+	cfg->passive[0] =
+		wlcore_scan_get_channels(wl,
+					 channels,
+					 n_channels,
+					 n_ssids,
+					 cfg->channels_2,
+					 IEEE80211_BAND_2GHZ,
+					 false, true, 0,
+					 MAX_CHANNELS_2GHZ,
+					 scan_type);
+	cfg->active[0] =
+		wlcore_scan_get_channels(wl,
+					 channels,
+					 n_channels,
+					 n_ssids,
+					 cfg->channels_2,
+					 IEEE80211_BAND_2GHZ,
+					 false, false,
+					 cfg->passive[0],
+					 MAX_CHANNELS_2GHZ,
+					 scan_type);
+	cfg->passive[1] =
+		wlcore_scan_get_channels(wl,
+					 channels,
+					 n_channels,
+					 n_ssids,
+					 cfg->channels_5,
+					 IEEE80211_BAND_5GHZ,
+					 false, true, 0,
+					 MAX_CHANNELS_5GHZ,
+					 scan_type);
+	cfg->dfs =
+		wlcore_scan_get_channels(wl,
+					 channels,
+					 n_channels,
+					 n_ssids,
+					 cfg->channels_5,
+					 IEEE80211_BAND_5GHZ,
+					 true, true,
+					 cfg->passive[1],
+					 MAX_CHANNELS_5GHZ,
+					 scan_type);
+	cfg->active[1] =
+		wlcore_scan_get_channels(wl,
+					 channels,
+					 n_channels,
+					 n_ssids,
+					 cfg->channels_5,
+					 IEEE80211_BAND_5GHZ,
+					 false, false,
+					 cfg->passive[1] + cfg->dfs,
+					 MAX_CHANNELS_5GHZ,
+					 scan_type);
+	/* TODO: add passive-after-active configuration */
+	/* 802.11j channels are not supported yet */
+	cfg->passive[2] = 0;
+	cfg->active[2] = 0;
+
+	cfg->passive_active = n_pactive_ch;
+
+	wl1271_debug(DEBUG_SCAN, "    2.4GHz: active %d passive %d",
+		     cfg->active[0], cfg->passive[0]);
+	wl1271_debug(DEBUG_SCAN, "    5GHz: active %d passive %d",
+		     cfg->active[1], cfg->passive[1]);
+	wl1271_debug(DEBUG_SCAN, "    DFS: %d", cfg->dfs);
+
+	return  cfg->passive[0] || cfg->active[0] ||
+		cfg->passive[1] || cfg->active[1] || cfg->dfs ||
+		cfg->passive[2] || cfg->active[2];
+}
 
 static int wl1271_scan_send(struct wl1271 *wl, struct ieee80211_vif *vif,
-			    enum ieee80211_band band,
-			    bool passive, u32 basic_rate)
+			    struct cfg80211_scan_request *req)
 {
 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
-	struct wl1271_cmd_scan *cmd;
-	struct wl1271_cmd_trigger_scan_to *trigger;
+	struct wl1271_cmd_scan_params *cmd;
 	int ret;
-	u16 scan_options = 0;
-
-	/* skip active scans if we don't have SSIDs */
-	if (!passive && wl->scan.req->n_ssids == 0)
-		return WL1271_NOTHING_TO_SCAN;
 
 	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
-	trigger = kzalloc(sizeof(*trigger), GFP_KERNEL);
-	if (!cmd || !trigger) {
+	if (!cmd) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	if (wl->conf.scan.split_scan_timeout)
-		scan_options |= WL1271_SCAN_OPT_SPLIT_SCAN;
+	/* TODO: delete split_scan_timeout conf */
 
-	if (passive)
-		scan_options |= WL1271_SCAN_OPT_PASSIVE;
-
-	if (wlvif->bss_type == BSS_TYPE_AP_BSS ||
-	    test_bit(WLVIF_FLAG_STA_ASSOCIATED, &wlvif->flags))
-		cmd->params.role_id = wlvif->role_id;
+	/* scan on the dev role if the regular one is not started */
+	if (wlvif->role_id == WL12XX_INVALID_ROLE_ID)
+		cmd->role_id = wlvif->dev_role_id;
 	else
-		cmd->params.role_id = wlvif->dev_role_id;
+		cmd->role_id = wlvif->role_id;
 
-	if (WARN_ON(cmd->params.role_id == WL12XX_INVALID_ROLE_ID)) {
+	if (WARN_ON(cmd->role_id == WL12XX_INVALID_ROLE_ID)) {
 		ret = -EINVAL;
 		goto out;
 	}
 
-	cmd->params.scan_options = cpu_to_le16(scan_options);
+	cmd->scan_type = SCAN_TYPE_SEARCH;
+	cmd->rssi_threshold = -127;
+	cmd->snr_threshold = 0;
 
-	cmd->params.n_ch = wl1271_get_scan_channels(wl, wl->scan.req,
-						    cmd->channels,
-						    band, passive);
-	if (cmd->params.n_ch == 0) {
-		ret = WL1271_NOTHING_TO_SCAN;
-		goto out;
+	/* TODO: use wlvif->type instead? */
+	cmd->bss_type = SCAN_BSS_TYPE_ANY;
+
+	cmd->ssid_from_list = 0;
+	cmd->filter = 0;
+	cmd->add_broadcast = 0;
+
+	/* TODO: figure this ones out */
+	cmd->urgency = 0;
+	cmd->protect = 0;
+
+	/* TODO: take num_probe from req if available */
+	cmd->n_probe_reqs = wl->conf.scan.num_probe_reqs;
+	cmd->terminate_after = 0;
+
+	/* configure channels */
+	WARN_ON(req->n_ssids > 1); /* TODO: support multi ssid */
+	wlcore_set_scan_chan_params(wl, cmd, req->channels,
+				    req->n_channels, req->n_ssids,
+				    SCAN_TYPE_SEARCH);
+
+	/*
+	 * all the cycles params (except total cycles) should
+	 * remain 0 for normal scan
+	 */
+	cmd->total_cycles = 1;
+
+	if (req->no_cck)
+		cmd->rate = WLCORE_SCAN_RATE_6;
+
+	cmd->tag = WL1271_SCAN_DEFAULT_TAG;
+
+	if (req->n_ssids) {
+		cmd->ssid_len = req->ssids[0].ssid_len;
+		memcpy(cmd->ssid, req->ssids[0].ssid, cmd->ssid_len);
 	}
 
-	cmd->params.tx_rate = cpu_to_le32(basic_rate);
-	cmd->params.n_probe_reqs = wl->conf.scan.num_probe_reqs;
-	cmd->params.tid_trigger = CONF_TX_AC_ANY_TID;
-	cmd->params.scan_tag = WL1271_SCAN_DEFAULT_TAG;
-
-	if (band == IEEE80211_BAND_2GHZ)
-		cmd->params.band = WL1271_SCAN_BAND_2_4_GHZ;
-	else
-		cmd->params.band = WL1271_SCAN_BAND_5_GHZ;
-
-	if (wl->scan.req->num_probe)
-		cmd->params.n_probe_reqs = wl->scan.req->num_probe;
-	else
-		cmd->params.n_probe_reqs = wl->conf.scan.num_probe_reqs;
-
-	if (wl->scan.ssid_len && wl->scan.ssid) {
-		cmd->params.ssid_len = wl->scan.ssid_len;
-		memcpy(cmd->params.ssid, wl->scan.ssid, wl->scan.ssid_len);
+	/* TODO: per-band ies? */
+	if (cmd->active[0]) {
+		u8 band = IEEE80211_BAND_2GHZ;
+		ret = wl12xx_cmd_build_probe_req(wl, wlvif,
+						 cmd->role_id, band,
+						 req->ssids[0].ssid,
+						 req->ssids[0].ssid_len,
+						 req->ie,
+						 req->ie_len,
+						 false);
+		if (ret < 0) {
+			wl1271_error("2.4GHz PROBE request template failed");
+			goto out;
+		}
 	}
 
-	memcpy(cmd->addr, vif->addr, ETH_ALEN);
-
-	ret = wl12xx_cmd_build_probe_req(wl, wlvif,
-					 cmd->params.role_id, band,
-					 wl->scan.ssid, wl->scan.ssid_len,
-					 wl->scan.req->ie,
-					 wl->scan.req->ie_len);
-	if (ret < 0) {
-		wl1271_error("PROBE request template failed");
-		goto out;
-	}
-
-	trigger->timeout = cpu_to_le32(wl->conf.scan.split_scan_timeout);
-	ret = wl1271_cmd_send(wl, CMD_TRIGGER_SCAN_TO, trigger,
-			      sizeof(*trigger), 0);
-	if (ret < 0) {
-		wl1271_error("trigger scan to failed for hw scan");
-		goto out;
+	if (cmd->active[1]) {
+		u8 band = IEEE80211_BAND_5GHZ;
+		ret = wl12xx_cmd_build_probe_req(wl, wlvif,
+						 cmd->role_id, band,
+						 req->ssids[0].ssid,
+						 req->ssids[0].ssid_len,
+						 req->ie,
+						 req->ie_len,
+						 false);
+		if (ret < 0) {
+			wl1271_error("5GHz PROBE request template failed");
+			goto out;
+		}
 	}
 
 	wl1271_dump(DEBUG_SCAN, "SCAN: ", cmd, sizeof(*cmd));
@@ -269,97 +392,15 @@ static int wl1271_scan_send(struct wl1271 *wl, struct ieee80211_vif *vif,
 
 out:
 	kfree(cmd);
-	kfree(trigger);
 	return ret;
 }
 
-void wl1271_scan_stm(struct wl1271 *wl, struct ieee80211_vif *vif)
+void wl12xx_scan_completed(struct wl1271 *wl)
 {
-	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
-	int ret = 0;
-	enum ieee80211_band band;
-	u32 rate, mask;
-
-	switch (wl->scan.state) {
-	case WL1271_SCAN_STATE_IDLE:
-		break;
-
-	case WL1271_SCAN_STATE_2GHZ_ACTIVE:
-		band = IEEE80211_BAND_2GHZ;
-		mask = wlvif->bitrate_masks[band];
-		if (wl->scan.req->no_cck) {
-			mask &= ~CONF_TX_CCK_RATES;
-			if (!mask)
-				mask = CONF_TX_RATE_MASK_BASIC_P2P;
-		}
-		rate = wl1271_tx_min_rate_get(wl, mask);
-		ret = wl1271_scan_send(wl, vif, band, false, rate);
-		if (ret == WL1271_NOTHING_TO_SCAN) {
-			wl->scan.state = WL1271_SCAN_STATE_2GHZ_PASSIVE;
-			wl1271_scan_stm(wl, vif);
-		}
-
-		break;
-
-	case WL1271_SCAN_STATE_2GHZ_PASSIVE:
-		band = IEEE80211_BAND_2GHZ;
-		mask = wlvif->bitrate_masks[band];
-		if (wl->scan.req->no_cck) {
-			mask &= ~CONF_TX_CCK_RATES;
-			if (!mask)
-				mask = CONF_TX_RATE_MASK_BASIC_P2P;
-		}
-		rate = wl1271_tx_min_rate_get(wl, mask);
-		ret = wl1271_scan_send(wl, vif, band, true, rate);
-		if (ret == WL1271_NOTHING_TO_SCAN) {
-			if (wl->enable_11a)
-				wl->scan.state = WL1271_SCAN_STATE_5GHZ_ACTIVE;
-			else
-				wl->scan.state = WL1271_SCAN_STATE_DONE;
-			wl1271_scan_stm(wl, vif);
-		}
-
-		break;
-
-	case WL1271_SCAN_STATE_5GHZ_ACTIVE:
-		band = IEEE80211_BAND_5GHZ;
-		rate = wl1271_tx_min_rate_get(wl, wlvif->bitrate_masks[band]);
-		ret = wl1271_scan_send(wl, vif, band, false, rate);
-		if (ret == WL1271_NOTHING_TO_SCAN) {
-			wl->scan.state = WL1271_SCAN_STATE_5GHZ_PASSIVE;
-			wl1271_scan_stm(wl, vif);
-		}
-
-		break;
-
-	case WL1271_SCAN_STATE_5GHZ_PASSIVE:
-		band = IEEE80211_BAND_5GHZ;
-		rate = wl1271_tx_min_rate_get(wl, wlvif->bitrate_masks[band]);
-		ret = wl1271_scan_send(wl, vif, band, true, rate);
-		if (ret == WL1271_NOTHING_TO_SCAN) {
-			wl->scan.state = WL1271_SCAN_STATE_DONE;
-			wl1271_scan_stm(wl, vif);
-		}
-
-		break;
-
-	case WL1271_SCAN_STATE_DONE:
-		wl->scan.failed = false;
-		cancel_delayed_work(&wl->scan_complete_work);
-		ieee80211_queue_delayed_work(wl->hw, &wl->scan_complete_work,
-					     msecs_to_jiffies(0));
-		break;
-
-	default:
-		wl1271_error("invalid scan state");
-		break;
-	}
-
-	if (ret < 0) {
-		cancel_delayed_work(&wl->scan_complete_work);
-		ieee80211_queue_delayed_work(wl->hw, &wl->scan_complete_work,
-					     msecs_to_jiffies(0));
-	}
+	wl->scan.failed = false;
+	cancel_delayed_work(&wl->scan_complete_work);
+	ieee80211_queue_delayed_work(wl->hw, &wl->scan_complete_work,
+				     msecs_to_jiffies(0));
 }
 
 int wl1271_scan(struct wl1271 *wl, struct ieee80211_vif *vif,
@@ -393,7 +434,7 @@ int wl1271_scan(struct wl1271 *wl, struct ieee80211_vif *vif,
 	ieee80211_queue_delayed_work(wl->hw, &wl->scan_complete_work,
 				     msecs_to_jiffies(WL1271_SCAN_TIMEOUT));
 
-	wl1271_scan_stm(wl, vif);
+	wl1271_scan_send(wl, vif, req);
 
 	return 0;
 }
@@ -425,146 +466,17 @@ out:
 	return ret;
 }
 
-static int
-wl1271_scan_get_sched_scan_channels(struct wl1271 *wl,
-				    struct cfg80211_sched_scan_request *req,
-				    struct conn_scan_ch_params *channels,
-				    u32 band, bool radar, bool passive,
-				    int start, int max_channels)
-{
-	struct conf_sched_scan_settings *c = &wl->conf.sched_scan;
-	int i, j;
-	u32 flags;
-	bool force_passive = !req->n_ssids;
-	u32 min_dwell_time_active, max_dwell_time_active, delta_per_probe;
-	u32 dwell_time_passive, dwell_time_dfs;
-
-	if (band == IEEE80211_BAND_5GHZ)
-		delta_per_probe = c->dwell_time_delta_per_probe_5;
-	else
-		delta_per_probe = c->dwell_time_delta_per_probe;
-
-	min_dwell_time_active = c->base_dwell_time +
-		 req->n_ssids * c->num_probe_reqs * delta_per_probe;
-
-	max_dwell_time_active = min_dwell_time_active + c->max_dwell_time_delta;
-
-	min_dwell_time_active = DIV_ROUND_UP(min_dwell_time_active, 1000);
-	max_dwell_time_active = DIV_ROUND_UP(max_dwell_time_active, 1000);
-	dwell_time_passive = DIV_ROUND_UP(c->dwell_time_passive, 1000);
-	dwell_time_dfs = DIV_ROUND_UP(c->dwell_time_dfs, 1000);
-
-	for (i = 0, j = start;
-	     i < req->n_channels && j < max_channels;
-	     i++) {
-		flags = req->channels[i]->flags;
-
-		if (force_passive)
-			flags |= IEEE80211_CHAN_PASSIVE_SCAN;
-
-		if ((req->channels[i]->band == band) &&
-		    !(flags & IEEE80211_CHAN_DISABLED) &&
-		    (!!(flags & IEEE80211_CHAN_RADAR) == radar) &&
-		    /* if radar is set, we ignore the passive flag */
-		    (radar ||
-		     !!(flags & IEEE80211_CHAN_PASSIVE_SCAN) == passive)) {
-			wl1271_debug(DEBUG_SCAN, "band %d, center_freq %d ",
-				     req->channels[i]->band,
-				     req->channels[i]->center_freq);
-			wl1271_debug(DEBUG_SCAN, "hw_value %d, flags %X",
-				     req->channels[i]->hw_value,
-				     req->channels[i]->flags);
-			wl1271_debug(DEBUG_SCAN, "max_power %d",
-				     req->channels[i]->max_power);
-			wl1271_debug(DEBUG_SCAN, "min_dwell_time %d"
-				     "max dwell time %d",
-				     min_dwell_time_active,
-				     max_dwell_time_active);
-
-			if (flags & IEEE80211_CHAN_RADAR) {
-				channels[j].flags |= SCAN_CHANNEL_FLAGS_DFS;
-
-				channels[j].passive_duration =
-					cpu_to_le16(dwell_time_dfs);
-			} else {
-				channels[j].passive_duration =
-					cpu_to_le16(dwell_time_passive);
-			}
-
-			channels[j].min_duration =
-				cpu_to_le16(min_dwell_time_active);
-			channels[j].max_duration =
-				cpu_to_le16(max_dwell_time_active);
-
-			channels[j].tx_power_att = req->channels[i]->max_power;
-			channels[j].channel = req->channels[i]->hw_value;
-
-			j++;
-		}
-	}
-
-	return j - start;
-}
-
-static bool
-wl1271_scan_sched_scan_channels(struct wl1271 *wl,
-				struct cfg80211_sched_scan_request *req,
-				struct wl1271_cmd_sched_scan_config *cfg)
-{
-	cfg->passive[0] =
-		wl1271_scan_get_sched_scan_channels(wl, req, cfg->channels_2,
-						    IEEE80211_BAND_2GHZ,
-						    false, true, 0,
-						    MAX_CHANNELS_2GHZ);
-	cfg->active[0] =
-		wl1271_scan_get_sched_scan_channels(wl, req, cfg->channels_2,
-						    IEEE80211_BAND_2GHZ,
-						    false, false,
-						    cfg->passive[0],
-						    MAX_CHANNELS_2GHZ);
-	cfg->passive[1] =
-		wl1271_scan_get_sched_scan_channels(wl, req, cfg->channels_5,
-						    IEEE80211_BAND_5GHZ,
-						    false, true, 0,
-						    MAX_CHANNELS_5GHZ);
-	cfg->dfs =
-		wl1271_scan_get_sched_scan_channels(wl, req, cfg->channels_5,
-						    IEEE80211_BAND_5GHZ,
-						    true, true,
-						    cfg->passive[1],
-						    MAX_CHANNELS_5GHZ);
-	cfg->active[1] =
-		wl1271_scan_get_sched_scan_channels(wl, req, cfg->channels_5,
-						    IEEE80211_BAND_5GHZ,
-						    false, false,
-						    cfg->passive[1] + cfg->dfs,
-						    MAX_CHANNELS_5GHZ);
-	/* 802.11j channels are not supported yet */
-	cfg->passive[2] = 0;
-	cfg->active[2] = 0;
-
-	wl1271_debug(DEBUG_SCAN, "    2.4GHz: active %d passive %d",
-		     cfg->active[0], cfg->passive[0]);
-	wl1271_debug(DEBUG_SCAN, "    5GHz: active %d passive %d",
-		     cfg->active[1], cfg->passive[1]);
-	wl1271_debug(DEBUG_SCAN, "    DFS: %d", cfg->dfs);
-
-	return  cfg->passive[0] || cfg->active[0] ||
-		cfg->passive[1] || cfg->active[1] || cfg->dfs ||
-		cfg->passive[2] || cfg->active[2];
-}
-
 /* Returns the scan type to be used or a negative value on error */
 static int
-wl12xx_scan_sched_scan_ssid_list(struct wl1271 *wl,
-				 struct cfg80211_sched_scan_request *req)
+wl12xx_scan_set_ssid_list(struct wl1271 *wl,
+				struct cfg80211_sched_scan_request *req)
 {
 	struct wl1271_cmd_sched_scan_ssid_list *cmd = NULL;
 	struct cfg80211_match_set *sets = req->match_sets;
 	struct cfg80211_ssid *ssids = req->ssids;
 	int ret = 0, type, i, j, n_match_ssids = 0;
 
-	wl1271_debug(DEBUG_CMD, "cmd sched scan ssid list");
+	wl1271_debug(DEBUG_CMD, "cmd scan ssid list");
 
 	/* count the match sets that contain SSIDs */
 	for (i = 0; i < req->n_match_sets; i++)
@@ -624,7 +536,7 @@ wl12xx_scan_sched_scan_ssid_list(struct wl1271 *wl,
 
 				for (j = 0; j < cmd->n_ssids; j++)
 					if ((req->ssids[i].ssid_len ==
-					     req->ssids[j].ssid_len) &&
+					     cmd->ssids[j].len) &&
 					    !memcmp(req->ssids[i].ssid,
 						   cmd->ssids[j].ssid,
 						   req->ssids[i].ssid_len)) {
@@ -658,15 +570,16 @@ out:
 	return type;
 }
 
+
 int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 				  struct wl12xx_vif *wlvif,
 				  struct cfg80211_sched_scan_request *req,
 				  struct ieee80211_sched_scan_ies *ies)
 {
-	struct wl1271_cmd_sched_scan_config *cfg = NULL;
+	struct wl1271_cmd_scan_params *cmd;
 	struct conf_sched_scan_settings *c = &wl->conf.sched_scan;
-	int i, ret;
-	bool force_passive = !req->n_ssids;
+	int ret;
+	int filter_type;
 
 	wl1271_debug(DEBUG_CMD, "cmd sched_scan scan config");
 
@@ -677,114 +590,101 @@ int wl1271_scan_sched_scan_config(struct wl1271 *wl,
 		return -EINVAL;
 	}
 
-	cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
-	if (!cfg)
-		return -ENOMEM;
+	filter_type = wl12xx_scan_set_ssid_list(wl,req);
+	if (filter_type < 0)
+		return filter_type;
 
-	cfg->rssi_threshold = c->rssi_threshold;
-	cfg->snr_threshold  = c->snr_threshold;
-	cfg->n_probe_reqs = c->num_probe_reqs;
-	/* cycles set to 0 it means infinite (until manually stopped) */
-	cfg->cycles = 0;
-	/* report APs when at least 1 is found */
-	cfg->report_after = 1;
-	/* don't stop scanning automatically when something is found */
-	cfg->terminate = 0;
-	cfg->tag = WL1271_SCAN_DEFAULT_TAG;
-	/* don't filter on BSS type */
-	cfg->bss_type = SCAN_BSS_TYPE_ANY;
-
-	for (i = 1; i < SCAN_MAX_CYCLE_INTERVALS; i++) {
-		if (i <= req->n_short_intervals)
-			cfg->intervals[i] = cpu_to_le32(req->short_interval);
-		else
-			cfg->intervals[i] = cpu_to_le32(req->long_interval);
+	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
+	if (!cmd) {
+		ret = -ENOMEM;
+		goto out;
 	}
 
-	cfg->ssid_len = 0;
-	ret = wl12xx_scan_sched_scan_ssid_list(wl, req);
-	if (ret < 0)
-		goto out;
+	cmd->role_id = wlvif->role_id;
+	/* report APs when at least 1 is found */
+	//cfg->report_after = 1;
 
-	cfg->filter_type = ret;
-
-	wl1271_debug(DEBUG_SCAN, "filter_type = %d", cfg->filter_type);
-
-	if (!wl1271_scan_sched_scan_channels(wl, req, cfg)) {
-		wl1271_error("scan channel list is empty");
+	if (WARN_ON(cmd->role_id == WL12XX_INVALID_ROLE_ID)) {
 		ret = -EINVAL;
 		goto out;
 	}
 
-	if (!force_passive && cfg->active[0]) {
+	cmd->scan_type = SCAN_TYPE_PERIODIC;
+	cmd->rssi_threshold = c->rssi_threshold;
+	cmd->snr_threshold = c->snr_threshold;
+
+	/* don't filter on BSS type */
+	cmd->bss_type = SCAN_BSS_TYPE_ANY;
+
+	cmd->ssid_from_list = 1;
+	if (filter_type == SCAN_SSID_FILTER_LIST)
+		cmd->filter = 1;
+	cmd->add_broadcast = 0;
+
+	/* TODO: figure this ones out */
+	cmd->urgency = 0;
+	cmd->protect = 0;
+
+	cmd->n_probe_reqs = c->num_probe_reqs;
+	/* don't stop scanning automatically when something is found */
+	cmd->terminate_after = 0;
+
+	/* configure channels */
+	wlcore_set_scan_chan_params(wl, cmd, req->channels,
+				    req->n_channels, req->n_ssids,
+				    SCAN_TYPE_PERIODIC);
+
+	/* TODO: check params */
+	cmd->short_cycles_sec = req->short_interval;
+	cmd->long_cycles_sec = req->long_interval;
+	cmd->short_cycles_count = req->n_short_intervals;
+	cmd->total_cycles = 0;
+
+	/* TODO: how to set tx rate? */
+
+	cmd->tag = WL1271_SCAN_DEFAULT_TAG;
+
+	if (cmd->active[0]) {
 		u8 band = IEEE80211_BAND_2GHZ;
 		ret = wl12xx_cmd_build_probe_req(wl, wlvif,
-						 wlvif->dev_role_id, band,
+						 cmd->role_id, band,
 						 req->ssids[0].ssid,
 						 req->ssids[0].ssid_len,
 						 ies->ie[band],
-						 ies->len[band]);
+						 ies->len[band],
+						 true);
 		if (ret < 0) {
 			wl1271_error("2.4GHz PROBE request template failed");
 			goto out;
 		}
 	}
 
-	if (!force_passive && cfg->active[1]) {
+	if (cmd->active[1]) {
 		u8 band = IEEE80211_BAND_5GHZ;
 		ret = wl12xx_cmd_build_probe_req(wl, wlvif,
-						 wlvif->dev_role_id, band,
+						 cmd->role_id, band,
 						 req->ssids[0].ssid,
 						 req->ssids[0].ssid_len,
 						 ies->ie[band],
-						 ies->len[band]);
+						 ies->len[band],
+						 true);
 		if (ret < 0) {
 			wl1271_error("5GHz PROBE request template failed");
 			goto out;
 		}
 	}
 
-	wl1271_dump(DEBUG_SCAN, "SCAN_CFG: ", cfg, sizeof(*cfg));
+	wl1271_dump(DEBUG_SCAN, "SCAN: ", cmd, sizeof(*cmd));
 
-	ret = wl1271_cmd_send(wl, CMD_CONNECTION_SCAN_CFG, cfg,
-			      sizeof(*cfg), 0);
+	wl1271_info("scan size: %d", sizeof(*cmd));
+	ret = wl1271_cmd_send(wl, CMD_SCAN, cmd, sizeof(*cmd), 0);
 	if (ret < 0) {
-		wl1271_error("SCAN configuration failed");
+		wl1271_error("SCAN failed");
 		goto out;
 	}
+
 out:
-	kfree(cfg);
-	return ret;
-}
-
-int wl1271_scan_sched_scan_start(struct wl1271 *wl, struct wl12xx_vif *wlvif)
-{
-	struct wl1271_cmd_sched_scan_start *start;
-	int ret = 0;
-
-	wl1271_debug(DEBUG_CMD, "cmd periodic scan start");
-
-	if (wlvif->bss_type != BSS_TYPE_STA_BSS)
-		return -EOPNOTSUPP;
-
-	if (test_bit(WLVIF_FLAG_IN_USE, &wlvif->flags))
-		return -EBUSY;
-
-	start = kzalloc(sizeof(*start), GFP_KERNEL);
-	if (!start)
-		return -ENOMEM;
-
-	start->tag = WL1271_SCAN_DEFAULT_TAG;
-
-	ret = wl1271_cmd_send(wl, CMD_START_PERIODIC_SCAN, start,
-			      sizeof(*start), 0);
-	if (ret < 0) {
-		wl1271_error("failed to send scan start command");
-		goto out_free;
-	}
-
-out_free:
-	kfree(start);
+	kfree(cmd);
 	return ret;
 }
 
@@ -795,9 +695,10 @@ void wl1271_scan_sched_scan_results(struct wl1271 *wl)
 	ieee80211_sched_scan_results(wl->hw);
 }
 
-void wl1271_scan_sched_scan_stop(struct wl1271 *wl)
+/* TODO: unify stop functions */
+void wl1271_scan_sched_scan_stop(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 {
-	struct wl1271_cmd_sched_scan_stop *stop;
+	struct wl12xx_cmd_scan_stop *stop;
 	int ret = 0;
 
 	wl1271_debug(DEBUG_CMD, "cmd periodic scan stop");
@@ -809,10 +710,10 @@ void wl1271_scan_sched_scan_stop(struct wl1271 *wl)
 		return;
 	}
 
-	stop->tag = WL1271_SCAN_DEFAULT_TAG;
+	stop->role_id = wlvif->role_id;
+	stop->scan_type = SCAN_TYPE_PERIODIC;
 
-	ret = wl1271_cmd_send(wl, CMD_STOP_PERIODIC_SCAN, stop,
-			      sizeof(*stop), 0);
+	ret = wl1271_cmd_send(wl, CMD_STOP_SCAN, stop, sizeof(*stop), 0);
 	if (ret < 0) {
 		wl1271_error("failed to send sched scan stop command");
 		goto out_free;
@@ -821,3 +722,4 @@ void wl1271_scan_sched_scan_stop(struct wl1271 *wl)
 out_free:
 	kfree(stop);
 }
+

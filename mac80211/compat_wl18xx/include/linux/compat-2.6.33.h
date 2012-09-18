@@ -15,7 +15,7 @@
 #include <linux/firmware.h>
 #include <linux/input.h>
 
-#if defined(CONFIG_COMPAT_FIRMWARE_CLASS)
+#if defined(CONFIG_FW_LOADER) || defined(CONFIG_FW_LOADER_MODULE)
 #define release_firmware compat_release_firmware
 #define request_firmware compat_request_firmware
 #define request_firmware_nowait compat_request_firmware_nowait
@@ -37,7 +37,7 @@ static inline int compat_request_firmware(const struct firmware **fw,
 {
 	return -EINVAL;
 }
-static inline int request_firmware_nowait(
+static inline int compat_request_firmware_nowait(
 	struct module *module, int uevent,
 	const char *name, struct device *device, gfp_t gfp, void *context,
 	void (*cont)(const struct firmware *fw, void *context))

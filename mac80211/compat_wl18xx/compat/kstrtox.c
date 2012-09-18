@@ -86,7 +86,7 @@ int kstrtoull(const char *s, unsigned int base, unsigned long long *res)
 		s++;
 	return _kstrtoull(s, base, res);
 }
-EXPORT_SYMBOL(kstrtoull);
+EXPORT_SYMBOL_GPL(kstrtoull);
 
 int kstrtoll(const char *s, unsigned int base, long long *res)
 {
@@ -110,7 +110,7 @@ int kstrtoll(const char *s, unsigned int base, long long *res)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(kstrtoll);
+EXPORT_SYMBOL_GPL(kstrtoll);
 
 /* Internal, do not use. */
 int _kstrtoul(const char *s, unsigned int base, unsigned long *res)
@@ -126,7 +126,7 @@ int _kstrtoul(const char *s, unsigned int base, unsigned long *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(_kstrtoul);
+EXPORT_SYMBOL_GPL(_kstrtoul);
 
 /* Internal, do not use. */
 int _kstrtol(const char *s, unsigned int base, long *res)
@@ -142,7 +142,7 @@ int _kstrtol(const char *s, unsigned int base, long *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(_kstrtol);
+EXPORT_SYMBOL_GPL(_kstrtol);
 
 int kstrtouint(const char *s, unsigned int base, unsigned int *res)
 {
@@ -157,7 +157,7 @@ int kstrtouint(const char *s, unsigned int base, unsigned int *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(kstrtouint);
+EXPORT_SYMBOL_GPL(kstrtouint);
 
 int kstrtoint(const char *s, unsigned int base, int *res)
 {
@@ -172,7 +172,7 @@ int kstrtoint(const char *s, unsigned int base, int *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(kstrtoint);
+EXPORT_SYMBOL_GPL(kstrtoint);
 
 int kstrtou16(const char *s, unsigned int base, u16 *res)
 {
@@ -187,7 +187,7 @@ int kstrtou16(const char *s, unsigned int base, u16 *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(kstrtou16);
+EXPORT_SYMBOL_GPL(kstrtou16);
 
 int kstrtos16(const char *s, unsigned int base, s16 *res)
 {
@@ -202,7 +202,7 @@ int kstrtos16(const char *s, unsigned int base, s16 *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(kstrtos16);
+EXPORT_SYMBOL_GPL(kstrtos16);
 
 int kstrtou8(const char *s, unsigned int base, u8 *res)
 {
@@ -217,7 +217,7 @@ int kstrtou8(const char *s, unsigned int base, u8 *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(kstrtou8);
+EXPORT_SYMBOL_GPL(kstrtou8);
 
 int kstrtos8(const char *s, unsigned int base, s8 *res)
 {
@@ -232,5 +232,5 @@ int kstrtos8(const char *s, unsigned int base, s8 *res)
 	*res = tmp;
 	return 0;
 }
-EXPORT_SYMBOL(kstrtos8);
+EXPORT_SYMBOL_GPL(kstrtos8);
 #endif /* #ifndef strict_strtol */

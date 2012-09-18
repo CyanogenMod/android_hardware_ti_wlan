@@ -4,11 +4,7 @@
 #define __COMPAT_LINUX_PM_QOS_PARAMS_H
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 1, 0))
-#include_next <linux/pm_qos.h>
-#else
 #include_next <linux/pm_qos_params.h>
-#endif
 #else
 /* interface for the pm_qos_power infrastructure of the linux kernel.
  *

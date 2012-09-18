@@ -32,6 +32,22 @@ enum {
 /* numbers of bits the length field takes (add 1 for the actual number) */
 #define WL18XX_HOST_IF_LEN_SIZE_FIELD 15
 
+#define WL18XX_ACX_EVENTS_VECTOR	(WL1271_ACX_INTR_WATCHDOG	| \
+					 WL1271_ACX_INTR_INIT_COMPLETE	| \
+					 WL1271_ACX_INTR_EVENT_A	| \
+					 WL1271_ACX_INTR_EVENT_B	| \
+					 WL1271_ACX_INTR_CMD_COMPLETE	| \
+					 WL1271_ACX_INTR_HW_AVAILABLE	| \
+					 WL1271_ACX_INTR_DATA		| \
+					 WL1271_ACX_SW_INTR_WATCHDOG)
+
+#define WL18XX_INTR_MASK		(WL1271_ACX_INTR_WATCHDOG	| \
+					 WL1271_ACX_INTR_EVENT_A	| \
+					 WL1271_ACX_INTR_EVENT_B	| \
+					 WL1271_ACX_INTR_HW_AVAILABLE	| \
+					 WL1271_ACX_INTR_DATA		| \
+					 WL1271_ACX_SW_INTR_WATCHDOG)
+
 struct wl18xx_acx_host_config_bitmap {
 	struct acx_header header;
 
@@ -127,8 +143,8 @@ struct wl18xx_acx_tx_stats {
 } __packed;
 
 struct wl18xx_acx_rx_stats {
-        u32 rx_beacon_early_term;
-        u32 rx_out_of_mpdu_nodes;
+	u32 rx_beacon_early_term;
+	u32 rx_out_of_mpdu_nodes;
 	u32 rx_hdr_overflow;
 	u32 rx_dropped_frame;
 	u32 rx_done_stage;

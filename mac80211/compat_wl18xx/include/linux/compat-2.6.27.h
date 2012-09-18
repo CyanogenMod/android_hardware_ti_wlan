@@ -22,6 +22,35 @@
 #include <net/sch_generic.h>
 #include <linux/ethtool.h>
 
+static inline struct net_device *qdisc_dev(const struct Qdisc *qdisc)
+{
+	return qdisc->dev;
+}
+
+/*
+ * Backports 378a2f09 and c27f339a
+ * This may need a bit more work.
+ */
+enum net_xmit_qdisc_t {
+	__NET_XMIT_STOLEN = 0x00010000,
+	__NET_XMIT_BYPASS = 0x00020000,
+};
+
+struct qdisc_skb_cb {
+	unsigned int            pkt_len;
+	char                    data[];
+};
+
+static inline struct qdisc_skb_cb *qdisc_skb_cb(struct sk_buff *skb)
+{
+	return (struct qdisc_skb_cb *)skb->cb;
+}
+
+static inline unsigned int qdisc_pkt_len(struct sk_buff *skb)
+{
+	return qdisc_skb_cb(skb)->pkt_len;
+}
+
 #define PCI_PM_CAP_PME_SHIFT	11
 
 /* I can't find a more suitable replacement... */
@@ -255,6 +284,8 @@ static inline __u32 ethtool_cmd_speed(const struct ethtool_cmd *ep)
  * @n: the number we're accessing
  */
 #define lower_32_bits(n) ((u32)(n))
+
+#define netif_wake_subqueue netif_start_subqueue
 
 #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27)) */
 

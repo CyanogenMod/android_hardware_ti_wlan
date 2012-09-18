@@ -8,12 +8,33 @@
 #include <linux/skbuff.h>
 #include <linux/if_ether.h>
 #include <linux/usb.h>
+#include <linux/types.h>
+#include <linux/types.h>
+#include <linux/cpumask.h>
 
 #ifndef ETH_P_PAE
 #define ETH_P_PAE 0x888E      /* Port Access Entity (IEEE 802.1X) */
 #endif
 
 #include <linux/pci.h>
+
+typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } compat_cpumask_t;
+
+#if defined(CONFIG_X86) || defined(CONFIG_X86_64) || defined(CONFIG_PPC)
+/*
+ * CONFIG_PHYS_ADDR_T_64BIT was added as new to all architectures
+ * as of 2.6.28 but x86 and ppc had it already. x86 only got phys_addr_t
+ * as of 2.6.25 but then is backported in compat-2.6.25.h
+ */
+#else
+#if defined(CONFIG_64BIT) || defined(CONFIG_X86_PAE) || defned(CONFIG_PPC64) || defined(CONFIG_PHYS_64BIT)
+#define CONFIG_PHYS_ADDR_T_64BIT 1
+typedef u64 phys_addr_t;
+#else
+typedef u32 phys_addr_t;
+#endif
+
+#endif /* non x86 and ppc */
 
 #ifndef WARN_ONCE
 #define WARN_ONCE(condition, format...) ({                      \
@@ -193,6 +214,10 @@ static inline void skb_queue_splice_tail(const struct sk_buff_head *list,
 	}
 }
 
+#define skb_queue_walk_from(queue, skb)						\
+		for (; skb != (struct sk_buff *)(queue);			\
+		     skb = skb->next)
+
 #ifndef DECLARE_TRACE
 
 #define TP_PROTO(args...)	args
@@ -225,7 +250,7 @@ static inline void skb_queue_splice_tail(const struct sk_buff_head *list,
 
 unsigned long round_jiffies_up(unsigned long j);
 
-extern void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page,
+extern void v2_6_28_skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page,
 			    int off, int size);
 
 #define wake_up_interruptible_poll(x, m)			\

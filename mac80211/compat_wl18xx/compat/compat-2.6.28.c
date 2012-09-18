@@ -161,7 +161,7 @@ next_entry:
 
 	return ret;
 }
-EXPORT_SYMBOL(pcmcia_loop_config);
+EXPORT_SYMBOL_GPL(pcmcia_loop_config);
 
 #endif /* CONFIG_PCMCIA */
 
@@ -303,7 +303,7 @@ unsigned long round_jiffies_up(unsigned long j)
 }
 EXPORT_SYMBOL_GPL(round_jiffies_up);
 
-void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+void v2_6_28_skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
 		int size)
 {
 	skb_fill_page_desc(skb, i, page, off, size);
@@ -311,7 +311,7 @@ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
 	skb->data_len += size;
 	skb->truesize += size;
 }
-EXPORT_SYMBOL(skb_add_rx_frag);
+EXPORT_SYMBOL_GPL(v2_6_28_skb_add_rx_frag);
 
 void tty_write_unlock(struct tty_struct *tty)
 {
@@ -437,7 +437,7 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
 		return tty_mode_ioctl(tty, file, cmd, arg);
 	}
 }
-EXPORT_SYMBOL(n_tty_ioctl_helper);
+EXPORT_SYMBOL_GPL(n_tty_ioctl_helper);
 
 /**
  * pci_wake_from_d3 - enable/disable device to wake up from D3_hot or D3_cold
@@ -459,5 +459,5 @@ int pci_wake_from_d3(struct pci_dev *dev, bool enable)
 			pci_enable_wake(dev, PCI_D3cold, enable) :
 			pci_enable_wake(dev, PCI_D3hot, enable);
 }
-EXPORT_SYMBOL(pci_wake_from_d3);
+EXPORT_SYMBOL_GPL(pci_wake_from_d3);
 

@@ -137,10 +137,50 @@ static inline void skb_tx_timestamp(struct sk_buff *skb)
 {
 }
 
+/*
+ * System-wide workqueues which are always present.
+ *
+ * system_wq is the one used by schedule[_delayed]_work[_on]().
+ * Multi-CPU multi-threaded.  There are users which expect relatively
+ * short queue flush time.  Don't queue works which can run for too
+ * long.
+ *
+ * system_long_wq is similar to system_wq but may host long running
+ * works.  Queue flushing might take relatively long.
+ *
+ * system_nrt_wq is non-reentrant and guarantees that any given work
+ * item is never executed in parallel by multiple CPUs.  Queue
+ * flushing might take relatively long.
+ */
+extern struct workqueue_struct *system_wq;
+extern struct workqueue_struct *system_long_wq;
 extern struct workqueue_struct *system_nrt_wq;
 
 void compat_system_workqueue_create(void);
 void compat_system_workqueue_destroy(void);
+
+int compat_schedule_work(struct work_struct *work);
+int compat_schedule_work_on(int cpu, struct work_struct *work);
+int compat_schedule_delayed_work(struct delayed_work *dwork,
+				 unsigned long delay);
+int compat_schedule_delayed_work_on(int cpu,
+				    struct delayed_work *dwork,
+				    unsigned long delay);
+void compat_flush_scheduled_work(void);
+
+enum {
+	/* bit mask for work_busy() return values */
+	WORK_BUSY_PENDING       = 1 << 0,
+	WORK_BUSY_RUNNING       = 1 << 1,
+};
+
+extern unsigned int work_busy(struct work_struct *work);
+
+#define schedule_work(work) compat_schedule_work(work)
+#define schedule_work_on(cpu, work) compat_schedule_work_on(cpu, work)
+#define schedule_delayed_work(dwork, delay) compat_schedule_delayed_work(dwork, delay)
+#define schedule_delayed_work_on(cpu, dwork, delay) compat_schedule_delayed_work_on(cpu, dwork, delay)
+#define flush_scheduled_work(a) compat_flush_scheduled_work(a)
 
 #define br_port_exists(dev)	(dev->br_port)
 

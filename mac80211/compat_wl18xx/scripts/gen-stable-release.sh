@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2009  Luis R. Rodriguez <mcgrof@gmail.com>
 #
 # You can use this to make stable compat-wireless releases
 #
-# The assumption is you have the linux-2.6-allstable git tree on your $HOME
-# git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-2.6-allstable.git
+# The assumption is you have the linux-stable git tree on your $HOME
+# git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 #
 # Local branches will be created based on the remote linux-2.6.X.y branches.
 # If your branch already exists we will nuke it for you to avoid rebasing.
@@ -68,7 +68,7 @@ FORCE_UPDATE="no"
 
 while [ $# -ne 0 ]; do
 	if [[ "$1" = "-s" ]]; then
-		UPDATE_ARGS="${UPDATE_ARGS} $1 refresh"
+		UPDATE_ARGS="${UPDATE_ARGS} $1"
 		POSTFIX_RELEASE_TAG="${POSTFIX_RELEASE_TAG}s"
 		shift; continue;
 	fi
@@ -145,7 +145,12 @@ if [[ $COMPAT_WIRELESS_BRANCH != $TARGET_KERNEL_RELEASE ]]; then
 	echo -e "You are on the compat-wireless ${GREEN}${COMPAT_WIRELESS_BRANCH}${NORMAL} but are "
 	echo -en "on the ${RED}${TARGET_KERNEL_RELEASE}${NORMAL} branch... "
 	echo -e "try changing to that first."
-	exit
+
+	read -p "Do you still want to continue (y/N)? "
+	if [[ "${REPLY}" != "y" ]]; then
+	    echo -e "Bailing out !"
+	    exit
+	fi
 fi
 
 

@@ -97,14 +97,15 @@ static void wl1271_event_mbox_dump(struct event_mailbox *mbox)
 	wl1271_debug(DEBUG_EVENT, "\tmask: 0x%x", mbox->events_mask);
 }
 
-static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
+static int wl1271_event_process(struct wl1271 *wl)
 {
+	struct event_mailbox *mbox = wl->mbox;
 	struct ieee80211_vif *vif;
 	struct wl12xx_vif *wlvif;
 	u32 vector;
-	bool beacon_loss = false;
 	bool disconnect_sta = false;
 	unsigned long sta_bitmap = 0;
+	int ret;
 
 	wl1271_event_mbox_dump(mbox);
 
@@ -116,22 +117,22 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 		wl1271_debug(DEBUG_EVENT, "status: 0x%x",
 			     mbox->scheduled_scan_status);
 
-		wl1271_scan_stm(wl, wl->scan_vif);
+		wl12xx_scan_completed(wl);
 	}
 
 	if (vector & PERIODIC_SCAN_REPORT_EVENT_ID) {
 		wl1271_debug(DEBUG_EVENT, "PERIODIC_SCAN_REPORT_EVENT "
 			     "(status 0x%0x)", mbox->scheduled_scan_status);
 
-		wl1271_scan_sched_scan_results(wl);
+		//wl1271_scan_sched_scan_results(wl);
 	}
 
 	if (vector & PERIODIC_SCAN_COMPLETE_EVENT_ID) {
 		wl1271_debug(DEBUG_EVENT, "PERIODIC_SCAN_COMPLETE_EVENT "
 			     "(status 0x%0x)", mbox->scheduled_scan_status);
-		if (wl->sched_scanning) {
+		if (wl->sched_vif) {
 			ieee80211_sched_scan_stopped(wl->hw);
-			wl->sched_scanning = false;
+			wl->sched_vif = NULL;
 		}
 	}
 
@@ -140,20 +141,41 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 					       mbox->soft_gemini_sense_info);
 
 	/*
-	 * The BSS_LOSE_EVENT_ID is only needed while psm (and hence beacon
-	 * filtering) is enabled. Without PSM, the stack will receive all
-	 * beacons and can detect beacon loss by itself.
-	 *
-	 * As there's possibility that the driver disables PSM before receiving
-	 * BSS_LOSE_EVENT, beacon loss has to be reported to the stack.
-	 *
+	 * We are HW_MONITOR device. On beacon loss - queue
+	 * connection loss work. Cancel it on REGAINED event.
 	 */
 	if (vector & BSS_LOSE_EVENT_ID) {
 		/* TODO: check for multi-role */
+		int delay = wl->conf.conn.synch_fail_thold *
+					wl->conf.conn.bss_lose_timeout;
 		wl1271_info("Beacon loss detected.");
 
-		/* indicate to the stack, that beacons have been lost */
-		beacon_loss = true;
+		/*
+		 * if the work is already queued, it should take place. We
+		 * don't want to delay the connection loss indication
+		 * any more.
+		 */
+		ieee80211_queue_delayed_work(wl->hw, &wl->connection_loss_work,
+					     msecs_to_jiffies(delay));
+
+		wl12xx_for_each_wlvif_sta(wl, wlvif) {
+			vif = wl12xx_wlvif_to_vif(wlvif);
+
+			ieee80211_cqm_rssi_notify(
+					vif,
+					NL80211_CQM_RSSI_BEACON_LOSS_EVENT,
+					GFP_KERNEL);
+		}
+	}
+
+	if (vector & REGAINED_BSS_EVENT_ID) {
+		/* TODO: check for multi-role */
+		wl1271_info("Beacon regained.");
+		cancel_delayed_work(&wl->connection_loss_work);
+
+		/* sanity check - we can't lose and gain the beacon together */
+		WARN(vector & BSS_LOSE_EVENT_ID,
+		     "Concurrent beacon loss and gain from FW");
 	}
 
 	if (vector & RSSI_SNR_TRIGGER_0_EVENT_ID) {
@@ -192,7 +214,6 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 
 		/* TODO: configure only the relevant vif */
 		wl12xx_for_each_wlvif_sta(wl, wlvif) {
-			struct ieee80211_vif *vif = wl12xx_wlvif_to_vif(wlvif);
 			bool success;
 
 			if (!test_and_clear_bit(WLVIF_FLAG_CS_PROGRESS,
@@ -200,13 +221,17 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 				continue;
 
 			success = mbox->channel_switch_status ? false : true;
+			vif = wl12xx_wlvif_to_vif(wlvif);
+
 			ieee80211_chswitch_done(vif, success);
 		}
 	}
 
 	if ((vector & DUMMY_PACKET_EVENT_ID)) {
 		wl1271_debug(DEBUG_EVENT, "DUMMY_PACKET_ID_EVENT_ID");
-		wl1271_tx_dummy_packet(wl);
+		ret = wl1271_tx_dummy_packet(wl);
+		if (ret < 0)
+			return ret;
 	}
 
 	/*
@@ -223,6 +248,12 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 		wl1271_debug(DEBUG_EVENT, "INACTIVE_STA_EVENT_ID");
 		sta_bitmap |= le16_to_cpu(mbox->sta_aging_status);
 		disconnect_sta = true;
+	}
+
+	if (vector & REMAIN_ON_CHANNEL_COMPLETE_EVENT_ID) {
+		wl1271_debug(DEBUG_EVENT,
+			     "REMAIN_ON_CHANNEL_COMPLETE_EVENT_ID");
+		ieee80211_ready_on_channel(wl->hw);
 	}
 
 	if (disconnect_sta) {
@@ -255,13 +286,6 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 			rcu_read_unlock();
 		}
 	}
-
-	if (beacon_loss)
-		wl12xx_for_each_wlvif_sta(wl, wlvif) {
-			vif = wl12xx_wlvif_to_vif(wlvif);
-			ieee80211_connection_loss(vif);
-		}
-
 	return 0;
 }
 
@@ -278,7 +302,6 @@ int wl1271_event_unmask(struct wl1271 *wl)
 
 int wl1271_event_handle(struct wl1271 *wl, u8 mbox_num)
 {
-	struct event_mailbox mbox;
 	int ret;
 
 	wl1271_debug(DEBUG_EVENT, "EVENT on mbox %d", mbox_num);
@@ -287,11 +310,13 @@ int wl1271_event_handle(struct wl1271 *wl, u8 mbox_num)
 		return -EINVAL;
 
 	/* first we read the mbox descriptor */
-	wl1271_read(wl, wl->mbox_ptr[mbox_num], &mbox,
-		    sizeof(struct event_mailbox), false);
+	ret = wlcore_read(wl, wl->mbox_ptr[mbox_num], wl->mbox,
+			  sizeof(*wl->mbox), false);
+	if (ret < 0)
+		return ret;
 
 	/* process the descriptor */
-	ret = wl1271_event_process(wl, &mbox);
+	ret = wl1271_event_process(wl);
 	if (ret < 0)
 		return ret;
 
@@ -299,7 +324,7 @@ int wl1271_event_handle(struct wl1271 *wl, u8 mbox_num)
 	 * TODO: we just need this because one bit is in a different
 	 * place.  Is there any better way?
 	 */
-	wl->ops->ack_event(wl);
+	ret = wl->ops->ack_event(wl);
 
-	return 0;
+	return ret;
 }
