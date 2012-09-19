@@ -267,6 +267,10 @@ void ieee80211_bss_info_change_notify(struct ieee80211_sub_if_data *sdata,
 				WARN_ON(1);
 				break;
 			}
+
+			/* beacon shouldn't be enabled while off channel */
+			WARN_ON(sdata->vif.bss_conf.enable_beacon
+				&& local->tmp_channel);
 		}
 	}
 
@@ -340,6 +344,8 @@ static void ieee80211_restart_work(struct work_struct *work)
 
 	rtnl_lock();
 	ieee80211_scan_cancel(local);
+	ieee80211_work_purge_type(local, IEEE80211_WORK_REMAIN_ON_CHANNEL);
+	ieee80211_work_purge_type(local, IEEE80211_WORK_OFFCHANNEL_TX);
 	ieee80211_reconfig(local);
 	rtnl_unlock();
 }

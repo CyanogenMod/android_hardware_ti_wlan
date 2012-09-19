@@ -302,15 +302,8 @@ static ssize_t start_recovery_write(struct file *file,
 				    size_t count, loff_t *ppos)
 {
 	struct wl1271 *wl = file->private_data;
-	int ret;
 
 	mutex_lock(&wl->mutex);
-
-	/* Call ELP wakeup to allow general recovery processing */
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		wl1271_error(
-		    "start_recovery_write: FAILED wl1271_ps_elp_wakeup");
 
 	wl12xx_queue_recovery_work(wl);
 

@@ -413,6 +413,8 @@ int wl12xx_cmd_role_enable(struct wl1271 *wl, u8 *addr, u8 role_type,
 
 	wl1271_debug(DEBUG_CMD, "cmd role enable");
 
+	wl12xx_change_fw_if_needed(wl);
+
 	if (WARN_ON(*role_id != WL12XX_INVALID_ROLE_ID))
 		return -EBUSY;
 
@@ -455,6 +457,8 @@ int wl12xx_cmd_role_disable(struct wl1271 *wl, u8 *role_id)
 
 	wl1271_debug(DEBUG_CMD, "cmd role disable");
 
+	wl12xx_change_fw_if_needed(wl);
+
 	if (WARN_ON(*role_id == WL12XX_INVALID_ROLE_ID))
 		return -ENOENT;
 
@@ -493,6 +497,10 @@ int wl12xx_allocate_link(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 *hlid)
 	__set_bit(link, wl->links_map);
 	__set_bit(link, wlvif->links_map);
 	spin_unlock_irqrestore(&wl->wl_lock, flags);
+
+	/* take the last "freed packets" value from the current FW status */
+	wl->links[link].prev_freed_pkts =
+				wl->fw_status->tx_lnk_free_pkts[link];
 	*hlid = link;
 	return 0;
 }
@@ -509,6 +517,11 @@ void wl12xx_free_link(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 *hlid)
 	__clear_bit(*hlid, wl->links_map);
 	__clear_bit(*hlid, wlvif->links_map);
 	spin_unlock_irqrestore(&wl->wl_lock, flags);
+
+	wl->links[*hlid].allocated_pkts = 0;
+	wl->links[*hlid].prev_freed_pkts = 0;
+	wl->links[*hlid].ba_bitmap = 0;
+	memset(wl->links[*hlid].addr, 0, ETH_ALEN);
 
 	/*
 	 * At this point op_tx() will not add more packets to the queues. We
@@ -729,7 +742,8 @@ int wl12xx_cmd_role_start_ap(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	struct ieee80211_bss_conf *bss_conf = &vif->bss_conf;
 	int ret;
 
-	wl1271_debug(DEBUG_CMD, "cmd role start ap %d", wlvif->role_id);
+	wl1271_debug(DEBUG_CMD, "cmd role start ap %d ch %d",
+		     wlvif->role_id, wlvif->channel);
 
 	/* trying to use a non-hidden SSID without SSID IE */
 	if (wlvif->ssid_len == 0 && !bss_conf->hidden_ssid) {

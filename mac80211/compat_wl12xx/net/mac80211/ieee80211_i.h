@@ -1473,6 +1473,8 @@ void ieee80211_work_init(struct ieee80211_local *local);
 void ieee80211_add_work(struct ieee80211_work *wk);
 void free_work(struct ieee80211_work *wk);
 void ieee80211_work_purge(struct ieee80211_sub_if_data *sdata);
+void ieee80211_work_purge_type(struct ieee80211_local *local,
+			       enum ieee80211_work_type type);
 ieee80211_rx_result ieee80211_work_rx_mgmt(struct ieee80211_sub_if_data *sdata,
 					   struct sk_buff *skb);
 int ieee80211_wk_remain_on_channel(struct ieee80211_sub_if_data *sdata,

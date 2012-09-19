@@ -446,7 +446,7 @@ int wl1271_init_ap_rates(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 		return -EINVAL;
 
 	rc.enabled_rates = wlvif->basic_rate_set;
-	rc.long_retry_limit = 10;
+	rc.long_retry_limit = 50;
 	rc.short_retry_limit = 10;
 	rc.aflags = 0;
 	ret = wl1271_acx_ap_rate_policy(wl, &rc, wlvif->ap.mgmt_rate_idx);
@@ -456,7 +456,7 @@ int wl1271_init_ap_rates(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	/* use the min basic rate for AP broadcast/multicast */
 	rc.enabled_rates = wl1271_tx_min_rate_get(wl, wlvif->basic_rate_set);
 	rc.short_retry_limit = 10;
-	rc.long_retry_limit = 10;
+	rc.long_retry_limit = 50;
 	rc.aflags = 0;
 	ret = wl1271_acx_ap_rate_policy(wl, &rc, wlvif->ap.bcast_rate_idx);
 	if (ret < 0)
@@ -478,7 +478,7 @@ int wl1271_init_ap_rates(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	for (i = 0; i < wl->conf.tx.ac_conf_count; i++) {
 		rc.enabled_rates = supported_rates;
 		rc.short_retry_limit = 10;
-		rc.long_retry_limit = 10;
+		rc.long_retry_limit = 50;
 		rc.aflags = 0;
 		ret = wl1271_acx_ap_rate_policy(wl, &rc,
 						wlvif->ap.ucast_rate_idx[i]);

@@ -552,4 +552,22 @@ b12-b0 - Supported Rate indicator bits as defined below.
 #define WL12XX_REG_FUSE_BD_ADDR_1	0x00310eb4
 #define WL12XX_REG_FUSE_BD_ADDR_2	0x00310eb8
 
+/*
+ * Highest priority FW interrupt - used when we trigger recovery
+ * by asking the FW to assert
+ */
+#define INTR_TRIG_H_PHY_RX_HEADER BIT(26)
+
+/*
+ * WL12XX Trigger Firmware Assert definitions
+ */
+
+/* Trigger FW assert mem address and 'MAGIC' value */
+#define WL12XX_FW_ASSERT_MEM_ADDR	0x1c
+#define WL12XX_FW_ASSERT_MEM_DWORD	0xcafecafe
+
+/* Keep the code general by indicating which INTR_TRIG we use - low or high */
+#define WL12XX_FW_ASSERT_INTR_LOW	false
+#define WL12XX_FW_ASSERT_INTR_TRIG	INTR_TRIG_H_PHY_RX_HEADER
+
 #endif

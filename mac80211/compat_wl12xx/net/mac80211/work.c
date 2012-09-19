@@ -31,6 +31,7 @@
 #define IEEE80211_AUTH_MAX_TRIES 5
 #define IEEE80211_ASSOC_TIMEOUT (HZ / 5)
 #define IEEE80211_ASSOC_MAX_TRIES 5
+#define IEEE80211_CSR_TIMEOUT_MS 5000
 
 enum work_action {
 	WORK_ACT_MISMATCH,
@@ -899,7 +900,7 @@ static void ieee80211_sw_ap_ch_if_needed(struct ieee80211_local *local)
 	struct ieee80211_channel *ap_ch_sw_req = NULL;
 	DECLARE_COMPLETION_ONSTACK(compl);
 	unsigned int ap_cs_grace_period = 0;
-	unsigned long csr_timeout = 0;
+	unsigned long csr_timeout = 0, csr_timeout_ms;
 
 	mutex_lock(&local->mtx);
 	list_for_each_entry(sdata, &local->interfaces, list) {
@@ -930,7 +931,11 @@ static void ieee80211_sw_ap_ch_if_needed(struct ieee80211_local *local)
 		       wk->sdata->name, ap_sdata->name, ap_ch_sw_req->hw_value);
 		ieee80211_req_channel_switch(&ap_sdata->vif, ap_ch_sw_req,
 					     GFP_KERNEL);
-		csr_timeout = msecs_to_jiffies(bss_conf->beacon_int * 10);
+
+		csr_timeout_ms = max(IEEE80211_CSR_TIMEOUT_MS,
+				     (bss_conf->beacon_int *
+				      bss_conf->dtim_period * 10));
+		csr_timeout = msecs_to_jiffies(csr_timeout_ms);
 		ap_cs_grace_period =
 			bss_conf->dtim_period * bss_conf->beacon_int * 2;
 	}
@@ -941,10 +946,11 @@ static void ieee80211_sw_ap_ch_if_needed(struct ieee80211_local *local)
 		local->csr_compl = &compl;
 		/* wait for channel switch to complete */
 		ret = wait_for_completion_timeout(&compl, csr_timeout);
-		if (ret == 0)
-			WARN(1, "completion timeout");
-		else if (ret < 0)
-			WARN(1, "completion error");
+		if ((ret <= 0)) {
+			WARN(1, "completion %s", ret ? "error" : "timeout");
+			local->ap_cs_channel = NULL;
+		}
+
 		/*
 		 * give the AP some time to start beaconing on the new
 		 * channel, otherwise it might loose peers
@@ -1135,6 +1141,37 @@ void ieee80211_work_init(struct ieee80211_local *local)
 		    (unsigned long)local);
 	INIT_WORK(&local->work_work, ieee80211_work_work);
 	skb_queue_head_init(&local->work_skb_queue);
+}
+
+void ieee80211_work_purge_type(struct ieee80211_local *local,
+			       enum ieee80211_work_type type)
+{
+	struct ieee80211_work *wk;
+	bool cleanup = false;
+
+	mutex_lock(&local->mtx);
+	list_for_each_entry(wk, &local->work_list, list) {
+		if (wk->type != type)
+			continue;
+		cleanup = true;
+		wk->type = IEEE80211_WORK_ABORT;
+		wk->started = true;
+		wk->timeout = jiffies;
+	}
+	mutex_unlock(&local->mtx);
+
+	/* run cleanups etc. */
+	if (cleanup)
+		ieee80211_work_work(&local->work_work);
+
+	mutex_lock(&local->mtx);
+	list_for_each_entry(wk, &local->work_list, list) {
+		if (wk->type != type)
+			continue;
+		WARN_ON(1);
+		break;
+	}
+	mutex_unlock(&local->mtx);
 }
 
 void ieee80211_work_purge(struct ieee80211_sub_if_data *sdata)

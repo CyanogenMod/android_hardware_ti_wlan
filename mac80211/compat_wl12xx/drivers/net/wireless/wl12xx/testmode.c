@@ -259,17 +259,9 @@ static int wl1271_tm_cmd_set_plt_mode(struct wl1271 *wl, struct nlattr *tb[])
 
 static int wl1271_tm_cmd_recover(struct wl1271 *wl, struct nlattr *tb[])
 {
-	int ret;
-
 	wl1271_debug(DEBUG_TESTMODE, "testmode cmd recover");
 
 	mutex_lock(&wl->mutex);
-
-	/* Call ELP wakeup to allow general recovery processing */
-	ret = wl1271_ps_elp_wakeup(wl);
-	if (ret < 0)
-		wl1271_error(
-		    "wl1271_tm_cmd_recover: FAILED wl1271_ps_elp_wakeup");
 
 	wl12xx_queue_recovery_work(wl);
 
