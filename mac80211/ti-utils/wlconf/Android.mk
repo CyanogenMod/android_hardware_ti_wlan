@@ -18,22 +18,12 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
-        nvs.c \
-        misc_cmds.c \
-        calibrator.c \
-        plt.c \
-        ini.c
+        main.c \
+        crc32.c
 
-LOCAL_CFLAGS := -DCONFIG_LIBNL20
-LOCAL_C_INCLUDES := \
-    $(LOCAL_PATH) \
-    external/libnl-headers
-
-LOCAL_STATIC_LIBRARIES := libnl_2
+LOCAL_C_INCLUDES := $(LOCAL_PATH)
+LOCAL_CFLAGS += -DWLCONF_DIR=\"/system/etc/wifi/\"
 LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE := calibrator
+LOCAL_MODULE := wlconf
 
 include $(BUILD_EXECUTABLE)
-
-# Build wlconf
-include $(LOCAL_PATH)/wlconf/Android.mk

@@ -1,0 +1,176 @@
+wlconf - Configuration utility for TI wireless drivers
+======================================================
+
+Author: Luciano Coelho <coelho@ti.com>
+
+Copyright (C) 2012, Texas Instruments Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
+USA
+
+EXAMPLES
+--------
+
+* Get the value of phy_standalone in the phy struct inside wl18xx from
+  the binary configuration file wl18xx-conf.bin in the current
+  directory:
+
+  # ./wlconf -i wl18xx-conf.bin -g wl18xx.phy.phy_standalone
+  wl18xx.phy.phy_standalone = 0x00
+
+* Set the window_size value in the hangover struct inside core, using
+  the binary at /lib/firmware/ti-connectivity/wl18xx-conf.bin as input
+  and writing the modified file into wl18xx-conf.bin in the local
+  directory (default output location):
+
+  # ./wlconf -i /lib/firmware/ti-connectivity/wl18xx-conf.bin -s core.hangover.window_size=0x20
+
+* Parse a text configuration file and generate a configuration binary
+  with the values specified:
+
+  # ./wlconf -C example.conf
+
+* Parse an INI file and generate a configuration binary with the
+  values specified.  The values that are not specified here are read
+  from the input binary file (default wl18xx-conf-default.bin):
+
+  # ./wlconf -I example.ini
+
+TEXT CONFIGURATION FORMAT
+-------------------------
+
+The text configuration file uses internal data representations.  With
+this kind of file, any element inside the configuration structure can
+be modified.  The file should contain one or more lines with the
+following syntax:
+
+<element>[.<element>...] = <value>
+
+Check the example.conf file for more details.
+
+INI FILE FORMAT
+---------------
+
+The INI file uses the format as specified by TI to the customers.  The
+format is not structured and contains simple element names:
+
+<element> = <value>
+
+Check the example.ini for a real life example.
+
+DICTIONARY FILE FORMAT
+----------------------
+
+The INI file format uses flat element names that must to be translated
+into the internal structured format.  The dictionary.txt file is used
+to specify the INI elements and their respective internal
+representations.  The dictionary file format is:
+
+<ini_flat_element> <element>[.<element>...]
+
+Check the dictionary.txt file for an example and to see which values
+can be used in INI files.
+
+UPGRADING DATA STRUCTURES
+-------------------------
+In case the data structures change (conf.h changes in driver) the following need to be done:
+
+* Update conf.h accordingly. Increment Versions (WLCORE and/or WL18xx)
+
+* If there are changes in INI params, need to update dictionary.txt
+
+* Recreate struct.bin:
+
+  # ./wlconf -S conf.h -G struct.bin
+
+* Update text conf files to new structures and defaults:
+	example.conf
+	example.ini
+	default.conf
+
+* Recreate default configuration bin file (wl18xx-conf-default.bin)
+
+  # ./wlconf -D
+
+KNOWN ISSUES AND LIMITATIONS
+----------------------------
+
+* Only the first struct in an array of structs can be set;
+
+* It's too cumbersome and prone to errors to let the end-users parse
+  the source header file.  Thus, a default struct.bin file with the
+  current driver configuration structure is provided.  This binary
+  should be updated here whenever the conf header files change in the
+  driver code.
+
+* The source header parser is very limited.  It doesn't do a full
+  pre-processing, but matches on regular expressions.  The format of
+  the file must be very strict;
+
+* The source header parser can't expand macros or enums.  These
+  symbols need to be translated manually and changed in the header
+  file;
+
+* The source header parser can't include other files (ie. the #include
+  statements are ignored), so it's best to copy the hw-specific header
+  (eg. wl18xx/conf.h) into the core header file (ie. wlcore/conf.h)
+  and substitute the priv[0] with the name of the top priv structure
+  (eg. wl18xx_priv_conf);
+
+* Trying to use --get to read the header.checksum value will always
+  return 0;
+
+* Trying to use --set to write the header.checksum value will not
+  work, as the checksum will be recalculated with the new value
+  (instead of 0) before writing, generating a conf binary with an
+  invalid checksum.
+
+TODO
+----
+
+* Allow setting values in any structure inside an array of structs;
+
+* Improve type-checking in the --set command;
+
+* Allow setting all values in an array with the --set command;
+
+* Allow setting a value in a specific index of an array;
+
+* Implement a man page;
+
+* Split into separate source files;
+
+* Implement "expert-mode" or something that doesn't make it so easy
+  for end-users to mangle with the source header parsing and
+  generation of struct binaries;
+
+* Improve checking of options that are allowed with each different
+  command;
+
+* Fix some compiler warnings on x86 and make sure it works well;
+
+* Add option to change the root structure;
+
+* Handle endianess and different type sizes for different archs;
+
+* Validate the checksum of the struct binary;
+
+* Prevent any of the special elements (such as header.magic,
+  header.version and header.checksum) from being read or set.
+
+* Check if output file size matches input file size.  If it doesn't
+  there's probably something wrong in the struct.bin generation
+  (eg. array sizes that were not expanded);
+
+* Add an option to change the dictionary file;
