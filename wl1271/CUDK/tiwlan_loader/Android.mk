@@ -8,6 +8,8 @@ HOST_PLATFORM ?= wipp
 WILINK_ROOT = ../..
 CUDK_ROOT = $(WILINK_ROOT)/CUDK
 
+LOCAL_MODULE_TAGS := optional
+
 ifeq ($(DEBUG),y)
 DEBUGFLAGS = -O2 -g -DDEBUG -DTI_DBG -fno-builtin   # "-O" is needed to expand inlines
 #  DEBUGFLAGS+= -DDEBUG_MESSAGES
