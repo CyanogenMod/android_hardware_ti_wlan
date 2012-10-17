@@ -10,6 +10,8 @@ WILINK_ROOT = ../..
 CUDK_ROOT ?= $(WILINK_ROOT)/CUDK
 CU_ROOT = $(CUDK_ROOT)/configurationutility
 
+LOCAL_MODULE_TAGS := optional
+
 ifndef WPA_SUPPLICANT_VERSION
 WPA_SUPPLICANT_VERSION := VER_0_5_X
 endif
