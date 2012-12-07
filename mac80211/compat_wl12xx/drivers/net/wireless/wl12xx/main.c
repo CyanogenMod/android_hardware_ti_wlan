@@ -3294,7 +3294,7 @@ static int wl12xx_op_change_interface(struct ieee80211_hw *hw,
 static int wl1271_join(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 			  bool set_assoc)
 {
-	int ret;
+	int ret = 0;
 	bool is_ibss = (wlvif->bss_type == BSS_TYPE_IBSS);
 
 	/*
@@ -4661,7 +4661,7 @@ static void wl1271_bss_info_changed_sta(struct wl1271 *wl,
 	bool is_ibss = (wlvif->bss_type == BSS_TYPE_IBSS);
 	bool ibss_joined = false;
 	u32 sta_rate_set = 0;
-	int ret;
+	int ret = 0;
 	struct ieee80211_sta *sta;
 	bool sta_exists = false;
 	struct ieee80211_sta_ht_cap sta_ht_cap;
@@ -5002,7 +5002,7 @@ static void wl1271_op_bss_info_changed(struct ieee80211_hw *hw,
 	struct wl1271 *wl = hw->priv;
 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
 	bool is_ap = (wlvif->bss_type == BSS_TYPE_AP_BSS);
-	int ret;
+	int ret = 0;
 
 	wl1271_debug(DEBUG_MAC80211, "mac80211 bss info changed 0x%x",
 		     (int)changed);
@@ -5041,7 +5041,7 @@ static void wl1271_op_get_current_rssi(struct ieee80211_hw *hw,
 	struct wl1271 *wl = hw->priv;
 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
 	int rssi = 0;
-	int ret;
+	int ret = 0;
 
 	wl1271_debug(DEBUG_MAC80211, "mac80211 get current rssi");
 
@@ -5164,7 +5164,7 @@ static u64 wl1271_op_get_tsf(struct ieee80211_hw *hw,
 	struct wl1271 *wl = hw->priv;
 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
 	u64 mactime = ULLONG_MAX;
-	int ret;
+	int ret = 0;
 
 	wl1271_debug(DEBUG_MAC80211, "mac80211 get tsf");
 
@@ -5210,7 +5210,7 @@ static int wl1271_allocate_sta(struct wl1271 *wl,
 			     struct ieee80211_sta *sta)
 {
 	struct wl1271_station *wl_sta;
-	int ret;
+	int ret = 0;
 
 
 	if (wl->active_sta_count >= AP_MAX_STATIONS) {
@@ -5258,7 +5258,7 @@ static void wl12xx_update_sta_state(struct wl1271 *wl,
 {
 	struct wl1271_station *wl_sta;
 	u8 hlid;
-	int ret;
+	int ret = 0;
 
 	wl_sta = (struct wl1271_station *)sta->drv_priv;
 	hlid = wl_sta->hlid;
@@ -5367,7 +5367,7 @@ static void wl12xx_op_sta_state(struct ieee80211_hw *hw,
 {
 	struct wl1271 *wl = hw->priv;
 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
-	int ret;
+	int ret = 0;
 
 	wl1271_debug(DEBUG_MAC80211, "mac80211 sta %d state=%d",
 		     sta->aid, state);
