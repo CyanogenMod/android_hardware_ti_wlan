@@ -3294,7 +3294,7 @@ static int wl12xx_op_change_interface(struct ieee80211_hw *hw,
 static int wl1271_join(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 			  bool set_assoc)
 {
-	int ret;
+	int ret = 0;
 	bool is_ibss = (wlvif->bss_type == BSS_TYPE_IBSS);
 
 	/*
@@ -4661,7 +4661,7 @@ static void wl1271_bss_info_changed_sta(struct wl1271 *wl,
 	bool is_ibss = (wlvif->bss_type == BSS_TYPE_IBSS);
 	bool ibss_joined = false;
 	u32 sta_rate_set = 0;
-	int ret;
+	int ret = 0;
 	struct ieee80211_sta *sta;
 	bool sta_exists = false;
 	struct ieee80211_sta_ht_cap sta_ht_cap;
