@@ -646,8 +646,9 @@ static void wl1271_skb_queue_head(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 		skb_queue_head(&wl->links[hlid].tx_queue[q], skb);
 
 		/* make sure we dequeue the same packet next time */
-		wlvif->last_tx_hlid = (hlid + WL12XX_MAX_LINKS - 1) %
-				      WL12XX_MAX_LINKS;
+		if (wlvif)
+			wlvif->last_tx_hlid = (hlid + WL12XX_MAX_LINKS - 1) %
+					      WL12XX_MAX_LINKS;
 	}
 
 	spin_lock_irqsave(&wl->wl_lock, flags);
