@@ -3294,7 +3294,7 @@ static int wl12xx_op_change_interface(struct ieee80211_hw *hw,
 static int wl1271_join(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 			  bool set_assoc)
 {
-	int ret;
+	int ret = 0;
 	bool is_ibss = (wlvif->bss_type == BSS_TYPE_IBSS);
 
 	/*
