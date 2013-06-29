@@ -15,7 +15,7 @@
  */
 
 #ifndef pr_fmt
-#define pr_fmt(fmt)»    »       KBUILD_MODNAME ": " fmt
+#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
 #endif
 
 #include <linux/module.h>
