@@ -2632,6 +2632,9 @@ static int wl1271_op_resume(struct ieee80211_hw *hw)
 	struct wl12xx_vif *wlvif;
 	unsigned long flags;
 	bool run_irq_work = false, pending_recovery;
+#ifdef CONFIG_HAS_WAKELOCK
+	bool holding_wake_lock = false;
+#endif
 	int ret;
 
 	wl1271_debug(DEBUG_MAC80211, "mac80211 resume wow=%d",
@@ -2644,8 +2647,14 @@ static int wl1271_op_resume(struct ieee80211_hw *hw)
 	 */
 	spin_lock_irqsave(&wl->wl_lock, flags);
 	clear_bit(WL1271_FLAG_SUSPENDED, &wl->flags);
-	if (test_and_clear_bit(WL1271_FLAG_PENDING_WORK, &wl->flags))
+	if (test_and_clear_bit(WL1271_FLAG_PENDING_WORK, &wl->flags)) {
 		run_irq_work = true;
+
+#ifdef CONFIG_HAS_WAKELOCK
+		if (test_and_clear_bit(WL1271_FLAG_WAKE_LOCK, &wl->flags))
+			holding_wake_lock = true;
+#endif
+	}
 	spin_unlock_irqrestore(&wl->wl_lock, flags);
 
 	mutex_lock(&wl->mutex);
@@ -2664,6 +2673,11 @@ static int wl1271_op_resume(struct ieee80211_hw *hw)
 			if (ret)
 				wl12xx_queue_recovery_work(wl);
 		}
+
+#ifdef CONFIG_HAS_WAKELOCK
+		if (holding_wake_lock)
+			wake_unlock(&wl->wake_lock);
+#endif
 
 		wl1271_enable_interrupts(wl);
 	}
