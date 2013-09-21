@@ -1195,6 +1195,10 @@ struct acx_rx_data_filter_cfg {
 	u8 fields[0];
 } __packed;
 
+struct acx_header_only_cfg {
+	struct acx_header header;
+} __packed;
+
 enum {
 	ACX_WAKE_UP_CONDITIONS           = 0x0000,
 	ACX_MEM_CFG                      = 0x0001,
@@ -1265,6 +1269,7 @@ enum {
 	ACX_CONFIG_HANGOVER              = 0x0042,
 	ACX_FEATURE_CFG                  = 0x0043,
 	ACX_PROTECTION_CFG               = 0x0044,
+	ACX_AP_CONN_ESTAB_COMPLETE       = 0x0045,
 };
 
 
@@ -1359,4 +1364,5 @@ int wl1271_acx_set_rx_data_filter(struct wl1271 *wl, u8 index, bool enable,
 				  struct wl12xx_rx_data_filter *filter);
 int wl12xx_acx_sta_get_rssi(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 			    int *rssi);
+int wl1271_acx_ap_conn_estab_complete(struct wl1271 *wl);
 #endif /* __WL1271_ACX_H__ */
