@@ -108,7 +108,7 @@ static struct conf_drv_settings default_conf = {
 			[CONF_SG_RXT] = 1200,
 			[CONF_SG_TXT] = 1000,
 			[CONF_SG_ADAPTIVE_RXT_TXT] = 1,
-			[CONF_SG_GENERAL_USAGE_BIT_MAP] = 3,
+			[CONF_SG_GENERAL_USAGE_BIT_MAP] = 19,
 			[CONF_SG_HV3_MAX_SERVED] = 6,
 			[CONF_SG_PS_POLL_TIMEOUT] = 10,
 			[CONF_SG_UPSD_TIMEOUT] = 10,
@@ -3458,8 +3458,10 @@ static int wl1271_join(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 	if (set_assoc)
 		set_bit(WLVIF_FLAG_STA_ASSOCIATED, &wlvif->flags);
 
-	if (wl12xx_change_fw_if_needed(wl))
+	if (wl12xx_change_fw_if_needed(wl)) {
+		ret = -EBUSY;
 		goto out;
+	}
 
 	if (is_ibss)
 		ret = wl12xx_cmd_role_start_ibss(wl, wlvif);
@@ -5418,6 +5420,10 @@ static void wl12xx_update_sta_state(struct wl1271 *wl,
 
 		ret = wl1271_acx_set_ht_capabilities(wl, &sta->ht_cap, true,
 						     hlid);
+		if (ret < 0)
+			return;
+
+		ret = wl1271_acx_ap_conn_estab_complete(wl);
 		if (ret < 0)
 			return;
 	}

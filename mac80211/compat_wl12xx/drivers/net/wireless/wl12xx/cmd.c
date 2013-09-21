@@ -1913,16 +1913,16 @@ int wl12xx_cmd_channel_switch(struct wl1271 *wl,
 
 	wl1271_debug(DEBUG_ACX, "cmd channel switch");
 
-	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
-	if (!cmd) {
-		ret = -ENOMEM;
-		goto out;
-	}
-
 	if (channel->flags & IEEE80211_CHAN_RADAR) {
 		wl1271_error("can't switch to radar channel,"
 			     "dfs not supported");
 		ret = -EINVAL;
+		goto out;
+	}
+
+	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
+	if (!cmd) {
+		ret = -ENOMEM;
 		goto out;
 	}
 
