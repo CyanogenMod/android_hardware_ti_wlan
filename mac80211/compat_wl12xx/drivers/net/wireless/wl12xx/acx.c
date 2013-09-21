@@ -1867,3 +1867,23 @@ out:
 	kfree(stat_info);
 	return ret;
 }
+
+int wl1271_acx_ap_conn_estab_complete(struct wl1271 *wl)
+{
+	struct acx_header_only_cfg *acx;
+	int ret;
+
+	wl1271_debug(DEBUG_ACX, "Sending AP Connection Establishment complete indication");
+
+	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
+	if (!acx)
+		return -ENOMEM;
+
+	ret = wl1271_cmd_configure(wl, ACX_AP_CONN_ESTAB_COMPLETE,
+				   acx, sizeof(*acx));
+	if (ret < 0)
+		wl1271_warning("failed to send Connection Establishment complete indication: %d", ret);
+
+	kfree(acx);
+	return ret;
+}

@@ -467,7 +467,15 @@ static int cmp_bss_noessid(struct cfg80211_bss *a,
 			       b->len_information_elements);
 	}
 
-	return memcmp(a->bssid, b->bssid, ETH_ALEN);
+	r = memcmp(a->bssid, b->bssid, ETH_ALEN);
+	if (!r)
+		r = cmp_ies(WLAN_EID_RSN,
+			    a->information_elements,
+			    a->len_information_elements,
+			    b->information_elements,
+			    b->len_information_elements);
+
+	return r;
 }
 
 static int cmp_bss(struct cfg80211_bss *a,
