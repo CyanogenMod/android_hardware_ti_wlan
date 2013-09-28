@@ -35,5 +35,22 @@ LOCAL_MODULE := calibrator
 
 include $(BUILD_EXECUTABLE)
 
-# Build wlconf
-include $(LOCAL_PATH)/wlconf/Android.mk
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := \
+        wl_logproxy.c
+
+LOCAL_CFLAGS := -DCONFIG_LIBNL20
+LOCAL_C_INCLUDES := \
+    $(LOCAL_PATH) \
+    external/libnl-headers
+
+LOCAL_MODULE_TAGS := optional
+LOCAL_STATIC_LIBRARIES := libnl_2
+LOCAL_MODULE := wl_logproxy
+
+include $(BUILD_EXECUTABLE)
+
+
+include $(call all-subdir-makefiles)
