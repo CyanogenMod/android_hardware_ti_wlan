@@ -39,26 +39,6 @@ include $(BUILD_PREBUILT)
 ########################
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := TQS_D_1.7.ini
-LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := ETC
-LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/wifi
-LOCAL_SRC_FILES := $(LOCAL_MODULE)
-include $(BUILD_PREBUILT)
-
-########################
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := TQS_D_1.7_127x.ini
-LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := ETC
-LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/wifi
-LOCAL_SRC_FILES := $(LOCAL_MODULE)
-include $(BUILD_PREBUILT)
-
-########################
-
-include $(CLEAR_VARS)
 LOCAL_MODULE := wifical.sh
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE_PATH := $(TARGET_OUT)/bin
