@@ -17,6 +17,16 @@
 #include "led.h"
 #include "wme.h"
 
+#ifdef HTC_VITO_SMART_QOS
+//Vito Smart Qos feature 0128
+int cur_tx_fail;
+
+int sqos_tx_fail_get(void)
+{
+	return cur_tx_fail;
+}
+EXPORT_SYMBOL(sqos_tx_fail_get);
+#endif
 
 void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
 				 struct sk_buff *skb)
@@ -457,6 +467,19 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
 			if (info->flags & IEEE80211_TX_STAT_ACK) {
 				if (sta->lost_packets)
 					sta->lost_packets = 0;
+#ifdef HTC_WIFI
+			//Sometimes dongle will not reply ACK, this will cause device disconnect dongle.
+			//we don't want to disconnect dongle for this case.
+			//For concurrent case, use 300 for STA_LOST_PKT_THRESHOLD
+			} else if (ieee80211_get_open_count(hw, NULL) > 1) {
+				if (++sta->lost_packets >= 300) {
+					cfg80211_cqm_pktloss_notify(sta->sdata->dev,
+								    sta->sta.addr,
+								    sta->lost_packets,
+								    GFP_ATOMIC);
+					sta->lost_packets = 0;
+				}
+#endif
 			} else if (++sta->lost_packets >= STA_LOST_PKT_THRESHOLD) {
 				cfg80211_cqm_pktloss_notify(sta->sdata->dev,
 							    sta->sta.addr,
@@ -496,7 +519,13 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
 			local->dot11TransmittedFragmentCount++;
 	} else {
 		if (ieee80211_is_first_frag(hdr->seq_ctrl))
+		{
 			local->dot11FailedCount++;
+#ifdef HTC_VITO_SMART_QOS
+//Vito Smart Qos feature 0206
+			cur_tx_fail = local->dot11FailedCount;
+#endif
+		}
 	}
 
 	if (ieee80211_is_nullfunc(fc) && ieee80211_has_pm(fc) &&

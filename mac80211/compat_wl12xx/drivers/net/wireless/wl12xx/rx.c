@@ -169,6 +169,14 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 	if (ieee80211_is_data_present(hdr->frame_control))
 		is_data = 1;
 
+#ifdef HTC_WIFI
+//TI patch 0012
+	if (ieee80211_is_deauth(hdr->frame_control) ||
+		     ieee80211_is_disassoc(hdr->frame_control))
+		wl1271_dump(DEBUG_MAC80211, "DISPACKET: ",
+			     skb->data, skb->len - desc->pad_len);
+#endif
+
 	wl1271_rx_status(wl, desc, IEEE80211_SKB_RXCB(skb), beacon);
 
 	seq_num = (le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_SEQ) >> 4;
@@ -184,7 +192,11 @@ static int wl1271_rx_handle_data(struct wl1271 *wl, u8 *data, u32 length,
 
 #ifdef CONFIG_HAS_WAKELOCK
 	/* let the frame some time to propagate to user-space */
+#ifdef HTC_WIFI
+	wake_lock_timeout(&wl->rx_wake, HZ/2); //modify from HZ to HZ/2
+#else
 	wake_lock_timeout(&wl->rx_wake, HZ);
+#endif
 #endif
 
 	return is_data;

@@ -840,6 +840,10 @@ static u8 wl1271_tx_get_rate_flags(u8 rate_class_index)
 	return flags;
 }
 
+#ifdef HTC_WIFI
+extern int stop_wifi_driver_flag;
+#endif
+
 static void wl1271_tx_complete_packet(struct wl1271 *wl,
 				      struct wl1271_tx_hw_res_descr *result)
 {
@@ -857,6 +861,13 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 		wl1271_warning("TX result illegal id: %d", id);
 		return;
 	}
+
+#ifdef HTC_WIFI
+	if (stop_wifi_driver_flag) {
+		wl1271_warning("driver is under stopping status\n");
+		return;
+	}
+#endif
 
 	skb = wl->tx_frames[id];
 	info = IEEE80211_SKB_CB(skb);
@@ -876,6 +887,9 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 			info->flags |= IEEE80211_TX_STAT_ACK;
 		rate = wl1271_rate_to_idx(result->rate_class_index,
 					  wlvif->band);
+#ifdef HTC_VITO_SMART_QOS
+		sqos_phy_rate_get(result->rate_class_index); //Vito Smart Qos feature 0128
+#endif
 		rate_flags = wl1271_tx_get_rate_flags(result->rate_class_index);
 		retries = result->ack_failures;
 	} else if (result->status == TX_RETRY_EXCEEDED) {
@@ -974,7 +988,6 @@ int wl1271_tx_complete(struct wl1271 *wl)
 
 		wl->tx_results_count++;
 	}
-
 out:
 	return ret;
 }

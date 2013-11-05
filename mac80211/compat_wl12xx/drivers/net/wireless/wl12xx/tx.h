@@ -247,5 +247,8 @@ bool wlcore_is_queue_stopped(struct wl1271 *wl, u8 queue);
 /* from main.c */
 void wl1271_free_sta(struct wl1271 *wl, struct wl12xx_vif *wlvif, u8 hlid);
 void wl12xx_rearm_tx_watchdog_locked(struct wl1271 *wl);
+#ifdef HTC_VITO_SMART_QOS
+int sqos_phy_rate_get(int index); //Vito Smart Qos feature 0128
+#endif
 
 #endif

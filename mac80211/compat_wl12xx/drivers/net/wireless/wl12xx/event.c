@@ -242,8 +242,19 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 	 */
 	if (vector & MAX_TX_RETRY_EVENT_ID) {
 		wl1271_debug(DEBUG_EVENT, "MAX_TX_RETRY_EVENT_ID");
+#ifdef HTC_WIFI
+		//Sometimes dongle will not reply ACK, this will cause device disconnect to dongle.
+		//we don't want to disconnect dongle for this case.
+		if (ieee80211_get_open_count(wl->hw, NULL) > 1) {
+			printk("[WLAN] do nothing for Concurrent case\n");
+		} else {
+			sta_bitmap |= le16_to_cpu(mbox->sta_tx_retry_exceeded);
+			disconnect_sta = true;
+		}
+#else
 		sta_bitmap |= le16_to_cpu(mbox->sta_tx_retry_exceeded);
 		disconnect_sta = true;
+#endif
 	}
 
 	if (vector & INACTIVE_STA_EVENT_ID) {

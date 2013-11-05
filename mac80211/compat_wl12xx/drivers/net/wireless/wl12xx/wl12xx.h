@@ -37,6 +37,9 @@
 
 #include "conf.h"
 #include "ini.h"
+#ifdef HTC_VITO_SMART_QOS
+int sqos_tx_fail_get(void); //Vito Smart Qos feature 0128
+#endif
 
 #define WL127X_FW_NAME_MULTI	"ti-connectivity/wl127x-fw-4-mr.bin"
 #define WL127X_FW_NAME_SINGLE	"ti-connectivity/wl127x-fw-4-sr.bin"
@@ -52,6 +55,10 @@
  * the correct NVS size in wl1271_boot_upload_nvs().
  */
 #define WL12XX_NVS_NAME "ti-connectivity/wl1271-nvs.bin"
+#ifdef HTC_WIFI
+#define WL12XX_NVS_NAME_CALIBRATED "../../../data/misc/wifi/wl1271-nvs-calibrated.bin"
+#define WL12XX_NVS_NAME_CALIBRATED_AUTO "../../../data/misc/wifi/wl1271-nvs-calibrated_auto.bin"
+#endif
 
 #define WL1271_TX_SECURITY_LO16(s) ((u16)((s) & 0xffff))
 #define WL1271_TX_SECURITY_HI32(s) ((u32)(((s) >> 16) & 0xffffffff))

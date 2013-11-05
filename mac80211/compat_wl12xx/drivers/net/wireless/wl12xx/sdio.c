@@ -33,6 +33,12 @@
 #include <linux/wl12xx.h>
 #include <linux/pm_runtime.h>
 
+#ifdef HTC_WIFI
+#ifdef CONFIG_HAS_WAKELOCK
+#include <linux/wakelock.h>
+#endif
+#endif
+
 #include "wl12xx.h"
 #include "wl12xx_80211.h"
 #include "io.h"
@@ -45,9 +51,19 @@
 #define SDIO_DEVICE_ID_TI_WL1271	0x4076
 #endif
 
+#ifdef HTC_WIFI
+extern int stop_wifi_driver_flag;
+extern void set_wifi_is_on(int on);
+#endif
+
 struct wl12xx_sdio_glue {
 	struct device *dev;
 	struct platform_device *core;
+#ifdef HTC_WIFI
+#ifdef CONFIG_HAS_WAKELOCK
+	struct wake_lock wake_lock_probe;
+#endif
+#endif
 };
 
 static const struct sdio_device_id wl1271_devices[] __devinitconst = {
@@ -215,6 +231,15 @@ static int __devinit wl1271_probe(struct sdio_func *func,
 		goto out;
 	}
 
+#ifdef HTC_WIFI
+#ifdef CONFIG_HAS_WAKELOCK
+	printk("[WLAN] wl1271_probe init wake_lock_probe and hold wake lock 2 secs for turning on wifi\n");
+	wake_lock_init(&glue->wake_lock_probe, WAKE_LOCK_SUSPEND, "wake_lock_probe");
+	/* give us a grace period for turning on wifi */
+	wake_lock_timeout(&glue->wake_lock_probe, 2 * HZ);
+#endif
+#endif
+
 	glue->dev = &func->dev;
 
 	/* Grab access to FN0 for ELP reg. */
@@ -294,6 +319,12 @@ static void __devexit wl1271_remove(struct sdio_func *func)
 	struct wl12xx_sdio_glue *glue = sdio_get_drvdata(func);
 
 	/* Undo decrement done above in wl1271_probe */
+#ifdef HTC_WIFI
+#ifdef CONFIG_HAS_WAKELOCK
+	printk("[WLAN] wl1271_remove & destroy wake_lock_probe\n");
+	wake_lock_destroy(&glue->wake_lock_probe);
+#endif
+#endif
 	pm_runtime_get_noresume(&func->dev);
 
 	platform_device_del(glue->core);
@@ -314,6 +345,21 @@ static int wl1271_suspend(struct device *dev)
 
 	dev_dbg(dev, "wl1271 suspend. wow_enabled: %d\n",
 		wl->wow_enabled);
+
+#ifdef HTC_WIFI
+	if (wl == NULL) {
+		dev_err(dev, "wl1271_suspend wl : 0x%x return 0 directly! & stop_wifi_driver_flag = %d",wl,stop_wifi_driver_flag);
+		if (!stop_wifi_driver_flag) {
+			dev_err(dev, "release sdio host & sdio_set_host_pm_flags");
+			ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+			if (ret) {
+				dev_err(dev, "error while trying to keep power\n");
+				goto out;
+			}
+		}
+		return 0;
+	}
+#endif
 
 	/* check whether sdio should keep power */
 	if (wl->wow_enabled) {
@@ -364,12 +410,20 @@ static struct sdio_driver wl1271_sdio_driver = {
 
 static int __init wl1271_init(void)
 {
+#ifdef HTC_WIFI
+	set_wifi_is_on(1);
+	printk("set wifi_is_on = 1\n");
+#endif
 	return sdio_register_driver(&wl1271_sdio_driver);
 }
 
 static void __exit wl1271_exit(void)
 {
 	sdio_unregister_driver(&wl1271_sdio_driver);
+#ifdef HTC_WIFI
+	set_wifi_is_on(0);
+	printk("set wifi_is_on = 0\n");
+#endif
 }
 
 module_init(wl1271_init);

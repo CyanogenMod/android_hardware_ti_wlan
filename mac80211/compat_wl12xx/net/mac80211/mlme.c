@@ -2095,6 +2095,11 @@ void ieee80211_sta_rx_queued_mgmt(struct ieee80211_sub_if_data *sdata,
 		struct ieee80211_local *local = sdata->local;
 		struct ieee80211_work *tmp, *wk = NULL;
 
+#ifdef HTC_DEBUG
+		printk("%s: deauth: bssid: %pM sa: %pM\n",
+		       __func__, mgmt->bssid, mgmt->sa); //add debug message
+#endif
+
 		mutex_lock(&local->mtx);
 		list_for_each_entry(tmp, &local->work_list, list) {
 			if (tmp->sdata != sdata)
@@ -2194,6 +2199,11 @@ void ieee80211_sta_work(struct ieee80211_sub_if_data *sdata)
 	    ifmgd->associated) {
 		u8 bssid[ETH_ALEN];
 		int max_tries;
+
+#ifdef HTC_DEBUG
+		printk("%s: nullfunc_failed: %d probe_send_count: %d\n",
+			__func__, ifmgd->nullfunc_failed, ifmgd->probe_send_count); //add debug message
+#endif
 
 		memcpy(bssid, ifmgd->associated->bssid, ETH_ALEN);
 
@@ -2547,10 +2557,17 @@ int ieee80211_mgd_auth(struct ieee80211_sub_if_data *sdata,
 	wk->probe_auth.privacy = req->bss->capability & WLAN_CAPABILITY_PRIVACY;
 
 	/* if we already have a probe, don't probe again */
+#ifdef HTC_WIFI
+#ifdef HTC_DEBUG
+	printk("We don't want to use direct probe, we will auth directly\n");
+#endif
+	wk->type = IEEE80211_WORK_AUTH; //austin disable direct probe to prevent prefer 5G issue
+#else
 	if (req->bss->proberesp_ies)
 		wk->type = IEEE80211_WORK_AUTH;
 	else
 		wk->type = IEEE80211_WORK_DIRECT_PROBE;
+#endif
 	wk->chan = req->bss->channel;
 	wk->chan_type = NL80211_CHAN_NO_HT;
 	wk->sdata = sdata;

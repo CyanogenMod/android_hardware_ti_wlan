@@ -1087,9 +1087,23 @@ EXPORT_SYMBOL(cfg80211_rx_mgmt);
 void cfg80211_mgmt_tx_status(struct net_device *dev, u64 cookie,
 			     const u8 *buf, size_t len, bool ack, gfp_t gfp)
 {
-	struct wireless_dev *wdev = dev->ieee80211_ptr;
-	struct wiphy *wiphy = wdev->wiphy;
-	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
+#ifdef HTC_WIFI
+	struct wireless_dev *wdev;
+	struct wiphy *wiphy;
+	struct cfg80211_registered_device *rdev;
+
+	if (!dev)
+		return;
+	wdev = dev->ieee80211_ptr;
+
+	if (!wdev)
+		return;
+	wiphy = wdev->wiphy;
+
+	if (!wiphy)
+		return;
+	rdev = wiphy_to_dev(wiphy);
+#endif
 
 	/* Indicate TX status of the Action frame to user space */
 	nl80211_send_mgmt_tx_status(rdev, dev, cookie, buf, len, ack, gfp);

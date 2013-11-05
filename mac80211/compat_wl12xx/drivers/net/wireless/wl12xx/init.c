@@ -477,7 +477,11 @@ int wl1271_init_ap_rates(struct wl1271 *wl, struct wl12xx_vif *wlvif)
 	/* configure unicast TX rate classes */
 	for (i = 0; i < wl->conf.tx.ac_conf_count; i++) {
 		rc.enabled_rates = supported_rates;
+#ifdef HTC_WIFI
+		rc.short_retry_limit = 50; //extend to 50 to solve CT2 buffering issue
+#else
 		rc.short_retry_limit = 10;
+#endif
 		rc.long_retry_limit = 50;
 		rc.aflags = 0;
 		ret = wl1271_acx_ap_rate_policy(wl, &rc,
