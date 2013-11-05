@@ -743,6 +743,9 @@ void cfg80211_dev_free(struct cfg80211_registered_device *rdev)
 	mutex_destroy(&rdev->sched_scan_mtx);
 	list_for_each_entry_safe(scan, tmp, &rdev->bss_list, list)
 		cfg80211_put_bss(&scan->pub);
+#ifdef HTC_DEBUG
+	printk("[WLAN] cfg80211_dev_free, free wowlan\n");
+#endif
 	cfg80211_rdev_free_wowlan(rdev);
 	kfree(rdev);
 }

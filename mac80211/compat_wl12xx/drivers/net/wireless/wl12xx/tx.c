@@ -840,6 +840,10 @@ static u8 wl1271_tx_get_rate_flags(u8 rate_class_index)
 	return flags;
 }
 
+#ifdef HTC_WIFI
+extern int stop_wifi_driver_flag;
+#endif
+
 static void wl1271_tx_complete_packet(struct wl1271 *wl,
 				      struct wl1271_tx_hw_res_descr *result)
 {
@@ -858,8 +862,22 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 		return;
 	}
 
+#ifdef HTC_WIFI
+	if (stop_wifi_driver_flag) {
+		wl1271_warning("=== driver is under stopping ===\n");
+		return;
+	}
+#endif
+
 	skb = wl->tx_frames[id];
+#ifdef HTC_DEBUG
+	if (skb)
+		info = IEEE80211_SKB_CB(skb);
+	else
+		printk("[WLAN] skb is null for id=%d\n",id);
+#else
 	info = IEEE80211_SKB_CB(skb);
+#endif
 
 	if (wl12xx_is_dummy_packet(wl, skb)) {
 		wl1271_free_tx_id(wl, id);
@@ -876,6 +894,9 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 			info->flags |= IEEE80211_TX_STAT_ACK;
 		rate = wl1271_rate_to_idx(result->rate_class_index,
 					  wlvif->band);
+#ifdef HTC_VITO_SMART_QOS
+		sqos_phy_rate_get(result->rate_class_index); //Vito Smart Qos feature 0128
+#endif
 		rate_flags = wl1271_tx_get_rate_flags(result->rate_class_index);
 		retries = result->ack_failures;
 	} else if (result->status == TX_RETRY_EXCEEDED) {
@@ -935,11 +956,21 @@ static void wl1271_tx_complete_packet(struct wl1271 *wl,
 /* Called upon reception of a TX complete interrupt */
 int wl1271_tx_complete(struct wl1271 *wl)
 {
+#ifdef HTC_DEBUG
+	static int is_in = 0;
+#endif
 	struct wl1271_acx_mem_map *memmap =
 		(struct wl1271_acx_mem_map *)wl->target_mem_map;
 	u32 count, fw_counter;
 	u32 i;
 	int ret;
+
+#ifdef HTC_DEBUG
+	if (is_in)
+		printk("HTC - we were preemted in wl1271_tx_complete, is_in = %d\n",is_in);
+
+	is_in++;
+#endif
 
 	/* read the tx results from the chipset */
 	ret = wl1271_read(wl, le32_to_cpu(memmap->tx_result),
@@ -959,6 +990,10 @@ int wl1271_tx_complete(struct wl1271 *wl)
 	count = fw_counter - wl->tx_results_count;
 	wl1271_debug(DEBUG_TX, "tx_complete received, packets: %d", count);
 
+#ifdef HTC_WAKE_DEBUG
+	printk("[WLAN] %s tx_complete received, packets: %d\n", __func__, count);
+#endif
+
 	/* verify that the result buffer is not getting overrun */
 	if (unlikely(count > TX_HW_RESULT_QUEUE_LEN))
 		wl1271_warning("TX result overflow from chipset: %d", count);
@@ -970,11 +1005,20 @@ int wl1271_tx_complete(struct wl1271 *wl)
 
 		/* process the packet */
 		result =  &(wl->tx_res_if->tx_results_queue[offset]);
+#ifdef HTC_DEBUG
+		if (result)
+			wl1271_tx_complete_packet(wl, result);
+		else
+			printk("HTC - result is NULL at offset = %d and count = %d\n",offset,count);
+#else
 		wl1271_tx_complete_packet(wl, result);
+#endif
 
 		wl->tx_results_count++;
 	}
-
+#ifdef HTC_DEBUG
+	is_in--;
+#endif
 out:
 	return ret;
 }

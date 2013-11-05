@@ -41,25 +41,51 @@ void wl1271_elp_work(struct work_struct *work)
 
 	wl1271_debug(DEBUG_PSM, "elp work");
 
+#ifdef HTC_DEBUG
+	/* wow_enabled is set during suspending */
+	if (wl->wow_enabled)
+		wl1271_info("@@@ elp work");
+#endif
+
 	mutex_lock(&wl->mutex);
 
 	if (unlikely(wl->state != WLCORE_STATE_ON))
 		goto out;
 
 	/* our work might have been already cancelled */
-	if (unlikely(!test_bit(WL1271_FLAG_ELP_REQUESTED, &wl->flags)))
+	if (unlikely(!test_bit(WL1271_FLAG_ELP_REQUESTED, &wl->flags))) {
+#ifdef HTC_DEBUG
+		if (wl->wow_enabled)
+			wl1271_info("@@@ goto out due to WL1271_FLAG_ELP_REQUESTED");
+#endif
 		goto out;
+	}
 
-	if (test_bit(WL1271_FLAG_IN_ELP, &wl->flags))
+	if (test_bit(WL1271_FLAG_IN_ELP, &wl->flags)) {
+#ifdef HTC_DEBUG
+		if (wl->wow_enabled)
+			wl1271_info("@@@ goto out due to WL1271_FLAG_IN_ELP");
+#endif
 		goto out;
+	}
 
 	wl12xx_for_each_wlvif(wl, wlvif) {
-		if (wlvif->bss_type == BSS_TYPE_AP_BSS)
+		if (wlvif->bss_type == BSS_TYPE_AP_BSS) {
+#ifdef HTC_DEBUG
+			if (wl->wow_enabled)
+				wl1271_info("@@@ goto out due to BSS_TYPE_AP_BSS");
+#endif
 			goto out;
+		}
 
 		if (!test_bit(WLVIF_FLAG_IN_PS, &wlvif->flags) &&
-		    test_bit(WLVIF_FLAG_IN_USE, &wlvif->flags))
+		    test_bit(WLVIF_FLAG_IN_USE, &wlvif->flags)) {
+#ifdef HTC_DEBUG
+			if (wl->wow_enabled)
+				wl1271_info("@@@ goto out due to WLVIF_FLAG_IN_USE");
+#endif
 			goto out;
+		}
 	}
 
 	wl1271_debug(DEBUG_PSM, "chip to elp");
@@ -72,6 +98,12 @@ void wl1271_elp_work(struct work_struct *work)
 
 	set_bit(WL1271_FLAG_IN_ELP, &wl->flags);
 
+#ifdef HTC_DEBUG
+	/* wow_enabled is set during suspending */
+	if (wl->wow_enabled) {
+		wl1271_info("@@@ chip to elp");
+	}
+#endif
 out:
 	mutex_unlock(&wl->mutex);
 }

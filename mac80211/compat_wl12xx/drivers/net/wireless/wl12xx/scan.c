@@ -42,7 +42,11 @@ void wl1271_scan_complete_work(struct work_struct *work)
 	dwork = container_of(work, struct delayed_work, work);
 	wl = container_of(dwork, struct wl1271, scan_complete_work);
 
+#ifdef HTC_DEBUG
+	wl1271_debug(DEBUG_MAC80211, "Scanning complete"); //add debug message
+#else
 	wl1271_debug(DEBUG_SCAN, "Scanning complete");
+#endif
 
 	mutex_lock(&wl->mutex);
 
@@ -77,6 +81,9 @@ void wl1271_scan_complete_work(struct work_struct *work)
 
 	wl1271_ps_elp_sleep(wl);
 
+#ifdef HTC_DEBUG
+	wl1271_debug(DEBUG_MAC80211, "%s: failed: %d", __func__, wl->scan.failed); //add debug message
+#endif
 	if (wl->scan.failed) {
 		wl1271_info("Scan completed due to error.");
 		wl12xx_queue_recovery_work(wl);

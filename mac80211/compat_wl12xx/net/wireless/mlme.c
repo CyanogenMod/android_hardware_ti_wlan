@@ -492,6 +492,9 @@ int cfg80211_mlme_auth(struct cfg80211_registered_device *rdev,
 {
 	int err;
 
+#ifdef HTC_DEBUG
+	printk("[WLAN] cfg80211_mlme_auth\n");
+#endif
 	wdev_lock(dev->ieee80211_ptr);
 	err = __cfg80211_mlme_auth(rdev, dev, chan, auth_type, bssid,
 				   ssid, ssid_len, ie, ie_len,
@@ -609,6 +612,9 @@ int cfg80211_mlme_assoc(struct cfg80211_registered_device *rdev,
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
 	int err;
 
+#ifdef HTC_DEBUG
+	printk("[WLAN] cfg80211_mlme_assoc\n");
+#endif
 	wdev_lock(wdev);
 	err = __cfg80211_mlme_assoc(rdev, dev, chan, bssid, prev_bssid,
 				    ssid, ssid_len, ie, ie_len, use_mfp, crypt,
@@ -664,6 +670,9 @@ int cfg80211_mlme_deauth(struct cfg80211_registered_device *rdev,
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
 	int err;
 
+#ifdef HTC_DEBUG
+	printk("[WLAN] cfg80211_mlme_deauth\n");
+#endif
 	wdev_lock(wdev);
 	err = __cfg80211_mlme_deauth(rdev, dev, bssid, ie, ie_len, reason,
 				     local_state_change);
@@ -709,6 +718,9 @@ int cfg80211_mlme_disassoc(struct cfg80211_registered_device *rdev,
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
 	int err;
 
+#ifdef HTC_DEBUG
+	printk("[WLAN] cfg80211_mlme_disassoc\n");
+#endif
 	wdev_lock(wdev);
 	err = __cfg80211_mlme_disassoc(rdev, dev, bssid, ie, ie_len, reason,
 				       local_state_change);
@@ -1087,9 +1099,34 @@ EXPORT_SYMBOL(cfg80211_rx_mgmt);
 void cfg80211_mgmt_tx_status(struct net_device *dev, u64 cookie,
 			     const u8 *buf, size_t len, bool ack, gfp_t gfp)
 {
-	struct wireless_dev *wdev = dev->ieee80211_ptr;
-	struct wiphy *wiphy = wdev->wiphy;
-	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
+#ifdef HTC_WIFI
+	struct wireless_dev *wdev;
+	struct wiphy *wiphy;
+	struct cfg80211_registered_device *rdev;
+
+#ifdef HTC_DEBUG
+	if (!dev) {
+		printk("[WLAN] %s, dev is null\n", __func__);
+		return;
+	}
+#endif
+	wdev = dev->ieee80211_ptr;
+
+#ifdef HTC_DEBUG
+	if (!wdev) {
+		printk("[WLAN] %s, wdev is null\n", __func__);
+		return;
+	}
+#endif
+	wiphy = wdev->wiphy;
+
+#ifdef HTC_DEBUG
+	if (!wiphy) {
+		printk("[WLAN] %s, wiphy is null\n", __func__);
+		return;
+	}
+#endif
+	rdev = wiphy_to_dev(wiphy);
 
 	/* Indicate TX status of the Action frame to user space */
 	nl80211_send_mgmt_tx_status(rdev, dev, cookie, buf, len, ack, gfp);
@@ -1104,6 +1141,9 @@ void cfg80211_cqm_rssi_notify(struct net_device *dev,
 	struct wiphy *wiphy = wdev->wiphy;
 	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
 
+#ifdef HTC_DEBUG
+    printk("[WLAN] cfg80211_cqm_rssi_notify\n");
+#endif
 	/* Indicate roaming trigger event to user space */
 	nl80211_send_cqm_rssi_notify(rdev, dev, rssi_event, gfp);
 }
@@ -1116,6 +1156,9 @@ void cfg80211_cqm_pktloss_notify(struct net_device *dev,
 	struct wiphy *wiphy = wdev->wiphy;
 	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
 
+#ifdef HTC_DEBUG
+    printk("[WLAN] cfg80211_cqm_pktloss_notify\n");
+#endif
 	/* Indicate roaming trigger event to user space */
 	nl80211_send_cqm_pktloss_notify(rdev, dev, peer, num_packets, gfp);
 }

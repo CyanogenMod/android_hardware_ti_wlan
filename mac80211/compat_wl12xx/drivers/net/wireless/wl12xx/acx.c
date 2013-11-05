@@ -449,6 +449,13 @@ int wl1271_acx_conn_monit_params(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 	u32 timeout = ACX_CONN_MONIT_DISABLE_VALUE;
 	int ret;
 
+#ifdef HTC_DEBUG
+	if(enable)
+		printk("wl1271_acx_conn_monit_params enable = true\n");
+	else
+		printk("wl1271_acx_conn_monit_params enable = false\n");
+#endif
+
 	wl1271_debug(DEBUG_ACX, "acx connection monitor parameters: %s",
 		     enable ? "enabled" : "disabled");
 
@@ -461,6 +468,10 @@ int wl1271_acx_conn_monit_params(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 	if (enable) {
 		threshold = wl->conf.conn.synch_fail_thold;
 		timeout = wl->conf.conn.bss_lose_timeout;
+#ifdef HTC_DEBUG
+		printk("beacon miss threshold = %d\n",threshold);
+		printk("timeout = %d\n",timeout);
+#endif
 	}
 
 	acx->role_id = wlvif->role_id;

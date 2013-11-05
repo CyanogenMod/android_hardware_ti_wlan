@@ -113,6 +113,10 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 	vector &= ~(le32_to_cpu(mbox->events_mask));
 	wl1271_debug(DEBUG_EVENT, "vector: 0x%x", vector);
 
+#ifdef HTC_DEBUG
+	printk("[WLAN] vector: 0x%x\n",vector);
+#endif
+
 	if (vector & SCAN_COMPLETE_EVENT_ID) {
 		wl1271_debug(DEBUG_EVENT, "status: 0x%x",
 			     mbox->scheduled_scan_status);
@@ -151,6 +155,9 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 	 */
 	if (vector & BSS_LOSE_EVENT_ID) {
 		/* TODO: check for multi-role */
+#ifdef HTC_DEBUG
+		printk("[WLAN] EVENT: BSS_LOSE_EVENT\n");
+#endif
 		wl1271_info("Beacon loss detected.");
 
 		/* indicate to the stack, that beacons have been lost */
@@ -159,6 +166,9 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 
 	if (vector & RSSI_SNR_TRIGGER_0_EVENT_ID) {
 		/* TODO: check actual multi-role support */
+#ifdef HTC_DEBUG
+		printk("[WLAN] EVENT: RSSI_SNR_TRIGGER_0_EVENT\n");
+#endif
 		wl1271_debug(DEBUG_EVENT, "RSSI_SNR_TRIGGER_0_EVENT");
 		wl12xx_for_each_wlvif_sta(wl, wlvif) {
 			wl1271_event_rssi_trigger(wl, wlvif, mbox);
@@ -167,6 +177,9 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 
 	if (vector & BA_SESSION_RX_CONSTRAINT_EVENT_ID) {
 		u8 role_id = mbox->role_id;
+#ifdef HTC_DEBUG
+		printk("[WLAN] EVENT: BA_SESSION_RX_CONSTRAINT_EVENT\n");
+#endif
 		wl1271_debug(DEBUG_EVENT, "BA_SESSION_RX_CONSTRAINT_EVENT_ID. "
 			     "ba_allowed = 0x%x, role_id=%d",
 			     mbox->rx_ba_allowed, role_id);
@@ -182,6 +195,9 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 	}
 
 	if (vector & CHANNEL_SWITCH_COMPLETE_EVENT_ID) {
+#ifdef HTC_DEBUG
+		printk("[WLAN] EVENT: CHANNEL_SWITCH_COMPLETE_EVENT\n");
+#endif
 		wl1271_debug(DEBUG_EVENT, "CHANNEL_SWITCH_COMPLETE_EVENT_ID. "
 					  "status = 0x%x",
 					  mbox->channel_switch_status);
@@ -242,11 +258,27 @@ static int wl1271_event_process(struct wl1271 *wl, struct event_mailbox *mbox)
 	 */
 	if (vector & MAX_TX_RETRY_EVENT_ID) {
 		wl1271_debug(DEBUG_EVENT, "MAX_TX_RETRY_EVENT_ID");
+#ifdef HTC_WIFI
+		//Sometimes dongle will not reply ACK, this will cause device disconnect to dongle.
+		//we don't want to disconnect dongle for this case.
+		if (ieee80211_get_open_count(wl->hw, NULL) > 1) {
+#ifdef HTC_DEBUG
+			printk("[WLAN] do nothing for Concurrent case\n");
+#endif
+		} else {
+			sta_bitmap |= le16_to_cpu(mbox->sta_tx_retry_exceeded);
+			disconnect_sta = true;
+		}
+#else
 		sta_bitmap |= le16_to_cpu(mbox->sta_tx_retry_exceeded);
 		disconnect_sta = true;
+#endif
 	}
 
 	if (vector & INACTIVE_STA_EVENT_ID) {
+#ifdef HTC_DEBUG
+		printk("[WLAN] EVENT: INACTIVE_STA_EVENT\n");
+#endif
 		wl1271_debug(DEBUG_EVENT, "INACTIVE_STA_EVENT_ID");
 		sta_bitmap |= le16_to_cpu(mbox->sta_aging_status);
 		disconnect_sta = true;
