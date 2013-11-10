@@ -6860,7 +6860,7 @@ static struct ieee80211_hw *wl1271_alloc_hw(void)
 	spin_lock_init(&wl->wl_lock);
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_init(&wl->wake_lock, WAKE_LOCK_SUSPEND, "wl1271_wake");
-	wake_lock_init(&wl->rx_wake, WAKE_LOCK_SUSPEND, "rx_wake");
+	wake_lock_init(&wl->rx_wake, WAKE_LOCK_IDLE, "rx_wake");
 	wake_lock_init(&wl->recovery_wake, WAKE_LOCK_SUSPEND, "recovery_wake");
 #endif
 
