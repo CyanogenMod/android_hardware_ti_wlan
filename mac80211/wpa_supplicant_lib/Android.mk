@@ -14,6 +14,10 @@ ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
     WPA_SUPPL_DIR = external/wpa_supplicant_8/wpa_supplicant
 endif
 
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X_TI)
+    WPA_SUPPL_DIR = external/wpa_supplicant_8_ti/wpa_supplicant
+endif
+
 ifneq ($(wildcard $(WPA_SUPPL_DIR)/.config),)
     include $(WPA_SUPPL_DIR)/.config
 endif
