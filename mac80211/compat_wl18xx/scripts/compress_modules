@@ -4,7 +4,7 @@
 COMPRESSION_FOUND="n"
 COUNT=0;
 
-for i in $(modprobe -l mac80211); do
+for i in $(find /lib/modules/*/ -name mac80211.ko -printf '%P'); do
 	let COUNT=$COUNT+1
 	i=${i##*/}
 	if [ "$i" = "mac80211.ko.gz" ]; then

@@ -27,17 +27,18 @@ if [ "$MODULE" == "ath5k" ]; then
 	madwifi-unload
 	athenable ath5k
 	modprobe ath5k
-	CHECK=`modprobe -l ath5k`
+	
+	CHECK=`find /lib/modules/*/ -name ath5k.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "ath5k loaded successfully"
 	fi
 	modprobe ath9k
-	CHECK=`modprobe -l ath9k`
+	CHECK=`find /lib/modules/*/ -name ath9k.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "ath9k loaded successfully"
 	fi
 elif [ "$MODULE" == "madwifi" ]; then
-	CHECK=`modprobe -l ath5k`
+	CHECK=`find /lib/modules/*/ -name ath5k.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "ath5k currently loaded, going to try to unload the module..."
 		modprobe -r --ignore-remove ath5k
@@ -47,7 +48,7 @@ elif [ "$MODULE" == "madwifi" ]; then
 	# currently available were picked up
 	madwifi-unload 2>&1 > /dev/null
 	modprobe ath_pci
-	CHECK=`modprobe -l ath_pci`
+	CHECK=`find /lib/modules/*/ -name ath_pci.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "MadWifi loaded successfully!"
 	fi

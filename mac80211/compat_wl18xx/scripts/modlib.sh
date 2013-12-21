@@ -14,7 +14,7 @@ VER=`uname -r`
 # If 'module' is found, its renamed to 'module.ignore'
 function module_disable {
 	# Basic check to see if this is a module available for loading
-	MODULE_CHECK=`modprobe -l $1`
+	MODULE_CHECK=`find /lib/modules/*/ -name $1.ko -printf '%P'`
 	if [ -z $MODULE_CHECK ]; then
 		echo "Module $1 not detected -- this is fine"
 		return
@@ -27,7 +27,7 @@ function module_disable {
 	MODULE_COUNT=`find /lib/modules/$VER/ -name $MODULE_KO | wc -l`
 	ALL_MODULES=`find /lib/modules/$VER/ -name $MODULE_KO`
 	COUNT=1
-	CHECK=`modprobe -l $MODULE`
+	CHECK=`find /lib/modules/*/ -name $MODULE.ko -printf '%P'`
 	for i in $ALL_MODULES; do
 		if [[ $MODULE_COUNT -gt 1 ]]; then
 			if [[ $COUNT -eq 1 ]]; then
@@ -40,7 +40,7 @@ function module_disable {
 		fi
 		mv -f $i ${i}${IGNORE_SUFFIX}
 		depmod -a
-		CHECK_AGAIN=`modprobe -l $MODULE`
+		CHECK_AGAIN=`find /lib/modules/*/ -name $MODULE.ko -printf '%P'`
 		if [ "$CHECK" != "$CHECK_AGAIN" ]; then
 			echo -e "\t[OK]\tModule disabled:"
 			echo "$CHECK"
@@ -66,7 +66,7 @@ function module_enable {
 		DIR=`dirname $i`
 		mv $i $DIR/$MODULE_KO
 		depmod -a
-		CHECK=`modprobe -l $MODULE`
+		CHECK=`find /lib/modules/*/ -name $MODULE.ko -printf '%P'`
 		if [ "$DIR/$MODULE_KO" != $CHECK ]; then
 			if [ -z $CHECK ]; then
 				echo -e "\t[ERROR]\tModule could not be enabled"

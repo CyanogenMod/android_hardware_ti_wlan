@@ -7,9 +7,9 @@ export KLIB:=          /lib/modules/$(shell uname -r)
 endif
 export KLIB_BUILD ?=	$(KLIB)/build
 # Sometimes not available in the path
-MODPROBE := /sbin/modprobe
-MADWIFI=$(shell $(MODPROBE) -l ath_pci)
-OLD_IWL=$(shell $(MODPROBE) -l iwl4965)
+FIND := /bin/find
+MADWIFI=$(shell $(FIND) /lib/modules/*/ -name ath_pci.ko -printf '%P')
+OLD_IWL=$(shell $(FIND) /lib/modules/*/ -name iwl4965.ko -printf '%P')
 
 DESTDIR?=
 
@@ -91,26 +91,26 @@ bt-install-modules: bt
 	@echo
 	@echo "Currently detected bluetooth subsystem modules:"
 	@echo
-	@$(MODPROBE) -l ath3k       
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
+	@$(FIND) /lib/modules/*/ -name ath3k.ko -printf '%P'  
+	@$(FIND) /lib/modules/*/ -name bcm203x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluecard_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluetooth.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bnep.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bpa10x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bt3c_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl_sdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btsdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btusb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btuart_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cmtp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name dtl1_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hidp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_vhci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_uart.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name l2cap.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rfcomm.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name sco.ko -printf '%P'
 	@echo
 	@echo Now run:
 	@echo
@@ -129,26 +129,26 @@ btuninstall:
 	@echo
 	@echo "Your old bluetooth subsystem modules were left intact:"
 	@echo
-	@$(MODPROBE) -l ath3k       
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
+	@$(FIND) /lib/modules/*/ -name ath3k.ko -printf '%P'  
+	@$(FIND) /lib/modules/*/ -name bcm203x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluecard_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluetooth.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bnep.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bpa10x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bt3c_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl_sdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btsdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btusb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btuart_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cmtp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name dtl1_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hidp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_vhci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_uart.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name l2cap.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rfcomm.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name sco.ko -printf '%P'
 	@echo
 
 btclean:
@@ -207,106 +207,106 @@ install-scripts:
 	@echo
 	@echo "Currently detected wireless subsystem modules:"
 	@echo 
-	@$(MODPROBE) -l mac80211
-	@$(MODPROBE) -l cfg80211
-	@$(MODPROBE) -l lib80211
-	@$(MODPROBE) -l adm8211
-	@$(MODPROBE) -l ar9170usb
-	@$(MODPROBE) -l at76c50x-usb
-	@$(MODPROBE) -l ath
-	@$(MODPROBE) -l ath5k
-	@$(MODPROBE) -l ath6kl
-	@$(MODPROBE) -l ath9k
-	@$(MODPROBE) -l ath9k_htc
-	@$(MODPROBE) -l b43
-	@$(MODPROBE) -l b43legacy
-	@$(MODPROBE) -l b44
-	@$(MODPROBE) -l carl9170
-	@$(MODPROBE) -l brcm80211
-	@$(MODPROBE) -l cdc_ether
-	@$(MODPROBE) -l eeprom_93cx6
-	@$(MODPROBE) -l ipw2100
-	@$(MODPROBE) -l ipw2200
-	@$(MODPROBE) -l iwl3945
-	@$(MODPROBE) -l iwlagn
-	@$(MODPROBE) -l iwlcore
-	@$(MODPROBE) -l iwmc3200wifi
-	@$(MODPROBE) -l lib80211_crypt_ccmp
-	@$(MODPROBE) -l lib80211_crypt_tkip
-	@$(MODPROBE) -l lib80211_crypt_wep
-	@$(MODPROBE) -l libertas
-	@$(MODPROBE) -l libertas_cs
-	@$(MODPROBE) -l libertas_sdio
-	@$(MODPROBE) -l libertas_spi
-	@$(MODPROBE) -l libertas_tf
-	@$(MODPROBE) -l libertas_tf_usb
-	@$(MODPROBE) -l libipw
-	@$(MODPROBE) -l mac80211_hwsim
-	@$(MODPROBE) -l mwl8k
-	@$(MODPROBE) -l orinoco_cs
-	@$(MODPROBE) -l orinoco_nortel
-	@$(MODPROBE) -l orinoco_pci
-	@$(MODPROBE) -l orinoco_plx
-	@$(MODPROBE) -l orinoco_tld
-	@$(MODPROBE) -l orinoco_usb
-	@$(MODPROBE) -l orinoco
-	@$(MODPROBE) -l p54common
-	@$(MODPROBE) -l p54pci
-	@$(MODPROBE) -l p54spi
-	@$(MODPROBE) -l p54usb
-	@$(MODPROBE) -l rndis_host
-	@$(MODPROBE) -l rndis_wlan
-	@$(MODPROBE) -l rt2400pci
-	@$(MODPROBE) -l rt2500pci
-	@$(MODPROBE) -l rt2500usb
-	@$(MODPROBE) -l rt2800pci
-	@$(MODPROBE) -l rt2800usb
-	@$(MODPROBE) -l rt2x00lib
-	@$(MODPROBE) -l rt2x00pci
-	@$(MODPROBE) -l rt2x00usb
-	@$(MODPROBE) -l rt61pci
-	@$(MODPROBE) -l rt73usb
-	@$(MODPROBE) -l rtl8180
-	@$(MODPROBE) -l rtl8187
-	@$(MODPROBE) -l rtlwifi
-	@$(MODPROBE) -l rtl8192ce
-	@$(MODPROBE) -l spectrum_cs
-	@$(MODPROBE) -l ssb
-	@$(MODPROBE) -l usb8xxx
-	@$(MODPROBE) -l usbnet
-	@$(MODPROBE) -l wl1251
-	@$(MODPROBE) -l wl12xx
-	@$(MODPROBE) -l zd1211rw
+	@$(FIND) /lib/modules/*/ -name mac80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cfg80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name adm8211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ar9170usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name at76c50x-usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath5k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath6kl.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath9k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath9k_htc.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name b43.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name b43legacy.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name b44.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name carl9170.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name brcm80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cdc_ether.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name eeprom_93cx6.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ipw2100.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ipw2200.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwl3945.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwlagn.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwlcore.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwmc3200wifi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211_crypt_ccmp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211_crypt_tkip.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211_crypt_wep.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_sdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_spi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_tf.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_tf_usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libipw.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name mac80211_hwsim.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name mwl8k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_nortel.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_plx.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_tld.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54common.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54spi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rndis_host.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rndis_wlan.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2400pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2500pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2500usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2800pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2800usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2x00lib.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2x00pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2x00usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt61pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt73usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtl8180.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtl8187.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtlwifi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtl8192ce.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name spectrum_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ssb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name usb8xxx.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name usbnet.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name wl1251.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name wl12xx.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name zd1211rw.ko -printf '%P'
 	@echo
 	@echo "Currently detected ethernet subsystem modules:"
 	@echo
-	@$(MODPROBE) -l atl1
-	@$(MODPROBE) -l atl2
-	@$(MODPROBE) -l atl1e
-	@$(MODPROBE) -l atl1c
+	@$(FIND) /lib/modules/*/ -name atl1.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name atl2.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name atl1e.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name atl1c.ko -printf '%P'
 	@echo
 	@echo "Currently detected bluetooth subsystem modules:"
 	@echo
-	@$(MODPROBE) -l ath3k           
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
+	@$(FIND) /lib/modules/*/ -name ath3k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bcm203x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluecard_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluetooth.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bnep.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bpa10x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bt3c_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl_sdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btsdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btusb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btuart_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cmtp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name dtl1_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hidp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_vhci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_uart.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name l2cap.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rfcomm.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name sco.ko -printf '%P'
 	@echo 
 	@echo Now run:
 	@echo 
@@ -336,106 +336,106 @@ uninstall:
 	@echo
 	@echo "Your old wireless subsystem modules were left intact:"
 	@echo 
-	@$(MODPROBE) -l mac80211
-	@$(MODPROBE) -l cfg80211
-	@$(MODPROBE) -l lib80211
-	@$(MODPROBE) -l adm8211
-	@$(MODPROBE) -l ar9170usb
-	@$(MODPROBE) -l at76c50x-usb
-	@$(MODPROBE) -l ath
-	@$(MODPROBE) -l ath5k
-	@$(MODPROBE) -l ath6kl
-	@$(MODPROBE) -l ath9k
-	@$(MODPROBE) -l ath9k_htc
-	@$(MODPROBE) -l b43
-	@$(MODPROBE) -l b43legacy
-	@$(MODPROBE) -l b44
-	@$(MODPROBE) -l carl9170
-	@$(MODPROBE) -l brcm80211
-	@$(MODPROBE) -l cdc_ether
-	@$(MODPROBE) -l eeprom_93cx6
-	@$(MODPROBE) -l ipw2100
-	@$(MODPROBE) -l ipw2200
-	@$(MODPROBE) -l iwl3945
-	@$(MODPROBE) -l iwlagn
-	@$(MODPROBE) -l iwlcore
-	@$(MODPROBE) -l iwmc3200wifi
-	@$(MODPROBE) -l lib80211_crypt_ccmp
-	@$(MODPROBE) -l lib80211_crypt_tkip
-	@$(MODPROBE) -l lib80211_crypt_wep
-	@$(MODPROBE) -l libertas
-	@$(MODPROBE) -l libertas_cs
-	@$(MODPROBE) -l libertas_sdio
-	@$(MODPROBE) -l libertas_spi
-	@$(MODPROBE) -l libertas_tf
-	@$(MODPROBE) -l libertas_tf_usb
-	@$(MODPROBE) -l libipw
-	@$(MODPROBE) -l mac80211_hwsim
-	@$(MODPROBE) -l mwl8k
-	@$(MODPROBE) -l orinoco_cs
-	@$(MODPROBE) -l orinoco_nortel
-	@$(MODPROBE) -l orinoco_pci
-	@$(MODPROBE) -l orinoco_plx
-	@$(MODPROBE) -l orinoco_tld
-	@$(MODPROBE) -l orinoco_usb
-	@$(MODPROBE) -l orinoco
-	@$(MODPROBE) -l p54common
-	@$(MODPROBE) -l p54pci
-	@$(MODPROBE) -l p54spi
-	@$(MODPROBE) -l p54usb
-	@$(MODPROBE) -l rndis_host
-	@$(MODPROBE) -l rndis_wlan
-	@$(MODPROBE) -l rt2400pci
-	@$(MODPROBE) -l rt2500pci
-	@$(MODPROBE) -l rt2500usb
-	@$(MODPROBE) -l rt2800pci
-	@$(MODPROBE) -l rt2800usb
-	@$(MODPROBE) -l rt2x00lib
-	@$(MODPROBE) -l rt2x00pci
-	@$(MODPROBE) -l rt2x00usb
-	@$(MODPROBE) -l rt61pci
-	@$(MODPROBE) -l rt73usb
-	@$(MODPROBE) -l rtl8180
-	@$(MODPROBE) -l rtl8187
-	@$(MODPROBE) -l rtlwifi
-	@$(MODPROBE) -l rtl8192ce
-	@$(MODPROBE) -l spectrum_cs
-	@$(MODPROBE) -l ssb
-	@$(MODPROBE) -l usb8xxx
-	@$(MODPROBE) -l usbnet
-	@$(MODPROBE) -l wl1251
-	@$(MODPROBE) -l wl12xx
-	@$(MODPROBE) -l zd1211rw
+	@$(FIND) /lib/modules/*/ -name mac80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cfg80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name adm8211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ar9170usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name at76c50x-usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath5k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath6kl.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath9k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ath9k_htc.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name b43.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name b43legacy.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name b44.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name carl9170.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name brcm80211.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cdc_ether.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name eeprom_93cx6.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ipw2100.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ipw2200.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwl3945.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwlagn.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwlcore.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name iwmc3200wifi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211_crypt_ccmp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211_crypt_tkip.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name lib80211_crypt_wep.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_sdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_spi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_tf.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libertas_tf_usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name libipw.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name mac80211_hwsim.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name mwl8k.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_nortel.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_plx.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_tld.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco_usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name orinoco.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54common.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54spi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name p54usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rndis_host.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rndis_wlan.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2400pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2500pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2500usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2800pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2800usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2x00lib.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2x00pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt2x00usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt61pci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rt73usb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtl8180.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtl8187.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtlwifi.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rtl8192ce.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name spectrum_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name ssb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name usb8xxx.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name usbnet.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name wl1251.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name wl12xx.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name zd1211rw.ko -printf '%P'
 	@echo
 	@echo "Your old ethernet subsystem modules are left intact:"
 	@echo
-	@$(MODPROBE) -l atl1
-	@$(MODPROBE) -l atl2
-	@$(MODPROBE) -l atl1e
-	@$(MODPROBE) -l atl1c
+	@$(FIND) /lib/modules/*/ -name atl1.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name atl2.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name atl1e.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name atl1c.ko -printf '%P'
 	@echo
 	@echo "Your old bluetooth subsystem modules were left intact:"
 	@echo
-	@$(MODPROBE) -l ath3k           
-	@$(MODPROBE) -l bcm203x
-	@$(MODPROBE) -l bluecard_cs
-	@$(MODPROBE) -l bluetooth
-	@$(MODPROBE) -l bnep
-	@$(MODPROBE) -l bpa10x
-	@$(MODPROBE) -l bt3c_cs
-	@$(MODPROBE) -l btmrvl
-	@$(MODPROBE) -l btmrvl_sdio
-	@$(MODPROBE) -l btsdio
-	@$(MODPROBE) -l btusb
-	@$(MODPROBE) -l btuart_cs
-	@$(MODPROBE) -l	cmtp
-	@$(MODPROBE) -l	dtl1_cs
-	@$(MODPROBE) -l hidp
-	@$(MODPROBE) -l	hci_vhci
-	@$(MODPROBE) -l	hci_uart
-	@$(MODPROBE) -l l2cap
-	@$(MODPROBE) -l rfcomm
-	@$(MODPROBE) -l sco
+	@$(FIND) /lib/modules/*/ -name ath3k.ko -printf '%P'   
+	@$(FIND) /lib/modules/*/ -name bcm203x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluecard_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bluetooth.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bnep.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bpa10x.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name bt3c_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btmrvl_sdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btsdio.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btusb.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name btuart_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name cmtp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name dtl1_cs.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hidp.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_vhci.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name hci_uart.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name l2cap.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name rfcomm.ko -printf '%P'
+	@$(FIND) /lib/modules/*/ -name sco.ko -printf '%P'
 	@
 	@echo 
 
