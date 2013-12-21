@@ -32,21 +32,21 @@ if [ "$MODULE" == "b43" ]; then
 	b43enable b43
 	modprobe b43
 	modprobe b43legacy
-	CHECK=`modprobe -l b43`
+	CHECK=`find /lib/modules/*/ -name b43.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "b43 loaded successfully"
 	fi
-	CHECK=`modprobe -l b43legacy`
+	CHECK=`find /lib/modules/*/ -name b43legacy.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "b43legacy loaded successfully"
 	fi
 elif [ "$MODULE" == "bcm43xx" ]; then
-	CHECK=`modprobe -l b43`
+	CHECK=`find /lib/modules/*/ -name b43.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "b43 currently loaded, going to try to unload the module..."
 		modprobe -r --ignore-remove b43
 	fi
-	CHECK=`modprobe -l b43legacy`
+	CHECK=`find /lib/modules/*/ -name b43legacy.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "b43legacy currently loaded, going to try to unload the module..."
 		modprobe -r --ignore-remove b43legacy
@@ -55,7 +55,7 @@ elif [ "$MODULE" == "bcm43xx" ]; then
 	# bcm43xx may be loaded already lets remove them first
 	modprobe -r --ignore-remov bcm43xx 2>&1 > /dev/null
 	modprobe bcm43xx
-	CHECK=`modprobe -l bcm43xx`
+	CHECK=`find /lib/modules/*/ -name bcm43xx.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "bcm43xx loaded successfully!"
 	fi

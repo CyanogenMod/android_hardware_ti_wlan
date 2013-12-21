@@ -34,12 +34,12 @@ if [ "$MODULE" == "iwlagn" ]; then
 	# Enables both b43 and b43legacy
 	iwl-enable iwlagn
 	modprobe iwlagn
-	CHECK=`modprobe -l iwlagn`
+	CHECK=`find /lib/modules/*/ -name iwlagn.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "iwlagn loaded successfully"
 	fi
 elif [ "$MODULE" == "iwl4965" ]; then
-	CHECK=`modprobe -l iwlagn`
+	CHECK=`find /lib/modules/*/ -name iwlagn.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "iwlagn currently loaded, going to try to unload the module..."
 		modprobe -r --ignore-remove iwlagn
@@ -48,7 +48,7 @@ elif [ "$MODULE" == "iwl4965" ]; then
 	# iwl4965 may be loaded already lets remove it first
 	modprobe -r --ignore-remov iwl4965 2>&1 > /dev/null
 	modprobe iwl4965
-	CHECK=`modprobe -l iwl4965`
+	CHECK=`find /lib/modules/*/ -name iwl4965.ko -printf '%P'`
 	if [ ! -z $CHECK ]; then
 		echo "iwl4965 loaded successfully!"
 	fi
