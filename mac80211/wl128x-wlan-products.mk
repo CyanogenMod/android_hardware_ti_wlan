@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+BOARD_WLAN_CHIPSET := wl128x
+
 # WLAN firmware for wl128x
 PRODUCT_PACKAGES += \
-    wl128x-fw-4-sr.bin \
-    wl128x-fw-4-mr.bin \
-    wl128x-fw-4-plt.bin
+    wl128x-fw-5-sr.bin \
+    wl128x-fw-5-mr.bin \
+    wl128x-fw-5-plt.bin
 
 # Default calibration file for wl128x
 PRODUCT_PACKAGES += \
-    wl1271-nvs_128x.bin
+    wl1271-nvs.bin
