@@ -1080,6 +1080,7 @@ static int plt_autocalibrate(struct nl80211_state *state, struct nl_cb *cb,
 	if (res) {
 		goto out_removenvs;
 	}
+        sleep(2);
 
 	res = plt_do_power_on(state, devname);
 	if (res < 0)
