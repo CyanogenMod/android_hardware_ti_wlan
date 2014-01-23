@@ -1270,6 +1270,7 @@ enum {
 	ACX_FEATURE_CFG                  = 0x0043,
 	ACX_PROTECTION_CFG               = 0x0044,
 	ACX_AP_CONN_ESTAB_COMPLETE       = 0x0045,
+	ACX_RX_BA_FILTER                 = 0x0046,
 };
 
 
@@ -1365,4 +1366,16 @@ int wl1271_acx_set_rx_data_filter(struct wl1271 *wl, u8 index, bool enable,
 int wl12xx_acx_sta_get_rssi(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 			    int *rssi);
 int wl1271_acx_ap_conn_estab_complete(struct wl1271 *wl);
+
+/*
+ * ACX_RX_BA_FILTER
+ * Only Enable/Disable the filter
+*/
+struct wl12xx_acx_rx_ba_filter {
+	struct acx_header header;
+	u32    enable;
+};
+
+int wl12xx_acx_rx_ba_filter(struct wl1271 *wl, bool action);
+
 #endif /* __WL1271_ACX_H__ */
