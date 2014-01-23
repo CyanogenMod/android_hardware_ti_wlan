@@ -591,6 +591,12 @@ static inline int drv_ampdu_action(struct ieee80211_local *local,
 
 	might_sleep();
 
+	/* don't allow BA actions while the system state is not deterministic */
+	if (local->in_reconfig) {
+		ret = -EBUSY;
+		goto end;
+	}
+
 	sdata = get_bss_sdata(sdata);
 	check_sdata_in_driver(sdata);
 
@@ -602,6 +608,7 @@ static inline int drv_ampdu_action(struct ieee80211_local *local,
 
 	trace_drv_return_int(local, ret);
 
+end:
 	return ret;
 }
 
