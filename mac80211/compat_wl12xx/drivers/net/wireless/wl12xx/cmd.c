@@ -1453,7 +1453,7 @@ int wl1271_cmd_set_sta_key(struct wl1271 *wl, struct wl12xx_vif *wlvif,
 
 	cmd->hlid = wlvif->sta.hlid;
 
-	if (key_type == KEY_WEP)
+	if (key_type == KEY_WEP && wlvif->encryption_type == KEY_NONE)
 		cmd->lid_key_type = WEP_DEFAULT_LID_TYPE;
 	else if (is_broadcast_ether_addr(addr))
 		cmd->lid_key_type = BROADCAST_LID_TYPE;

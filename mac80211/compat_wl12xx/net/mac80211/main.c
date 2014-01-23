@@ -267,10 +267,6 @@ void ieee80211_bss_info_change_notify(struct ieee80211_sub_if_data *sdata,
 				WARN_ON(1);
 				break;
 			}
-
-			/* beacon shouldn't be enabled while off channel */
-			WARN_ON(sdata->vif.bss_conf.enable_beacon
-				&& local->tmp_channel);
 		}
 	}
 

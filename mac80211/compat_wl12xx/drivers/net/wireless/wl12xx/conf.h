@@ -988,6 +988,11 @@ struct conf_conn_settings {
 	 * interrogating the FW status for each packets.
 	 */
 	u16 elp_timeout;
+
+	/*
+	 * Default RX BA Activity filter configuration
+	 */
+	u8 suspend_rx_ba_activity;
 };
 
 enum {
