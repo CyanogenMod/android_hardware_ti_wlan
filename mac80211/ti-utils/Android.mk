@@ -27,9 +27,9 @@ LOCAL_SRC_FILES := \
 LOCAL_CFLAGS := -DCONFIG_LIBNL20
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) \
-    external/libnl-headers
+    external/libnl
 
-LOCAL_STATIC_LIBRARIES := libnl_2
+LOCAL_STATIC_LIBRARIES := libnl
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := calibrator
 
