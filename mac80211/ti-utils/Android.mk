@@ -26,10 +26,15 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CFLAGS := -DCONFIG_LIBNL20
 LOCAL_C_INCLUDES := \
-    $(LOCAL_PATH) \
-    external/libnl-headers
+    $(LOCAL_PATH)
 
+ifneq ($(wildcard external/libnl),)
+LOCAL_C_INCLUDES += external/libnl/include
+LOCAL_SHARED_LIBRARIES := libnl
+else
+LOCAL_C_INCLUDES += external/libnl-headers
 LOCAL_STATIC_LIBRARIES := libnl_2
+endif
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := calibrator
 
