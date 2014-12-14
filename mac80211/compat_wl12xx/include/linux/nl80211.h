@@ -1543,6 +1543,43 @@ enum nl80211_commands {
  * @NL80211_ATTR_VENDOR_EVENTS: used for event list advertising in the wiphy
  *	info, containing a nested array of possible events
  *
+ * @NL80211_ATTR_QOS_MAP: IP DSCP mapping for Interworking QoS mapping. This
+ *	data is in the format defined for the payload of the QoS Map Set element
+ *	in IEEE Std 802.11-2012, 8.4.2.97.
+ *
+ * @NL80211_ATTR_MAC_HINT: MAC address recommendation as initial BSS
+ * @NL80211_ATTR_WIPHY_FREQ_HINT: frequency of the recommended initial BSS
+ *
+ * @NL80211_ATTR_MAX_AP_ASSOC_STA: Device attribute that indicates how many
+ *	associated stations are supported in AP mode (including P2P GO); u32.
+ *	Since drivers may not have a fixed limit on the maximum number (e.g.,
+ *	other concurrent operations may affect this), drivers are allowed to
+ *	advertise values that cannot always be met. In such cases, an attempt
+ *	to add a new station entry with @NL80211_CMD_NEW_STATION may fail.
+ *
+ * @NL80211_ATTR_TDLS_PEER_CAPABILITY: flags for TDLS peer capabilities, u32.
+ *	As specified in the &enum nl80211_tdls_peer_capability.
+ *
+ * @NL80211_ATTR_IFACE_SOCKET_OWNER: flag attribute, if set during interface
+ *	creation then the new interface will be owned by the netlink socket
+ *	that created it and will be destroyed when the socket is closed
+ *
+ * @NL80211_ATTR_AUTHORIZATION_STATUS: Status of key management offload.
+ * @NL80211_ATTR_KEY_REPLAY_CTR: Key Replay Counter value last used in a
+ *	valid EAPOL-Key frame.
+ * @NL80211_ATTR_PSK: The Preshared Key to be used for the connection.
+ * @NL80211_ATTR_OFFLOAD_KEY_MGMT: Requests that device handle establishment
+ *	of temporal keys if possible.
+ * @NL80211_ATTR_KEY_MGMT_OFFLOAD_SUPPORT: Supported types of device key
+ *	management offload.
+ * @NL80211_ATTR_KEY_DERIVE_OFFLOAD_SUPPORT: Supported types of device key
+ *	derivation used as part of key management offload.
+ * @NL80211_ATTR_PMK: The Pairwise Master Key to be used for the
+ *	connection.
+ * @NL80211_ATTR_PMK_LEN: The length of the PMK.
+ * @NL80211_ATTR_PTK_KCK: Pairwise Transient Key, Key Confirmation Key.
+ * @NL80211_ATTR_PTK_KEK: Pairwise Transient Key, Key Encryption Key.
+ *
  * @%NL80211_ATTR_IM_SCAN_RESULT: Flag attribute to enable intermediate
  *     scan result notification event (%NL80211_CMD_IM_SCAN_RESULT)
  *     for the %NL80211_CMD_TRIGGER_SCAN command.
@@ -1908,11 +1945,32 @@ enum nl80211_attrs {
 	NL80211_ATTR_VENDOR_ID,
 	NL80211_ATTR_VENDOR_SUBCMD,
 	NL80211_ATTR_VENDOR_DATA,
-
 	NL80211_ATTR_VENDOR_EVENTS,
 
+	NL80211_ATTR_QOS_MAP,
+
+	NL80211_ATTR_MAC_HINT,
+	NL80211_ATTR_WIPHY_FREQ_HINT,
+
+	NL80211_ATTR_MAX_AP_ASSOC_STA,
+
+	NL80211_ATTR_TDLS_PEER_CAPABILITY,
+
+	NL80211_ATTR_AUTHORIZATION_STATUS,
+	NL80211_ATTR_KEY_REPLAY_CTR,
+	NL80211_ATTR_PSK,
+	NL80211_ATTR_OFFLOAD_KEY_MGMT,
+	NL80211_ATTR_KEY_MGMT_OFFLOAD_SUPPORT,
+	NL80211_ATTR_KEY_DERIVE_OFFLOAD_SUPPORT,
+	NL80211_ATTR_PMK,
+	NL80211_ATTR_PMK_LEN,
+	NL80211_ATTR_PTK_KCK,
+	NL80211_ATTR_PTK_KEK,
+
+	NL80211_ATTR_IFACE_SOCKET_OWNER,
+
 	/* leave some room for new attributes in nl80211 updates */
-	NL80211_ATTR_IM_SCAN_RESULT = NL80211_ATTR_VENDOR_EVENTS + 10,
+	NL80211_ATTR_IM_SCAN_RESULT = NL80211_ATTR_IFACE_SOCKET_OWNER + 10,
 	NL80211_ATTR_IM_SCAN_RESULT_MIN_RSSI,
 
 	NL80211_ATTR_SCAN_MIN_DWELL,
