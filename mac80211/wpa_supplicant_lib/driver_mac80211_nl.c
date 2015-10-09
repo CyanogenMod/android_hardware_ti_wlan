@@ -24,7 +24,7 @@
 #include "config_ssid.h"
 #include "wpa_debug.h"
 #include "linux_ioctl.h"
-#include "hardware_legacy/driver_nl80211.h"
+#include "driver_nl80211.h"
 
 #define WPA_EVENT_DRIVER_STATE          "CTRL-EVENT-DRIVER-STATE "
 #define DRV_NUMBER_SEQUENTIAL_ERRORS     4
