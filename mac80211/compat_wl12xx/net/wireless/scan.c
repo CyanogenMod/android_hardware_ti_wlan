@@ -861,6 +861,7 @@ cfg80211_inform_bss_frame(struct wiphy *wiphy,
 	size_t ielen = len - offsetof(struct ieee80211_mgmt,
 				      u.probe_resp.variable);
 	size_t privsz;
+	struct timespec ts;
 
 	if (WARN_ON(!mgmt))
 		return NULL;
@@ -884,7 +885,10 @@ cfg80211_inform_bss_frame(struct wiphy *wiphy,
 	memcpy(res->pub.bssid, mgmt->bssid, ETH_ALEN);
 	res->pub.channel = channel;
 	res->pub.signal = signal;
-	res->pub.tsf = le64_to_cpu(mgmt->u.probe_resp.timestamp);
+	/* Android does not want the timestamp from the frame.
+	   Instead it wants a monotonic increasing value */
+	get_monotonic_boottime(&ts);
+	res->pub.tsf = ((u64)ts.tv_sec * 1000000) + (ts.tv_nsec / 1000);
 	res->pub.beacon_interval = le16_to_cpu(mgmt->u.probe_resp.beacon_int);
 	res->pub.capability = le16_to_cpu(mgmt->u.probe_resp.capab_info);
 	INIT_LIST_HEAD(&res->list_aliases);
