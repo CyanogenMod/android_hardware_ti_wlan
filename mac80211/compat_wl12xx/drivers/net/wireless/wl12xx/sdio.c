@@ -364,12 +364,22 @@ static struct sdio_driver wl1271_sdio_driver = {
 
 static int __init wl1271_init(void)
 {
+	const struct wl12xx_platform_data *wlan_data = wl12xx_get_platform_data();
+
+	if (wlan_data->set_power)
+		wlan_data->set_power(1);
+
 	return sdio_register_driver(&wl1271_sdio_driver);
 }
 
 static void __exit wl1271_exit(void)
 {
+	const struct wl12xx_platform_data *wlan_data = wl12xx_get_platform_data();
+
 	sdio_unregister_driver(&wl1271_sdio_driver);
+
+	if (wlan_data->set_power)
+		wlan_data->set_power(0);
 }
 
 module_init(wl1271_init);
